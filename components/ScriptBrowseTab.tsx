@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Keyboard,
   Pressable,
   StyleSheet,
   Text,
@@ -20,7 +21,12 @@ interface Props {
   importedScripts: ReturnType<typeof useSavedScriptStore.getState>['scripts'];
   downloading: string | null;
   handleDownload: (script: BotcScriptResult) => void;
-  onPreview?: (name: string, roleIds: string[], author: string, version: string) => void;
+  onPreview?: (
+    name: string,
+    roleIds: string[],
+    author: string,
+    version: string,
+  ) => void;
 }
 
 export default function ScriptBrowseTab({
@@ -119,7 +125,14 @@ export default function ScriptBrowseTab({
           onSubmitEditing={handleSearch}
           returnKeyType="search"
         />
-        <Pressable accessibilityLabel="Search" style={s.searchBtn} onPress={handleSearch}>
+        <Pressable
+          accessibilityLabel="Search"
+          style={s.searchBtn}
+          onPress={() => {
+            Keyboard.dismiss();
+            handleSearch();
+          }}
+        >
           <Text style={s.searchBtnText}>Search</Text>
         </Pressable>
       </View>
