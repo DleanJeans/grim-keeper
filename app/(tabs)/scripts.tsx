@@ -2,9 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ContentWrapper from '../../components/ContentWrapper';
+import SavedScriptTab from '../../components/SavedScriptTab';
 import ScriptBrowseTab from '../../components/ScriptBrowseTab';
 import ScriptDetailPanel from '../../components/ScriptDetailPanel';
-import SavedScriptTab from '../../components/SavedScriptTab';
 import { getScripts } from '../../data/scripts';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useSavedScriptStore } from '../../hooks/useSavedScriptStore';
@@ -74,7 +74,6 @@ export default function ScriptsScreen() {
         script.version,
         roleIds,
       );
-      useSavedScriptStore.getState().loadScripts();
     } catch {
       // Fallback: save with whatever roles we have from search results
       const roleIds = extractRoleIds(script.content);
@@ -84,7 +83,6 @@ export default function ScriptsScreen() {
         script.version,
         roleIds,
       );
-      useSavedScriptStore.getState().loadScripts();
     }
     setDownloading(null);
   };
@@ -104,7 +102,6 @@ export default function ScriptsScreen() {
       detailScript.version,
       detailScript.roleIds,
     );
-    useSavedScriptStore.getState().loadScripts();
     setDetailScript(null);
   };
 
@@ -263,7 +260,6 @@ export default function ScriptsScreen() {
         onClose={() => setShowCreate(false)}
         onSave={(name: string, roleIds: string[]) => {
           saveScript(name, 'Custom', '1.0', roleIds);
-          useSavedScriptStore.getState().loadScripts();
         }}
       />
     </SafeAreaView>

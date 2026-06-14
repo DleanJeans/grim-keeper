@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 import type { SavedScript } from '../types';
 import { generateId } from '../utils/layout';
+import { platformGetItem, platformSetItem } from '../utils/platformStorage';
 
 const STORAGE_KEY = 'grim-keeper-saved-scripts';
 
 function loadScripts(): SavedScript[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = platformGetItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -15,7 +16,7 @@ function loadScripts(): SavedScript[] {
 
 function saveScripts(scripts: SavedScript[]) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(scripts));
+    platformSetItem(STORAGE_KEY, JSON.stringify(scripts));
   } catch {}
 }
 
@@ -50,10 +51,7 @@ export const useSavedScriptStore = create<SavedScriptStore>((set, get) => ({
       roleIds,
       savedAt: Date.now(),
     };
-    const scripts = [
-      ...get().scripts,
-      script,
-    ];
+    const scripts = [...get().scripts, script];
     saveScripts(scripts);
     set({
       scripts,

@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import type { Game } from '../types';
 import { calculateRoomPositions } from '../utils/layout';
+import { platformGetItem, platformSetItem } from '../utils/platformStorage';
 import PlayerSeat from './PlayerSeat';
 
 interface PlayerRoomProps {
@@ -46,7 +47,7 @@ export default function PlayerRoom({
     y: number;
   } => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = platformGetItem(STORAGE_KEY);
       if (raw) return JSON.parse(raw);
     } catch {}
     return {
@@ -56,7 +57,7 @@ export default function PlayerRoom({
   };
   const savePan = (pos: { x: number; y: number }) => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(pos));
+      platformSetItem(STORAGE_KEY, JSON.stringify(pos));
     } catch {}
   };
 

@@ -15,7 +15,7 @@ env:
 - waitForAnimationToEnd:
     timeout: 1000
 
-- openLink: exp://192.168.0.100:8081/--/scripts
+- openLink: exp://192.168.0.100:8081/--/scripts?clear=true
 
 # Wait for app to load
 - extendedWaitUntil:

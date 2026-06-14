@@ -1,6 +1,8 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useURL } from 'expo-linking';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { LogBox, View } from 'react-native';
 import { preloadRoleData } from '../data/roleIcons';
 import { useFriendStore } from '../hooks/useFriendStore';
@@ -15,12 +17,25 @@ export default function RootLayout() {
   const loadFriends = useFriendStore(s => s.loadFriends);
   const loadScripts = useSavedScriptStore(s => s.loadScripts);
 
-  useEffect(() => {
+  const url = useURL();
+  const cleared = useRef(false);
+
+  const init = () => {
     loadGames();
     loadFriends();
     loadScripts();
     preloadRoleData();
-  }, [loadScripts, loadGames, loadFriends]);
+  };
+
+  useEffect(() => {
+    if (cleared.current) return;
+    if (url?.includes('clear=true')) {
+      cleared.current = true;
+      AsyncStorage.clear().then(init);
+    } else {
+      init();
+    }
+  }, [url, loadScripts, loadGames, loadFriends]);
 
   return (
     <View

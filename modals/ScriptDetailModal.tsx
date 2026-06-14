@@ -46,11 +46,6 @@ export default function ScriptDetailModal({
 
   const unknownCount = roleIds.filter(id => !roles[id]).length;
 
-  console.log({
-    grouped,
-    unknownCount,
-  });
-
   return (
     <Modal accessible={false} visible={visible} transparent animationType="slide">
       <View style={styles.overlay}>
