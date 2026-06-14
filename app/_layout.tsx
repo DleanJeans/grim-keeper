@@ -1,11 +1,14 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { View } from 'react-native';
+import { LogBox, View } from 'react-native';
 import { preloadRoleData } from '../data/roleIcons';
 import { useFriendStore } from '../hooks/useFriendStore';
 import { useGameStore } from '../hooks/useGameStore';
 import { useSavedScriptStore } from '../hooks/useSavedScriptStore';
+
+// Suppress Reanimated reduced motion LogBox toast in dev mode
+LogBox.ignoreLogs(['[Reanimated] Reduced motion setting']);
 
 export default function RootLayout() {
   const loadGames = useGameStore(s => s.loadGames);
@@ -17,11 +20,7 @@ export default function RootLayout() {
     loadFriends();
     loadScripts();
     preloadRoleData();
-  }, [
-    loadScripts,
-    loadGames,
-    loadFriends,
-  ]);
+  }, [loadScripts, loadGames, loadFriends]);
 
   return (
     <View

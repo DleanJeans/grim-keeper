@@ -1,0 +1,70 @@
+# Test: Browse scripts, preview, save, verify saved tab
+# Run with: maestro test .maestro/expo-go/scripts/browse-preview-save.yaml
+# Run with: maestro test --udid <emulator-id> .maestro/expo-go/scripts/browse-preview-save.yaml
+# Requires: Expo dev server running AND app loaded on emulator
+
+appId: host.exp.exponent
+env:
+  SCRIPT_NAME: "One in one out"
+---
+# Kill any existing app session and wipe its state
+- launchApp:
+    appId: host.exp.exponent
+    stopApp: true
+
+- waitForAnimationToEnd:
+    timeout: 1000
+
+- openLink: exp://192.168.0.100:8081/--/scripts
+
+# Wait for app to load
+- extendedWaitUntil:
+    visible: "Search botcscripts.com..."
+    timeout: 15000
+
+- tapOn: "Search botcscripts.com..."
+- inputText: "${SCRIPT_NAME}"
+- tapOn:
+    text: "Search"
+    index: 0
+
+# Wait for results to load (API call + render)
+- extendedWaitUntil:
+    visible: "Preview"
+    timeout: 15000
+
+# Tap Preview on first result
+- tapOn: "Preview"
+
+# Wait for modal to appear
+- extendedWaitUntil:
+    visible: "Save Script"
+    timeout: 5000
+
+# Modal should NOT show any "unknown roles"
+- assertNotVisible: "Unknown roles"
+
+# Save the script from the modal (direct save, no async download)
+- tapOn: "Save Script"
+
+# Saved (0) should change to Saved (1)
+- extendedWaitUntil:
+    visible: "Saved (1)"
+    timeout: 5000
+
+# Go to Saved tab
+- tapOn: "Saved tab"
+- extendedWaitUntil:
+    visible: "${SCRIPT_NAME}"
+    timeout: 3000
+
+# Tap on script
+- tapOn: "${SCRIPT_NAME}"
+
+# Wait for modal
+- extendedWaitUntil:
+    visible: "Save Script"
+    timeout: 5000
+
+# Verify modal has no "unknown roles" either
+- assertNotVisible: "Unknown roles"
