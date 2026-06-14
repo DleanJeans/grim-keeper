@@ -1,4 +1,4 @@
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { SavedScript, Script } from '../types';
 
 interface Props {
@@ -19,7 +19,7 @@ export default function SavedScriptTab({
   onScriptPress,
   onDeleteScript,
 }: Props) {
-  const renderSaved = ({ item }: { item: SavedScript }) => (
+  const renderSaved = (item: SavedScript) => (
     <Pressable
       accessibilityLabel={`Saved script ${item.name}`}
       style={s.card}
@@ -47,16 +47,11 @@ export default function SavedScriptTab({
   );
 
   return (
-    <View style={{ flex: 1 }}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={s.scrollContent}>
       {importedScripts.length > 0 && (
         <>
           <Text style={s.panelTitle}>Saved ({importedScripts.length})</Text>
-          <FlatList
-            data={importedScripts}
-            keyExtractor={item => item.id}
-            contentContainerStyle={s.list}
-            renderItem={renderSaved}
-          />
+          {importedScripts.map(renderSaved)}
         </>
       )}
 
@@ -94,7 +89,7 @@ export default function SavedScriptTab({
           </View>
         </Pressable>
       ))}
-    </View>
+    </ScrollView>
   );
 }
 
@@ -120,7 +115,7 @@ const s = StyleSheet.create({
     letterSpacing: 1,
     marginBottom: 10,
   },
-  list: { paddingBottom: 8 },
+  scrollContent: { paddingBottom: 24 },
   center: {
     alignItems: 'center',
     justifyContent: 'center',
