@@ -4,11 +4,16 @@ import type { SavedScript, Script } from '../types';
 interface Props {
   importedScripts: SavedScript[];
   builtinScripts: Script[];
-  onScriptPress: (name: string, roleIds: string[], author: string, version: string) => void;
+  onScriptPress: (
+    name: string,
+    roleIds: string[],
+    author: string,
+    version: string,
+  ) => void;
   onDeleteScript: (id: string, name: string) => void;
 }
 
-export default function ScriptSavedTab({
+export default function SavedScriptTab({
   importedScripts,
   builtinScripts,
   onScriptPress,
@@ -18,7 +23,14 @@ export default function ScriptSavedTab({
     <Pressable
       accessibilityLabel={`Saved script ${item.name}`}
       style={s.card}
-      onPress={() => onScriptPress(item.name, item.roleIds, item.author || 'Unknown', item.version)}
+      onPress={() =>
+        onScriptPress(
+          item.name,
+          item.roleIds,
+          item.author || 'Unknown',
+          item.version,
+        )
+      }
       onLongPress={() => onDeleteScript(item.id, item.name)}
     >
       <View style={s.cardBody}>
@@ -35,11 +47,7 @@ export default function ScriptSavedTab({
   );
 
   return (
-    <View
-      style={{
-        flex: 1,
-      }}
-    >
+    <View style={{ flex: 1 }}>
       {importedScripts.length > 0 && (
         <>
           <Text style={s.panelTitle}>Saved ({importedScripts.length})</Text>
@@ -65,9 +73,7 @@ export default function ScriptSavedTab({
       <Text
         style={[
           s.panelTitle,
-          {
-            marginTop: importedScripts.length > 0 ? 16 : 8,
-          },
+          { marginTop: importedScripts.length > 0 ? 16 : 8 },
         ]}
       >
         Official Scripts
@@ -76,7 +82,9 @@ export default function ScriptSavedTab({
         <Pressable
           key={script.id}
           style={s.card}
-          onPress={() => onScriptPress(script.name, script.roles, 'Clocktower', '1.0')}
+          onPress={() =>
+            onScriptPress(script.name, script.roles, 'Clocktower', '1.0')
+          }
         >
           <View style={s.cardBody}>
             <Text style={s.cardName}>{script.name}</Text>
@@ -100,23 +108,10 @@ const s = StyleSheet.create({
     gap: 12,
     marginBottom: 10,
   },
-  cardBody: {
-    flex: 1,
-  },
-  cardName: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  cardMeta: {
-    color: '#888',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  cardArrow: {
-    color: '#666',
-    fontSize: 18,
-  },
+  cardBody: { flex: 1 },
+  cardName: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  cardMeta: { color: '#888', fontSize: 12, marginTop: 2 },
+  cardArrow: { color: '#666', fontSize: 18 },
   panelTitle: {
     color: '#aaa',
     fontSize: 13,
@@ -125,19 +120,14 @@ const s = StyleSheet.create({
     letterSpacing: 1,
     marginBottom: 10,
   },
-  list: {
-    paddingBottom: 8,
-  },
+  list: { paddingBottom: 8 },
   center: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 40,
     paddingVertical: 40,
   },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
+  emptyIcon: { fontSize: 48, marginBottom: 12 },
   emptyTitle: {
     color: '#fff',
     fontSize: 20,

@@ -9,7 +9,7 @@
       "quoteStyle": "single",
       "trailingCommas": "all",
       "arrowParentheses": "asNeeded",
-      "expand": "always"
+      "expand": "auto"
     }
   },
   "linter": {

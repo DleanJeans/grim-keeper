@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import ContentWrapper from '../../components/ContentWrapper';
 import ScriptBrowseTab from '../../components/ScriptBrowseTab';
 import ScriptDetailPanel from '../../components/ScriptDetailPanel';
-import ScriptSavedTab from '../../components/ScriptSavedTab';
+import SavedScriptTab from '../../components/SavedScriptTab';
 import { getScripts } from '../../data/scripts';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useSavedScriptStore } from '../../hooks/useSavedScriptStore';
@@ -43,9 +43,7 @@ export default function ScriptsScreen() {
   }, []);
   useEffect(() => {
     refreshImported();
-  }, [
-    refreshImported,
-  ]);
+  }, [refreshImported]);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -119,7 +117,12 @@ export default function ScriptsScreen() {
     importedScripts,
     downloading,
     handleDownload,
-    onPreview: (name: string, roleIds: string[], author: string, version: string) =>
+    onPreview: (
+      name: string,
+      roleIds: string[],
+      author: string,
+      version: string,
+    ) =>
       setDetailScript({
         name,
         roleIds,
@@ -163,7 +166,7 @@ export default function ScriptsScreen() {
                 flex: 1,
               }}
             >
-              <ScriptSavedTab
+              <SavedScriptTab
                 importedScripts={importedScripts}
                 builtinScripts={builtinScripts}
                 onScriptPress={(name, roleIds, author, version) =>
@@ -190,10 +193,7 @@ export default function ScriptsScreen() {
             <View style={styles.tabBar}>
               <Pressable
                 accessibilityLabel="Browse tab"
-                style={[
-                  styles.tab,
-                  viewTab === 'browse' && styles.tabActive,
-                ]}
+                style={[styles.tab, viewTab === 'browse' && styles.tabActive]}
                 onPress={() => setViewTab('browse')}
               >
                 <Text
@@ -207,10 +207,7 @@ export default function ScriptsScreen() {
               </Pressable>
               <Pressable
                 accessibilityLabel="Saved tab"
-                style={[
-                  styles.tab,
-                  viewTab === 'saved' && styles.tabActive,
-                ]}
+                style={[styles.tab, viewTab === 'saved' && styles.tabActive]}
                 onPress={() => setViewTab('saved')}
               >
                 <Text
@@ -226,7 +223,7 @@ export default function ScriptsScreen() {
             {viewTab === 'browse' ? (
               <ScriptBrowseTab {...commonBrowseProps} />
             ) : (
-              <ScriptSavedTab
+              <SavedScriptTab
                 importedScripts={importedScripts}
                 builtinScripts={builtinScripts}
                 onScriptPress={(name, roleIds, author, version) =>
