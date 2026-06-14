@@ -1,0 +1,65 @@
+# Test: Browse scripts, preview, save, verify saved tab
+# Run with: maestro test .maestro/scripts-browse-preview-save.yaml
+# Requires: Expo Go running on device/simulator with app loaded
+
+appId: host.exp.Exponent
+---
+# Navigate to Scripts tab
+- tapOn: "Scripts tab"
+- extendedWaitUntil:
+    visible: "Search scripts"
+    timeout: 5000
+
+# Search for Bad Moon Rising
+- tapOn: "Search scripts"
+- inputText: "Bad Moon Rising"
+- tapOn: "Search"
+
+# Wait for results to load
+- extendedWaitUntil:
+    visible: "Preview"
+    timeout: 10000
+
+# Tap Preview on first result
+- tapOn:
+    text: "Preview Bad Moon Rising"
+
+# Wait for modal to appear
+- extendedWaitUntil:
+    visible: "Save Script"
+    timeout: 5000
+
+# Modal should NOT show any "unknown roles"
+- assertNotVisible: "Unknown roles"
+
+# Close modal
+- tapOn: "Close"
+- extendedWaitUntil:
+    visible: "Search scripts"
+    timeout: 3000
+
+# Save the script from search results
+- tapOn:
+    text: "Save Bad Moon Rising"
+
+# Saved (0) should change to Saved (1)
+- extendedWaitUntil:
+    visible: "Saved (1)"
+    timeout: 5000
+
+# Go to Saved tab
+- tapOn: "Saved tab"
+- extendedWaitUntil:
+    visible: "Bad Moon Rising"
+    timeout: 3000
+
+# Tap on Bad Moon Rising
+- tapOn: "Bad Moon Rising"
+
+# Wait for modal
+- extendedWaitUntil:
+    visible: "Save Script"
+    timeout: 5000
+
+# Verify modal has no "unknown roles" either
+- assertNotVisible: "Unknown roles"

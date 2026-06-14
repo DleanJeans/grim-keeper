@@ -52,13 +52,13 @@ export default function ScriptDetailModal({
   });
 
   return (
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal accessible={false} visible={visible} transparent animationType="slide">
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>{scriptName}</Text>
-            <Pressable onPress={onClose} style={styles.closeBtn}>
+            <Pressable accessibilityLabel="Close" onPress={onClose} style={styles.closeBtn}>
               <Text style={styles.closeBtnText}>✕</Text>
             </Pressable>
           </View>
@@ -99,7 +99,7 @@ export default function ScriptDetailModal({
               </View>
             ))}
             {unknownCount > 0 && (
-              <Text style={styles.unknownText}>
+              <Text accessibilityLabel="Unknown roles" style={styles.unknownText}>
                 {unknownCount} unknown role{unknownCount > 1 ? 's' : ''}
               </Text>
             )}
@@ -113,7 +113,7 @@ export default function ScriptDetailModal({
           {/* Save button */}
           {onSave && (
             <View style={styles.footer}>
-              <Pressable style={styles.saveBtn} onPress={onSave}>
+              <Pressable accessibilityLabel="Save Script" style={styles.saveBtn} onPress={onSave}>
                 <Text style={styles.saveBtnText}>Save Script</Text>
               </Pressable>
             </View>

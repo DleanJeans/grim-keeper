@@ -61,6 +61,7 @@ function CustomTabBar({ navigation, state }: any) {
             return (
               <Pressable
                 key={tab.name}
+                accessibilityLabel={`${tab.label} tab`}
                 style={[
                   lsStyles.item,
                   active && lsStyles.itemActive,
@@ -102,6 +103,7 @@ function CustomTabBar({ navigation, state }: any) {
         return (
           <Pressable
             key={tab.name}
+            accessibilityLabel={`${tab.label} tab`}
             style={tbStyles.item}
             onPress={() => navigation.navigate(tab.name)}
           >

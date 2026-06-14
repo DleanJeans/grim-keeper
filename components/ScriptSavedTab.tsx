@@ -16,6 +16,7 @@ export default function ScriptSavedTab({
 }: Props) {
   const renderSaved = ({ item }: { item: SavedScript }) => (
     <Pressable
+      accessibilityLabel={`Saved script ${item.name}`}
       style={s.card}
       onPress={() => onScriptPress(item.name, item.roleIds, item.author || 'Unknown', item.version)}
       onLongPress={() => onDeleteScript(item.id, item.name)}

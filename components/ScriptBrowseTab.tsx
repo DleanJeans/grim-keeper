@@ -66,6 +66,7 @@ export default function ScriptBrowseTab({
           }}
         >
           <Pressable
+            accessibilityLabel={`Preview ${item.name}`}
             style={s.previewBtn}
             onPress={() =>
               onPreview?.(
@@ -84,6 +85,7 @@ export default function ScriptBrowseTab({
             </View>
           ) : (
             <Pressable
+              accessibilityLabel={`Save ${item.name}`}
               style={s.downloadBtn}
               onPress={() => handleDownload(item)}
               disabled={downloading === item.script_id.toString()}
@@ -108,6 +110,7 @@ export default function ScriptBrowseTab({
     >
       <View style={s.searchRow}>
         <TextInput
+          accessibilityLabel="Search scripts"
           style={s.searchInput}
           value={searchQuery}
           onChangeText={handleChange}
@@ -116,7 +119,7 @@ export default function ScriptBrowseTab({
           onSubmitEditing={handleSearch}
           returnKeyType="search"
         />
-        <Pressable style={s.searchBtn} onPress={handleSearch}>
+        <Pressable accessibilityLabel="Search" style={s.searchBtn} onPress={handleSearch}>
           <Text style={s.searchBtnText}>Search</Text>
         </Pressable>
       </View>

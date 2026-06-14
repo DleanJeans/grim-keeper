@@ -189,6 +189,7 @@ export default function ScriptsScreen() {
           <>
             <View style={styles.tabBar}>
               <Pressable
+                accessibilityLabel="Browse tab"
                 style={[
                   styles.tab,
                   viewTab === 'browse' && styles.tabActive,
@@ -205,6 +206,7 @@ export default function ScriptsScreen() {
                 </Text>
               </Pressable>
               <Pressable
+                accessibilityLabel="Saved tab"
                 style={[
                   styles.tab,
                   viewTab === 'saved' && styles.tabActive,
