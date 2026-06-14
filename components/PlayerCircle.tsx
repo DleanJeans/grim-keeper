@@ -89,7 +89,7 @@ export default function PlayerCircle({
   const initialized = useRef(false);
 
   // ── Canvas pan offset ──
-  const STORAGE_KEY = 'grim-player-circle-pan';
+  const STORAGE_KEY = 'grim-keeper-circle-pan';
   const loadPan = (): {
     x: number;
     y: number;

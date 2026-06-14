@@ -40,7 +40,7 @@ export default function PlayerRoom({
   const initialized = useRef(false);
 
   // ── Canvas pan offset ──
-  const STORAGE_KEY = 'grim-player-room-pan';
+  const STORAGE_KEY = 'grim-keeper-room-pan';
   const loadPan = (): {
     x: number;
     y: number;

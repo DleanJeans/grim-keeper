@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { SavedScript } from '../types';
 import { generateId } from '../utils/layout';
 
-const STORAGE_KEY = 'grim-player-saved-scripts';
+const STORAGE_KEY = 'grim-keeper-saved-scripts';
 
 function loadScripts(): SavedScript[] {
   try {

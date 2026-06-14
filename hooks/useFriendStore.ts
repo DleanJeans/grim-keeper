@@ -7,7 +7,7 @@ import {
   platformSetItem,
 } from '../utils/platformStorage';
 
-const STORAGE_KEY = 'grim-player-friends';
+const STORAGE_KEY = 'grim-keeper-friends';
 
 function readFriends(): Friend[] {
   try {

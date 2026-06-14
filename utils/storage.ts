@@ -1,9 +1,9 @@
 import type { Friend, Game, SavedScript } from '../types';
 import { platformGetItem, platformSetItem } from './platformStorage';
 
-const STORAGE_KEY = 'grim-player-games';
-const FRIENDS_KEY = 'grim-player-friends';
-const SAVED_SCRIPTS_KEY = 'grim-player-scripts';
+const STORAGE_KEY = 'grim-keeper-games';
+const FRIENDS_KEY = 'grim-keeper-friends';
+const SAVED_SCRIPTS_KEY = 'grim-keeper-scripts';
 
 export function loadGames(): Game[] {
   try {

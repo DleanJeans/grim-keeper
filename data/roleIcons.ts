@@ -9,7 +9,7 @@ const BASE = 'https://release.botc.app/resources/characters';
 const ROLES_URL = 'https://release.botc.app/resources/data/roles.json';
 const NIGHTSHEET_URL =
   'https://release.botc.app/resources/data/nightsheet.json';
-const CACHE_KEY = 'grim-player-role-data';
+const CACHE_KEY = 'grim-keeper-role-data';
 
 import { platformGetItem, platformSetItem } from '../utils/platformStorage';
 
