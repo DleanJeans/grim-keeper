@@ -5,7 +5,10 @@
 
 appId: host.exp.exponent
 env:
-  SCRIPT_NAME: "One in one out"
+  SCRIPT_NAME: One in one out
+onFlowStart:
+  - clearState:
+      appId: host.exp.exponent
 ---
 # Kill any existing app session and wipe its state
 - launchApp:
@@ -15,57 +18,46 @@ env:
 - waitForAnimationToEnd:
     timeout: 1000
 
-- openLink: exp://192.168.0.100:8081/--/scripts?clear=true
+- openLink: exp://192.168.0.100:8081/--/scripts
 
-# Wait for app to load
-- extendedWaitUntil:
-    visible: "Search botcscripts.com..."
-    timeout: 10000
-
-- tapOn: "Search botcscripts.com..."
-- inputText: "${SCRIPT_NAME}"
 - tapOn:
-    text: "Search"
+    text: Continue
+    optional: true
+- back
+
+- assertNotVisible: Saved (1)
+- assertVisible: Saved (0)
+
+- tapOn: Search botcscripts.com...
+- inputText: ${SCRIPT_NAME}
+- tapOn:
+    text: Search
     index: 0
 
-# Wait for results to load (API call + render)
-- extendedWaitUntil:
-    visible: "Preview"
-    timeout: 15000
+- assertVisible: Preview
 
-# Tap Preview on first result
-- tapOn: "Preview"
+- tapOn: Preview
 
-# Wait for modal to appear
-- extendedWaitUntil:
-    visible: "Save Script"
-    timeout: 5000
+- assertVisible: Save Script
 
-# Modal should NOT show any "unknown roles"
-- assertNotVisible: "Unknown roles"
+- assertNotVisible: Unknown roles
 
-# Save the script from the modal (direct save, no async download)
-- tapOn: "Save Script"
+- tapOn: Save Script
+
+# Saved script should not be able to save again
+- tapOn: Preview
+- assertNotVisible: Save Script
+- tapOn: Close
 
 # Saved (0) should change to Saved (1)
-- extendedWaitUntil:
-    visible: "Saved (1)"
-    timeout: 5000
+- assertVisible: Saved (1)
 
-# Go to Saved tab
-- tapOn: "Saved tab"
-- extendedWaitUntil:
-    visible: "${SCRIPT_NAME}"
-    timeout: 3000
+- tapOn: Saved tab
+- assertVisible: ${SCRIPT_NAME}
 
-# Tap on script
-- tapOn: "${SCRIPT_NAME}"
+- tapOn: ${SCRIPT_NAME}
 
-# Wait for modal
-- extendedWaitUntil:
-    visible: "Steward"
-    timeout: 5000
+- assertVisible: Steward
 
-# Verify modal has no "unknown roles" either
-- assertNotVisible: "Unknown roles"
-- assertNotVisible: "Save Script"
+- assertNotVisible: Unknown roles
+- assertNotVisible: Save Script
