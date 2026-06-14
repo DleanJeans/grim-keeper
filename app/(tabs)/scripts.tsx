@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ContentWrapper from '../../components/ContentWrapper';
@@ -35,22 +35,21 @@ export default function ScriptsScreen() {
     scripts: importedScripts,
     saveScript,
     deleteScript,
+    loadScripts,
   } = useSavedScriptStore();
   const builtinScripts = getScripts();
 
-  const refreshImported = useCallback(() => {
-    useSavedScriptStore.getState().loadScripts();
-  }, []);
   useEffect(() => {
-    refreshImported();
-  }, [refreshImported]);
+    loadScripts();
+  }, [loadScripts]);
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+    const q = searchQuery.trim();
+    if (!q) return;
     setLoading(true);
     try {
       const res = await fetch(
-        `https://www.botcscripts.com/api/scripts/?search=${encodeURIComponent(searchQuery.trim())}`,
+        `https://www.botcscripts.com/api/scripts/?search=${encodeURIComponent(q)}`,
       );
       setSearchResults((await res.json()).results || []);
     } catch {
@@ -61,37 +60,29 @@ export default function ScriptsScreen() {
 
   const handleDownload = async (script: BotcScriptResult) => {
     setDownloading(script.script_id.toString());
+    let roleIds: string[] = [];
     try {
-      // Fetch full script detail to get all roles
       const res = await fetch(
         `https://www.botcscripts.com/api/scripts/${script.pk}/`,
       );
       const data = await res.json();
-      const roleIds = extractRoleIds(data.content || script.content);
-      saveScript(
-        script.name,
-        script.author || 'Unknown',
-        script.version,
-        roleIds,
-      );
+      roleIds = extractRoleIds(data.content || script.content);
     } catch {
-      // Fallback: save with whatever roles we have from search results
-      const roleIds = extractRoleIds(script.content);
-      saveScript(
-        script.name,
-        script.author || 'Unknown',
-        script.version,
-        roleIds,
-      );
+      roleIds = extractRoleIds(script.content);
     }
+    saveScript(
+      script.name,
+      script.author || 'Unknown',
+      script.version,
+      roleIds,
+    );
     setDownloading(null);
   };
 
   const handleDeleteSaved = (id: string, name: string) => {
-    if (typeof window !== 'undefined' && window.confirm) {
-      if (!window.confirm(`Delete "${name}"?`)) return;
-      deleteScript(id);
-    }
+    if (typeof window === 'undefined') return;
+    if (!window.confirm(`Delete "${name}"?`)) return;
+    deleteScript(id);
   };
 
   const handleSaveFromDetail = () => {
@@ -105,6 +96,19 @@ export default function ScriptsScreen() {
     setDetailScript(null);
   };
 
+  const handleScriptPress = (
+    name: string,
+    roleIds: string[],
+    author: string,
+    version: string,
+  ) => setDetailScript({ name, roleIds, author, version });
+
+  const isBuiltin =
+    detailScript?.author === 'Clocktower' && detailScript?.version === '1.0';
+  const alreadySaved =
+    detailScript != null &&
+    importedScripts.some(s => s.name === detailScript.name);
+
   const commonBrowseProps = {
     searchQuery,
     setSearchQuery,
@@ -114,18 +118,7 @@ export default function ScriptsScreen() {
     importedScripts,
     downloading,
     handleDownload,
-    onPreview: (
-      name: string,
-      roleIds: string[],
-      author: string,
-      version: string,
-    ) =>
-      setDetailScript({
-        name,
-        roleIds,
-        author,
-        version,
-      }),
+    onPreview: handleScriptPress,
   };
 
   return (
@@ -166,14 +159,7 @@ export default function ScriptsScreen() {
               <SavedScriptTab
                 importedScripts={importedScripts}
                 builtinScripts={builtinScripts}
-                onScriptPress={(name, roleIds, author, version) =>
-                  setDetailScript({
-                    name,
-                    roleIds,
-                    author,
-                    version,
-                  })
-                }
+                onScriptPress={handleScriptPress}
                 onDeleteScript={handleDeleteSaved}
               />
             </View>
@@ -223,14 +209,7 @@ export default function ScriptsScreen() {
               <SavedScriptTab
                 importedScripts={importedScripts}
                 builtinScripts={builtinScripts}
-                onScriptPress={(name, roleIds, author, version) =>
-                  setDetailScript({
-                    name,
-                    roleIds,
-                    author,
-                    version,
-                  })
-                }
+                onScriptPress={handleScriptPress}
                 onDeleteScript={handleDeleteSaved}
               />
             )}
@@ -240,19 +219,13 @@ export default function ScriptsScreen() {
 
       {detailScript && (
         <ScriptDetailModal
-          visible={!!detailScript}
+          visible
           scriptName={detailScript.name}
           roleIds={detailScript.roleIds}
           author={detailScript.author}
           version={detailScript.version}
           onClose={() => setDetailScript(null)}
-          onSave={
-            (detailScript.author === 'Clocktower' &&
-              detailScript.version === '1.0') ||
-            importedScripts.some(s => s.name === detailScript.name)
-              ? undefined
-              : handleSaveFromDetail
-          }
+          onSave={isBuiltin || alreadySaved ? undefined : handleSaveFromDetail}
         />
       )}
 
