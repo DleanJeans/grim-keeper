@@ -1,24 +1,16 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useURL } from 'expo-linking';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef } from 'react';
-import { LogBox, View } from 'react-native';
+import { View } from 'react-native';
 import { preloadRoleData } from '../data/roleIcons';
 import { useFriendStore } from '../hooks/useFriendStore';
 import { useGameStore } from '../hooks/useGameStore';
 import { useSavedScriptStore } from '../hooks/useSavedScriptStore';
-
-// Suppress Reanimated reduced motion LogBox toast in dev mode
-LogBox.ignoreLogs(['[Reanimated] Reduced motion setting']);
+import { useDevClear } from '../utils/devConfig';
 
 export default function RootLayout() {
   const loadGames = useGameStore(s => s.loadGames);
   const loadFriends = useFriendStore(s => s.loadFriends);
   const loadScripts = useSavedScriptStore(s => s.loadScripts);
-
-  const url = useURL();
-  const cleared = useRef(false);
 
   const init = () => {
     loadGames();
@@ -27,15 +19,7 @@ export default function RootLayout() {
     preloadRoleData();
   };
 
-  useEffect(() => {
-    if (cleared.current) return;
-    if (url?.includes('clear=true')) {
-      cleared.current = true;
-      AsyncStorage.clear().then(init);
-    } else {
-      init();
-    }
-  }, [url, loadScripts, loadGames, loadFriends]);
+  useDevClear(init);
 
   return (
     <View

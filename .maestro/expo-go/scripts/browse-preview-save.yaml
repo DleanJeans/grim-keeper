@@ -20,7 +20,7 @@ env:
 # Wait for app to load
 - extendedWaitUntil:
     visible: "Search botcscripts.com..."
-    timeout: 15000
+    timeout: 10000
 
 - tapOn: "Search botcscripts.com..."
 - inputText: "${SCRIPT_NAME}"
@@ -63,8 +63,9 @@ env:
 
 # Wait for modal
 - extendedWaitUntil:
-    visible: "Save Script"
+    visible: "Steward"
     timeout: 5000
 
 # Verify modal has no "unknown roles" either
 - assertNotVisible: "Unknown roles"
+- assertNotVisible: "Save Script"
