@@ -247,8 +247,9 @@ export default function ScriptsScreen() {
           version={detailScript.version}
           onClose={() => setDetailScript(null)}
           onSave={
-            detailScript.author === 'Clocktower' &&
-            detailScript.version === '1.0'
+            (detailScript.author === 'Clocktower' &&
+              detailScript.version === '1.0') ||
+            importedScripts.some(s => s.name === detailScript.name)
               ? undefined
               : handleSaveFromDetail
           }
