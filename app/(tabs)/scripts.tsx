@@ -249,7 +249,12 @@ export default function ScriptsScreen() {
           author={detailScript.author}
           version={detailScript.version}
           onClose={() => setDetailScript(null)}
-          onSave={handleSaveFromDetail}
+          onSave={
+            detailScript.author === 'Clocktower' &&
+            detailScript.version === '1.0'
+              ? undefined
+              : handleSaveFromDetail
+          }
         />
       )}
 
