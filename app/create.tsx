@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Keyboard, Pressable, Text, TextInput, View } from 'react-native';
 import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
 
@@ -14,6 +14,7 @@ type DraftPlayer = {
 
 export default function CreateRoute() {
   const createGame = useGameStore((state) => state.createGame);
+  const inputRef = useRef<TextInput>(null);
   const [name, setName] = useState('');
   const [players, setPlayers] = useState<DraftPlayer[]>([]);
   const playerOrderKey = useMemo(() => players.map((player) => player.id).join('|'), [players]);
@@ -51,6 +52,7 @@ export default function CreateRoute() {
       { id: createDraftId(), name: normalizedName },
     ]);
     setName('');
+    requestAnimationFrame(() => inputRef.current?.focus());
   }
 
   function handleStart() {
@@ -83,9 +85,11 @@ export default function CreateRoute() {
             autoCapitalize="words"
             autoCorrect={false}
             enterKeyHint="done"
+            ref={inputRef}
             onChangeText={setName}
             onSubmitEditing={handleAddPlayer}
             returnKeyType="done"
+            submitBehavior="submit"
             value={name}
             style={{
               backgroundColor: colors.surface,
