@@ -13,6 +13,7 @@ type CreateGameInput = {
 type GameState = {
   games: Game[];
   createGame: (input: CreateGameInput) => Game;
+  addPlayer: (gameId: string, name: string) => void;
   setActiveDay: (gameId: string, day: number) => void;
   updatePlayerPosition: (gameId: string, playerId: string, position: PlayerPosition) => void;
   updatePlayerPositions: (gameId: string, positions: Record<string, PlayerPosition>) => void;
@@ -45,6 +46,44 @@ export const useGameStore = create<GameState>()(
         }));
 
         return game;
+      },
+      addPlayer: (gameId, name) => {
+        const normalizedName = normalizePlayerName(name);
+
+        if (!normalizedName) {
+          return;
+        }
+
+        set((state) => ({
+          games: state.games.map((game) => {
+            if (game.id !== gameId) {
+              return game;
+            }
+
+            const hasDuplicate = game.players.some(
+              (player) =>
+                normalizePlayerName(player.name).toLocaleLowerCase() ===
+                normalizedName.toLocaleLowerCase(),
+            );
+
+            if (hasDuplicate) {
+              return game;
+            }
+
+            return {
+              ...game,
+              updatedAt: new Date().toISOString(),
+              players: [
+                ...game.players,
+                {
+                  id: createId('player'),
+                  name: normalizedName,
+                  seat: Math.max(-1, ...game.players.map((player) => player.seat)) + 1,
+                },
+              ],
+            };
+          }),
+        }));
       },
       setActiveDay: (gameId, day) => {
         set((state) => ({

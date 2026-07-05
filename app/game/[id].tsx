@@ -2,6 +2,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 
+import { AddPlayerModal } from '@/components/add-player-modal';
 import { ConversationTable } from '@/components/conversation-table';
 import { GameMap } from '@/components/game-map';
 import { InteractionList } from '@/components/interaction-list';
@@ -22,12 +23,14 @@ export default function GameRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { height, width } = useWindowDimensions();
   const games = useGameStore((state) => state.games);
+  const addPlayer = useGameStore((state) => state.addPlayer);
   const updatePlayerPosition = useGameStore((state) => state.updatePlayerPosition);
   const updatePlayerPositions = useGameStore((state) => state.updatePlayerPositions);
   const addConversation = useGameStore((state) => state.addConversation);
   const deleteConversation = useGameStore((state) => state.deleteConversation);
   const setActiveDay = useGameStore((state) => state.setActiveDay);
   const [activeTab, setActiveTab] = useState<GameTab>('map');
+  const [addPlayerVisible, setAddPlayerVisible] = useState(false);
   const [interactionMode, setInteractionMode] = useState(false);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const game = getGameById(games, id);
@@ -90,209 +93,239 @@ export default function GameRoute() {
   }
 
   return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      style={{ backgroundColor: '#0b1120', flex: 1 }}
-      contentContainerStyle={{ gap: 20, padding: 20, paddingBottom: 40 }}
-    >
-      <Stack.Screen options={{ title: `Day ${activeGame.activeDay}` }} />
+    <>
+      <Stack.Screen
+        options={{
+          title: `Day ${activeGame.activeDay}`,
+          headerRight: () => (
+            <Pressable
+              accessibilityLabel="Add missing player"
+              accessibilityRole="button"
+              onPress={() => setAddPlayerVisible(true)}
+              style={({ pressed }) => ({
+                backgroundColor: pressed ? '#1f2937' : '#111827',
+                borderColor: '#334155',
+                borderRadius: 999,
+                borderWidth: 1,
+                paddingHorizontal: 12,
+                paddingVertical: 7,
+              })}
+            >
+              <Text style={{ color: '#f8fafc', fontSize: 13, fontWeight: '900' }}>Player</Text>
+            </Pressable>
+          ),
+        }}
+      />
 
-      <View style={{ flexDirection: 'row', gap: 8 }}>
-        <Pressable
-          accessibilityRole="button"
-          disabled={activeGame.activeDay === 1}
-          onPress={() => handleChangeDay(activeGame.activeDay - 1)}
-          style={{
-            alignItems: 'center',
-            backgroundColor: activeGame.activeDay === 1 ? '#1f2937' : '#334155',
-            borderRadius: 8,
-            flex: 1,
-            paddingVertical: 12,
-          }}
-        >
-          <Text style={{ color: activeGame.activeDay === 1 ? '#64748b' : '#f8fafc' }}>
-            Previous
-          </Text>
-        </Pressable>
-        <View
-          style={{
-            alignItems: 'center',
-            backgroundColor: '#111827',
-            borderColor: '#334155',
-            borderRadius: 8,
-            borderWidth: 1,
-            flex: 1,
-            justifyContent: 'center',
-            paddingVertical: 12,
-          }}
-        >
-          <Text selectable style={{ color: '#f8fafc', fontWeight: '900' }}>
-            Day {activeGame.activeDay}
-          </Text>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => handleChangeDay(activeGame.activeDay + 1)}
-          style={{
-            alignItems: 'center',
-            backgroundColor: '#334155',
-            borderRadius: 8,
-            flex: 1,
-            paddingVertical: 12,
-          }}
-        >
-          <Text style={{ color: '#f8fafc' }}>Next</Text>
-        </Pressable>
-      </View>
+      <AddPlayerModal
+        players={activeGame.players}
+        visible={addPlayerVisible}
+        onAddPlayer={(name) => addPlayer(activeGame.id, name)}
+        onClose={() => setAddPlayerVisible(false)}
+      />
 
-      <View
-        style={{ backgroundColor: '#111827', borderRadius: 8, flexDirection: 'row', padding: 4 }}
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        style={{ backgroundColor: '#0b1120', flex: 1 }}
+        contentContainerStyle={{ gap: 20, padding: 20, paddingBottom: 40 }}
       >
-        {gameTabs.map((tab) => (
+        <View style={{ flexDirection: 'row', gap: 8 }}>
           <Pressable
-            key={tab.value}
             accessibilityRole="button"
-            onPress={() => setActiveTab(tab.value)}
+            disabled={activeGame.activeDay === 1}
+            onPress={() => handleChangeDay(activeGame.activeDay - 1)}
             style={{
               alignItems: 'center',
-              backgroundColor: activeTab === tab.value ? '#f8fafc' : 'transparent',
-              borderRadius: 6,
+              backgroundColor: activeGame.activeDay === 1 ? '#1f2937' : '#334155',
+              borderRadius: 8,
               flex: 1,
-              paddingVertical: 10,
+              paddingVertical: 12,
             }}
           >
-            <Text
-              style={{
-                color: activeTab === tab.value ? '#0b1120' : '#94a3b8',
-                fontSize: 13,
-                fontWeight: '800',
-              }}
-            >
-              {tab.label}
+            <Text style={{ color: activeGame.activeDay === 1 ? '#64748b' : '#f8fafc' }}>
+              Previous
             </Text>
           </Pressable>
-        ))}
-      </View>
+          <View
+            style={{
+              alignItems: 'center',
+              backgroundColor: '#111827',
+              borderColor: '#334155',
+              borderRadius: 8,
+              borderWidth: 1,
+              flex: 1,
+              justifyContent: 'center',
+              paddingVertical: 12,
+            }}
+          >
+            <Text selectable style={{ color: '#f8fafc', fontWeight: '900' }}>
+              Day {activeGame.activeDay}
+            </Text>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => handleChangeDay(activeGame.activeDay + 1)}
+            style={{
+              alignItems: 'center',
+              backgroundColor: '#334155',
+              borderRadius: 8,
+              flex: 1,
+              paddingVertical: 12,
+            }}
+          >
+            <Text style={{ color: '#f8fafc' }}>Next</Text>
+          </Pressable>
+        </View>
 
-      {activeTab === 'map' ? (
-        <>
-          <GameMap
-            activeDay={activeGame.activeDay}
-            conversations={activeGame.conversations}
-            interactionMode={interactionMode}
-            mapHeight={mapHeight}
-            mapWidth={mapWidth}
-            players={activeGame.players}
-            onMovePlayer={(playerId, position) =>
-              updatePlayerPosition(activeGame.id, playerId, position)
-            }
-            onSelectPlayer={handleSelectPlayer}
-            selectedPlayerIds={selectedPlayerIds}
-          />
-
-          {interactionMode ? (
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <Pressable
-                accessibilityRole="button"
-                onPress={handleCancelInteraction}
+        <View
+          style={{ backgroundColor: '#111827', borderRadius: 8, flexDirection: 'row', padding: 4 }}
+        >
+          {gameTabs.map((tab) => (
+            <Pressable
+              key={tab.value}
+              accessibilityRole="button"
+              onPress={() => setActiveTab(tab.value)}
+              style={{
+                alignItems: 'center',
+                backgroundColor: activeTab === tab.value ? '#f8fafc' : 'transparent',
+                borderRadius: 6,
+                flex: 1,
+                paddingVertical: 10,
+              }}
+            >
+              <Text
                 style={{
-                  alignItems: 'center',
-                  backgroundColor: '#334155',
-                  borderRadius: 8,
-                  flex: 1,
-                  paddingVertical: 14,
+                  color: activeTab === tab.value ? '#0b1120' : '#94a3b8',
+                  fontSize: 13,
+                  fontWeight: '800',
                 }}
               >
-                <Text style={{ color: '#f8fafc', fontWeight: '800' }}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                disabled={selectedPlayerIds.length < 2}
-                onPress={handleConfirmInteraction}
-                style={{
-                  alignItems: 'center',
-                  backgroundColor: selectedPlayerIds.length < 2 ? '#334155' : '#16a34a',
-                  borderRadius: 8,
-                  flex: 1,
-                  paddingVertical: 14,
-                }}
-              >
-                <Text
+                {tab.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {activeTab === 'map' ? (
+          <>
+            <GameMap
+              activeDay={activeGame.activeDay}
+              conversations={activeGame.conversations}
+              interactionMode={interactionMode}
+              mapHeight={mapHeight}
+              mapWidth={mapWidth}
+              players={activeGame.players}
+              onMovePlayer={(playerId, position) =>
+                updatePlayerPosition(activeGame.id, playerId, position)
+              }
+              onSelectPlayer={handleSelectPlayer}
+              selectedPlayerIds={selectedPlayerIds}
+            />
+
+            {interactionMode ? (
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={handleCancelInteraction}
                   style={{
-                    color: selectedPlayerIds.length < 2 ? '#94a3b8' : '#f8fafc',
-                    fontWeight: '800',
+                    alignItems: 'center',
+                    backgroundColor: '#334155',
+                    borderRadius: 8,
+                    flex: 1,
+                    paddingVertical: 14,
                   }}
                 >
-                  Confirm
-                </Text>
-              </Pressable>
-            </View>
-          ) : (
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <Pressable
-                accessibilityLabel="Rotate tokens left"
-                accessibilityRole="button"
-                onPress={() => handleRotateTokens(-rotationStepRadians)}
-                style={({ pressed }) => ({
-                  alignItems: 'center',
-                  backgroundColor: pressed ? '#1f2937' : '#111827',
-                  borderColor: '#334155',
-                  borderRadius: 999,
-                  borderWidth: 1,
-                  flex: 1,
-                  paddingVertical: 14,
-                })}
-              >
-                <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Left</Text>
-              </Pressable>
-              <Pressable
-                accessibilityLabel="Rotate tokens right"
-                accessibilityRole="button"
-                onPress={() => handleRotateTokens(rotationStepRadians)}
-                style={({ pressed }) => ({
-                  alignItems: 'center',
-                  backgroundColor: pressed ? '#1f2937' : '#111827',
-                  borderColor: '#334155',
-                  borderRadius: 999,
-                  borderWidth: 1,
-                  flex: 1,
-                  paddingVertical: 14,
-                })}
-              >
-                <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Right</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => setInteractionMode(true)}
-                style={{
-                  alignItems: 'center',
-                  backgroundColor: '#f8fafc',
-                  borderRadius: 999,
-                  flex: 0.8,
-                  paddingVertical: 14,
-                }}
-              >
-                <Text style={{ color: '#0b1120', fontWeight: '900' }}>Add</Text>
-              </Pressable>
-            </View>
-          )}
-        </>
-      ) : activeTab === 'table' ? (
-        <ConversationTable
-          activeDay={activeGame.activeDay}
-          conversations={activeGame.conversations}
-          players={activeGame.players}
-        />
-      ) : (
-        <InteractionList
-          activeDay={activeGame.activeDay}
-          conversations={activeGame.conversations}
-          players={activeGame.players}
-          onDeleteConversation={(conversationId) =>
-            deleteConversation(activeGame.id, conversationId)
-          }
-        />
-      )}
-    </ScrollView>
+                  <Text style={{ color: '#f8fafc', fontWeight: '800' }}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={selectedPlayerIds.length < 2}
+                  onPress={handleConfirmInteraction}
+                  style={{
+                    alignItems: 'center',
+                    backgroundColor: selectedPlayerIds.length < 2 ? '#334155' : '#16a34a',
+                    borderRadius: 8,
+                    flex: 1,
+                    paddingVertical: 14,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: selectedPlayerIds.length < 2 ? '#94a3b8' : '#f8fafc',
+                      fontWeight: '800',
+                    }}
+                  >
+                    Confirm
+                  </Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <Pressable
+                  accessibilityLabel="Rotate tokens left"
+                  accessibilityRole="button"
+                  onPress={() => handleRotateTokens(-rotationStepRadians)}
+                  style={({ pressed }) => ({
+                    alignItems: 'center',
+                    backgroundColor: pressed ? '#1f2937' : '#111827',
+                    borderColor: '#334155',
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    flex: 1,
+                    paddingVertical: 14,
+                  })}
+                >
+                  <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Left</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityLabel="Rotate tokens right"
+                  accessibilityRole="button"
+                  onPress={() => handleRotateTokens(rotationStepRadians)}
+                  style={({ pressed }) => ({
+                    alignItems: 'center',
+                    backgroundColor: pressed ? '#1f2937' : '#111827',
+                    borderColor: '#334155',
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    flex: 1,
+                    paddingVertical: 14,
+                  })}
+                >
+                  <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Right</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setInteractionMode(true)}
+                  style={{
+                    alignItems: 'center',
+                    backgroundColor: '#f8fafc',
+                    borderRadius: 999,
+                    flex: 0.8,
+                    paddingVertical: 14,
+                  }}
+                >
+                  <Text style={{ color: '#0b1120', fontWeight: '900' }}>Add</Text>
+                </Pressable>
+              </View>
+            )}
+          </>
+        ) : activeTab === 'table' ? (
+          <ConversationTable
+            activeDay={activeGame.activeDay}
+            conversations={activeGame.conversations}
+            players={activeGame.players}
+          />
+        ) : (
+          <InteractionList
+            activeDay={activeGame.activeDay}
+            conversations={activeGame.conversations}
+            players={activeGame.players}
+            onDeleteConversation={(conversationId) =>
+              deleteConversation(activeGame.id, conversationId)
+            }
+          />
+        )}
+      </ScrollView>
+    </>
   );
 }
