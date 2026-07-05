@@ -3,7 +3,7 @@ import Svg, { Path } from 'react-native-svg';
 
 import { PlayerToken } from '@/components/player-token';
 import type { Conversation, Player, PlayerPosition } from '@/types/game';
-import { getPlayerMapPosition } from '@/utils/layout-utils';
+import { getPlayerMapPosition, getTokenSize } from '@/utils/layout-utils';
 
 type GameMapProps = {
   activeDay: number;
@@ -81,6 +81,13 @@ export function GameMap({
                       participantPosition,
                       mapWidth,
                       mapHeight,
+                      players
+                        .filter(
+                          (player) =>
+                            player.id !== conversation.initiatorId && player.id !== playerId,
+                        )
+                        .map((player) => positions.get(player.id))
+                        .filter((position): position is PlayerPosition => !!position),
                     )}
                     fill="none"
                     stroke="#38bdf8"
@@ -118,6 +125,7 @@ function getConversationCurvePath(
   to: PlayerPosition,
   mapWidth: number,
   mapHeight: number,
+  blockers: PlayerPosition[],
 ) {
   const deltaX = to.x - from.x;
   const deltaY = to.y - from.y;
@@ -133,14 +141,66 @@ function getConversationCurvePath(
     return `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
   }
 
-  const normalX = -deltaY / distance;
-  const normalY = deltaX / distance;
   const centerX = mapWidth / 2;
   const centerY = mapHeight / 2;
-  const outwardSide =
-    normalX * (midpointX - centerX) + normalY * (midpointY - centerY) >= 0 ? 1 : -1;
-  const controlX = midpointX + normalX * controlOffset * outwardSide;
-  const controlY = midpointY + normalY * controlOffset * outwardSide;
+  const centerDeltaX = centerX - midpointX;
+  const centerDeltaY = centerY - midpointY;
+  const centerDistance = Math.hypot(centerDeltaX, centerDeltaY);
+  const controlX =
+    centerDistance > 0 ? midpointX + (centerDeltaX / centerDistance) * controlOffset : midpointX;
+  const controlY =
+    centerDistance > 0 ? midpointY + (centerDeltaY / centerDistance) * controlOffset : midpointY;
 
-  return `M ${from.x} ${from.y} Q ${controlX} ${controlY} ${to.x} ${to.y}`;
+  if (blockers.length === 0) {
+    return `M ${from.x} ${from.y} Q ${controlX} ${controlY} ${to.x} ${to.y}`;
+  }
+
+  return getClippedQuadraticPath(from, { x: controlX, y: controlY }, to, blockers);
+}
+
+function getClippedQuadraticPath(
+  from: PlayerPosition,
+  control: PlayerPosition,
+  to: PlayerPosition,
+  blockers: PlayerPosition[],
+) {
+  const samples = 48;
+  const blockerRadius = getTokenSize() / 2 + 5;
+  const commands: string[] = [];
+  let drawing = false;
+
+  for (let index = 0; index <= samples; index += 1) {
+    const progress = index / samples;
+    const point = getQuadraticPoint(from, control, to, progress);
+    const blocked = blockers.some((blocker) => {
+      const deltaX = point.x - blocker.x;
+      const deltaY = point.y - blocker.y;
+
+      return Math.hypot(deltaX, deltaY) < blockerRadius;
+    });
+
+    if (blocked) {
+      drawing = false;
+      continue;
+    }
+
+    commands.push(`${drawing ? 'L' : 'M'} ${point.x} ${point.y}`);
+    drawing = true;
+  }
+
+  return commands.join(' ');
+}
+
+function getQuadraticPoint(
+  from: PlayerPosition,
+  control: PlayerPosition,
+  to: PlayerPosition,
+  progress: number,
+): PlayerPosition {
+  const inverse = 1 - progress;
+
+  return {
+    x: inverse * inverse * from.x + 2 * inverse * progress * control.x + progress * progress * to.x,
+    y: inverse * inverse * from.y + 2 * inverse * progress * control.y + progress * progress * to.y,
+  };
 }
