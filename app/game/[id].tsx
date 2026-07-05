@@ -11,6 +11,7 @@ import { getGameById, useGameStore } from '@/store/game-store';
 import { rotatePlayerMapPositions } from '@/utils/layout-utils';
 
 type GameTab = 'map' | 'table' | 'interactions';
+type TrackingMode = 'interaction' | 'nomination';
 
 const gameTabs: { label: string; value: GameTab }[] = [
   { label: 'Map', value: 'map' },
@@ -31,7 +32,8 @@ export default function GameRoute() {
   const setActiveDay = useGameStore((state) => state.setActiveDay);
   const [activeTab, setActiveTab] = useState<GameTab>('map');
   const [addPlayerVisible, setAddPlayerVisible] = useState(false);
-  const [interactionMode, setInteractionMode] = useState(false);
+  const [trackingMode, setTrackingMode] = useState<TrackingMode | null>(null);
+  const [focusedPlayerId, setFocusedPlayerId] = useState<string | null>(null);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const game = getGameById(games, id);
   const mapWidth = Math.max(1, width - 40);
@@ -57,31 +59,62 @@ export default function GameRoute() {
   }
 
   const activeGame = game;
+  const focusedPlayer = activeGame.players.find((player) => player.id === focusedPlayerId);
+  const highlightedPlayerIds = trackingMode
+    ? selectedPlayerIds
+    : focusedPlayerId
+      ? [focusedPlayerId]
+      : [];
+  const trackingConfirmLabel = trackingMode === 'nomination' ? 'Confirm Nomination' : 'Confirm';
 
   function handleSelectPlayer(playerId: string) {
-    setSelectedPlayerIds((currentIds) =>
-      currentIds.includes(playerId)
-        ? currentIds.filter((currentId) => currentId !== playerId)
-        : [...currentIds, playerId],
-    );
-  }
-
-  function handleCancelInteraction() {
-    setInteractionMode(false);
-    setSelectedPlayerIds([]);
-  }
-
-  function handleConfirmInteraction() {
-    if (selectedPlayerIds.length < 2) {
+    if (!trackingMode) {
+      setFocusedPlayerId((currentPlayerId) => (currentPlayerId === playerId ? null : playerId));
       return;
     }
 
-    addConversation(activeGame.id, activeGame.activeDay, selectedPlayerIds);
-    handleCancelInteraction();
+    if (trackingMode === 'nomination') {
+      setSelectedPlayerIds((currentIds) =>
+        currentIds[0] === playerId ? currentIds : [currentIds[0], playerId],
+      );
+      return;
+    }
+
+    setSelectedPlayerIds((currentIds) =>
+      currentIds[0] === playerId
+        ? currentIds
+        : currentIds.includes(playerId)
+          ? currentIds.filter((currentId) => currentId !== playerId)
+          : [...currentIds, playerId],
+    );
+  }
+
+  function handleStartTracking(mode: TrackingMode) {
+    if (!focusedPlayerId) {
+      return;
+    }
+
+    setTrackingMode(mode);
+    setSelectedPlayerIds([focusedPlayerId]);
+  }
+
+  function handleCancelTracking() {
+    setTrackingMode(null);
+    setFocusedPlayerId(null);
+    setSelectedPlayerIds([]);
+  }
+
+  function handleConfirmTracking() {
+    if (selectedPlayerIds.length < 2 || !trackingMode) {
+      return;
+    }
+
+    addConversation(activeGame.id, activeGame.activeDay, selectedPlayerIds, trackingMode);
+    handleCancelTracking();
   }
 
   function handleChangeDay(day: number) {
-    handleCancelInteraction();
+    handleCancelTracking();
     setActiveDay(activeGame.id, day);
   }
 
@@ -211,7 +244,7 @@ export default function GameRoute() {
             <GameMap
               activeDay={activeGame.activeDay}
               conversations={activeGame.conversations}
-              interactionMode={interactionMode}
+              interactionMode={!!trackingMode}
               mapHeight={mapHeight}
               mapWidth={mapWidth}
               players={activeGame.players}
@@ -219,14 +252,14 @@ export default function GameRoute() {
                 updatePlayerPosition(activeGame.id, playerId, position)
               }
               onSelectPlayer={handleSelectPlayer}
-              selectedPlayerIds={selectedPlayerIds}
+              selectedPlayerIds={highlightedPlayerIds}
             />
 
-            {interactionMode ? (
+            {trackingMode ? (
               <View style={{ flexDirection: 'row', gap: 12 }}>
                 <Pressable
                   accessibilityRole="button"
-                  onPress={handleCancelInteraction}
+                  onPress={handleCancelTracking}
                   style={{
                     alignItems: 'center',
                     backgroundColor: '#334155',
@@ -240,7 +273,7 @@ export default function GameRoute() {
                 <Pressable
                   accessibilityRole="button"
                   disabled={selectedPlayerIds.length < 2}
-                  onPress={handleConfirmInteraction}
+                  onPress={handleConfirmTracking}
                   style={{
                     alignItems: 'center',
                     backgroundColor: selectedPlayerIds.length < 2 ? '#334155' : '#16a34a',
@@ -255,8 +288,43 @@ export default function GameRoute() {
                       fontWeight: '800',
                     }}
                   >
-                    Confirm
+                    {trackingConfirmLabel}
                   </Text>
+                </Pressable>
+              </View>
+            ) : focusedPlayer ? (
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <Pressable
+                  accessibilityLabel={`Track interaction from ${focusedPlayer.name}`}
+                  accessibilityRole="button"
+                  onPress={() => handleStartTracking('interaction')}
+                  style={({ pressed }) => ({
+                    alignItems: 'center',
+                    backgroundColor: pressed ? '#1f2937' : '#111827',
+                    borderColor: '#334155',
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    flex: 1,
+                    paddingVertical: 14,
+                  })}
+                >
+                  <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Track Interaction</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityLabel={`Track nomination from ${focusedPlayer.name}`}
+                  accessibilityRole="button"
+                  onPress={() => handleStartTracking('nomination')}
+                  style={({ pressed }) => ({
+                    alignItems: 'center',
+                    backgroundColor: pressed ? '#1f2937' : '#111827',
+                    borderColor: '#334155',
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    flex: 1,
+                    paddingVertical: 14,
+                  })}
+                >
+                  <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Track Nomination</Text>
                 </Pressable>
               </View>
             ) : (
@@ -292,19 +360,6 @@ export default function GameRoute() {
                   })}
                 >
                   <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Right</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => setInteractionMode(true)}
-                  style={{
-                    alignItems: 'center',
-                    backgroundColor: '#f8fafc',
-                    borderRadius: 999,
-                    flex: 0.8,
-                    paddingVertical: 14,
-                  }}
-                >
-                  <Text style={{ color: '#0b1120', fontWeight: '900' }}>Add</Text>
                 </Pressable>
               </View>
             )}

@@ -81,7 +81,7 @@ export function PlayerToken({
   }));
 
   return (
-    <GestureDetector gesture={interactionMode ? tap : pan}>
+    <GestureDetector gesture={interactionMode ? tap : Gesture.Race(tap, pan)}>
       <Animated.View
         style={[
           {

@@ -13,6 +13,7 @@ export type Player = {
 export type Conversation = {
   id: string;
   day: number;
+  kind?: 'interaction' | 'nomination';
   participantIds: string[];
   initiatorId: string;
   createdAt: string;

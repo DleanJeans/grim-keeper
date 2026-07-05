@@ -47,6 +47,7 @@ export function InteractionList({
         const talkedToNames = conversation.participantIds
           .filter((playerId) => playerId !== conversation.initiatorId)
           .map((playerId) => playerNames.get(playerId) ?? 'Unknown');
+        const isNomination = conversation.kind === 'nomination';
 
         return (
           <View
@@ -81,7 +82,9 @@ export function InteractionList({
                   {initiatorName}
                 </Text>
                 <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
-                  Talked to {talkedToNames.join(', ')}
+                  {isNomination
+                    ? `Nominated ${talkedToNames.join(', ')}`
+                    : `Talked to ${talkedToNames.join(', ')}`}
                 </Text>
               </View>
               <Pressable

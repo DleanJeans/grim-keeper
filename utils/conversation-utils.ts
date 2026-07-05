@@ -47,6 +47,10 @@ export function buildConversationRows(
   const currentRepeated = new Map<string, Set<string>>();
 
   for (const conversation of conversations) {
+    if (conversation.kind === 'nomination') {
+      continue;
+    }
+
     if (conversation.day >= activeDay) {
       continue;
     }
@@ -57,6 +61,10 @@ export function buildConversationRows(
   }
 
   for (const conversation of conversations) {
+    if (conversation.kind === 'nomination') {
+      continue;
+    }
+
     if (conversation.day !== activeDay) {
       continue;
     }

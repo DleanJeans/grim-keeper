@@ -17,7 +17,12 @@ type GameState = {
   setActiveDay: (gameId: string, day: number) => void;
   updatePlayerPosition: (gameId: string, playerId: string, position: PlayerPosition) => void;
   updatePlayerPositions: (gameId: string, positions: Record<string, PlayerPosition>) => void;
-  addConversation: (gameId: string, day: number, participantIds: string[]) => void;
+  addConversation: (
+    gameId: string,
+    day: number,
+    participantIds: string[],
+    kind?: 'interaction' | 'nomination',
+  ) => void;
   deleteConversation: (gameId: string, conversationId: string) => void;
 };
 
@@ -128,7 +133,7 @@ export const useGameStore = create<GameState>()(
           ),
         }));
       },
-      addConversation: (gameId, day, participantIds) => {
+      addConversation: (gameId, day, participantIds, kind = 'interaction') => {
         const uniqueParticipantIds = [...new Set(participantIds)];
 
         if (uniqueParticipantIds.length < 2) {
@@ -147,6 +152,7 @@ export const useGameStore = create<GameState>()(
                     {
                       id: createId('conversation'),
                       day,
+                      kind,
                       participantIds: uniqueParticipantIds,
                       initiatorId: uniqueParticipantIds[0],
                       createdAt: new Date().toISOString(),

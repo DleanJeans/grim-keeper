@@ -56,7 +56,9 @@ export function GameMap({
         width={mapWidth}
       >
         {conversations
-          .filter((conversation) => conversation.day === activeDay)
+          .filter(
+            (conversation) => conversation.day === activeDay && conversation.kind !== 'nomination',
+          )
           .flatMap((conversation) => {
             const initiatorPosition = positions.get(conversation.initiatorId);
 
