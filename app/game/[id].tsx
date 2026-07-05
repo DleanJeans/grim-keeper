@@ -26,13 +26,17 @@ import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
 import { rotatePlayerMapPositions } from '@/utils/layout-utils';
 
-type GameTab = 'map' | 'table' | 'interactions' | 'nominations';
+type GameTab = 'map' | 'interactions' | 'nominations';
+type InteractionSubtab = 'list' | 'table';
 type TrackingMode = 'interaction' | 'nomination';
 
 const gameTabs: { label: string; value: GameTab }[] = [
   { label: 'Map', value: 'map' },
   { label: 'Interactions', value: 'interactions' },
   { label: 'Noms', value: 'nominations' },
+];
+const interactionSubtabs: { label: string; value: InteractionSubtab }[] = [
+  { label: 'List', value: 'list' },
   { label: 'Table', value: 'table' },
 ];
 const rotationStepRadians = Math.PI / 8;
@@ -45,6 +49,13 @@ function renderGameTabIcon(tab: GameTab, color: string) {
       return <List color={color} size={15} strokeWidth={2.5} />;
     case 'nominations':
       return <Vote color={color} size={15} strokeWidth={2.5} />;
+  }
+}
+
+function renderInteractionSubtabIcon(tab: InteractionSubtab, color: string) {
+  switch (tab) {
+    case 'list':
+      return <List color={color} size={15} strokeWidth={2.5} />;
     case 'table':
       return <Table2 color={color} size={15} strokeWidth={2.5} />;
   }
@@ -63,6 +74,7 @@ export default function GameRoute() {
   const deleteConversation = useGameStore((state) => state.deleteConversation);
   const setActiveDay = useGameStore((state) => state.setActiveDay);
   const [activeTab, setActiveTab] = useState<GameTab>('map');
+  const [interactionSubtab, setInteractionSubtab] = useState<InteractionSubtab>('list');
   const [addPlayerVisible, setAddPlayerVisible] = useState(false);
   const [trackingMode, setTrackingMode] = useState<TrackingMode | null>(null);
   const [votingNominationId, setVotingNominationId] = useState<string | null>(null);
@@ -556,12 +568,6 @@ export default function GameRoute() {
               </View>
             )}
           </>
-        ) : activeTab === 'table' ? (
-          <ConversationTable
-            activeDay={activeGame.activeDay}
-            conversations={activeGame.conversations}
-            players={activeGame.players}
-          />
         ) : activeTab === 'nominations' ? (
           <NominationList
             activeDay={activeGame.activeDay}
@@ -570,14 +576,65 @@ export default function GameRoute() {
             onDeleteNomination={(nominationId) => deleteConversation(activeGame.id, nominationId)}
           />
         ) : (
-          <InteractionList
-            activeDay={activeGame.activeDay}
-            conversations={activeGame.conversations}
-            players={activeGame.players}
-            onDeleteConversation={(conversationId) =>
-              deleteConversation(activeGame.id, conversationId)
-            }
-          />
+          <View style={{ gap: 12 }}>
+            <View
+              style={{
+                backgroundColor: '#111827',
+                borderRadius: 8,
+                flexDirection: 'row',
+                padding: 4,
+              }}
+            >
+              {interactionSubtabs.map((tab) => (
+                <Pressable
+                  key={tab.value}
+                  accessibilityRole="button"
+                  onPress={() => setInteractionSubtab(tab.value)}
+                  style={{
+                    alignItems: 'center',
+                    backgroundColor: interactionSubtab === tab.value ? '#f8fafc' : 'transparent',
+                    borderRadius: 6,
+                    flex: 1,
+                    flexDirection: 'row',
+                    gap: 5,
+                    justifyContent: 'center',
+                    paddingVertical: 10,
+                  }}
+                >
+                  {renderInteractionSubtabIcon(
+                    tab.value,
+                    interactionSubtab === tab.value ? '#0b1120' : '#94a3b8',
+                  )}
+                  <Text
+                    style={{
+                      color: interactionSubtab === tab.value ? '#0b1120' : '#94a3b8',
+                      fontSize: 13,
+                      fontWeight: '800',
+                    }}
+                  >
+                    {tab.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {interactionSubtab === 'table' ? (
+              <ConversationTable
+                activeDay={activeGame.activeDay}
+                conversations={activeGame.conversations}
+                players={activeGame.players}
+              />
+            ) : (
+              <InteractionList
+                activeDay={activeGame.activeDay}
+                conversations={activeGame.conversations}
+                players={activeGame.players}
+                onDeleteConversation={(conversationId) =>
+                  deleteConversation(activeGame.id, conversationId)
+                }
+              />
+            )}
+          </View>
         )}
       </ScrollView>
     </>
