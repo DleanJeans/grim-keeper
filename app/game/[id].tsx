@@ -79,6 +79,7 @@ export default function GameRoute() {
   const [addPlayerVisible, setAddPlayerVisible] = useState(false);
   const [trackingMode, setTrackingMode] = useState<TrackingMode | null>(null);
   const [votingNominationId, setVotingNominationId] = useState<string | null>(null);
+  const [votingReturnTab, setVotingReturnTab] = useState<GameTab | null>(null);
   const [focusedPlayerId, setFocusedPlayerId] = useState<string | null>(null);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const game = getGameById(games, id);
@@ -160,6 +161,7 @@ export default function GameRoute() {
   function handleCancelTracking() {
     setTrackingMode(null);
     setVotingNominationId(null);
+    setVotingReturnTab(null);
     setFocusedPlayerId(null);
     setSelectedPlayerIds([]);
   }
@@ -179,6 +181,7 @@ export default function GameRoute() {
     if (trackingMode === 'nomination' && conversation) {
       setTrackingMode(null);
       setVotingNominationId(conversation.id);
+      setVotingReturnTab(null);
       setFocusedPlayerId(null);
       setSelectedPlayerIds([]);
       return;
@@ -192,13 +195,28 @@ export default function GameRoute() {
       return;
     }
 
+    const returnTab = votingReturnTab;
     updateNominationVotes(activeGame.id, votingNominationId, selectedPlayerIds);
     handleCancelTracking();
+
+    if (returnTab) {
+      setActiveTab(returnTab);
+    }
+  }
+
+  function handleCancelVoting() {
+    const returnTab = votingReturnTab;
+    handleCancelTracking();
+
+    if (returnTab) {
+      setActiveTab(returnTab);
+    }
   }
 
   function handleEditNominationVotes(nominationId: string, voterIds: string[]) {
     handleCancelTracking();
     setVotingNominationId(nominationId);
+    setVotingReturnTab('nominations');
     setSelectedPlayerIds(voterIds);
     setActiveTab('map');
   }
@@ -394,7 +412,7 @@ export default function GameRoute() {
               >
                 <Pressable
                   accessibilityRole="button"
-                  onPress={handleCancelTracking}
+                  onPress={handleCancelVoting}
                   style={{
                     alignItems: 'center',
                     backgroundColor: '#334155',
