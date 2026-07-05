@@ -4,6 +4,7 @@ import { Keyboard, Pressable, Text, TextInput, View } from 'react-native';
 import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
 
 import { useGameStore } from '@/store/game-store';
+import { colors } from '@/theme/colors';
 import { hasDuplicatePlayerName, normalizePlayerName } from '@/utils/conversation-utils';
 
 type DraftPlayer = {
@@ -58,102 +59,142 @@ export default function CreateRoute() {
   }
 
   return (
-    <DraggableFlatList
-      contentInsetAdjustmentBehavior="automatic"
-      keyboardShouldPersistTaps="handled"
-      style={{ backgroundColor: '#0b1120', flex: 1 }}
-      contentContainerStyle={{ gap: 12, padding: 20, paddingBottom: 40 }}
-      data={players}
-      keyExtractor={(item) => item.id}
-      onDragEnd={({ data }) => setPlayers(data)}
-      ListHeaderComponent={
-        <View style={{ gap: 12, paddingBottom: 8 }}>
+    <View style={{ backgroundColor: colors.background, flex: 1 }}>
+      <View style={{ gap: 14, padding: 20, paddingBottom: 12 }}>
+        <View style={{ gap: 6 }}>
+          <Text selectable style={{ color: colors.text, fontSize: 24, fontWeight: '800' }}>
+            Seat the circle
+          </Text>
+          <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+            Add players in any order, then long press to set the final seat order.
+          </Text>
+        </View>
+
+        <View style={{ gap: 8 }}>
+          <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '700' }}>
+            Player name
+          </Text>
           <TextInput
             autoCapitalize="words"
             autoCorrect={false}
             enterKeyHint="done"
             onChangeText={setName}
             onSubmitEditing={handleAddPlayer}
-            placeholder="Player name"
-            placeholderTextColor="#64748b"
+            placeholder="Washerwoman, chef, recluse..."
+            placeholderTextColor={colors.textSubtle}
             returnKeyType="done"
             value={name}
             style={{
-              backgroundColor: '#111827',
-              borderColor: duplicateName ? '#ef4444' : '#334155',
+              backgroundColor: colors.surface,
+              borderColor: duplicateName ? colors.danger : colors.border,
               borderRadius: 8,
               borderWidth: 1,
-              color: '#f8fafc',
+              color: colors.text,
               fontSize: 18,
+              minHeight: 52,
               paddingHorizontal: 16,
               paddingVertical: 14,
             }}
           />
-
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            <Pressable
-              accessibilityRole="button"
-              disabled={!canAddPlayer}
-              onPress={handleAddPlayer}
-              style={({ pressed }) => ({
-                alignItems: 'center',
-                backgroundColor: !canAddPlayer ? '#334155' : pressed ? '#e2e8f0' : '#f8fafc',
-                borderRadius: 8,
-                flex: 1,
-                paddingVertical: 13,
-              })}
-            >
-              <Text style={{ color: canAddPlayer ? '#0b1120' : '#94a3b8', fontWeight: '800' }}>
-                Add
-              </Text>
-            </Pressable>
-
-            <Pressable
-              accessibilityRole="button"
-              disabled={!canStart}
-              onPress={handleStart}
-              style={({ pressed }) => ({
-                alignItems: 'center',
-                backgroundColor: !canStart ? '#334155' : pressed ? '#22c55e' : '#16a34a',
-                borderRadius: 8,
-                flex: 1,
-                paddingVertical: 13,
-              })}
-            >
-              <Text style={{ color: canStart ? '#f8fafc' : '#94a3b8', fontWeight: '800' }}>
-                Start
-              </Text>
-            </Pressable>
-          </View>
-
-          <Text
-            selectable
-            style={{
-              color: duplicateName ? '#fca5a5' : '#94a3b8',
-              fontSize: 14,
-              lineHeight: 20,
-            }}
-          >
-            {helperText}
-          </Text>
         </View>
-      }
-      renderItem={renderPlayerRow}
-      ListEmptyComponent={
-        <View
+
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <Pressable
+            accessibilityRole="button"
+            disabled={!canAddPlayer}
+            onPress={handleAddPlayer}
+            style={({ pressed }) => ({
+              alignItems: 'center',
+              backgroundColor: !canAddPlayer
+                ? colors.disabled
+                : pressed
+                  ? colors.surfacePressed
+                  : colors.surfaceRaised,
+              borderColor: colors.border,
+              borderRadius: 8,
+              borderWidth: 1,
+              flex: 1,
+              minHeight: 48,
+              paddingVertical: 13,
+            })}
+          >
+            <Text
+              style={{ color: canAddPlayer ? colors.text : colors.onDisabled, fontWeight: '800' }}
+            >
+              Add
+            </Text>
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            disabled={!canStart}
+            onPress={handleStart}
+            style={({ pressed }) => ({
+              alignItems: 'center',
+              backgroundColor: !canStart
+                ? colors.disabled
+                : pressed
+                  ? colors.surfacePressed
+                  : colors.primary,
+              borderRadius: 8,
+              flex: 1,
+              minHeight: 48,
+              paddingVertical: 13,
+            })}
+          >
+            <Text
+              style={{ color: canStart ? colors.onPrimary : colors.onDisabled, fontWeight: '800' }}
+            >
+              Start
+            </Text>
+          </Pressable>
+        </View>
+
+        <Text
+          selectable
           style={{
-            borderColor: '#1f2937',
-            borderRadius: 8,
-            borderWidth: 1,
-            padding: 16,
+            color: duplicateName ? colors.danger : colors.textMuted,
+            fontSize: 14,
+            lineHeight: 20,
           }}
         >
-          <Text selectable style={{ color: '#94a3b8', fontSize: 16 }}>
+          {helperText}
+        </Text>
+      </View>
+
+      {players.length === 0 ? (
+        <View
+          style={{
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            borderRadius: 8,
+            borderWidth: 1,
+            gap: 8,
+            marginHorizontal: 20,
+            padding: 18,
+          }}
+        >
+          <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '800' }}>
             No players yet.
           </Text>
+          <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
+            Type a name and press Enter or Add.
+          </Text>
         </View>
-      }
-    />
+      ) : (
+        <DraggableFlatList
+          activationDistance={8}
+          contentInsetAdjustmentBehavior="automatic"
+          keyboardShouldPersistTaps="handled"
+          style={{ backgroundColor: colors.background, flex: 1 }}
+          contentContainerStyle={{ gap: 10, padding: 20, paddingTop: 4, paddingBottom: 40 }}
+          data={players}
+          keyExtractor={(item) => item.id}
+          onDragEnd={({ data }) => setPlayers(data)}
+          renderItem={renderPlayerRow}
+        />
+      )}
+    </View>
   );
 }
 
@@ -165,22 +206,26 @@ function renderPlayerRow({ item, drag, isActive, getIndex }: RenderItemParams<Dr
       accessibilityRole="button"
       onLongPress={drag}
       style={{
-        backgroundColor: isActive ? '#1e293b' : '#111827',
-        borderColor: isActive ? '#f8fafc' : '#334155',
+        backgroundColor: isActive ? colors.surfacePressed : colors.surface,
+        borderColor: isActive ? colors.primary : colors.border,
         borderRadius: 8,
         borderWidth: 1,
         flexDirection: 'row',
         gap: 12,
+        minHeight: 54,
         padding: 16,
       }}
     >
-      <Text selectable style={{ color: '#94a3b8', fontVariant: ['tabular-nums'], width: 24 }}>
+      <Text
+        selectable
+        style={{ color: colors.textMuted, fontVariant: ['tabular-nums'], width: 24 }}
+      >
         {index + 1}
       </Text>
-      <Text selectable style={{ color: '#f8fafc', flex: 1, fontSize: 17, fontWeight: '700' }}>
+      <Text selectable style={{ color: colors.text, flex: 1, fontSize: 17, fontWeight: '700' }}>
         {item.name}
       </Text>
-      <Text selectable style={{ color: '#64748b', fontSize: 13 }}>
+      <Text selectable style={{ color: colors.textSubtle, fontSize: 13 }}>
         Hold
       </Text>
     </Pressable>
