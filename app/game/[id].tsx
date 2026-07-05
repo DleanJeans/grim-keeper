@@ -114,6 +114,8 @@ export default function GameRoute() {
         ? [focusedPlayerId]
         : [];
   const trackingConfirmLabel = trackingMode === 'nomination' ? 'Confirm Nomination' : 'Confirm';
+  const trackingCancelFlex = trackingMode === 'nomination' ? 0.82 : 1;
+  const trackingConfirmFlex = trackingMode === 'nomination' ? 1.18 : 1;
 
   function handleSelectPlayer(playerId: string) {
     if (votingNominationId) {
@@ -453,7 +455,7 @@ export default function GameRoute() {
                     alignItems: 'center',
                     backgroundColor: '#334155',
                     borderRadius: 8,
-                    flex: 1,
+                    flex: trackingCancelFlex,
                     flexBasis: 0,
                     flexDirection: 'row',
                     gap: 6,
@@ -473,7 +475,7 @@ export default function GameRoute() {
                     alignItems: 'center',
                     backgroundColor: selectedPlayerIds.length < 2 ? '#334155' : '#16a34a',
                     borderRadius: 8,
-                    flex: 1,
+                    flex: trackingConfirmFlex,
                     flexBasis: 0,
                     flexDirection: 'row',
                     gap: 6,
