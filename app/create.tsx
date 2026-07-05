@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { GripVertical, Play, Plus } from 'lucide-react-native';
 import { useMemo, useRef, useState } from 'react';
 import type { TextInput as RNTextInput } from 'react-native';
 import { Keyboard, Pressable, View } from 'react-native';
@@ -123,10 +124,18 @@ export default function CreateRoute() {
               borderRadius: 8,
               borderWidth: 1,
               flex: 1,
+              flexDirection: 'row',
+              gap: 7,
+              justifyContent: 'center',
               minHeight: 48,
               paddingVertical: 13,
             })}
           >
+            <Plus
+              color={canAddPlayer ? colors.text : colors.onDisabled}
+              size={17}
+              strokeWidth={2.7}
+            />
             <Text
               style={{ color: canAddPlayer ? colors.text : colors.onDisabled, fontWeight: '800' }}
             >
@@ -147,10 +156,18 @@ export default function CreateRoute() {
                   : colors.primary,
               borderRadius: 8,
               flex: 1,
+              flexDirection: 'row',
+              gap: 7,
+              justifyContent: 'center',
               minHeight: 48,
               paddingVertical: 13,
             })}
           >
+            <Play
+              color={canStart ? colors.onPrimary : colors.onDisabled}
+              size={16}
+              strokeWidth={2.7}
+            />
             <Text
               style={{ color: canStart ? colors.onPrimary : colors.onDisabled, fontWeight: '800' }}
             >
@@ -244,9 +261,7 @@ function PlayerRow({
       <Text selectable style={{ color: colors.text, flex: 1, fontSize: 17, fontWeight: '700' }}>
         {item.name}
       </Text>
-      <Text selectable style={{ color: colors.textSubtle, fontSize: 13 }}>
-        Hold
-      </Text>
+      <GripVertical color={colors.textSubtle} size={18} strokeWidth={2.5} />
     </Pressable>
   );
 }

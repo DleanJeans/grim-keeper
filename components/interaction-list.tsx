@@ -1,3 +1,4 @@
+import { Trash2 } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
 import { Text } from '@/components/text';
@@ -88,14 +89,18 @@ export function InteractionList({
                 accessibilityRole="button"
                 onPress={() => onDeleteConversation(conversation.id)}
                 style={({ pressed }) => ({
+                  alignItems: 'center',
                   backgroundColor: pressed ? colors.surfacePressed : colors.dangerSurface,
                   borderColor: colors.danger,
                   borderRadius: 8,
                   borderWidth: 1,
+                  flexDirection: 'row',
+                  gap: 6,
                   paddingHorizontal: 12,
                   paddingVertical: 8,
                 })}
               >
+                <Trash2 color={colors.danger} size={15} strokeWidth={2.6} />
                 <Text style={{ color: colors.danger, fontSize: 13, fontWeight: '800' }}>
                   Delete
                 </Text>

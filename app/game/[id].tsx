@@ -1,4 +1,18 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  List,
+  Map as MapIcon,
+  Plus,
+  RotateCcw,
+  RotateCw,
+  Table2,
+  UserPlus,
+  Vote,
+  X,
+} from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 
@@ -21,6 +35,19 @@ const gameTabs: { label: string; value: GameTab }[] = [
   { label: 'Table', value: 'table' },
 ];
 const rotationStepRadians = Math.PI / 8;
+
+function renderGameTabIcon(tab: GameTab, color: string) {
+  switch (tab) {
+    case 'map':
+      return <MapIcon color={color} size={15} strokeWidth={2.5} />;
+    case 'interactions':
+      return <List color={color} size={15} strokeWidth={2.5} />;
+    case 'nominations':
+      return <Vote color={color} size={15} strokeWidth={2.5} />;
+    case 'table':
+      return <Table2 color={color} size={15} strokeWidth={2.5} />;
+  }
+}
 
 export default function GameRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -175,14 +202,18 @@ export default function GameRoute() {
               accessibilityRole="button"
               onPress={() => setAddPlayerVisible(true)}
               style={({ pressed }) => ({
+                alignItems: 'center',
                 backgroundColor: pressed ? '#1f2937' : '#111827',
                 borderColor: '#334155',
                 borderRadius: 999,
                 borderWidth: 1,
+                flexDirection: 'row',
+                gap: 6,
                 paddingHorizontal: 12,
                 paddingVertical: 7,
               })}
             >
+              <UserPlus color="#f8fafc" size={15} strokeWidth={2.5} />
               <Text style={{ color: '#f8fafc', fontSize: 13, fontWeight: '900' }}>Player</Text>
             </Pressable>
           ),
@@ -211,9 +242,17 @@ export default function GameRoute() {
               backgroundColor: activeGame.activeDay === 1 ? '#1f2937' : '#334155',
               borderRadius: 8,
               flex: 1,
+              flexDirection: 'row',
+              gap: 6,
+              justifyContent: 'center',
               paddingVertical: 12,
             }}
           >
+            <ChevronLeft
+              color={activeGame.activeDay === 1 ? '#64748b' : '#f8fafc'}
+              size={17}
+              strokeWidth={2.7}
+            />
             <Text style={{ color: activeGame.activeDay === 1 ? '#64748b' : '#f8fafc' }}>
               Previous
             </Text>
@@ -242,9 +281,13 @@ export default function GameRoute() {
               backgroundColor: '#334155',
               borderRadius: 8,
               flex: 1,
+              flexDirection: 'row',
+              gap: 6,
+              justifyContent: 'center',
               paddingVertical: 12,
             }}
           >
+            <ChevronRight color="#f8fafc" size={17} strokeWidth={2.7} />
             <Text style={{ color: '#f8fafc' }}>Next</Text>
           </Pressable>
         </View>
@@ -262,9 +305,13 @@ export default function GameRoute() {
                 backgroundColor: activeTab === tab.value ? '#f8fafc' : 'transparent',
                 borderRadius: 6,
                 flex: 1,
+                flexDirection: 'row',
+                gap: 4,
+                justifyContent: 'center',
                 paddingVertical: 10,
               }}
             >
+              {renderGameTabIcon(tab.value, activeTab === tab.value ? '#0b1120' : '#94a3b8')}
               <Text
                 style={{
                   color: activeTab === tab.value ? '#0b1120' : '#94a3b8',
@@ -304,9 +351,13 @@ export default function GameRoute() {
                     backgroundColor: '#334155',
                     borderRadius: 8,
                     flex: 1,
+                    flexDirection: 'row',
+                    gap: 6,
+                    justifyContent: 'center',
                     paddingVertical: 14,
                   }}
                 >
+                  <X color="#f8fafc" size={17} strokeWidth={2.7} />
                   <Text style={{ color: '#f8fafc', fontWeight: '800' }}>Cancel</Text>
                 </Pressable>
                 <Pressable
@@ -317,9 +368,13 @@ export default function GameRoute() {
                     backgroundColor: '#16a34a',
                     borderRadius: 8,
                     flex: 1,
+                    flexDirection: 'row',
+                    gap: 6,
+                    justifyContent: 'center',
                     paddingVertical: 14,
                   }}
                 >
+                  <Check color="#f8fafc" size={17} strokeWidth={2.7} />
                   <Text style={{ color: '#f8fafc', fontWeight: '800' }}>Confirm Votes</Text>
                 </Pressable>
               </View>
@@ -333,9 +388,13 @@ export default function GameRoute() {
                     backgroundColor: '#334155',
                     borderRadius: 8,
                     flex: 1,
+                    flexDirection: 'row',
+                    gap: 6,
+                    justifyContent: 'center',
                     paddingVertical: 14,
                   }}
                 >
+                  <X color="#f8fafc" size={17} strokeWidth={2.7} />
                   <Text style={{ color: '#f8fafc', fontWeight: '800' }}>Cancel</Text>
                 </Pressable>
                 <Pressable
@@ -347,9 +406,17 @@ export default function GameRoute() {
                     backgroundColor: selectedPlayerIds.length < 2 ? '#334155' : '#16a34a',
                     borderRadius: 8,
                     flex: 1,
+                    flexDirection: 'row',
+                    gap: 6,
+                    justifyContent: 'center',
                     paddingVertical: 14,
                   }}
                 >
+                  <Check
+                    color={selectedPlayerIds.length < 2 ? '#94a3b8' : '#f8fafc'}
+                    size={17}
+                    strokeWidth={2.7}
+                  />
                   <Text
                     style={{
                       color: selectedPlayerIds.length < 2 ? '#94a3b8' : '#f8fafc',
@@ -373,10 +440,14 @@ export default function GameRoute() {
                     borderRadius: 999,
                     borderWidth: 1,
                     flex: 1,
+                    flexDirection: 'row',
+                    gap: 6,
+                    justifyContent: 'center',
                     paddingVertical: 14,
                   })}
                 >
-                  <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Track Interaction</Text>
+                  <Plus color="#f8fafc" size={17} strokeWidth={2.7} />
+                  <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Interaction</Text>
                 </Pressable>
                 <Pressable
                   accessibilityLabel={`Track nomination from ${focusedPlayer.name}`}
@@ -389,10 +460,14 @@ export default function GameRoute() {
                     borderRadius: 999,
                     borderWidth: 1,
                     flex: 1,
+                    flexDirection: 'row',
+                    gap: 6,
+                    justifyContent: 'center',
                     paddingVertical: 14,
                   })}
                 >
-                  <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Track Nomination</Text>
+                  <Plus color="#f8fafc" size={17} strokeWidth={2.7} />
+                  <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Nomination</Text>
                 </Pressable>
               </View>
             ) : (
@@ -408,9 +483,13 @@ export default function GameRoute() {
                     borderRadius: 999,
                     borderWidth: 1,
                     flex: 1,
+                    flexDirection: 'row',
+                    gap: 6,
+                    justifyContent: 'center',
                     paddingVertical: 14,
                   })}
                 >
+                  <RotateCcw color="#f8fafc" size={17} strokeWidth={2.7} />
                   <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Left</Text>
                 </Pressable>
                 <Pressable
@@ -424,9 +503,13 @@ export default function GameRoute() {
                     borderRadius: 999,
                     borderWidth: 1,
                     flex: 1,
+                    flexDirection: 'row',
+                    gap: 6,
+                    justifyContent: 'center',
                     paddingVertical: 14,
                   })}
                 >
+                  <RotateCw color="#f8fafc" size={17} strokeWidth={2.7} />
                   <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Right</Text>
                 </Pressable>
               </View>

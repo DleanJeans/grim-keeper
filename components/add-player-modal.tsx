@@ -1,3 +1,4 @@
+import { Plus, X } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TextInput as RNTextInput } from 'react-native';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, View } from 'react-native';
@@ -119,9 +120,13 @@ export function AddPlayerModal({ onAddPlayer, onClose, players, visible }: AddPl
                 borderRadius: 8,
                 borderWidth: 1,
                 flex: 1,
+                flexDirection: 'row',
+                gap: 7,
+                justifyContent: 'center',
                 paddingVertical: 14,
               })}
             >
+              <X color={colors.text} size={17} strokeWidth={2.7} />
               <Text style={{ color: colors.text, fontWeight: '900' }}>Cancel</Text>
             </Pressable>
             <Pressable
@@ -137,9 +142,17 @@ export function AddPlayerModal({ onAddPlayer, onClose, players, visible }: AddPl
                     : colors.primary,
                 borderRadius: 8,
                 flex: 1,
+                flexDirection: 'row',
+                gap: 7,
+                justifyContent: 'center',
                 paddingVertical: 14,
               })}
             >
+              <Plus
+                color={canAddPlayer ? colors.onPrimary : colors.onDisabled}
+                size={17}
+                strokeWidth={2.7}
+              />
               <Text
                 style={{
                   color: canAddPlayer ? colors.onPrimary : colors.onDisabled,

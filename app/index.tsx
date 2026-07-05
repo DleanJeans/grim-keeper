@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { ChevronRight, Plus } from 'lucide-react-native';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { Text } from '@/components/text';
@@ -21,10 +22,14 @@ export default function HomeRoute() {
           backgroundColor: pressed ? '#f8fafc' : '#ffffff',
           borderRadius: 8,
           borderCurve: 'continuous',
+          flexDirection: 'row',
+          gap: 8,
+          justifyContent: 'center',
           paddingHorizontal: 18,
           paddingVertical: 14,
         })}
       >
+        <Plus color="#0b1120" size={18} strokeWidth={2.7} />
         <Text style={{ color: '#0b1120', fontSize: 17, fontWeight: '800' }}>New Game</Text>
       </Pressable>
 
@@ -58,16 +63,21 @@ export default function HomeRoute() {
                 borderColor: '#334155',
                 borderRadius: 8,
                 borderWidth: 1,
+                flexDirection: 'row',
                 gap: 8,
+                justifyContent: 'space-between',
                 padding: 16,
               })}
             >
-              <Text selectable style={{ color: '#f8fafc', fontSize: 17, fontWeight: '700' }}>
-                {formatGameTitle(game.createdAt)}
-              </Text>
-              <Text selectable style={{ color: '#94a3b8', fontSize: 14 }}>
-                {game.players.length} players - Day {game.activeDay}
-              </Text>
+              <View style={{ flex: 1, gap: 8 }}>
+                <Text selectable style={{ color: '#f8fafc', fontSize: 17, fontWeight: '700' }}>
+                  {formatGameTitle(game.createdAt)}
+                </Text>
+                <Text selectable style={{ color: '#94a3b8', fontSize: 14 }}>
+                  {game.players.length} players - Day {game.activeDay}
+                </Text>
+              </View>
+              <ChevronRight color="#94a3b8" size={18} strokeWidth={2.5} />
             </Pressable>
           ))
         )}
