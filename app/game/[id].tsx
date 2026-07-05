@@ -6,16 +6,18 @@ import { AddPlayerModal } from '@/components/add-player-modal';
 import { ConversationTable } from '@/components/conversation-table';
 import { GameMap } from '@/components/game-map';
 import { InteractionList } from '@/components/interaction-list';
+import { NominationList } from '@/components/nomination-list';
 import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
 import { rotatePlayerMapPositions } from '@/utils/layout-utils';
 
-type GameTab = 'map' | 'table' | 'interactions';
+type GameTab = 'map' | 'table' | 'interactions' | 'nominations';
 type TrackingMode = 'interaction' | 'nomination';
 
 const gameTabs: { label: string; value: GameTab }[] = [
   { label: 'Map', value: 'map' },
   { label: 'Interactions', value: 'interactions' },
+  { label: 'Noms', value: 'nominations' },
   { label: 'Table', value: 'table' },
 ];
 const rotationStepRadians = Math.PI / 8;
@@ -28,11 +30,13 @@ export default function GameRoute() {
   const updatePlayerPosition = useGameStore((state) => state.updatePlayerPosition);
   const updatePlayerPositions = useGameStore((state) => state.updatePlayerPositions);
   const addConversation = useGameStore((state) => state.addConversation);
+  const updateNominationVotes = useGameStore((state) => state.updateNominationVotes);
   const deleteConversation = useGameStore((state) => state.deleteConversation);
   const setActiveDay = useGameStore((state) => state.setActiveDay);
   const [activeTab, setActiveTab] = useState<GameTab>('map');
   const [addPlayerVisible, setAddPlayerVisible] = useState(false);
   const [trackingMode, setTrackingMode] = useState<TrackingMode | null>(null);
+  const [votingNominationId, setVotingNominationId] = useState<string | null>(null);
   const [focusedPlayerId, setFocusedPlayerId] = useState<string | null>(null);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const game = getGameById(games, id);
@@ -62,12 +66,23 @@ export default function GameRoute() {
   const focusedPlayer = activeGame.players.find((player) => player.id === focusedPlayerId);
   const highlightedPlayerIds = trackingMode
     ? selectedPlayerIds
-    : focusedPlayerId
-      ? [focusedPlayerId]
-      : [];
+    : votingNominationId
+      ? selectedPlayerIds
+      : focusedPlayerId
+        ? [focusedPlayerId]
+        : [];
   const trackingConfirmLabel = trackingMode === 'nomination' ? 'Confirm Nomination' : 'Confirm';
 
   function handleSelectPlayer(playerId: string) {
+    if (votingNominationId) {
+      setSelectedPlayerIds((currentIds) =>
+        currentIds.includes(playerId)
+          ? currentIds.filter((currentId) => currentId !== playerId)
+          : [...currentIds, playerId],
+      );
+      return;
+    }
+
     if (!trackingMode) {
       setFocusedPlayerId((currentPlayerId) => (currentPlayerId === playerId ? null : playerId));
       return;
@@ -100,6 +115,7 @@ export default function GameRoute() {
 
   function handleCancelTracking() {
     setTrackingMode(null);
+    setVotingNominationId(null);
     setFocusedPlayerId(null);
     setSelectedPlayerIds([]);
   }
@@ -109,7 +125,30 @@ export default function GameRoute() {
       return;
     }
 
-    addConversation(activeGame.id, activeGame.activeDay, selectedPlayerIds, trackingMode);
+    const conversation = addConversation(
+      activeGame.id,
+      activeGame.activeDay,
+      selectedPlayerIds,
+      trackingMode,
+    );
+
+    if (trackingMode === 'nomination' && conversation) {
+      setTrackingMode(null);
+      setVotingNominationId(conversation.id);
+      setFocusedPlayerId(null);
+      setSelectedPlayerIds([]);
+      return;
+    }
+
+    handleCancelTracking();
+  }
+
+  function handleConfirmVotes() {
+    if (!votingNominationId) {
+      return;
+    }
+
+    updateNominationVotes(activeGame.id, votingNominationId, selectedPlayerIds);
     handleCancelTracking();
   }
 
@@ -244,7 +283,7 @@ export default function GameRoute() {
             <GameMap
               activeDay={activeGame.activeDay}
               conversations={activeGame.conversations}
-              interactionMode={!!trackingMode}
+              interactionMode={!!trackingMode || !!votingNominationId}
               mapHeight={mapHeight}
               mapWidth={mapWidth}
               players={activeGame.players}
@@ -255,7 +294,36 @@ export default function GameRoute() {
               selectedPlayerIds={highlightedPlayerIds}
             />
 
-            {trackingMode ? (
+            {votingNominationId ? (
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={handleCancelTracking}
+                  style={{
+                    alignItems: 'center',
+                    backgroundColor: '#334155',
+                    borderRadius: 8,
+                    flex: 1,
+                    paddingVertical: 14,
+                  }}
+                >
+                  <Text style={{ color: '#f8fafc', fontWeight: '800' }}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={handleConfirmVotes}
+                  style={{
+                    alignItems: 'center',
+                    backgroundColor: '#16a34a',
+                    borderRadius: 8,
+                    flex: 1,
+                    paddingVertical: 14,
+                  }}
+                >
+                  <Text style={{ color: '#f8fafc', fontWeight: '800' }}>Confirm Votes</Text>
+                </Pressable>
+              </View>
+            ) : trackingMode ? (
               <View style={{ flexDirection: 'row', gap: 12 }}>
                 <Pressable
                   accessibilityRole="button"
@@ -366,6 +434,12 @@ export default function GameRoute() {
           </>
         ) : activeTab === 'table' ? (
           <ConversationTable
+            activeDay={activeGame.activeDay}
+            conversations={activeGame.conversations}
+            players={activeGame.players}
+          />
+        ) : activeTab === 'nominations' ? (
+          <NominationList
             activeDay={activeGame.activeDay}
             conversations={activeGame.conversations}
             players={activeGame.players}

@@ -19,7 +19,7 @@ export function InteractionList({
 }: InteractionListProps) {
   const playerNames = new Map(players.map((player) => [player.id, player.name]));
   const activeDayConversations = conversations.filter(
-    (conversation) => conversation.day === activeDay,
+    (conversation) => conversation.day === activeDay && conversation.kind !== 'nomination',
   );
 
   if (activeDayConversations.length === 0) {
@@ -47,7 +47,6 @@ export function InteractionList({
         const talkedToNames = conversation.participantIds
           .filter((playerId) => playerId !== conversation.initiatorId)
           .map((playerId) => playerNames.get(playerId) ?? 'Unknown');
-        const isNomination = conversation.kind === 'nomination';
 
         return (
           <View
@@ -82,9 +81,7 @@ export function InteractionList({
                   {initiatorName}
                 </Text>
                 <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
-                  {isNomination
-                    ? `Nominated ${talkedToNames.join(', ')}`
-                    : `Talked to ${talkedToNames.join(', ')}`}
+                  Talked to {talkedToNames.join(', ')}
                 </Text>
               </View>
               <Pressable

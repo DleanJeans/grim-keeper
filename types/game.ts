@@ -16,6 +16,7 @@ export type Conversation = {
   kind?: 'interaction' | 'nomination';
   participantIds: string[];
   initiatorId: string;
+  voterIds?: string[];
   createdAt: string;
 };
 

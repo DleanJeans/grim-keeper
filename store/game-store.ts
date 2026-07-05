@@ -3,7 +3,7 @@ import 'expo-sqlite/localStorage/install';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import type { Game, Player, PlayerPosition } from '@/types/game';
+import type { Conversation, Game, Player, PlayerPosition } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
 
 type CreateGameInput = {
@@ -22,7 +22,8 @@ type GameState = {
     day: number,
     participantIds: string[],
     kind?: 'interaction' | 'nomination',
-  ) => void;
+  ) => Conversation | undefined;
+  updateNominationVotes: (gameId: string, nominationId: string, voterIds: string[]) => void;
   deleteConversation: (gameId: string, conversationId: string) => void;
 };
 
@@ -137,8 +138,17 @@ export const useGameStore = create<GameState>()(
         const uniqueParticipantIds = [...new Set(participantIds)];
 
         if (uniqueParticipantIds.length < 2) {
-          return;
+          return undefined;
         }
+
+        const conversation: Conversation = {
+          id: createId('conversation'),
+          day,
+          kind,
+          participantIds: uniqueParticipantIds,
+          initiatorId: uniqueParticipantIds[0],
+          createdAt: new Date().toISOString(),
+        };
 
         set((state) => ({
           games: state.games.map((game) =>
@@ -147,17 +157,28 @@ export const useGameStore = create<GameState>()(
                   ...game,
                   activeDay: day,
                   updatedAt: new Date().toISOString(),
-                  conversations: [
-                    ...game.conversations,
-                    {
-                      id: createId('conversation'),
-                      day,
-                      kind,
-                      participantIds: uniqueParticipantIds,
-                      initiatorId: uniqueParticipantIds[0],
-                      createdAt: new Date().toISOString(),
-                    },
-                  ],
+                  conversations: [...game.conversations, conversation],
+                }
+              : game,
+          ),
+        }));
+
+        return conversation;
+      },
+      updateNominationVotes: (gameId, nominationId, voterIds) => {
+        const uniqueVoterIds = [...new Set(voterIds)];
+
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? {
+                  ...game,
+                  updatedAt: new Date().toISOString(),
+                  conversations: game.conversations.map((conversation) =>
+                    conversation.id === nominationId
+                      ? { ...conversation, voterIds: uniqueVoterIds }
+                      : conversation,
+                  ),
                 }
               : game,
           ),
