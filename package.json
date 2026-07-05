@@ -1,0 +1,48 @@
+{
+  "name": "grim-keeper",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "dependencies": {
+    "expo": "~57.0.2",
+    "expo-router": "~57.0.3",
+    "expo-sqlite": "~57.0.0",
+    "expo-status-bar": "~57.0.0",
+    "expo-updates": "~57.0.6",
+    "react": "19.2.3",
+    "react-native": "0.86.0",
+    "react-native-gesture-handler": "~2.32.0",
+    "react-native-reanimated": "4.5.0",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "4.25.2",
+    "react-native-svg": "15.15.4",
+    "react-native-worklets": "0.10.0",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.16",
+    "@types/jest": "^29.5.14",
+    "@types/react": "~19.2.2",
+    "jest": "^29.7.0",
+    "ts-jest": "29",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "format:changed": "biome format --write $(git diff --name-only HEAD --diff-filter=ACMR; git ls-files --others --exclude-standard | grep -E '\\.(ts|tsx|json)$')",
+    "format:imports": "biome check --write --only=organizeImports",
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "build:android:local": "eas build --platform android --profile development --local --non-interactive --output ./builds/grim-keeper.apk && cd builds && NAME=grim-keeper-$(date +%Y%m%d%H%M) && mv grim-keeper.apk $NAME.apk && zip $NAME.zip $NAME.apk",
+    "build:android:eas": "eas build --platform android --profile development --non-interactive",
+    "build:android:prod:eas": "eas build --platform android --profile production --non-interactive",
+    "test:maestro": "maestro test",
+    "test:maestro:all": "maestro test .maestro",
+    "emulator": "$ANDROID_HOME/emulator/emulator -netdelay none -netspeed full -no-snapshot-load -avd maestro_test",
+    "emulator:stop": "adb emu kill",
+    "test:unit": "jest",
+    "ota:android:dev": "eas update --platform android --branch development --environment development --auto",
+    "ota:android:pre": "eas update --platform android --branch preview --environment preview --auto"
+  },
+  "private": true,
+  "packageManager": "pnpm@10.34.1"
+}
