@@ -102,7 +102,6 @@ export function PlayerToken({
       >
         <Text
           numberOfLines={2}
-          selectable
           style={{
             color: '#0b1120',
             fontSize: 12,
