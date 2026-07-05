@@ -7,6 +7,8 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Stack>
         <Stack.Screen name="index" options={{ title: 'GrimKeeper' }} />
+        <Stack.Screen name="create" options={{ title: 'New Game' }} />
+        <Stack.Screen name="game/[id]" options={{ title: 'Game' }} />
       </Stack>
       <StatusBar style="light" />
     </GestureHandlerRootView>
