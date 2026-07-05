@@ -16,6 +16,11 @@ export default function CreateRoute() {
   const createGame = useGameStore((state) => state.createGame);
   const [name, setName] = useState('');
   const [players, setPlayers] = useState<DraftPlayer[]>([]);
+  const playerOrderKey = useMemo(() => players.map((player) => player.id).join('|'), [players]);
+  const playerIndexes = useMemo(
+    () => new Map(players.map((player, index) => [player.id, index])),
+    [players],
+  );
   const normalizedName = normalizePlayerName(name);
   const duplicateName = hasDuplicatePlayerName(
     players.map((player) => player.name),
@@ -185,22 +190,30 @@ export default function CreateRoute() {
           containerStyle={{ backgroundColor: colors.background, flex: 1 }}
           contentInsetAdjustmentBehavior="automatic"
           keyboardShouldPersistTaps="handled"
-          extraData={players.length}
+          extraData={playerOrderKey}
           style={{ backgroundColor: colors.background }}
           contentContainerStyle={{ gap: 10, padding: 20, paddingTop: 4, paddingBottom: 40 }}
           data={players}
           keyExtractor={(item) => item.id}
           onDragEnd={({ data }) => setPlayers(data)}
-          renderItem={renderPlayerRow}
+          renderItem={(params) => (
+            <PlayerRow
+              {...params}
+              index={playerIndexes.get(params.item.id) ?? params.getIndex() ?? 0}
+            />
+          )}
         />
       )}
     </View>
   );
 }
 
-function renderPlayerRow({ item, drag, isActive, getIndex }: RenderItemParams<DraftPlayer>) {
-  const index = getIndex() ?? 0;
-
+function PlayerRow({
+  drag,
+  index,
+  isActive,
+  item,
+}: RenderItemParams<DraftPlayer> & { index: number }) {
   return (
     <Pressable
       accessibilityRole="button"
