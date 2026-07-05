@@ -165,12 +165,6 @@ export default function GameRoute() {
 
       {activeTab === 'map' ? (
         <>
-          <Text selectable style={{ color: '#94a3b8', fontSize: 15, lineHeight: 21 }}>
-            {interactionMode
-              ? 'Select 2 or more players. The first selected player initiated the conversation.'
-              : 'Long press a token to move it around the circle.'}
-          </Text>
-
           <GameMap
             activeDay={activeGame.activeDay}
             conversations={activeGame.conversations}
