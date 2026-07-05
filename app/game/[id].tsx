@@ -386,7 +386,10 @@ export default function GameRoute() {
             />
 
             {votingNominationId ? (
-              <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View
+                key="vote-actions"
+                style={{ alignSelf: 'stretch', flexDirection: 'row', gap: 12 }}
+              >
                 <Pressable
                   accessibilityRole="button"
                   onPress={handleCancelTracking}
@@ -399,6 +402,7 @@ export default function GameRoute() {
                     flexDirection: 'row',
                     gap: 6,
                     justifyContent: 'center',
+                    minWidth: 0,
                     paddingVertical: 14,
                   }}
                 >
@@ -417,6 +421,7 @@ export default function GameRoute() {
                     flexDirection: 'row',
                     gap: 6,
                     justifyContent: 'center',
+                    minWidth: 0,
                     paddingVertical: 14,
                   }}
                 >
@@ -425,7 +430,10 @@ export default function GameRoute() {
                 </Pressable>
               </View>
             ) : trackingMode ? (
-              <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View
+                key="tracking-actions"
+                style={{ alignSelf: 'stretch', flexDirection: 'row', gap: 12 }}
+              >
                 <Pressable
                   accessibilityRole="button"
                   onPress={handleCancelTracking}
@@ -438,6 +446,7 @@ export default function GameRoute() {
                     flexDirection: 'row',
                     gap: 6,
                     justifyContent: 'center',
+                    minWidth: 0,
                     paddingVertical: 14,
                   }}
                 >
@@ -457,6 +466,7 @@ export default function GameRoute() {
                     flexDirection: 'row',
                     gap: 6,
                     justifyContent: 'center',
+                    minWidth: 0,
                     paddingVertical: 14,
                   }}
                 >
@@ -476,7 +486,10 @@ export default function GameRoute() {
                 </Pressable>
               </View>
             ) : focusedPlayer ? (
-              <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View
+                key="focused-player-actions"
+                style={{ alignSelf: 'stretch', flexDirection: 'row', gap: 10 }}
+              >
                 <Pressable
                   accessibilityLabel={`Delete ${focusedPlayer.name}`}
                   accessibilityRole="button"
@@ -509,6 +522,7 @@ export default function GameRoute() {
                     flexDirection: 'row',
                     gap: 6,
                     justifyContent: 'center',
+                    minWidth: 0,
                     paddingVertical: 14,
                   })}
                 >
@@ -530,6 +544,7 @@ export default function GameRoute() {
                     flexDirection: 'row',
                     gap: 6,
                     justifyContent: 'center',
+                    minWidth: 0,
                     paddingVertical: 14,
                   })}
                 >
@@ -538,7 +553,10 @@ export default function GameRoute() {
                 </Pressable>
               </View>
             ) : (
-              <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View
+                key="rotate-actions"
+                style={{ alignSelf: 'stretch', flexDirection: 'row', gap: 10 }}
+              >
                 <Pressable
                   accessibilityLabel="Rotate tokens left"
                   accessibilityRole="button"
@@ -554,6 +572,7 @@ export default function GameRoute() {
                     flexDirection: 'row',
                     gap: 6,
                     justifyContent: 'center',
+                    minWidth: 0,
                     paddingVertical: 14,
                   })}
                 >
@@ -575,6 +594,7 @@ export default function GameRoute() {
                     flexDirection: 'row',
                     gap: 6,
                     justifyContent: 'center',
+                    minWidth: 0,
                     paddingVertical: 14,
                   })}
                 >
