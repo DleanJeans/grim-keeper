@@ -5,7 +5,8 @@ import {
   ChevronRight,
   List,
   Map as MapIcon,
-  Plus,
+  MessageCircle,
+  Pointer,
   RotateCcw,
   RotateCw,
   Table2,
@@ -499,7 +500,7 @@ export default function GameRoute() {
                     paddingVertical: 14,
                   })}
                 >
-                  <Plus color="#f8fafc" size={17} strokeWidth={2.7} />
+                  <MessageCircle color="#f8fafc" size={17} strokeWidth={2.7} />
                   <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Interaction</Text>
                 </Pressable>
                 <Pressable
@@ -519,7 +520,7 @@ export default function GameRoute() {
                     paddingVertical: 14,
                   })}
                 >
-                  <Plus color="#f8fafc" size={17} strokeWidth={2.7} />
+                  <Pointer color="#f8fafc" size={17} strokeWidth={2.7} />
                   <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Nomination</Text>
                 </Pressable>
               </View>
