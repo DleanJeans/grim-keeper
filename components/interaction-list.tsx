@@ -1,5 +1,5 @@
 import { Trash2 } from 'lucide-react-native';
-import { Pressable, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
@@ -87,7 +87,16 @@ export function InteractionList({
               </View>
               <Pressable
                 accessibilityRole="button"
-                onPress={() => onDeleteConversation(conversation.id)}
+                onPress={() =>
+                  Alert.alert('Delete interaction?', 'This removes the recorded conversation.', [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Delete',
+                      style: 'destructive',
+                      onPress: () => onDeleteConversation(conversation.id),
+                    },
+                  ])
+                }
                 style={({ pressed }) => ({
                   alignItems: 'center',
                   backgroundColor: pressed ? colors.surfacePressed : colors.dangerSurface,

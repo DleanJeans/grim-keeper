@@ -14,6 +14,8 @@ type GameState = {
   games: Game[];
   createGame: (input: CreateGameInput) => Game;
   addPlayer: (gameId: string, name: string) => void;
+  deleteGame: (gameId: string) => void;
+  deletePlayer: (gameId: string, playerId: string) => void;
   setActiveDay: (gameId: string, day: number) => void;
   updatePlayerPosition: (gameId: string, playerId: string, position: PlayerPosition) => void;
   updatePlayerPositions: (gameId: string, positions: Record<string, PlayerPosition>) => void;
@@ -87,6 +89,37 @@ export const useGameStore = create<GameState>()(
                   seat: Math.max(-1, ...game.players.map((player) => player.seat)) + 1,
                 },
               ],
+            };
+          }),
+        }));
+      },
+      deleteGame: (gameId) => {
+        set((state) => ({
+          games: state.games.filter((game) => game.id !== gameId),
+        }));
+      },
+      deletePlayer: (gameId, playerId) => {
+        set((state) => ({
+          games: state.games.map((game) => {
+            if (game.id !== gameId) {
+              return game;
+            }
+
+            const players = game.players
+              .filter((player) => player.id !== playerId)
+              .sort((first, second) => first.seat - second.seat)
+              .map((player, index) => ({ ...player, seat: index }));
+
+            return {
+              ...game,
+              updatedAt: new Date().toISOString(),
+              players,
+              conversations: game.conversations
+                .filter((conversation) => !conversation.participantIds.includes(playerId))
+                .map((conversation) => ({
+                  ...conversation,
+                  voterIds: conversation.voterIds?.filter((voterId) => voterId !== playerId),
+                })),
             };
           }),
         }));

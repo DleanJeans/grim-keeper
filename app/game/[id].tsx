@@ -9,12 +9,13 @@ import {
   RotateCcw,
   RotateCw,
   Table2,
+  Trash2,
   UserPlus,
   Vote,
   X,
 } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { Alert, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 
 import { AddPlayerModal } from '@/components/add-player-modal';
 import { ConversationTable } from '@/components/conversation-table';
@@ -54,6 +55,7 @@ export default function GameRoute() {
   const { height, width } = useWindowDimensions();
   const games = useGameStore((state) => state.games);
   const addPlayer = useGameStore((state) => state.addPlayer);
+  const deletePlayer = useGameStore((state) => state.deletePlayer);
   const updatePlayerPosition = useGameStore((state) => state.updatePlayerPosition);
   const updatePlayerPositions = useGameStore((state) => state.updatePlayerPositions);
   const addConversation = useGameStore((state) => state.addConversation);
@@ -188,6 +190,28 @@ export default function GameRoute() {
     updatePlayerPositions(
       activeGame.id,
       rotatePlayerMapPositions(activeGame.players, mapWidth, mapHeight, angleRadians),
+    );
+  }
+
+  function confirmDeletePlayer() {
+    if (!focusedPlayer) {
+      return;
+    }
+
+    Alert.alert(
+      'Delete player?',
+      `Delete ${focusedPlayer.name} and remove their related interactions, nominations, and votes?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            deletePlayer(activeGame.id, focusedPlayer.id);
+            handleCancelTracking();
+          },
+        },
+      ],
     );
   }
 
@@ -430,6 +454,23 @@ export default function GameRoute() {
             ) : focusedPlayer ? (
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <Pressable
+                  accessibilityLabel={`Delete ${focusedPlayer.name}`}
+                  accessibilityRole="button"
+                  onPress={confirmDeletePlayer}
+                  style={({ pressed }) => ({
+                    alignItems: 'center',
+                    backgroundColor: pressed ? '#2a1517' : '#111827',
+                    borderColor: '#fca5a5',
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    justifyContent: 'center',
+                    paddingHorizontal: 15,
+                    paddingVertical: 14,
+                  })}
+                >
+                  <Trash2 color="#fca5a5" size={17} strokeWidth={2.7} />
+                </Pressable>
+                <Pressable
                   accessibilityLabel={`Track interaction from ${focusedPlayer.name}`}
                   accessibilityRole="button"
                   onPress={() => handleStartTracking('interaction')}
@@ -526,6 +567,7 @@ export default function GameRoute() {
             activeDay={activeGame.activeDay}
             conversations={activeGame.conversations}
             players={activeGame.players}
+            onDeleteNomination={(nominationId) => deleteConversation(activeGame.id, nominationId)}
           />
         ) : (
           <InteractionList
