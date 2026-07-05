@@ -426,7 +426,19 @@ export default function GameRoute() {
                   }}
                 >
                   <Check color="#f8fafc" size={17} strokeWidth={2.7} />
-                  <Text style={{ color: '#f8fafc', fontWeight: '800' }}>Confirm Votes</Text>
+                  <Text
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.72}
+                    numberOfLines={1}
+                    style={{
+                      color: '#f8fafc',
+                      flexShrink: 1,
+                      fontWeight: '800',
+                      minWidth: 0,
+                    }}
+                  >
+                    Confirm Votes
+                  </Text>
                 </Pressable>
               </View>
             ) : trackingMode ? (
@@ -476,9 +488,14 @@ export default function GameRoute() {
                     strokeWidth={2.7}
                   />
                   <Text
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.72}
+                    numberOfLines={1}
                     style={{
                       color: selectedPlayerIds.length < 2 ? '#94a3b8' : '#f8fafc',
+                      flexShrink: 1,
                       fontWeight: '800',
+                      minWidth: 0,
                     }}
                   >
                     {trackingConfirmLabel}
