@@ -16,6 +16,7 @@ type GameState = {
   setActiveDay: (gameId: string, day: number) => void;
   updatePlayerPosition: (gameId: string, playerId: string, position: PlayerPosition) => void;
   addConversation: (gameId: string, day: number, participantIds: string[]) => void;
+  deleteConversation: (gameId: string, conversationId: string) => void;
 };
 
 export const useGameStore = create<GameState>()(
@@ -96,6 +97,21 @@ export const useGameStore = create<GameState>()(
                       createdAt: new Date().toISOString(),
                     },
                   ],
+                }
+              : game,
+          ),
+        }));
+      },
+      deleteConversation: (gameId, conversationId) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? {
+                  ...game,
+                  updatedAt: new Date().toISOString(),
+                  conversations: game.conversations.filter(
+                    (conversation) => conversation.id !== conversationId,
+                  ),
                 }
               : game,
           ),

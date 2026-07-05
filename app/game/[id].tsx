@@ -4,10 +4,17 @@ import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 
 import { ConversationTable } from '@/components/conversation-table';
 import { GameMap } from '@/components/game-map';
+import { InteractionList } from '@/components/interaction-list';
 import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
 
-type GameTab = 'map' | 'table';
+type GameTab = 'map' | 'table' | 'interactions';
+
+const gameTabs: { label: string; value: GameTab }[] = [
+  { label: 'Map', value: 'map' },
+  { label: 'Table', value: 'table' },
+  { label: 'Interactions', value: 'interactions' },
+];
 
 export default function GameRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -15,6 +22,7 @@ export default function GameRoute() {
   const games = useGameStore((state) => state.games);
   const updatePlayerPosition = useGameStore((state) => state.updatePlayerPosition);
   const addConversation = useGameStore((state) => state.addConversation);
+  const deleteConversation = useGameStore((state) => state.deleteConversation);
   const setActiveDay = useGameStore((state) => state.setActiveDay);
   const [activeTab, setActiveTab] = useState<GameTab>('map');
   const [interactionMode, setInteractionMode] = useState(false);
@@ -129,14 +137,14 @@ export default function GameRoute() {
       <View
         style={{ backgroundColor: '#111827', borderRadius: 8, flexDirection: 'row', padding: 4 }}
       >
-        {(['map', 'table'] as const).map((tab) => (
+        {gameTabs.map((tab) => (
           <Pressable
-            key={tab}
+            key={tab.value}
             accessibilityRole="button"
-            onPress={() => setActiveTab(tab)}
+            onPress={() => setActiveTab(tab.value)}
             style={{
               alignItems: 'center',
-              backgroundColor: activeTab === tab ? '#f8fafc' : 'transparent',
+              backgroundColor: activeTab === tab.value ? '#f8fafc' : 'transparent',
               borderRadius: 6,
               flex: 1,
               paddingVertical: 10,
@@ -144,12 +152,12 @@ export default function GameRoute() {
           >
             <Text
               style={{
-                color: activeTab === tab ? '#0b1120' : '#94a3b8',
+                color: activeTab === tab.value ? '#0b1120' : '#94a3b8',
+                fontSize: 13,
                 fontWeight: '800',
-                textTransform: 'capitalize',
               }}
             >
-              {tab}
+              {tab.label}
             </Text>
           </Pressable>
         ))}
@@ -230,11 +238,20 @@ export default function GameRoute() {
             </Pressable>
           )}
         </>
-      ) : (
+      ) : activeTab === 'table' ? (
         <ConversationTable
           activeDay={activeGame.activeDay}
           conversations={activeGame.conversations}
           players={activeGame.players}
+        />
+      ) : (
+        <InteractionList
+          activeDay={activeGame.activeDay}
+          conversations={activeGame.conversations}
+          players={activeGame.players}
+          onDeleteConversation={(conversationId) =>
+            deleteConversation(activeGame.id, conversationId)
+          }
         />
       )}
     </ScrollView>
