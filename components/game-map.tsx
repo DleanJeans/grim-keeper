@@ -133,14 +133,13 @@ function getConversationCurvePath(
   const deltaY = to.y - from.y;
   const distance = Math.hypot(deltaX, deltaY);
   const roomDistance = Math.hypot(mapWidth, mapHeight);
-  const curveDistance = roomDistance * 0.42;
-  const curveStrength = Math.max(0, 1 - distance / curveDistance);
-  const controlOffset = curveStrength * 76;
+  const curveStrength = Math.max(0, 1 - distance / roomDistance);
+  const controlOffset = 24 + curveStrength * 64;
   const midpointX = (from.x + to.x) / 2;
   const midpointY = (from.y + to.y) / 2;
 
-  if (distance <= 0 || controlOffset <= 0) {
-    return `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
+  if (distance <= 0) {
+    return `M ${from.x} ${from.y}`;
   }
 
   const centerX = mapWidth / 2;
@@ -149,9 +148,9 @@ function getConversationCurvePath(
   const centerDeltaY = centerY - midpointY;
   const centerDistance = Math.hypot(centerDeltaX, centerDeltaY);
   const controlX =
-    centerDistance > 0 ? midpointX + (centerDeltaX / centerDistance) * controlOffset : midpointX;
+    centerDistance > 0 ? midpointX + (centerDeltaX / centerDistance) * controlOffset : centerX;
   const controlY =
-    centerDistance > 0 ? midpointY + (centerDeltaY / centerDistance) * controlOffset : midpointY;
+    centerDistance > 0 ? midpointY + (centerDeltaY / centerDistance) * controlOffset : centerY;
 
   if (blockers.length === 0) {
     return `M ${from.x} ${from.y} Q ${controlX} ${controlY} ${to.x} ${to.y}`;
