@@ -90,7 +90,9 @@ export default function GameRoute() {
             paddingVertical: 12,
           }}
         >
-          <Text style={{ color: activeGame.activeDay === 1 ? '#64748b' : '#f8fafc' }}>Previous</Text>
+          <Text style={{ color: activeGame.activeDay === 1 ? '#64748b' : '#f8fafc' }}>
+            Previous
+          </Text>
         </Pressable>
         <View
           style={{
@@ -123,7 +125,9 @@ export default function GameRoute() {
         </Pressable>
       </View>
 
-      <View style={{ backgroundColor: '#111827', borderRadius: 8, flexDirection: 'row', padding: 4 }}>
+      <View
+        style={{ backgroundColor: '#111827', borderRadius: 8, flexDirection: 'row', padding: 4 }}
+      >
         {(['map', 'table'] as const).map((tab) => (
           <Pressable
             key={tab}

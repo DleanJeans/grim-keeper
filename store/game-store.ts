@@ -20,7 +20,7 @@ type GameState = {
 
 export const useGameStore = create<GameState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       games: [],
       createGame: ({ playerNames }) => {
         const now = new Date().toISOString();

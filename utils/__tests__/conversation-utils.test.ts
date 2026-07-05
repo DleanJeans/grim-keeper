@@ -1,9 +1,9 @@
+import type { Conversation, Player } from '@/types/game';
 import {
   buildConversationRows,
   hasDuplicatePlayerName,
   normalizePlayerName,
 } from '@/utils/conversation-utils';
-import type { Conversation, Player } from '@/types/game';
 
 const players: Player[] = [
   { id: 'alice', name: 'Alice', seat: 0 },
@@ -60,8 +60,6 @@ describe('conversation utils', () => {
       },
     ]);
 
-    expect(buildConversationRows(players, conversations, 2)[0]?.repeatedPlayerIds).toEqual([
-      'ben',
-    ]);
+    expect(buildConversationRows(players, conversations, 2)[0]?.repeatedPlayerIds).toEqual(['ben']);
   });
 });

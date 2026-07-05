@@ -18,8 +18,14 @@ export function getConversationPairs(conversation: Conversation) {
   const pairs = new Set<string>();
 
   for (let index = 0; index < conversation.participantIds.length; index += 1) {
-    for (let nextIndex = index + 1; nextIndex < conversation.participantIds.length; nextIndex += 1) {
-      pairs.add(getPairKey(conversation.participantIds[index], conversation.participantIds[nextIndex]));
+    for (
+      let nextIndex = index + 1;
+      nextIndex < conversation.participantIds.length;
+      nextIndex += 1
+    ) {
+      pairs.add(
+        getPairKey(conversation.participantIds[index], conversation.participantIds[nextIndex]),
+      );
     }
   }
 
