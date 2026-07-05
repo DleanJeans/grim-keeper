@@ -80,8 +80,6 @@ export default function CreateRoute() {
             enterKeyHint="done"
             onChangeText={setName}
             onSubmitEditing={handleAddPlayer}
-            placeholder="Washerwoman, chef, recluse..."
-            placeholderTextColor={colors.textSubtle}
             returnKeyType="done"
             value={name}
             style={{
