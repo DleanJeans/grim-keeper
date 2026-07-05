@@ -45,3 +45,35 @@ export function clampTokenPosition(
     y: Math.min(maxY, Math.max(inset, position.y)),
   };
 }
+
+export function rotatePlayerMapPositions(
+  players: Player[],
+  mapWidth: number,
+  mapHeight: number,
+  angleRadians: number,
+): Record<string, PlayerPosition> {
+  const centerX = mapWidth / 2;
+  const centerY = mapHeight / 2;
+  const cos = Math.cos(angleRadians);
+  const sin = Math.sin(angleRadians);
+
+  return Object.fromEntries(
+    players.map((player) => {
+      const position = getPlayerMapPosition(player, players, mapWidth, mapHeight);
+      const relativeX = position.x - centerX;
+      const relativeY = position.y - centerY;
+
+      return [
+        player.id,
+        clampTokenPosition(
+          {
+            x: centerX + relativeX * cos - relativeY * sin,
+            y: centerY + relativeX * sin + relativeY * cos,
+          },
+          mapWidth,
+          mapHeight,
+        ),
+      ];
+    }),
+  );
+}

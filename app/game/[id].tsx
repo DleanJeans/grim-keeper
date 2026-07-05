@@ -7,6 +7,7 @@ import { GameMap } from '@/components/game-map';
 import { InteractionList } from '@/components/interaction-list';
 import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
+import { rotatePlayerMapPositions } from '@/utils/layout-utils';
 
 type GameTab = 'map' | 'table' | 'interactions';
 
@@ -15,12 +16,14 @@ const gameTabs: { label: string; value: GameTab }[] = [
   { label: 'Table', value: 'table' },
   { label: 'Interactions', value: 'interactions' },
 ];
+const rotationStepRadians = Math.PI / 8;
 
 export default function GameRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { height, width } = useWindowDimensions();
   const games = useGameStore((state) => state.games);
   const updatePlayerPosition = useGameStore((state) => state.updatePlayerPosition);
+  const updatePlayerPositions = useGameStore((state) => state.updatePlayerPositions);
   const addConversation = useGameStore((state) => state.addConversation);
   const deleteConversation = useGameStore((state) => state.deleteConversation);
   const setActiveDay = useGameStore((state) => state.setActiveDay);
@@ -77,6 +80,13 @@ export default function GameRoute() {
   function handleChangeDay(day: number) {
     handleCancelInteraction();
     setActiveDay(activeGame.id, day);
+  }
+
+  function handleRotateTokens(angleRadians: number) {
+    updatePlayerPositions(
+      activeGame.id,
+      rotatePlayerMapPositions(activeGame.players, mapWidth, mapHeight, angleRadians),
+    );
   }
 
   return (
@@ -218,20 +228,53 @@ export default function GameRoute() {
               </Pressable>
             </View>
           ) : (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => setInteractionMode(true)}
-              style={{
-                alignItems: 'center',
-                alignSelf: 'flex-end',
-                backgroundColor: '#f8fafc',
-                borderRadius: 999,
-                paddingHorizontal: 20,
-                paddingVertical: 14,
-              }}
-            >
-              <Text style={{ color: '#0b1120', fontWeight: '900' }}>Add</Text>
-            </Pressable>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Pressable
+                accessibilityLabel="Rotate tokens left"
+                accessibilityRole="button"
+                onPress={() => handleRotateTokens(-rotationStepRadians)}
+                style={({ pressed }) => ({
+                  alignItems: 'center',
+                  backgroundColor: pressed ? '#1f2937' : '#111827',
+                  borderColor: '#334155',
+                  borderRadius: 999,
+                  borderWidth: 1,
+                  flex: 1,
+                  paddingVertical: 14,
+                })}
+              >
+                <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Left</Text>
+              </Pressable>
+              <Pressable
+                accessibilityLabel="Rotate tokens right"
+                accessibilityRole="button"
+                onPress={() => handleRotateTokens(rotationStepRadians)}
+                style={({ pressed }) => ({
+                  alignItems: 'center',
+                  backgroundColor: pressed ? '#1f2937' : '#111827',
+                  borderColor: '#334155',
+                  borderRadius: 999,
+                  borderWidth: 1,
+                  flex: 1,
+                  paddingVertical: 14,
+                })}
+              >
+                <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Right</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setInteractionMode(true)}
+                style={{
+                  alignItems: 'center',
+                  backgroundColor: '#f8fafc',
+                  borderRadius: 999,
+                  flex: 0.8,
+                  paddingVertical: 14,
+                }}
+              >
+                <Text style={{ color: '#0b1120', fontWeight: '900' }}>Add</Text>
+              </Pressable>
+            </View>
           )}
         </>
       ) : activeTab === 'table' ? (

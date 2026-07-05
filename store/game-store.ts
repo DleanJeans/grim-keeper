@@ -15,6 +15,7 @@ type GameState = {
   createGame: (input: CreateGameInput) => Game;
   setActiveDay: (gameId: string, day: number) => void;
   updatePlayerPosition: (gameId: string, playerId: string, position: PlayerPosition) => void;
+  updatePlayerPositions: (gameId: string, positions: Record<string, PlayerPosition>) => void;
   addConversation: (gameId: string, day: number, participantIds: string[]) => void;
   deleteConversation: (gameId: string, conversationId: string) => void;
 };
@@ -67,6 +68,21 @@ export const useGameStore = create<GameState>()(
                   updatedAt: new Date().toISOString(),
                   players: game.players.map((player) =>
                     player.id === playerId ? { ...player, position } : player,
+                  ),
+                }
+              : game,
+          ),
+        }));
+      },
+      updatePlayerPositions: (gameId, positions) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? {
+                  ...game,
+                  updatedAt: new Date().toISOString(),
+                  players: game.players.map((player) =>
+                    positions[player.id] ? { ...player, position: positions[player.id] } : player,
                   ),
                 }
               : game,
