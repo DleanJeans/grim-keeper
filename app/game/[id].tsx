@@ -194,6 +194,13 @@ export default function GameRoute() {
     handleCancelTracking();
   }
 
+  function handleEditNominationVotes(nominationId: string, voterIds: string[]) {
+    handleCancelTracking();
+    setVotingNominationId(nominationId);
+    setSelectedPlayerIds(voterIds);
+    setActiveTab('map');
+  }
+
   function handleChangeDay(day: number) {
     handleCancelTracking();
     setActiveDay(activeGame.id, day);
@@ -575,6 +582,7 @@ export default function GameRoute() {
             conversations={activeGame.conversations}
             players={activeGame.players}
             onDeleteNomination={(nominationId) => deleteConversation(activeGame.id, nominationId)}
+            onEditVotes={handleEditNominationVotes}
           />
         ) : (
           <View style={{ gap: 12 }}>

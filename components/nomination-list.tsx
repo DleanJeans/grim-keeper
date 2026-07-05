@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react-native';
+import { Pencil, Trash2 } from 'lucide-react-native';
 import { Alert, Pressable, View } from 'react-native';
 
 import { Text } from '@/components/text';
@@ -10,12 +10,14 @@ type NominationListProps = {
   conversations: Conversation[];
   players: Player[];
   onDeleteNomination: (nominationId: string) => void;
+  onEditVotes: (nominationId: string, voterIds: string[]) => void;
 };
 
 export function NominationList({
   activeDay,
   conversations,
   onDeleteNomination,
+  onEditVotes,
   players,
 }: NominationListProps) {
   const playerNames = new Map(players.map((player) => [player.id, player.name]));
@@ -82,6 +84,24 @@ export function NominationList({
                   {nominatorName} nominated {nomineeName}
                 </Text>
               </View>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => onEditVotes(nomination.id, nomination.voterIds ?? [])}
+                style={({ pressed }) => ({
+                  alignItems: 'center',
+                  backgroundColor: pressed ? colors.surfacePressed : colors.surfaceRaised,
+                  borderColor: colors.border,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  flexDirection: 'row',
+                  gap: 6,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                })}
+              >
+                <Pencil color={colors.text} size={15} strokeWidth={2.6} />
+                <Text style={{ color: colors.text, fontSize: 13, fontWeight: '800' }}>Votes</Text>
+              </Pressable>
               <Pressable
                 accessibilityRole="button"
                 onPress={() =>
