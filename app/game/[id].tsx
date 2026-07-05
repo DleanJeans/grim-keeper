@@ -14,8 +14,8 @@ type GameTab = 'map' | 'table' | 'interactions';
 
 const gameTabs: { label: string; value: GameTab }[] = [
   { label: 'Map', value: 'map' },
-  { label: 'Table', value: 'table' },
   { label: 'Interactions', value: 'interactions' },
+  { label: 'Table', value: 'table' },
 ];
 const rotationStepRadians = Math.PI / 8;
 
