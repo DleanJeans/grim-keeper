@@ -184,9 +184,11 @@ export default function CreateRoute() {
       ) : (
         <DraggableFlatList
           activationDistance={8}
+          containerStyle={{ backgroundColor: colors.background, flex: 1 }}
           contentInsetAdjustmentBehavior="automatic"
           keyboardShouldPersistTaps="handled"
-          style={{ backgroundColor: colors.background, flex: 1 }}
+          extraData={players.length}
+          style={{ backgroundColor: colors.background }}
           contentContainerStyle={{ gap: 10, padding: 20, paddingTop: 4, paddingBottom: 40 }}
           data={players}
           keyExtractor={(item) => item.id}
