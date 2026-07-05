@@ -1,5 +1,5 @@
 import { View } from 'react-native';
-import Svg, { Line } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 
 import { PlayerToken } from '@/components/player-token';
 import type { Conversation, Player, PlayerPosition } from '@/types/game';
@@ -74,15 +74,19 @@ export function GameMap({
                 }
 
                 return (
-                  <Line
+                  <Path
                     key={`${conversation.id}-${playerId}`}
+                    d={getConversationCurvePath(
+                      initiatorPosition,
+                      participantPosition,
+                      mapWidth,
+                      mapHeight,
+                    )}
+                    fill="none"
                     stroke="#38bdf8"
+                    strokeLinecap="round"
                     strokeOpacity={0.76}
                     strokeWidth={3}
-                    x1={initiatorPosition.x}
-                    x2={participantPosition.x}
-                    y1={initiatorPosition.y}
-                    y2={participantPosition.y}
                   />
                 );
               });
@@ -107,4 +111,36 @@ export function GameMap({
       ))}
     </View>
   );
+}
+
+function getConversationCurvePath(
+  from: PlayerPosition,
+  to: PlayerPosition,
+  mapWidth: number,
+  mapHeight: number,
+) {
+  const deltaX = to.x - from.x;
+  const deltaY = to.y - from.y;
+  const distance = Math.hypot(deltaX, deltaY);
+  const roomDistance = Math.hypot(mapWidth, mapHeight);
+  const curveDistance = roomDistance * 0.42;
+  const curveStrength = Math.max(0, 1 - distance / curveDistance);
+  const controlOffset = curveStrength * 76;
+  const midpointX = (from.x + to.x) / 2;
+  const midpointY = (from.y + to.y) / 2;
+
+  if (distance <= 0 || controlOffset <= 0) {
+    return `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
+  }
+
+  const normalX = -deltaY / distance;
+  const normalY = deltaX / distance;
+  const centerX = mapWidth / 2;
+  const centerY = mapHeight / 2;
+  const outwardSide =
+    normalX * (midpointX - centerX) + normalY * (midpointY - centerY) >= 0 ? 1 : -1;
+  const controlX = midpointX + normalX * controlOffset * outwardSide;
+  const controlY = midpointY + normalY * controlOffset * outwardSide;
+
+  return `M ${from.x} ${from.y} Q ${controlX} ${controlY} ${to.x} ${to.y}`;
 }
