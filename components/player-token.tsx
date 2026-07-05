@@ -13,12 +13,25 @@ import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
 
 type PlayerTokenProps = {
   mapSize: number;
+  interactionMode?: boolean;
+  isInitiator?: boolean;
+  isSelected?: boolean;
   player: Player;
   position: PlayerPosition;
   onMove: (playerId: string, position: PlayerPosition) => void;
+  onSelect?: (playerId: string) => void;
 };
 
-export function PlayerToken({ mapSize, player, position, onMove }: PlayerTokenProps) {
+export function PlayerToken({
+  interactionMode = false,
+  isInitiator = false,
+  isSelected = false,
+  mapSize,
+  onMove,
+  onSelect,
+  player,
+  position,
+}: PlayerTokenProps) {
   const tokenSize = getTokenSize();
   const x = useSharedValue(position.x);
   const y = useSharedValue(position.y);
@@ -53,6 +66,11 @@ export function PlayerToken({ mapSize, player, position, onMove }: PlayerTokenPr
     .onEnd(() => {
       runOnJS(onMove)(player.id, { x: x.value, y: y.value });
     });
+  const tap = Gesture.Tap().onEnd(() => {
+    if (onSelect) {
+      runOnJS(onSelect)(player.id);
+    }
+  });
 
   const animatedStyle = useAnimatedStyle(() => ({
     left: x.value - tokenSize / 2,
@@ -60,15 +78,15 @@ export function PlayerToken({ mapSize, player, position, onMove }: PlayerTokenPr
   }));
 
   return (
-    <GestureDetector gesture={pan}>
+    <GestureDetector gesture={interactionMode ? tap : pan}>
       <Animated.View
         style={[
           {
             alignItems: 'center',
-            backgroundColor: '#f8fafc',
-            borderColor: '#94a3b8',
+            backgroundColor: isInitiator ? '#fde68a' : isSelected ? '#bbf7d0' : '#f8fafc',
+            borderColor: isInitiator ? '#f59e0b' : isSelected ? '#22c55e' : '#94a3b8',
             borderRadius: tokenSize / 2,
-            borderWidth: 2,
+            borderWidth: isSelected ? 3 : 2,
             height: tokenSize,
             justifyContent: 'center',
             paddingHorizontal: 6,
