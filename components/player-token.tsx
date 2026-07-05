@@ -12,7 +12,8 @@ import type { Player, PlayerPosition } from '@/types/game';
 import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
 
 type PlayerTokenProps = {
-  mapSize: number;
+  mapHeight: number;
+  mapWidth: number;
   interactionMode?: boolean;
   isInitiator?: boolean;
   isSelected?: boolean;
@@ -26,7 +27,8 @@ export function PlayerToken({
   interactionMode = false,
   isInitiator = false,
   isSelected = false,
-  mapSize,
+  mapHeight,
+  mapWidth,
   onMove,
   onSelect,
   player,
@@ -57,7 +59,8 @@ export function PlayerToken({
           x: startX.value + event.translationX,
           y: startY.value + event.translationY,
         },
-        mapSize,
+        mapWidth,
+        mapHeight,
       );
 
       x.value = nextPosition.x;

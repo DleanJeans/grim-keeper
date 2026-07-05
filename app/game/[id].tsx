@@ -18,7 +18,7 @@ const gameTabs: { label: string; value: GameTab }[] = [
 
 export default function GameRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { width } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
   const games = useGameStore((state) => state.games);
   const updatePlayerPosition = useGameStore((state) => state.updatePlayerPosition);
   const addConversation = useGameStore((state) => state.addConversation);
@@ -28,7 +28,8 @@ export default function GameRoute() {
   const [interactionMode, setInteractionMode] = useState(false);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const game = getGameById(games, id);
-  const mapSize = Math.min(width - 40, 520);
+  const mapWidth = Math.max(1, width - 40);
+  const mapHeight = Math.max(mapWidth, Math.floor(height * 0.52));
 
   if (!game) {
     return (
@@ -169,7 +170,8 @@ export default function GameRoute() {
             activeDay={activeGame.activeDay}
             conversations={activeGame.conversations}
             interactionMode={interactionMode}
-            mapSize={mapSize}
+            mapHeight={mapHeight}
+            mapWidth={mapWidth}
             players={activeGame.players}
             onMovePlayer={(playerId, position) =>
               updatePlayerPosition(activeGame.id, playerId, position)

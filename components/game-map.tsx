@@ -9,7 +9,8 @@ type GameMapProps = {
   activeDay: number;
   conversations: Conversation[];
   interactionMode?: boolean;
-  mapSize: number;
+  mapHeight: number;
+  mapWidth: number;
   players: Player[];
   onMovePlayer: (playerId: string, position: PlayerPosition) => void;
   onSelectPlayer?: (playerId: string) => void;
@@ -20,14 +21,18 @@ export function GameMap({
   activeDay,
   conversations,
   interactionMode = false,
-  mapSize,
+  mapHeight,
+  mapWidth,
   onMovePlayer,
   onSelectPlayer,
   players,
   selectedPlayerIds = [],
 }: GameMapProps) {
   const positions = new Map(
-    players.map((player) => [player.id, getPlayerMapPosition(player, players, mapSize)]),
+    players.map((player) => [
+      player.id,
+      getPlayerMapPosition(player, players, mapWidth, mapHeight),
+    ]),
   );
 
   return (
@@ -36,15 +41,20 @@ export function GameMap({
         alignSelf: 'center',
         backgroundColor: '#111827',
         borderColor: '#334155',
-        borderRadius: mapSize / 2,
+        borderRadius: 8,
         borderWidth: 1,
-        height: mapSize,
+        height: mapHeight,
         overflow: 'hidden',
         position: 'relative',
-        width: mapSize,
+        width: mapWidth,
       }}
     >
-      <Svg height={mapSize} pointerEvents="none" style={{ position: 'absolute' }} width={mapSize}>
+      <Svg
+        height={mapHeight}
+        pointerEvents="none"
+        style={{ position: 'absolute' }}
+        width={mapWidth}
+      >
         {conversations
           .filter((conversation) => conversation.day === activeDay)
           .flatMap((conversation) => {
@@ -85,11 +95,14 @@ export function GameMap({
           interactionMode={interactionMode}
           isInitiator={selectedPlayerIds[0] === player.id}
           isSelected={selectedPlayerIds.includes(player.id)}
-          mapSize={mapSize}
+          mapHeight={mapHeight}
+          mapWidth={mapWidth}
           onMove={onMovePlayer}
           onSelect={onSelectPlayer}
           player={player}
-          position={positions.get(player.id) ?? getPlayerMapPosition(player, players, mapSize)}
+          position={
+            positions.get(player.id) ?? getPlayerMapPosition(player, players, mapWidth, mapHeight)
+          }
         />
       ))}
     </View>
