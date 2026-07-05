@@ -3,10 +3,17 @@ export type PlayerPosition = {
   y: number;
 };
 
+export type PlayerDeath = {
+  day: number;
+  kind: 'execution' | 'night';
+  updatedAt: string;
+};
+
 export type Player = {
   id: string;
   name: string;
   seat: number;
+  death?: PlayerDeath;
   position?: PlayerPosition;
 };
 

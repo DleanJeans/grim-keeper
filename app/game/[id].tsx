@@ -6,11 +6,14 @@ import {
   List,
   Map as MapIcon,
   MessageCircle,
+  Moon,
   Pointer,
   RotateCcw,
   RotateCw,
+  Skull,
   Table2,
   Trash2,
+  Undo2,
   UserPlus,
   Vote,
   X,
@@ -68,6 +71,7 @@ export default function GameRoute() {
   const games = useGameStore((state) => state.games);
   const addPlayer = useGameStore((state) => state.addPlayer);
   const deletePlayer = useGameStore((state) => state.deletePlayer);
+  const setPlayerDeath = useGameStore((state) => state.setPlayerDeath);
   const updatePlayerPosition = useGameStore((state) => state.updatePlayerPosition);
   const updatePlayerPositions = useGameStore((state) => state.updatePlayerPositions);
   const addConversation = useGameStore((state) => state.addConversation);
@@ -117,6 +121,9 @@ export default function GameRoute() {
   const trackingConfirmLabel = trackingMode === 'nomination' ? 'Confirm Nomination' : 'Confirm';
   const trackingCancelFlex = trackingMode === 'nomination' ? 0.82 : 1;
   const trackingConfirmFlex = trackingMode === 'nomination' ? 1.18 : 1;
+  const deadPlayerCount = activeGame.players.filter((player) => player.death).length;
+  const totalPlayerCount = activeGame.players.length;
+  const alivePlayerCount = totalPlayerCount - deadPlayerCount;
 
   function handleSelectPlayer(playerId: string) {
     if (votingNominationId) {
@@ -231,6 +238,26 @@ export default function GameRoute() {
       activeGame.id,
       rotatePlayerMapPositions(activeGame.players, mapWidth, mapHeight, angleRadians),
     );
+  }
+
+  function handleSetFocusedPlayerDeath(kind: 'execution' | 'night') {
+    if (!focusedPlayer) {
+      return;
+    }
+
+    setPlayerDeath(activeGame.id, focusedPlayer.id, {
+      day: activeGame.activeDay,
+      kind,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  function handleUndoFocusedPlayerDeath() {
+    if (!focusedPlayer?.death) {
+      return;
+    }
+
+    setPlayerDeath(activeGame.id, focusedPlayer.id, null);
   }
 
   function confirmDeletePlayer() {
@@ -354,6 +381,43 @@ export default function GameRoute() {
             <ChevronRight color="#f8fafc" size={17} strokeWidth={2.7} />
             <Text style={{ color: '#f8fafc' }}>Next</Text>
           </Pressable>
+        </View>
+
+        <View
+          style={{
+            backgroundColor: '#111827',
+            borderColor: '#334155',
+            borderRadius: 8,
+            borderWidth: 1,
+            flexDirection: 'row',
+            gap: 8,
+            padding: 4,
+          }}
+        >
+          {[
+            { label: 'Alive', value: alivePlayerCount },
+            { label: 'Dead', value: deadPlayerCount },
+            { label: 'Total', value: totalPlayerCount },
+          ].map((stat) => (
+            <View
+              key={stat.label}
+              style={{
+                alignItems: 'center',
+                backgroundColor: '#0f172a',
+                borderRadius: 6,
+                flex: 1,
+                gap: 3,
+                paddingVertical: 10,
+              }}
+            >
+              <Text style={{ color: '#94a3b8', fontSize: 12, fontWeight: '800' }}>
+                {stat.label}
+              </Text>
+              <Text style={{ color: '#f8fafc', fontSize: 18, fontWeight: '900' }}>
+                {stat.value}
+              </Text>
+            </View>
+          ))}
         </View>
 
         <View
@@ -523,71 +587,142 @@ export default function GameRoute() {
                 </Pressable>
               </View>
             ) : focusedPlayer ? (
-              <View
-                key="focused-player-actions"
-                style={{ alignSelf: 'stretch', flexDirection: 'row', gap: 10 }}
-              >
-                <Pressable
-                  accessibilityLabel={`Delete ${focusedPlayer.name}`}
-                  accessibilityRole="button"
-                  onPress={confirmDeletePlayer}
-                  style={({ pressed }) => ({
-                    alignItems: 'center',
-                    backgroundColor: pressed ? '#2a1517' : '#111827',
-                    borderColor: '#fca5a5',
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    minWidth: 48,
-                    justifyContent: 'center',
-                    paddingVertical: 14,
-                  })}
-                >
-                  <Trash2 color="#fca5a5" size={17} strokeWidth={2.7} />
-                </Pressable>
-                <Pressable
-                  accessibilityLabel={`Track interaction from ${focusedPlayer.name}`}
-                  accessibilityRole="button"
-                  onPress={() => handleStartTracking('interaction')}
-                  style={({ pressed }) => ({
-                    alignItems: 'center',
-                    backgroundColor: pressed ? '#1f2937' : '#111827',
-                    borderColor: '#334155',
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    flex: 1,
-                    flexBasis: 0,
-                    flexDirection: 'row',
-                    gap: 6,
-                    justifyContent: 'center',
-                    minWidth: 0,
-                    paddingVertical: 14,
-                  })}
-                >
-                  <MessageCircle color="#f8fafc" size={17} strokeWidth={2.7} />
-                  <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Interaction</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityLabel={`Track nomination from ${focusedPlayer.name}`}
-                  accessibilityRole="button"
-                  onPress={() => handleStartTracking('nomination')}
-                  style={({ pressed }) => ({
-                    alignItems: 'center',
-                    backgroundColor: pressed ? '#1f2937' : '#111827',
-                    borderColor: '#334155',
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    flex: 1,
-                    flexBasis: 0,
-                    flexDirection: 'row',
-                    gap: 6,
-                    justifyContent: 'center',
-                    minWidth: 0,
-                    paddingVertical: 14,
-                  })}
-                >
-                  <Pointer color="#f8fafc" size={17} strokeWidth={2.7} />
-                  <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Nomination</Text>
-                </Pressable>
+              <View key="focused-player-actions" style={{ alignSelf: 'stretch', gap: 10 }}>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <Pressable
+                    accessibilityLabel={`Mark ${focusedPlayer.name} dead by execution`}
+                    accessibilityRole="button"
+                    onPress={() => handleSetFocusedPlayerDeath('execution')}
+                    style={({ pressed }) => ({
+                      alignItems: 'center',
+                      backgroundColor: pressed ? '#1f2937' : '#111827',
+                      borderColor:
+                        focusedPlayer.death?.kind === 'execution' ? '#fca5a5' : '#334155',
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      flex: 1,
+                      flexBasis: 0,
+                      flexDirection: 'row',
+                      gap: 6,
+                      justifyContent: 'center',
+                      minWidth: 0,
+                      paddingVertical: 14,
+                    })}
+                  >
+                    <Skull color="#fca5a5" size={17} strokeWidth={2.7} />
+                    <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Execution</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityLabel={`Mark ${focusedPlayer.name} dead at night`}
+                    accessibilityRole="button"
+                    onPress={() => handleSetFocusedPlayerDeath('night')}
+                    style={({ pressed }) => ({
+                      alignItems: 'center',
+                      backgroundColor: pressed ? '#1f2937' : '#111827',
+                      borderColor: focusedPlayer.death?.kind === 'night' ? '#93c5fd' : '#334155',
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      flex: 1,
+                      flexBasis: 0,
+                      flexDirection: 'row',
+                      gap: 6,
+                      justifyContent: 'center',
+                      minWidth: 0,
+                      paddingVertical: 14,
+                    })}
+                  >
+                    <Moon color="#93c5fd" size={17} strokeWidth={2.7} />
+                    <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Night</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityLabel={`Undo death for ${focusedPlayer.name}`}
+                    accessibilityRole="button"
+                    disabled={!focusedPlayer.death}
+                    onPress={handleUndoFocusedPlayerDeath}
+                    style={({ pressed }) => ({
+                      alignItems: 'center',
+                      backgroundColor: pressed ? '#1f2937' : '#111827',
+                      borderColor: focusedPlayer.death ? '#334155' : '#1f2937',
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      flex: 0.72,
+                      flexBasis: 0,
+                      flexDirection: 'row',
+                      gap: 6,
+                      justifyContent: 'center',
+                      minWidth: 0,
+                      opacity: focusedPlayer.death ? 1 : 0.48,
+                      paddingVertical: 14,
+                    })}
+                  >
+                    <Undo2 color="#f8fafc" size={17} strokeWidth={2.7} />
+                    <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Undo</Text>
+                  </Pressable>
+                </View>
+
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <Pressable
+                    accessibilityLabel={`Delete ${focusedPlayer.name}`}
+                    accessibilityRole="button"
+                    onPress={confirmDeletePlayer}
+                    style={({ pressed }) => ({
+                      alignItems: 'center',
+                      backgroundColor: pressed ? '#2a1517' : '#111827',
+                      borderColor: '#fca5a5',
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      justifyContent: 'center',
+                      minWidth: 48,
+                      paddingVertical: 14,
+                    })}
+                  >
+                    <Trash2 color="#fca5a5" size={17} strokeWidth={2.7} />
+                  </Pressable>
+                  <Pressable
+                    accessibilityLabel={`Track interaction from ${focusedPlayer.name}`}
+                    accessibilityRole="button"
+                    onPress={() => handleStartTracking('interaction')}
+                    style={({ pressed }) => ({
+                      alignItems: 'center',
+                      backgroundColor: pressed ? '#1f2937' : '#111827',
+                      borderColor: '#334155',
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      flex: 1,
+                      flexBasis: 0,
+                      flexDirection: 'row',
+                      gap: 6,
+                      justifyContent: 'center',
+                      minWidth: 0,
+                      paddingVertical: 14,
+                    })}
+                  >
+                    <MessageCircle color="#f8fafc" size={17} strokeWidth={2.7} />
+                    <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Interaction</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityLabel={`Track nomination from ${focusedPlayer.name}`}
+                    accessibilityRole="button"
+                    onPress={() => handleStartTracking('nomination')}
+                    style={({ pressed }) => ({
+                      alignItems: 'center',
+                      backgroundColor: pressed ? '#1f2937' : '#111827',
+                      borderColor: '#334155',
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      flex: 1,
+                      flexBasis: 0,
+                      flexDirection: 'row',
+                      gap: 6,
+                      justifyContent: 'center',
+                      minWidth: 0,
+                      paddingVertical: 14,
+                    })}
+                  >
+                    <Pointer color="#f8fafc" size={17} strokeWidth={2.7} />
+                    <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Nomination</Text>
+                  </Pressable>
+                </View>
               </View>
             ) : (
               <View

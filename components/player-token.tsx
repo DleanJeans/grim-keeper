@@ -86,10 +86,23 @@ export function PlayerToken({
         style={[
           {
             alignItems: 'center',
-            backgroundColor: isInitiator ? '#fde68a' : isSelected ? '#bbf7d0' : '#f8fafc',
-            borderColor: isInitiator ? '#f59e0b' : isSelected ? '#22c55e' : '#94a3b8',
+            backgroundColor: player.death
+              ? '#1f2937'
+              : isInitiator
+                ? '#fde68a'
+                : isSelected
+                  ? '#bbf7d0'
+                  : '#f8fafc',
+            borderColor: player.death
+              ? '#64748b'
+              : isInitiator
+                ? '#f59e0b'
+                : isSelected
+                  ? '#22c55e'
+                  : '#94a3b8',
             borderRadius: tokenSize / 2,
             borderWidth: isSelected ? 3 : 2,
+            opacity: player.death ? 0.72 : 1,
             height: tokenSize,
             justifyContent: 'center',
             paddingHorizontal: 6,
@@ -103,7 +116,7 @@ export function PlayerToken({
         <Text
           numberOfLines={2}
           style={{
-            color: '#0b1120',
+            color: player.death ? '#cbd5e1' : '#0b1120',
             fontSize: 12,
             fontWeight: '800',
             lineHeight: 15,

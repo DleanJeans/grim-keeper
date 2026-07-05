@@ -3,7 +3,7 @@ import 'expo-sqlite/localStorage/install';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import type { Conversation, Game, Player, PlayerPosition } from '@/types/game';
+import type { Conversation, Game, Player, PlayerDeath, PlayerPosition } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
 
 type CreateGameInput = {
@@ -16,6 +16,7 @@ type GameState = {
   addPlayer: (gameId: string, name: string) => void;
   deleteGame: (gameId: string) => void;
   deletePlayer: (gameId: string, playerId: string) => void;
+  setPlayerDeath: (gameId: string, playerId: string, death: PlayerDeath | null) => void;
   setActiveDay: (gameId: string, day: number) => void;
   updatePlayerPosition: (gameId: string, playerId: string, position: PlayerPosition) => void;
   updatePlayerPositions: (gameId: string, positions: Record<string, PlayerPosition>) => void;
@@ -122,6 +123,26 @@ export const useGameStore = create<GameState>()(
                 })),
             };
           }),
+        }));
+      },
+      setPlayerDeath: (gameId, playerId, death) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? {
+                  ...game,
+                  updatedAt: new Date().toISOString(),
+                  players: game.players.map((player) =>
+                    player.id === playerId
+                      ? {
+                          ...player,
+                          death: death ?? undefined,
+                        }
+                      : player,
+                  ),
+                }
+              : game,
+          ),
         }));
       },
       setActiveDay: (gameId, day) => {
