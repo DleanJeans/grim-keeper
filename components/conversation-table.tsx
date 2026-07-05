@@ -1,5 +1,6 @@
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 
+import { Text } from '@/components/text';
 import type { Conversation, Player } from '@/types/game';
 import { buildConversationRows } from '@/utils/conversation-utils';
 

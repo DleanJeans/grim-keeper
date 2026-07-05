@@ -1,8 +1,10 @@
 import { router } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
-import { Keyboard, Pressable, Text, TextInput, View } from 'react-native';
+import type { TextInput as RNTextInput } from 'react-native';
+import { Keyboard, Pressable, View } from 'react-native';
 import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
 
+import { Text, TextInput } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { hasDuplicatePlayerName, normalizePlayerName } from '@/utils/conversation-utils';
@@ -14,7 +16,7 @@ type DraftPlayer = {
 
 export default function CreateRoute() {
   const createGame = useGameStore((state) => state.createGame);
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<RNTextInput>(null);
   const [name, setName] = useState('');
   const [players, setPlayers] = useState<DraftPlayer[]>([]);
   const playerOrderKey = useMemo(() => players.map((player) => player.id).join('|'), [players]);

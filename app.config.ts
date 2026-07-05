@@ -52,7 +52,16 @@ const config: ExpoConfig = {
       projectId,
     },
   },
-  plugins: ['expo-router', 'expo-sqlite'],
+  plugins: [
+    'expo-router',
+    'expo-sqlite',
+    [
+      'expo-font',
+      {
+        fonts: ['./assets/fonts/GoogleSans.ttf', './assets/fonts/GoogleSans-Bold.ttf'],
+      },
+    ],
+  ],
   owner: 'dleanjeans',
 };
 

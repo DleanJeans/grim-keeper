@@ -1,9 +1,10 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 
 import { ConversationTable } from '@/components/conversation-table';
 import { GameMap } from '@/components/game-map';
+import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
 
 type GameTab = 'map' | 'table';

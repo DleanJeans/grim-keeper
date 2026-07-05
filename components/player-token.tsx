@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { Text } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
@@ -8,6 +7,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
+import { Text } from '@/components/text';
 import type { Player, PlayerPosition } from '@/types/game';
 import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
 

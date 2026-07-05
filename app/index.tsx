@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
+import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 
 export default function HomeRoute() {
