@@ -85,6 +85,7 @@ export default function GameRoute() {
   const [votingNominationId, setVotingNominationId] = useState<string | null>(null);
   const [votingReturnTab, setVotingReturnTab] = useState<GameTab | null>(null);
   const [focusedPlayerId, setFocusedPlayerId] = useState<string | null>(null);
+  const [isRotatingMode, setIsRotatingMode] = useState(false);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const game = getGameById(games, id);
   const mapWidth = Math.max(1, width - 40);
@@ -136,6 +137,7 @@ export default function GameRoute() {
     }
 
     if (!trackingMode) {
+      setIsRotatingMode(false);
       setFocusedPlayerId((currentPlayerId) => (currentPlayerId === playerId ? null : playerId));
       return;
     }
@@ -162,10 +164,12 @@ export default function GameRoute() {
     }
 
     setTrackingMode(mode);
+    setIsRotatingMode(false);
     setSelectedPlayerIds([focusedPlayerId]);
   }
 
   function handleCancelTracking() {
+    setIsRotatingMode(false);
     setTrackingMode(null);
     setVotingNominationId(null);
     setVotingReturnTab(null);
@@ -230,6 +234,7 @@ export default function GameRoute() {
 
   function handleChangeDay(day: number) {
     handleCancelTracking();
+    setIsRotatingMode(false);
     setActiveDay(activeGame.id, day);
   }
 
@@ -422,7 +427,10 @@ export default function GameRoute() {
             <Pressable
               key={tab.value}
               accessibilityRole="button"
-              onPress={() => setActiveTab(tab.value)}
+              onPress={() => {
+                setIsRotatingMode(false);
+                setActiveTab(tab.value);
+              }}
               style={{
                 alignItems: 'center',
                 backgroundColor: activeTab === tab.value ? '#f8fafc' : 'transparent',
@@ -719,7 +727,7 @@ export default function GameRoute() {
                   </Pressable>
                 </View>
               </View>
-            ) : (
+            ) : isRotatingMode ? (
               <View
                 key="rotate-actions"
                 style={{ alignSelf: 'stretch', flexDirection: 'row', gap: 10 }}
@@ -767,6 +775,50 @@ export default function GameRoute() {
                 >
                   <RotateCw color="#f8fafc" size={17} strokeWidth={2.7} />
                   <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Right</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityLabel="Done rotating tokens"
+                  accessibilityRole="button"
+                  onPress={() => setIsRotatingMode(false)}
+                  style={({ pressed }) => ({
+                    alignItems: 'center',
+                    backgroundColor: pressed ? '#dbeafe' : '#f8fafc',
+                    borderColor: '#f8fafc',
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    justifyContent: 'center',
+                    minWidth: 48,
+                    paddingVertical: 14,
+                    width: 48,
+                  })}
+                >
+                  <Check color="#0b1120" size={17} strokeWidth={2.8} />
+                </Pressable>
+              </View>
+            ) : (
+              <View
+                key="rotate-toggle-action"
+                style={{ alignSelf: 'stretch', flexDirection: 'row', gap: 10 }}
+              >
+                <Pressable
+                  accessibilityLabel="Enter rotating mode"
+                  accessibilityRole="button"
+                  onPress={() => setIsRotatingMode(true)}
+                  style={({ pressed }) => ({
+                    alignItems: 'center',
+                    backgroundColor: pressed ? '#1f2937' : '#111827',
+                    borderColor: '#334155',
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    flex: 1,
+                    flexDirection: 'row',
+                    gap: 6,
+                    justifyContent: 'center',
+                    paddingVertical: 14,
+                  })}
+                >
+                  <RotateCw color="#f8fafc" size={17} strokeWidth={2.7} />
+                  <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Rotate</Text>
                 </Pressable>
               </View>
             )}
