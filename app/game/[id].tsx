@@ -34,10 +34,10 @@ type GameTab = 'map' | 'interactions' | 'nominations';
 type InteractionSubtab = 'list' | 'table';
 type TrackingMode = 'interaction' | 'nomination';
 
-const gameTabs: { label: string; value: GameTab }[] = [
-  { label: 'Map', value: 'map' },
-  { label: 'Interactions', value: 'interactions' },
-  { label: 'Noms', value: 'nominations' },
+const gameTabs: { flex: number; label: string; value: GameTab }[] = [
+  { flex: 0.85, label: 'Map', value: 'map' },
+  { flex: 1.3, label: 'Interactions', value: 'interactions' },
+  { flex: 0.85, label: 'Noms', value: 'nominations' },
 ];
 const interactionSubtabs: { label: string; value: InteractionSubtab }[] = [
   { label: 'List', value: 'list' },
@@ -435,7 +435,7 @@ export default function GameRoute() {
                 alignItems: 'center',
                 backgroundColor: activeTab === tab.value ? '#f8fafc' : 'transparent',
                 borderRadius: 6,
-                flex: 1,
+                flex: tab.flex,
                 flexDirection: 'row',
                 gap: 4,
                 justifyContent: 'center',
