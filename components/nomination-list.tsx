@@ -1,4 +1,4 @@
-import { Pencil, Trash2 } from 'lucide-react-native';
+import { Hand, Pencil, Pointer, Trash2 } from 'lucide-react-native';
 import { Alert, Pressable, View } from 'react-native';
 
 import { Text } from '@/components/text';
@@ -80,9 +80,17 @@ export function NominationList({
                 >
                   Nomination {index + 1}
                 </Text>
-                <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
-                  {nominatorName} nominated {nomineeName}
-                </Text>
+                <View style={{ alignItems: 'center', flexDirection: 'row', gap: 6 }}>
+                  <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
+                    {nominatorName}
+                  </Text>
+                  <View style={{ transform: [{ rotate: '90deg' }] }}>
+                    <Pointer color={colors.text} size={16} />
+                  </View>
+                  <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
+                    {nomineeName}
+                  </Text>
+                </View>
               </View>
               <Pressable
                 accessibilityRole="button"
@@ -122,19 +130,23 @@ export function NominationList({
                   borderWidth: 1,
                   flexDirection: 'row',
                   gap: 6,
-                  paddingHorizontal: 12,
+                  paddingHorizontal: 8,
                   paddingVertical: 8,
                 })}
               >
                 <Trash2 color={colors.danger} size={15} strokeWidth={2.6} />
-                <Text style={{ color: colors.danger, fontSize: 13, fontWeight: '800' }}>
-                  Delete
-                </Text>
               </Pressable>
             </View>
-            <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
-              Voted: {voterNames.length > 0 ? voterNames.join(', ') : 'No votes recorded'}
-            </Text>
+            <View>
+              <Text
+                selectable
+                style={{ color: colors.textMuted, fontSize: 14, gap: 8, lineHeight: 20 }}
+              >
+                <Hand color={colors.textMuted} size={12} />{' '}
+                {voterNames.length > 0 ? voterNames.join(', ') : 'No votes recorded'} (
+                {voterNames.length})
+              </Text>
+            </View>
           </View>
         );
       })}
