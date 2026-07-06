@@ -287,56 +287,60 @@ export default function GameRoute() {
       <Stack.Screen
         options={{
           title: `Day ${activeGame.activeDay}`,
-          headerLeft: () => (
-            <Pressable
-              accessibilityRole="button"
-              disabled={activeGame.activeDay === 1}
-              onPress={() => handleChangeDay(activeGame.activeDay - 1)}
-              style={({ pressed }) => ({
-                alignItems: 'center',
-                backgroundColor: activeGame.activeDay === 1 ? '#1f2937' : '#334155',
-                borderRadius: 8,
-                flexDirection: 'row',
-                gap: 4,
-                opacity: pressed ? 0.75 : 1,
-                paddingHorizontal: 9,
-                paddingVertical: 7,
-              })}
-            >
-              <ChevronLeft
-                color={activeGame.activeDay === 1 ? '#64748b' : '#f8fafc'}
-                size={15}
-                strokeWidth={2.7}
-              />
+          headerTitle: () => (
+            <View style={{ alignItems: 'center', flexDirection: 'row', gap: 8 }}>
+              <Pressable
+                accessibilityLabel="Previous day"
+                accessibilityRole="button"
+                disabled={activeGame.activeDay === 1}
+                onPress={() => handleChangeDay(activeGame.activeDay - 1)}
+                style={({ pressed }) => ({
+                  alignItems: 'center',
+                  backgroundColor: activeGame.activeDay === 1 ? '#1f2937' : '#334155',
+                  borderRadius: 8,
+                  height: 32,
+                  justifyContent: 'center',
+                  opacity: pressed ? 0.75 : 1,
+                  width: 34,
+                })}
+              >
+                <ChevronLeft
+                  color={activeGame.activeDay === 1 ? '#64748b' : '#f8fafc'}
+                  size={15}
+                  strokeWidth={2.7}
+                />
+              </Pressable>
               <Text
+                selectable
                 style={{
-                  color: activeGame.activeDay === 1 ? '#64748b' : '#f8fafc',
-                  fontSize: 12,
+                  color: '#f8fafc',
+                  fontSize: 15,
                   fontWeight: '900',
+                  minWidth: 54,
+                  textAlign: 'center',
                 }}
               >
-                Previous
+                Day {activeGame.activeDay}
               </Text>
-            </Pressable>
-          ),
-          headerRight: () => (
-            <View style={{ flexDirection: 'row', gap: 8 }}>
               <Pressable
+                accessibilityLabel="Next day"
                 accessibilityRole="button"
                 onPress={() => handleChangeDay(activeGame.activeDay + 1)}
                 style={({ pressed }) => ({
                   alignItems: 'center',
                   backgroundColor: pressed ? '#475569' : '#334155',
                   borderRadius: 8,
-                  flexDirection: 'row',
-                  gap: 4,
-                  paddingHorizontal: 9,
-                  paddingVertical: 7,
+                  height: 32,
+                  justifyContent: 'center',
+                  width: 34,
                 })}
               >
-                <Text style={{ color: '#f8fafc', fontSize: 12, fontWeight: '900' }}>Next</Text>
                 <ChevronRight color="#f8fafc" size={15} strokeWidth={2.7} />
               </Pressable>
+            </View>
+          ),
+          headerRight: () => (
+            <View style={{ flexDirection: 'row' }}>
               <Pressable
                 accessibilityLabel="Add missing player"
                 accessibilityRole="button"

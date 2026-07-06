@@ -46,6 +46,7 @@ function CompactHeader({ back, navigation, options, route }: NativeStackHeaderPr
   const insets = useSafeAreaInsets();
   const HeaderLeft = options.headerLeft;
   const HeaderRight = options.headerRight;
+  const HeaderTitle = typeof options.headerTitle === 'function' ? options.headerTitle : null;
   const title =
     typeof options.headerTitle === 'string' ? options.headerTitle : options.title || route.name;
 
@@ -66,9 +67,15 @@ function CompactHeader({ back, navigation, options, route }: NativeStackHeaderPr
           ) : null}
           {HeaderLeft ? <HeaderLeft canGoBack={Boolean(back)} tintColor={colors.text} /> : null}
         </View>
-        <Text numberOfLines={1} style={[styles.headerTitle, options.headerTitleStyle]}>
-          {title}
-        </Text>
+        <View style={styles.headerTitleSlot}>
+          {HeaderTitle ? (
+            HeaderTitle({ children: title, tintColor: colors.text })
+          ) : (
+            <Text numberOfLines={1} style={[styles.headerTitle, options.headerTitleStyle]}>
+              {title}
+            </Text>
+          )}
+        </View>
         <View style={[styles.headerSide, styles.headerRight]}>
           {HeaderRight ? <HeaderRight canGoBack={Boolean(back)} tintColor={colors.text} /> : null}
         </View>
@@ -155,10 +162,14 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: colors.text,
-    flex: 0.75,
     fontFamily: 'GoogleSans-Bold',
     fontSize: 15,
     textAlign: 'center',
+  },
+  headerTitleSlot: {
+    alignItems: 'center',
+    flex: 0.75,
+    justifyContent: 'center',
   },
   pressed: {
     opacity: 0.65,
