@@ -32,6 +32,7 @@ export type Game = {
   createdAt: string;
   updatedAt: string;
   activeDay: number;
+  tokenSize?: number;
   players: Player[];
   conversations: Conversation[];
 };

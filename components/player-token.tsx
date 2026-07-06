@@ -21,6 +21,7 @@ type PlayerTokenProps = {
   isSelected?: boolean;
   player: Player;
   position: PlayerPosition;
+  tokenSize: number;
   onMove: (playerId: string, position: PlayerPosition) => void;
   onSelect?: (playerId: string) => void;
 };
@@ -35,9 +36,10 @@ export function PlayerToken({
   onSelect,
   player,
   position,
+  tokenSize: tokenSizeProp,
 }: PlayerTokenProps) {
   const [isDragReady, setIsDragReady] = useState(false);
-  const tokenSize = getTokenSize();
+  const tokenSize = getTokenSize(tokenSizeProp);
   const DeathIcon = player.death?.kind === 'execution' ? Skull : Swords;
   const deathIconColor = player.death?.kind === 'execution' ? '#fecaca' : '#bfdbfe';
   const x = useSharedValue(position.x);
@@ -67,6 +69,7 @@ export function PlayerToken({
         },
         mapWidth,
         mapHeight,
+        tokenSize,
       );
 
       x.value = nextPosition.x;

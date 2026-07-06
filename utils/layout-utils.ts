@@ -1,9 +1,14 @@
 import type { Player, PlayerPosition } from '@/types/game';
 
-const tokenSize = 68;
+export const defaultTokenSize = 68;
+export const minTokenSize = 52;
+export const maxTokenSize = 92;
+export const tokenSizeStep = 8;
 
-export function getTokenSize() {
-  return tokenSize;
+export function getTokenSize(tokenSize = defaultTokenSize) {
+  'worklet';
+
+  return Math.min(maxTokenSize, Math.max(minTokenSize, tokenSize));
 }
 
 export function getPlayerMapPosition(
@@ -11,14 +16,17 @@ export function getPlayerMapPosition(
   players: Player[],
   mapWidth: number,
   mapHeight: number,
+  tokenSize = defaultTokenSize,
 ): PlayerPosition {
+  const resolvedTokenSize = getTokenSize(tokenSize);
+
   if (player.position) {
-    return clampTokenPosition(player.position, mapWidth, mapHeight);
+    return clampTokenPosition(player.position, mapWidth, mapHeight, resolvedTokenSize);
   }
 
   const centerX = mapWidth / 2;
   const centerY = mapHeight / 2;
-  const radius = Math.max(0, (Math.min(mapWidth, mapHeight) - tokenSize - 28) / 2);
+  const radius = Math.max(0, (Math.min(mapWidth, mapHeight) - resolvedTokenSize - 28) / 2);
   const sortedPlayers = [...players].sort((first, second) => first.seat - second.seat);
   const index = sortedPlayers.findIndex((candidate) => candidate.id === player.id);
   const angle = (Math.PI * 2 * index) / Math.max(1, sortedPlayers.length) - Math.PI / 2;
@@ -33,10 +41,11 @@ export function clampTokenPosition(
   position: PlayerPosition,
   mapWidth: number,
   mapHeight: number,
+  tokenSize = defaultTokenSize,
 ): PlayerPosition {
   'worklet';
 
-  const inset = tokenSize / 2;
+  const inset = getTokenSize(tokenSize) / 2;
   const maxX = Math.max(inset, mapWidth - inset);
   const maxY = Math.max(inset, mapHeight - inset);
 
@@ -51,6 +60,7 @@ export function rotatePlayerMapPositions(
   mapWidth: number,
   mapHeight: number,
   angleRadians: number,
+  tokenSize = defaultTokenSize,
 ): Record<string, PlayerPosition> {
   const centerX = mapWidth / 2;
   const centerY = mapHeight / 2;
@@ -59,7 +69,7 @@ export function rotatePlayerMapPositions(
 
   return Object.fromEntries(
     players.map((player) => {
-      const position = getPlayerMapPosition(player, players, mapWidth, mapHeight);
+      const position = getPlayerMapPosition(player, players, mapWidth, mapHeight, tokenSize);
       const relativeX = position.x - centerX;
       const relativeY = position.y - centerY;
 
@@ -72,6 +82,7 @@ export function rotatePlayerMapPositions(
           },
           mapWidth,
           mapHeight,
+          tokenSize,
         ),
       ];
     }),

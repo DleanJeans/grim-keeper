@@ -12,6 +12,7 @@ type GameMapProps = {
   mapHeight: number;
   mapWidth: number;
   players: Player[];
+  tokenSize: number;
   onMovePlayer: (playerId: string, position: PlayerPosition) => void;
   onSelectPlayer?: (playerId: string) => void;
   selectedPlayerIds?: string[];
@@ -27,11 +28,12 @@ export function GameMap({
   onSelectPlayer,
   players,
   selectedPlayerIds = [],
+  tokenSize,
 }: GameMapProps) {
   const positions = new Map(
     players.map((player) => [
       player.id,
-      getPlayerMapPosition(player, players, mapWidth, mapHeight),
+      getPlayerMapPosition(player, players, mapWidth, mapHeight, tokenSize),
     ]),
   );
 
@@ -83,6 +85,7 @@ export function GameMap({
                       participantPosition,
                       mapWidth,
                       mapHeight,
+                      tokenSize,
                       players
                         .filter(
                           (player) =>
@@ -113,8 +116,10 @@ export function GameMap({
           onMove={onMovePlayer}
           onSelect={onSelectPlayer}
           player={player}
+          tokenSize={tokenSize}
           position={
-            positions.get(player.id) ?? getPlayerMapPosition(player, players, mapWidth, mapHeight)
+            positions.get(player.id) ??
+            getPlayerMapPosition(player, players, mapWidth, mapHeight, tokenSize)
           }
         />
       ))}
@@ -127,6 +132,7 @@ function getConversationCurvePath(
   to: PlayerPosition,
   mapWidth: number,
   mapHeight: number,
+  tokenSize: number,
   blockers: PlayerPosition[],
 ) {
   const deltaX = to.x - from.x;
@@ -156,17 +162,18 @@ function getConversationCurvePath(
     return `M ${from.x} ${from.y} Q ${controlX} ${controlY} ${to.x} ${to.y}`;
   }
 
-  return getClippedQuadraticPath(from, { x: controlX, y: controlY }, to, blockers);
+  return getClippedQuadraticPath(from, { x: controlX, y: controlY }, to, tokenSize, blockers);
 }
 
 function getClippedQuadraticPath(
   from: PlayerPosition,
   control: PlayerPosition,
   to: PlayerPosition,
+  tokenSize: number,
   blockers: PlayerPosition[],
 ) {
   const samples = 48;
-  const blockerRadius = getTokenSize() / 2 + 5;
+  const blockerRadius = getTokenSize(tokenSize) / 2 + 5;
   const commands: string[] = [];
   let drawing = false;
 

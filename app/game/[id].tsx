@@ -7,6 +7,8 @@ import {
   List,
   Map as MapIcon,
   MessageCircle,
+  Minus,
+  Plus,
   Pointer,
   RotateCcw,
   RotateCw,
@@ -29,7 +31,13 @@ import { InteractionList } from '@/components/interaction-list';
 import { NominationList } from '@/components/nomination-list';
 import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
-import { rotatePlayerMapPositions } from '@/utils/layout-utils';
+import {
+  getTokenSize,
+  maxTokenSize,
+  minTokenSize,
+  rotatePlayerMapPositions,
+  tokenSizeStep,
+} from '@/utils/layout-utils';
 
 type GameTab = 'map' | 'interactions' | 'nominations';
 type InteractionSubtab = 'list' | 'table';
@@ -79,6 +87,7 @@ export default function GameRoute() {
   const updateNominationVotes = useGameStore((state) => state.updateNominationVotes);
   const deleteConversation = useGameStore((state) => state.deleteConversation);
   const setActiveDay = useGameStore((state) => state.setActiveDay);
+  const setTokenSize = useGameStore((state) => state.setTokenSize);
   const [activeTab, setActiveTab] = useState<GameTab>('map');
   const [interactionSubtab, setInteractionSubtab] = useState<InteractionSubtab>('list');
   const [addPlayerVisible, setAddPlayerVisible] = useState(false);
@@ -123,6 +132,7 @@ export default function GameRoute() {
   const trackingConfirmLabel = trackingMode === 'nomination' ? 'Confirm Nomination' : 'Confirm';
   const trackingCancelFlex = trackingMode === 'nomination' ? 0.82 : 1;
   const trackingConfirmFlex = trackingMode === 'nomination' ? 1.18 : 1;
+  const activeTokenSize = getTokenSize(activeGame.tokenSize);
   const deadPlayerCount = activeGame.players.filter((player) => player.death).length;
   const alivePlayerCount = activeGame.players.length - deadPlayerCount;
 
@@ -241,8 +251,18 @@ export default function GameRoute() {
   function handleRotateTokens(angleRadians: number) {
     updatePlayerPositions(
       activeGame.id,
-      rotatePlayerMapPositions(activeGame.players, mapWidth, mapHeight, angleRadians),
+      rotatePlayerMapPositions(
+        activeGame.players,
+        mapWidth,
+        mapHeight,
+        angleRadians,
+        activeTokenSize,
+      ),
     );
+  }
+
+  function handleResizeTokens(sizeDelta: number) {
+    setTokenSize(activeGame.id, activeTokenSize + sizeDelta);
   }
 
   function handleSetFocusedPlayerDeath(kind: 'execution' | 'night') {
@@ -444,6 +464,7 @@ export default function GameRoute() {
               mapHeight={mapHeight}
               mapWidth={mapWidth}
               players={activeGame.players}
+              tokenSize={activeTokenSize}
               onMovePlayer={(playerId, position) =>
                 updatePlayerPosition(activeGame.id, playerId, position)
               }
@@ -780,6 +801,26 @@ export default function GameRoute() {
                 style={{ alignSelf: 'stretch', flexDirection: 'row', gap: 10 }}
               >
                 <Pressable
+                  accessibilityLabel="Shrink player tokens"
+                  accessibilityRole="button"
+                  disabled={activeTokenSize <= minTokenSize}
+                  onPress={() => handleResizeTokens(-tokenSizeStep)}
+                  style={({ pressed }) => ({
+                    alignItems: 'center',
+                    backgroundColor: pressed ? '#1f2937' : '#111827',
+                    borderColor: activeTokenSize <= minTokenSize ? '#1f2937' : '#334155',
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    justifyContent: 'center',
+                    minWidth: 48,
+                    opacity: activeTokenSize <= minTokenSize ? 0.48 : 1,
+                    paddingVertical: 14,
+                    width: 48,
+                  })}
+                >
+                  <Minus color="#f8fafc" size={17} strokeWidth={2.7} />
+                </Pressable>
+                <Pressable
                   accessibilityLabel="Enter rotating mode"
                   accessibilityRole="button"
                   onPress={() => setIsRotatingMode(true)}
@@ -797,7 +838,29 @@ export default function GameRoute() {
                   })}
                 >
                   <RotateCw color="#f8fafc" size={17} strokeWidth={2.7} />
-                  <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Rotate</Text>
+                  <Text style={{ color: '#f8fafc', fontWeight: '900' }}>
+                    Rotate · {activeTokenSize}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityLabel="Enlarge player tokens"
+                  accessibilityRole="button"
+                  disabled={activeTokenSize >= maxTokenSize}
+                  onPress={() => handleResizeTokens(tokenSizeStep)}
+                  style={({ pressed }) => ({
+                    alignItems: 'center',
+                    backgroundColor: pressed ? '#1f2937' : '#111827',
+                    borderColor: activeTokenSize >= maxTokenSize ? '#1f2937' : '#334155',
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    justifyContent: 'center',
+                    minWidth: 48,
+                    opacity: activeTokenSize >= maxTokenSize ? 0.48 : 1,
+                    paddingVertical: 14,
+                    width: 48,
+                  })}
+                >
+                  <Plus color="#f8fafc" size={17} strokeWidth={2.7} />
                 </Pressable>
               </View>
             )}

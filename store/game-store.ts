@@ -5,6 +5,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import type { Conversation, Game, Player, PlayerDeath, PlayerPosition } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
+import { getTokenSize } from '@/utils/layout-utils';
 
 type CreateGameInput = {
   playerNames: string[];
@@ -17,6 +18,7 @@ type GameState = {
   deleteGame: (gameId: string) => void;
   deletePlayer: (gameId: string, playerId: string) => void;
   setPlayerDeath: (gameId: string, playerId: string, death: PlayerDeath | null) => void;
+  setTokenSize: (gameId: string, tokenSize: number) => void;
   setActiveDay: (gameId: string, day: number) => void;
   updatePlayerPosition: (gameId: string, playerId: string, position: PlayerPosition) => void;
   updatePlayerPositions: (gameId: string, positions: Record<string, PlayerPosition>) => void;
@@ -46,6 +48,7 @@ export const useGameStore = create<GameState>()(
           createdAt: now,
           updatedAt: now,
           activeDay: 1,
+          tokenSize: getTokenSize(),
           players,
           conversations: [],
         };
@@ -140,6 +143,19 @@ export const useGameStore = create<GameState>()(
                         }
                       : player,
                   ),
+                }
+              : game,
+          ),
+        }));
+      },
+      setTokenSize: (gameId, tokenSize) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? {
+                  ...game,
+                  tokenSize: getTokenSize(tokenSize),
+                  updatedAt: new Date().toISOString(),
                 }
               : game,
           ),
