@@ -140,7 +140,7 @@ function getConversationCurvePath(
   const distance = Math.hypot(deltaX, deltaY);
   const roomDistance = Math.hypot(mapWidth, mapHeight);
   const curveStrength = Math.max(0, 1 - distance / roomDistance);
-  const controlOffset = 24 + curveStrength * 64;
+  const baseControlOffset = 24 + curveStrength * 64;
   const midpointX = (from.x + to.x) / 2;
   const midpointY = (from.y + to.y) / 2;
 
@@ -153,50 +153,57 @@ function getConversationCurvePath(
   const centerDeltaX = centerX - midpointX;
   const centerDeltaY = centerY - midpointY;
   const centerDistance = Math.hypot(centerDeltaX, centerDeltaY);
-  const controlX =
-    centerDistance > 0 ? midpointX + (centerDeltaX / centerDistance) * controlOffset : centerX;
-  const controlY =
-    centerDistance > 0 ? midpointY + (centerDeltaY / centerDistance) * controlOffset : centerY;
+  const centerUnit =
+    centerDistance > 0
+      ? { x: centerDeltaX / centerDistance, y: centerDeltaY / centerDistance }
+      : { x: 0, y: -1 };
+  const blockerRadius = getTokenSize(tokenSize) / 2 + 8;
+  const maxOffset = Math.max(mapWidth, mapHeight);
+  const offsetSteps = [1, 1.4, 1.8, 2.3, 2.8, 3.4, 4.1, 5];
 
-  if (blockers.length === 0) {
-    return `M ${from.x} ${from.y} Q ${controlX} ${controlY} ${to.x} ${to.y}`;
+  for (const multiplier of offsetSteps) {
+    const offset = Math.min(maxOffset, baseControlOffset * multiplier);
+    const control = {
+      x: midpointX + centerUnit.x * offset,
+      y: midpointY + centerUnit.y * offset,
+    };
+
+    if (!curveOverlapsBlocker(from, control, to, blockers, blockerRadius)) {
+      return `M ${from.x} ${from.y} Q ${control.x} ${control.y} ${to.x} ${to.y}`;
+    }
   }
 
-  return getClippedQuadraticPath(from, { x: controlX, y: controlY }, to, tokenSize, blockers);
+  const fallbackControl = {
+    x: midpointX + centerUnit.x * maxOffset,
+    y: midpointY + centerUnit.y * maxOffset,
+  };
+
+  return `M ${from.x} ${from.y} Q ${fallbackControl.x} ${fallbackControl.y} ${to.x} ${to.y}`;
 }
 
-function getClippedQuadraticPath(
+function curveOverlapsBlocker(
   from: PlayerPosition,
   control: PlayerPosition,
   to: PlayerPosition,
-  tokenSize: number,
   blockers: PlayerPosition[],
+  blockerRadius: number,
 ) {
-  const samples = 48;
-  const blockerRadius = getTokenSize(tokenSize) / 2 + 5;
-  const commands: string[] = [];
-  let drawing = false;
+  const samples = 64;
 
-  for (let index = 0; index <= samples; index += 1) {
-    const progress = index / samples;
-    const point = getQuadraticPoint(from, control, to, progress);
-    const blocked = blockers.some((blocker) => {
+  return blockers.some((blocker) => {
+    for (let index = 0; index <= samples; index += 1) {
+      const progress = index / samples;
+      const point = getQuadraticPoint(from, control, to, progress);
       const deltaX = point.x - blocker.x;
       const deltaY = point.y - blocker.y;
 
-      return Math.hypot(deltaX, deltaY) < blockerRadius;
-    });
-
-    if (blocked) {
-      drawing = false;
-      continue;
+      if (Math.hypot(deltaX, deltaY) < blockerRadius) {
+        return true;
+      }
     }
 
-    commands.push(`${drawing ? 'L' : 'M'} ${point.x} ${point.y}`);
-    drawing = true;
-  }
-
-  return commands.join(' ');
+    return false;
+  });
 }
 
 function getQuadraticPoint(
