@@ -1,7 +1,11 @@
+import type { NativeStackHeaderProps } from 'expo-router/build/react-navigation/native-stack';
 import { DarkTheme, ThemeProvider } from 'expo-router/react-navigation';
 import { Stack } from 'expo-router/stack';
 import { StatusBar } from 'expo-status-bar';
+import { ChevronLeft } from 'lucide-react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppFonts } from '@/hooks/use-app-fonts';
 import { colors } from '@/theme/colors';
@@ -38,6 +42,39 @@ const grimKeeperTheme = {
   },
 };
 
+function CompactHeader({ back, navigation, options, route }: NativeStackHeaderProps) {
+  const insets = useSafeAreaInsets();
+  const HeaderRight = options.headerRight;
+  const title =
+    typeof options.headerTitle === 'string' ? options.headerTitle : options.title || route.name;
+
+  return (
+    <View style={[styles.header, { paddingTop: insets.top }]}>
+      <View style={styles.headerContent}>
+        <View style={styles.headerSide}>
+          {back ? (
+            <Pressable
+              accessibilityLabel="Go back"
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={navigation.goBack}
+              style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+            >
+              <ChevronLeft color={colors.text} size={24} strokeWidth={2.5} />
+            </Pressable>
+          ) : null}
+        </View>
+        <Text numberOfLines={1} style={styles.headerTitle}>
+          {title}
+        </Text>
+        <View style={[styles.headerSide, styles.headerRight]}>
+          {HeaderRight ? <HeaderRight canGoBack={Boolean(back)} tintColor={colors.text} /> : null}
+        </View>
+      </View>
+    </View>
+  );
+}
+
 export default function RootLayout() {
   const fontsReady = useAppFonts();
 
@@ -51,6 +88,7 @@ export default function RootLayout() {
         <Stack
           screenOptions={{
             contentStyle: { backgroundColor: colors.background },
+            header: (props) => <CompactHeader {...props} />,
             headerLargeStyle: { backgroundColor: colors.background },
             headerShadowVisible: false,
             headerStyle: { backgroundColor: colors.background },
@@ -62,7 +100,7 @@ export default function RootLayout() {
             },
           }}
         >
-          <Stack.Screen name="index" options={{ title: 'GrimKeeper' }} />
+          <Stack.Screen name="index" options={{ title: 'Grim Keeper' }} />
           <Stack.Screen name="create" options={{ title: 'New Game' }} />
           <Stack.Screen name="game/[id]" options={{ title: 'Game' }} />
         </Stack>
@@ -71,3 +109,39 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  backButton: {
+    alignItems: 'center',
+    height: 36,
+    justifyContent: 'center',
+    marginLeft: -8,
+    width: 36,
+  },
+  header: {
+    backgroundColor: colors.background,
+  },
+  headerContent: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    height: 44,
+    paddingHorizontal: 16,
+  },
+  headerRight: {
+    alignItems: 'flex-end',
+  },
+  headerSide: {
+    justifyContent: 'center',
+    minWidth: 84,
+  },
+  headerTitle: {
+    color: colors.text,
+    flex: 1,
+    fontFamily: 'GoogleSans-Bold',
+    fontSize: 15,
+    textAlign: 'center',
+  },
+  pressed: {
+    opacity: 0.65,
+  },
+});
