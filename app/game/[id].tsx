@@ -3,6 +3,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  HeartPulse,
   List,
   Map as MapIcon,
   MessageCircle,
@@ -123,8 +124,7 @@ export default function GameRoute() {
   const trackingCancelFlex = trackingMode === 'nomination' ? 0.82 : 1;
   const trackingConfirmFlex = trackingMode === 'nomination' ? 1.18 : 1;
   const deadPlayerCount = activeGame.players.filter((player) => player.death).length;
-  const totalPlayerCount = activeGame.players.length;
-  const alivePlayerCount = totalPlayerCount - deadPlayerCount;
+  const alivePlayerCount = activeGame.players.length - deadPlayerCount;
 
   function handleSelectPlayer(playerId: string) {
     if (votingNominationId) {
@@ -293,6 +293,22 @@ export default function GameRoute() {
         options={{
           headerBackVisible: false,
           title: `Day ${activeGame.activeDay}`,
+          headerLeft: () => (
+            <View style={{ alignItems: 'center', flexDirection: 'row', gap: 8 }}>
+              <View style={{ alignItems: 'center', flexDirection: 'row', gap: 3 }}>
+                <HeartPulse color="#86efac" size={16} strokeWidth={2.7} />
+                <Text style={{ color: '#f8fafc', fontSize: 14, fontWeight: '900' }}>
+                  {alivePlayerCount}
+                </Text>
+              </View>
+              <View style={{ alignItems: 'center', flexDirection: 'row', gap: 3 }}>
+                <Skull color="#fca5a5" size={16} strokeWidth={2.7} />
+                <Text style={{ color: '#f8fafc', fontSize: 14, fontWeight: '900' }}>
+                  {deadPlayerCount}
+                </Text>
+              </View>
+            </View>
+          ),
           headerTitle: () => (
             <View style={{ alignItems: 'center', flexDirection: 'row', gap: 8 }}>
               <Pressable
@@ -383,43 +399,6 @@ export default function GameRoute() {
         style={{ backgroundColor: '#0b1120', flex: 1 }}
         contentContainerStyle={{ gap: 20, padding: 20, paddingBottom: 40 }}
       >
-        <View
-          style={{
-            backgroundColor: '#111827',
-            borderColor: '#334155',
-            borderRadius: 8,
-            borderWidth: 1,
-            flexDirection: 'row',
-            gap: 8,
-            padding: 4,
-          }}
-        >
-          {[
-            { label: 'Alive', value: alivePlayerCount },
-            { label: 'Dead', value: deadPlayerCount },
-            { label: 'Total', value: totalPlayerCount },
-          ].map((stat) => (
-            <View
-              key={stat.label}
-              style={{
-                alignItems: 'center',
-                backgroundColor: '#0f172a',
-                borderRadius: 6,
-                flex: 1,
-                gap: 3,
-                paddingVertical: 10,
-              }}
-            >
-              <Text style={{ color: '#94a3b8', fontSize: 12, fontWeight: '800' }}>
-                {stat.label}
-              </Text>
-              <Text style={{ color: '#f8fafc', fontSize: 18, fontWeight: '900' }}>
-                {stat.value}
-              </Text>
-            </View>
-          ))}
-        </View>
-
         <View
           style={{ backgroundColor: '#111827', borderRadius: 8, flexDirection: 'row', padding: 4 }}
         >
