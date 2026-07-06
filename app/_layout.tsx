@@ -54,7 +54,7 @@ function CompactHeader({ back, navigation, options, route }: NativeStackHeaderPr
     <View style={[styles.header, { paddingTop: insets.top }]}>
       <View style={styles.headerContent}>
         <View style={[styles.headerSide, styles.headerLeft]}>
-          {back ? (
+          {back && options.headerBackVisible !== false ? (
             <Pressable
               accessibilityLabel="Go back"
               accessibilityRole="button"

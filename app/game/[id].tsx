@@ -286,6 +286,7 @@ export default function GameRoute() {
     <>
       <Stack.Screen
         options={{
+          headerBackVisible: false,
           title: `Day ${activeGame.activeDay}`,
           headerTitle: () => (
             <View style={{ alignItems: 'center', flexDirection: 'row', gap: 8 }}>
