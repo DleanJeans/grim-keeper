@@ -6,11 +6,11 @@ import {
   List,
   Map as MapIcon,
   MessageCircle,
-  Moon,
   Pointer,
   RotateCcw,
   RotateCw,
   Skull,
+  Swords,
   Table2,
   Trash2,
   Undo2,
@@ -634,11 +634,11 @@ export default function GameRoute() {
                       paddingVertical: 14,
                     })}
                   >
-                    <Moon color="#93c5fd" size={17} strokeWidth={2.7} />
+                    <Swords color="#93c5fd" size={17} strokeWidth={2.7} />
                     <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Night</Text>
                   </Pressable>
                   <Pressable
-                    accessibilityLabel={`Undo death for ${focusedPlayer.name}`}
+                    accessibilityLabel={`Revive ${focusedPlayer.name}`}
                     accessibilityRole="button"
                     disabled={!focusedPlayer.death}
                     onPress={handleUndoFocusedPlayerDeath}
@@ -659,7 +659,7 @@ export default function GameRoute() {
                     })}
                   >
                     <Undo2 color="#f8fafc" size={17} strokeWidth={2.7} />
-                    <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Undo</Text>
+                    <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Revive</Text>
                   </Pressable>
                 </View>
 
