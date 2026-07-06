@@ -54,7 +54,7 @@ export function PlayerToken({
 
   const pan = Gesture.Pan()
     .activateAfterLongPress(250)
-    .onBegin(() => {
+    .onStart(() => {
       startX.value = x.value;
       startY.value = y.value;
       runOnJS(setIsDragReady)(true);
