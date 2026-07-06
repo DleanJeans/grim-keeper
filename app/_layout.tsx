@@ -53,21 +53,28 @@ function CompactHeader({ back, navigation, options, route }: NativeStackHeaderPr
   return (
     <View style={[styles.header, { paddingTop: insets.top }]}>
       <View style={styles.headerContent}>
-        <View style={[styles.headerSide, styles.headerLeft]}>
-          {back && options.headerBackVisible !== false ? (
-            <Pressable
-              accessibilityLabel="Go back"
-              accessibilityRole="button"
-              hitSlop={8}
-              onPress={navigation.goBack}
-              style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
-            >
-              <ChevronLeft color={colors.text} size={24} strokeWidth={2.5} />
-            </Pressable>
-          ) : null}
-          {HeaderLeft ? <HeaderLeft canGoBack={Boolean(back)} tintColor={colors.text} /> : null}
-        </View>
-        <View style={styles.headerTitleSlot}>
+        {back || HeaderLeft ? (
+          <View style={[styles.headerSide, styles.headerLeft]}>
+            {back && options.headerBackVisible !== false ? (
+              <Pressable
+                accessibilityLabel="Go back"
+                accessibilityRole="button"
+                hitSlop={8}
+                onPress={navigation.goBack}
+                style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+              >
+                <ChevronLeft color={colors.text} size={24} strokeWidth={2.5} />
+              </Pressable>
+            ) : null}
+            {HeaderLeft ? <HeaderLeft canGoBack={Boolean(back)} tintColor={colors.text} /> : null}
+          </View>
+        ) : null}
+        <View
+          style={[
+            styles.headerTitleSlot,
+            route.name === 'index' ? styles.headerTitleSlotFull : null,
+          ]}
+        >
           {HeaderTitle ? (
             HeaderTitle({ children: title, tintColor: colors.text })
           ) : (
@@ -76,9 +83,11 @@ function CompactHeader({ back, navigation, options, route }: NativeStackHeaderPr
             </Text>
           )}
         </View>
-        <View style={[styles.headerSide, styles.headerRight]}>
-          {HeaderRight ? <HeaderRight canGoBack={Boolean(back)} tintColor={colors.text} /> : null}
-        </View>
+        {HeaderRight ? (
+          <View style={[styles.headerSide, styles.headerRight]}>
+            {HeaderRight ? <HeaderRight canGoBack={Boolean(back)} tintColor={colors.text} /> : null}
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -115,7 +124,7 @@ export default function RootLayout() {
               headerTitleStyle: {
                 color: colors.text,
                 fontFamily: 'GoogleSans-Bold',
-                fontSize: 20,
+                fontSize: 30,
               },
               title: 'Grim Keeper',
             }}
@@ -163,13 +172,16 @@ const styles = StyleSheet.create({
   headerTitle: {
     color: colors.text,
     fontFamily: 'GoogleSans-Bold',
-    fontSize: 15,
+    fontSize: 20,
     textAlign: 'center',
   },
   headerTitleSlot: {
     alignItems: 'center',
     flex: 0.75,
     justifyContent: 'center',
+  },
+  headerTitleSlotFull: {
+    flex: 1,
   },
   pressed: {
     opacity: 0.65,
