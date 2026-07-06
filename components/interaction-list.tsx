@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react-native';
+import { Podcast, Trash2 } from 'lucide-react-native';
 import { Alert, Pressable, View } from 'react-native';
 
 import { Text } from '@/components/text';
@@ -58,10 +58,11 @@ export function InteractionList({
               borderRadius: 8,
               borderWidth: 1,
               gap: 12,
-              padding: 14,
+              padding: 10,
+              paddingLeft: 20,
             }}
           >
-            <View style={{ alignItems: 'flex-start', flexDirection: 'row', gap: 12 }}>
+            <View style={{ alignItems: 'center', flexDirection: 'row', gap: 12 }}>
               <Text
                 selectable
                 style={{
@@ -74,16 +75,22 @@ export function InteractionList({
               >
                 {index + 1}.
               </Text>
-              <View style={{ flex: 1, gap: 6 }}>
+              <View style={{ flex: 1, gap: 6, flexDirection: 'row' }}>
                 <Text
                   selectable
                   style={{ color: colors.text, fontSize: 16, fontWeight: '800', lineHeight: 21 }}
                 >
                   {initiatorName}
                 </Text>
-                <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
-                  Talked to {talkedToNames.join(', ')}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Podcast color={colors.textMuted} size={14} />
+                  <Text
+                    selectable
+                    style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}
+                  >
+                    {talkedToNames.join(', ')}
+                  </Text>
+                </View>
               </View>
               <Pressable
                 accessibilityRole="button"
@@ -105,14 +112,11 @@ export function InteractionList({
                   borderWidth: 1,
                   flexDirection: 'row',
                   gap: 6,
-                  paddingHorizontal: 12,
+                  paddingHorizontal: 8,
                   paddingVertical: 8,
                 })}
               >
                 <Trash2 color={colors.danger} size={15} strokeWidth={2.6} />
-                <Text style={{ color: colors.danger, fontSize: 13, fontWeight: '800' }}>
-                  Delete
-                </Text>
               </Pressable>
             </View>
           </View>

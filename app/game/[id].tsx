@@ -9,6 +9,7 @@ import {
   MessageCircle,
   Minus,
   Plus,
+  Podcast,
   Pointer,
   RotateCcw,
   RotateCw,
@@ -59,7 +60,7 @@ function renderGameTabIcon(tab: GameTab, color: string) {
     case 'map':
       return <MapIcon color={color} size={15} strokeWidth={2.5} />;
     case 'interactions':
-      return <List color={color} size={15} strokeWidth={2.5} />;
+      return <Podcast color={color} size={15} strokeWidth={2.5} />;
     case 'nominations':
       return <Vote color={color} size={15} strokeWidth={2.5} />;
   }
