@@ -1,5 +1,5 @@
 import { Skull, Swords } from 'lucide-react-native';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -36,6 +36,7 @@ export function PlayerToken({
   player,
   position,
 }: PlayerTokenProps) {
+  const [isDragReady, setIsDragReady] = useState(false);
   const tokenSize = getTokenSize();
   const DeathIcon = player.death?.kind === 'execution' ? Skull : Swords;
   const deathIconColor = player.death?.kind === 'execution' ? '#fecaca' : '#bfdbfe';
@@ -56,6 +57,7 @@ export function PlayerToken({
     .onBegin(() => {
       startX.value = x.value;
       startY.value = y.value;
+      runOnJS(setIsDragReady)(true);
     })
     .onUpdate((event) => {
       const nextPosition = clampTokenPosition(
@@ -72,6 +74,9 @@ export function PlayerToken({
     })
     .onEnd(() => {
       runOnJS(onMove)(player.id, { x: x.value, y: y.value });
+    })
+    .onFinalize(() => {
+      runOnJS(setIsDragReady)(false);
     });
   const tap = Gesture.Tap().onEnd(() => {
     if (onSelect) {
@@ -90,23 +95,27 @@ export function PlayerToken({
         style={[
           {
             alignItems: 'center',
-            backgroundColor: player.death
-              ? '#1f2937'
-              : isInitiator
-                ? '#fde68a'
-                : isSelected
-                  ? '#bbf7d0'
-                  : '#f8fafc',
-            borderColor: player.death
-              ? '#64748b'
-              : isInitiator
-                ? '#f59e0b'
-                : isSelected
-                  ? '#22c55e'
-                  : '#94a3b8',
+            backgroundColor: isDragReady
+              ? '#38bdf8'
+              : player.death
+                ? '#1f2937'
+                : isInitiator
+                  ? '#fde68a'
+                  : isSelected
+                    ? '#bbf7d0'
+                    : '#f8fafc',
+            borderColor: isDragReady
+              ? '#e0f2fe'
+              : player.death
+                ? '#64748b'
+                : isInitiator
+                  ? '#f59e0b'
+                  : isSelected
+                    ? '#22c55e'
+                    : '#94a3b8',
             borderRadius: tokenSize / 2,
             borderWidth: isSelected ? 3 : 2,
-            opacity: player.death ? 0.72 : 1,
+            opacity: player.death && !isDragReady ? 0.72 : 1,
             height: tokenSize,
             justifyContent: 'center',
             paddingHorizontal: 6,
@@ -120,7 +129,7 @@ export function PlayerToken({
         <Text
           numberOfLines={2}
           style={{
-            color: player.death ? '#cbd5e1' : '#0b1120',
+            color: isDragReady ? '#082f49' : player.death ? '#cbd5e1' : '#0b1120',
             fontSize: 12,
             fontWeight: '800',
             lineHeight: 15,
