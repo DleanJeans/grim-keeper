@@ -287,26 +287,76 @@ export default function GameRoute() {
       <Stack.Screen
         options={{
           title: `Day ${activeGame.activeDay}`,
-          headerRight: () => (
+          headerLeft: () => (
             <Pressable
-              accessibilityLabel="Add missing player"
               accessibilityRole="button"
-              onPress={() => setAddPlayerVisible(true)}
+              disabled={activeGame.activeDay === 1}
+              onPress={() => handleChangeDay(activeGame.activeDay - 1)}
               style={({ pressed }) => ({
                 alignItems: 'center',
-                backgroundColor: pressed ? '#1f2937' : '#111827',
-                borderColor: '#334155',
+                backgroundColor: activeGame.activeDay === 1 ? '#1f2937' : '#334155',
                 borderRadius: 8,
-                borderWidth: 1,
                 flexDirection: 'row',
-                gap: 6,
-                paddingHorizontal: 12,
+                gap: 4,
+                opacity: pressed ? 0.75 : 1,
+                paddingHorizontal: 9,
                 paddingVertical: 7,
               })}
             >
-              <UserPlus color="#f8fafc" size={15} strokeWidth={2.5} />
-              <Text style={{ color: '#f8fafc', fontSize: 13, fontWeight: '900' }}>Player</Text>
+              <ChevronLeft
+                color={activeGame.activeDay === 1 ? '#64748b' : '#f8fafc'}
+                size={15}
+                strokeWidth={2.7}
+              />
+              <Text
+                style={{
+                  color: activeGame.activeDay === 1 ? '#64748b' : '#f8fafc',
+                  fontSize: 12,
+                  fontWeight: '900',
+                }}
+              >
+                Previous
+              </Text>
             </Pressable>
+          ),
+          headerRight: () => (
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => handleChangeDay(activeGame.activeDay + 1)}
+                style={({ pressed }) => ({
+                  alignItems: 'center',
+                  backgroundColor: pressed ? '#475569' : '#334155',
+                  borderRadius: 8,
+                  flexDirection: 'row',
+                  gap: 4,
+                  paddingHorizontal: 9,
+                  paddingVertical: 7,
+                })}
+              >
+                <Text style={{ color: '#f8fafc', fontSize: 12, fontWeight: '900' }}>Next</Text>
+                <ChevronRight color="#f8fafc" size={15} strokeWidth={2.7} />
+              </Pressable>
+              <Pressable
+                accessibilityLabel="Add missing player"
+                accessibilityRole="button"
+                onPress={() => setAddPlayerVisible(true)}
+                style={({ pressed }) => ({
+                  alignItems: 'center',
+                  backgroundColor: pressed ? '#1f2937' : '#111827',
+                  borderColor: '#334155',
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  flexDirection: 'row',
+                  gap: 6,
+                  paddingHorizontal: 10,
+                  paddingVertical: 7,
+                })}
+              >
+                <UserPlus color="#f8fafc" size={15} strokeWidth={2.5} />
+                <Text style={{ color: '#f8fafc', fontSize: 13, fontWeight: '900' }}>Player</Text>
+              </Pressable>
+            </View>
           ),
         }}
       />
@@ -323,66 +373,6 @@ export default function GameRoute() {
         style={{ backgroundColor: '#0b1120', flex: 1 }}
         contentContainerStyle={{ gap: 20, padding: 20, paddingBottom: 40 }}
       >
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <Pressable
-            accessibilityRole="button"
-            disabled={activeGame.activeDay === 1}
-            onPress={() => handleChangeDay(activeGame.activeDay - 1)}
-            style={{
-              alignItems: 'center',
-              backgroundColor: activeGame.activeDay === 1 ? '#1f2937' : '#334155',
-              borderRadius: 8,
-              flex: 1,
-              flexDirection: 'row',
-              gap: 6,
-              justifyContent: 'center',
-              paddingVertical: 12,
-            }}
-          >
-            <ChevronLeft
-              color={activeGame.activeDay === 1 ? '#64748b' : '#f8fafc'}
-              size={17}
-              strokeWidth={2.7}
-            />
-            <Text style={{ color: activeGame.activeDay === 1 ? '#64748b' : '#f8fafc' }}>
-              Previous
-            </Text>
-          </Pressable>
-          <View
-            style={{
-              alignItems: 'center',
-              backgroundColor: '#111827',
-              borderColor: '#334155',
-              borderRadius: 8,
-              borderWidth: 1,
-              flex: 1,
-              justifyContent: 'center',
-              paddingVertical: 12,
-            }}
-          >
-            <Text selectable style={{ color: '#f8fafc', fontWeight: '900' }}>
-              Day {activeGame.activeDay}
-            </Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => handleChangeDay(activeGame.activeDay + 1)}
-            style={{
-              alignItems: 'center',
-              backgroundColor: '#334155',
-              borderRadius: 8,
-              flex: 1,
-              flexDirection: 'row',
-              gap: 6,
-              justifyContent: 'center',
-              paddingVertical: 12,
-            }}
-          >
-            <ChevronRight color="#f8fafc" size={17} strokeWidth={2.7} />
-            <Text style={{ color: '#f8fafc' }}>Next</Text>
-          </Pressable>
-        </View>
-
         <View
           style={{
             backgroundColor: '#111827',

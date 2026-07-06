@@ -44,6 +44,7 @@ const grimKeeperTheme = {
 
 function CompactHeader({ back, navigation, options, route }: NativeStackHeaderProps) {
   const insets = useSafeAreaInsets();
+  const HeaderLeft = options.headerLeft;
   const HeaderRight = options.headerRight;
   const title =
     typeof options.headerTitle === 'string' ? options.headerTitle : options.title || route.name;
@@ -51,7 +52,7 @@ function CompactHeader({ back, navigation, options, route }: NativeStackHeaderPr
   return (
     <View style={[styles.header, { paddingTop: insets.top }]}>
       <View style={styles.headerContent}>
-        <View style={styles.headerSide}>
+        <View style={[styles.headerSide, styles.headerLeft]}>
           {back ? (
             <Pressable
               accessibilityLabel="Go back"
@@ -63,8 +64,9 @@ function CompactHeader({ back, navigation, options, route }: NativeStackHeaderPr
               <ChevronLeft color={colors.text} size={24} strokeWidth={2.5} />
             </Pressable>
           ) : null}
+          {HeaderLeft ? <HeaderLeft canGoBack={Boolean(back)} tintColor={colors.text} /> : null}
         </View>
-        <Text numberOfLines={1} style={styles.headerTitle}>
+        <Text numberOfLines={1} style={[styles.headerTitle, options.headerTitleStyle]}>
           {title}
         </Text>
         <View style={[styles.headerSide, styles.headerRight]}>
@@ -100,7 +102,17 @@ export default function RootLayout() {
             },
           }}
         >
-          <Stack.Screen name="index" options={{ title: 'Grim Keeper' }} />
+          <Stack.Screen
+            name="index"
+            options={{
+              headerTitleStyle: {
+                color: colors.text,
+                fontFamily: 'GoogleSans-Bold',
+                fontSize: 20,
+              },
+              title: 'Grim Keeper',
+            }}
+          />
           <Stack.Screen name="create" options={{ title: 'New Game' }} />
           <Stack.Screen name="game/[id]" options={{ title: 'Game' }} />
         </Stack>
@@ -127,16 +139,23 @@ const styles = StyleSheet.create({
     height: 44,
     paddingHorizontal: 16,
   },
+  headerLeft: {
+    justifyContent: 'flex-start',
+  },
   headerRight: {
     alignItems: 'flex-end',
+    justifyContent: 'flex-end',
   },
   headerSide: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    gap: 8,
     justifyContent: 'center',
-    minWidth: 84,
   },
   headerTitle: {
     color: colors.text,
-    flex: 1,
+    flex: 0.75,
     fontFamily: 'GoogleSans-Bold',
     fontSize: 15,
     textAlign: 'center',
