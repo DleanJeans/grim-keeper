@@ -38,6 +38,15 @@ export function GameMap({
     ]),
   );
   const groupRepeats = buildConversationGroupRepeats(conversations, activeDay);
+  const activeDayNominations = conversations.filter(
+    (conversation) => conversation.day === activeDay && conversation.kind === 'nomination',
+  );
+  const nominatorIds = new Set(activeDayNominations.map((nomination) => nomination.initiatorId));
+  const nominatedIds = new Set(
+    activeDayNominations.flatMap((nomination) =>
+      nomination.participantIds.filter((playerId) => playerId !== nomination.initiatorId),
+    ),
+  );
 
   return (
     <View
@@ -123,6 +132,8 @@ export function GameMap({
           key={player.id}
           interactionMode={interactionMode}
           isInitiator={selectedPlayerIds[0] === player.id}
+          isNominated={nominatedIds.has(player.id)}
+          isNominator={nominatorIds.has(player.id)}
           isSelected={selectedPlayerIds.includes(player.id)}
           mapHeight={mapHeight}
           mapWidth={mapWidth}

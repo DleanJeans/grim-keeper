@@ -1,4 +1,4 @@
-import { FlameKindling, Skull } from 'lucide-react-native';
+import { FlameKindling, Pointer, Skull, Vote } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -18,6 +18,8 @@ type PlayerTokenProps = {
   mapWidth: number;
   interactionMode?: boolean;
   isInitiator?: boolean;
+  isNominated?: boolean;
+  isNominator?: boolean;
   isSelected?: boolean;
   player: Player;
   position: PlayerPosition;
@@ -29,6 +31,8 @@ type PlayerTokenProps = {
 export function PlayerToken({
   interactionMode = false,
   isInitiator = false,
+  isNominated = false,
+  isNominator = false,
   isSelected = false,
   mapHeight,
   mapWidth,
@@ -158,6 +162,44 @@ export function PlayerToken({
             }}
           >
             <DeathIcon color={deathIconColor} size={13} strokeWidth={2} />
+          </View>
+        ) : null}
+        {isNominator ? (
+          <View
+            style={{
+              alignItems: 'center',
+              backgroundColor: '#312e81',
+              borderColor: '#c4b5fd',
+              borderRadius: 11,
+              borderWidth: 2,
+              height: 22,
+              justifyContent: 'center',
+              left: -2,
+              position: 'absolute',
+              top: -2,
+              width: 22,
+            }}
+          >
+            <Pointer color="#ddd6fe" size={12} strokeWidth={2.3} />
+          </View>
+        ) : null}
+        {isNominated ? (
+          <View
+            style={{
+              alignItems: 'center',
+              backgroundColor: '#713f12',
+              borderColor: '#fde68a',
+              borderRadius: 11,
+              borderWidth: 2,
+              height: 22,
+              justifyContent: 'center',
+              position: 'absolute',
+              right: -2,
+              top: -2,
+              width: 22,
+            }}
+          >
+            <Vote color="#fef3c7" size={12} strokeWidth={2.3} />
           </View>
         ) : null}
       </Animated.View>
