@@ -18,13 +18,18 @@ type DraftPlayer = {
 };
 
 export default function CreateRoute() {
+  const appUserName = useGameStore((state) => state.appUserName);
   const createGame = useGameStore((state) => state.createGame);
   const games = useGameStore((state) => state.games);
   const storedFriends = useGameStore((state) => state.friends);
   const inputRef = useRef<RNTextInput>(null);
   const [name, setName] = useState('');
+  const [nameFocused, setNameFocused] = useState(false);
   const [players, setPlayers] = useState<DraftPlayer[]>([]);
-  const friends = useMemo(() => getFriendSummaries(games, storedFriends), [games, storedFriends]);
+  const friends = useMemo(
+    () => getFriendSummaries(games, storedFriends, appUserName),
+    [appUserName, games, storedFriends],
+  );
   const playerOrderKey = useMemo(() => players.map((player) => player.id).join('|'), [players]);
   const playerIndexes = useMemo(
     () => new Map(players.map((player, index) => [player.id, index])),
@@ -32,14 +37,14 @@ export default function CreateRoute() {
   );
   const normalizedName = normalizePlayerName(name);
   const duplicateName = hasDuplicatePlayerName(
-    players.map((player) => player.name),
+    [appUserName, ...players.map((player) => player.name)],
     name,
   );
   const canAddPlayer = normalizedName.length > 0 && !duplicateName;
-  const canStart = players.length >= 2 && !(normalizedName.length > 0 && duplicateName);
+  const canStart = players.length >= 1 && !(normalizedName.length > 0 && duplicateName);
   const suggestedFriends = useMemo(() => {
     const key = normalizedName.toLocaleLowerCase();
-    const selectedNames = players.map((player) => player.name);
+    const selectedNames = [appUserName, ...players.map((player) => player.name)];
 
     return friends
       .filter(
@@ -48,15 +53,15 @@ export default function CreateRoute() {
           (!key || friend.name.toLocaleLowerCase().includes(key)),
       )
       .slice(0, 5);
-  }, [friends, normalizedName, players]);
+  }, [appUserName, friends, normalizedName, players]);
 
   const helperText = useMemo(() => {
     if (duplicateName) {
       return 'That player already exists.';
     }
 
-    if (players.length < 2) {
-      return 'Add at least 2 players.';
+    if (players.length < 1) {
+      return 'Add at least 1 other player.';
     }
 
     return 'Long press a player to drag them into seat order.';
@@ -72,7 +77,8 @@ export default function CreateRoute() {
       { id: createDraftId(), name: normalizedName },
     ]);
     setName('');
-    requestAnimationFrame(() => inputRef.current?.focus());
+    setNameFocused(false);
+    inputRef.current?.blur();
   }
 
   function handleSelectFriend(friendName: string) {
@@ -81,7 +87,7 @@ export default function CreateRoute() {
     if (
       !normalizedFriendName ||
       hasDuplicatePlayerName(
-        players.map((player) => player.name),
+        [appUserName, ...players.map((player) => player.name)],
         normalizedFriendName,
       )
     ) {
@@ -93,7 +99,8 @@ export default function CreateRoute() {
       { id: createDraftId(), name: normalizedFriendName },
     ]);
     setName('');
-    requestAnimationFrame(() => inputRef.current?.focus());
+    setNameFocused(false);
+    inputRef.current?.blur();
   }
 
   function handleStart() {
@@ -127,7 +134,9 @@ export default function CreateRoute() {
             autoCorrect={false}
             enterKeyHint="done"
             ref={inputRef}
+            onBlur={() => setNameFocused(false)}
             onChangeText={setName}
+            onFocus={() => setNameFocused(true)}
             onSubmitEditing={handleAddPlayer}
             returnKeyType="done"
             submitBehavior="submit"
@@ -146,7 +155,9 @@ export default function CreateRoute() {
           />
         </View>
 
-        <FriendSuggestions friends={suggestedFriends} onSelectFriend={handleSelectFriend} />
+        {nameFocused ? (
+          <FriendSuggestions friends={suggestedFriends} onSelectFriend={handleSelectFriend} />
+        ) : null}
 
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <Pressable
@@ -228,6 +239,10 @@ export default function CreateRoute() {
         </Text>
       </View>
 
+      <View style={{ gap: 10, paddingHorizontal: 20, paddingTop: 4 }}>
+        <FixedPlayerRow name={appUserName} />
+      </View>
+
       {players.length === 0 ? (
         <View
           style={{
@@ -241,7 +256,7 @@ export default function CreateRoute() {
           }}
         >
           <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '800' }}>
-            No players yet.
+            No other players yet.
           </Text>
           <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
             Type a name and press Enter or Add.
@@ -262,11 +277,41 @@ export default function CreateRoute() {
           renderItem={(params) => (
             <PlayerRow
               {...params}
-              index={playerIndexes.get(params.item.id) ?? params.getIndex() ?? 0}
+              index={(playerIndexes.get(params.item.id) ?? params.getIndex() ?? 0) + 1}
             />
           )}
         />
       )}
+    </View>
+  );
+}
+
+function FixedPlayerRow({ name }: { name: string }) {
+  return (
+    <View
+      style={{
+        backgroundColor: colors.surfaceRaised,
+        borderColor: colors.primary,
+        borderRadius: 8,
+        borderWidth: 1,
+        flexDirection: 'row',
+        gap: 12,
+        minHeight: 54,
+        padding: 16,
+      }}
+    >
+      <Text
+        selectable
+        style={{ color: colors.textMuted, fontVariant: ['tabular-nums'], width: 24 }}
+      >
+        1
+      </Text>
+      <Text selectable style={{ color: colors.text, flex: 1, fontSize: 17, fontWeight: '800' }}>
+        {name}
+      </Text>
+      <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '800' }}>
+        You
+      </Text>
     </View>
   );
 }

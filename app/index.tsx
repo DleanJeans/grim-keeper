@@ -3,16 +3,22 @@ import { ChevronRight, Plus, Trash2, Users } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
 
+import { AppUserNameCard } from '@/components/app-user-name-card';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { getFriendSummaries } from '@/utils/friend-utils';
 
 export default function HomeRoute() {
+  const appUserName = useGameStore((state) => state.appUserName);
   const games = useGameStore((state) => state.games);
   const storedFriends = useGameStore((state) => state.friends);
   const deleteGame = useGameStore((state) => state.deleteGame);
-  const friends = useMemo(() => getFriendSummaries(games, storedFriends), [games, storedFriends]);
+  const setAppUserName = useGameStore((state) => state.setAppUserName);
+  const friends = useMemo(
+    () => getFriendSummaries(games, storedFriends, appUserName),
+    [appUserName, games, storedFriends],
+  );
 
   function confirmDeleteGame(gameId: string) {
     Alert.alert('Delete saved game?', 'This removes the game and all tracked data.', [
@@ -31,6 +37,8 @@ export default function HomeRoute() {
       style={{ backgroundColor: colors.background, flex: 1 }}
       contentContainerStyle={{ gap: 24, padding: 20, paddingBottom: 40 }}
     >
+      <AppUserNameCard appUserName={appUserName} onSave={setAppUserName} />
+
       <View style={{ flexDirection: 'row', gap: 12 }}>
         <HomeActionButton icon="plus" label="New Game" onPress={() => router.push('/create')} />
         <HomeActionButton icon="users" label="Friends" onPress={() => router.push('/friends')} />

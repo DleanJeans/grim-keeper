@@ -13,6 +13,7 @@ type CreateGameInput = {
 };
 
 type GameState = {
+  appUserName: string;
   games: Game[];
   friends: Friend[];
   addFriend: (name: string) => void;
@@ -33,11 +34,13 @@ type GameState = {
   ) => Conversation | undefined;
   updateNominationVotes: (gameId: string, nominationId: string, voterIds: string[]) => void;
   deleteConversation: (gameId: string, conversationId: string) => void;
+  setAppUserName: (name: string) => void;
 };
 
 export const useGameStore = create<GameState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
+      appUserName: 'You',
       games: [],
       friends: [],
       addFriend: (name) => {
@@ -48,7 +51,14 @@ export const useGameStore = create<GameState>()(
         }
 
         set((state) => {
-          const friends = getFriendSummaries(state.games, state.friends);
+          if (
+            normalizedName.toLocaleLowerCase() ===
+            normalizePlayerName(state.appUserName).toLocaleLowerCase()
+          ) {
+            return state;
+          }
+
+          const friends = getFriendSummaries(state.games, state.friends, state.appUserName);
 
           if (hasFriendName(friends, normalizedName)) {
             return state;
@@ -66,8 +76,14 @@ export const useGameStore = create<GameState>()(
       },
       createGame: ({ playerNames }) => {
         const now = new Date().toISOString();
-        const players = playerNames.map<Player>((name, index) => ({
+        const appUserName = normalizePlayerName(get().appUserName) || 'You';
+        const appUserKey = appUserName.toLocaleLowerCase();
+        const otherPlayerNames = playerNames.filter(
+          (name) => normalizePlayerName(name).toLocaleLowerCase() !== appUserKey,
+        );
+        const players = [appUserName, ...otherPlayerNames].map<Player>((name, index) => ({
           id: createId('player'),
+          isAppUser: index === 0,
           name: normalizePlayerName(name),
           seat: index,
         }));
@@ -83,7 +99,7 @@ export const useGameStore = create<GameState>()(
 
         set((state) => {
           const games = [game, ...state.games];
-          const friends = addMissingFriends(state.friends, playerNames, now);
+          const friends = addMissingFriends(state.friends, otherPlayerNames, now);
 
           return {
             games,
@@ -140,6 +156,10 @@ export const useGameStore = create<GameState>()(
         set((state) => ({
           games: state.games.map((game) => {
             if (game.id !== gameId) {
+              return game;
+            }
+
+            if (game.players.find((player) => player.id === playerId)?.isAppUser) {
               return game;
             }
 
@@ -303,11 +323,20 @@ export const useGameStore = create<GameState>()(
           ),
         }));
       },
+      setAppUserName: (name) => {
+        const normalizedName = normalizePlayerName(name) || 'You';
+
+        set({ appUserName: normalizedName });
+      },
     }),
     {
       name: 'grim-keeper-game-store-v1',
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ friends: state.friends, games: state.games }),
+      partialize: (state) => ({
+        appUserName: state.appUserName,
+        friends: state.friends,
+        games: state.games,
+      }),
     },
   ),
 );

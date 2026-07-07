@@ -1,14 +1,20 @@
 import type { Friend, FriendSummary, Game } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
 
-export function getFriendSummaries(games: Game[], friends: Friend[]): FriendSummary[] {
+export function getFriendSummaries(
+  games: Game[],
+  friends: Friend[],
+  excludedName?: string,
+): FriendSummary[] {
   const summaries = new Map<string, FriendSummary>();
+  const excludedKey = normalizePlayerName(excludedName ?? '').toLocaleLowerCase();
 
   for (const friend of friends) {
     const name = normalizePlayerName(friend.name);
+    const key = name.toLocaleLowerCase();
 
-    if (name) {
-      summaries.set(name.toLocaleLowerCase(), { ...friend, name, gamesPlayed: 0 });
+    if (name && key !== excludedKey) {
+      summaries.set(key, { ...friend, name, gamesPlayed: 0 });
     }
   }
 
@@ -23,6 +29,11 @@ export function getFriendSummaries(games: Game[], friends: Friend[]): FriendSumm
       }
 
       const key = name.toLocaleLowerCase();
+
+      if (player.isAppUser || key === excludedKey) {
+        continue;
+      }
+
       gameFriendKeys.add(key);
 
       if (!summaries.has(key)) {

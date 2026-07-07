@@ -9,10 +9,14 @@ import { colors } from '@/theme/colors';
 import { getFriendSummaries } from '@/utils/friend-utils';
 
 export function FriendsScreen() {
+  const appUserName = useGameStore((state) => state.appUserName);
   const games = useGameStore((state) => state.games);
   const storedFriends = useGameStore((state) => state.friends);
   const addFriend = useGameStore((state) => state.addFriend);
-  const friends = useMemo(() => getFriendSummaries(games, storedFriends), [games, storedFriends]);
+  const friends = useMemo(
+    () => getFriendSummaries(games, storedFriends, appUserName),
+    [appUserName, games, storedFriends],
+  );
 
   return (
     <ScrollView

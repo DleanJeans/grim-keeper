@@ -29,8 +29,8 @@ import { AddPlayerModal } from '@/components/add-player-modal';
 import { ConversationTable } from '@/components/conversation-table';
 import { GameMap } from '@/components/game-map';
 import { InteractionList } from '@/components/interaction-list';
-import { NominationList } from '@/components/nomination-list';
 import { NomIcon } from '@/components/nom-icon';
+import { NominationList } from '@/components/nomination-list';
 import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
 import {
@@ -318,7 +318,7 @@ export default function GameRoute() {
   }
 
   function confirmDeletePlayer() {
-    if (!focusedPlayer) {
+    if (!focusedPlayer || focusedPlayer.isAppUser) {
       return;
     }
 
@@ -647,7 +647,9 @@ export default function GameRoute() {
                     })}
                   >
                     <FlameKindling color="#fca5a5" size={17} strokeWidth={2.7} />
-                    <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Execute{focusedPlayer.death?.kind === 'execution' ? 'd' : ''}</Text>
+                    <Text style={{ color: '#f8fafc', fontWeight: '900' }}>
+                      Execute{focusedPlayer.death?.kind === 'execution' ? 'd' : ''}
+                    </Text>
                   </Pressable>
                   <Pressable
                     accessibilityLabel={`Mark ${focusedPlayer.name} dead at night`}
@@ -669,7 +671,9 @@ export default function GameRoute() {
                     })}
                   >
                     <Skull color="#93c5fd" size={17} strokeWidth={2.7} />
-                    <Text style={{ color: '#f8fafc', fontWeight: '900' }}>{focusedPlayer.death?.kind === 'night' ? 'Killed' : 'Night'}</Text>
+                    <Text style={{ color: '#f8fafc', fontWeight: '900' }}>
+                      {focusedPlayer.death?.kind === 'night' ? 'Killed' : 'Night'}
+                    </Text>
                   </Pressable>
                   <Pressable
                     accessibilityLabel={`Revive ${focusedPlayer.name}`}
@@ -701,19 +705,29 @@ export default function GameRoute() {
                   <Pressable
                     accessibilityLabel={`Delete ${focusedPlayer.name}`}
                     accessibilityRole="button"
+                    disabled={focusedPlayer.isAppUser}
                     onPress={confirmDeletePlayer}
                     style={({ pressed }) => ({
                       alignItems: 'center',
-                      backgroundColor: pressed ? '#2a1517' : '#111827',
-                      borderColor: '#fca5a5',
+                      backgroundColor: focusedPlayer.isAppUser
+                        ? '#1f2937'
+                        : pressed
+                          ? '#2a1517'
+                          : '#111827',
+                      borderColor: focusedPlayer.isAppUser ? '#334155' : '#fca5a5',
                       borderRadius: 8,
                       borderWidth: 1,
                       justifyContent: 'center',
                       minWidth: 48,
+                      opacity: focusedPlayer.isAppUser ? 0.48 : 1,
                       paddingVertical: 14,
                     })}
                   >
-                    <Trash2 color="#fca5a5" size={17} strokeWidth={2.7} />
+                    <Trash2
+                      color={focusedPlayer.isAppUser ? '#94a3b8' : '#fca5a5'}
+                      size={17}
+                      strokeWidth={2.7}
+                    />
                   </Pressable>
                   <Pressable
                     accessibilityLabel={`Track interaction from ${focusedPlayer.name}`}

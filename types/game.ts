@@ -11,6 +11,7 @@ export type PlayerDeath = {
 
 export type Player = {
   id: string;
+  isAppUser?: boolean;
   name: string;
   seat: number;
   death?: PlayerDeath;

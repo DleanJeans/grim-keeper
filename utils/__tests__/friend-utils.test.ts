@@ -43,4 +43,11 @@ describe('friend utils', () => {
     expect(hasFriendName(getFriendSummaries([], friends), ' alice   smith ')).toBe(true);
     expect(addMissingFriends(friends, ['Alice Smith', 'Drew'], games[0].createdAt)).toHaveLength(2);
   });
+
+  it('excludes the app user from friend summaries', () => {
+    expect(getFriendSummaries(games, [], 'Alice')).toEqual([
+      expect.objectContaining({ name: 'Ben', gamesPlayed: 1 }),
+      expect.objectContaining({ name: 'Cora', gamesPlayed: 1 }),
+    ]);
+  });
 });
