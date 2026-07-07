@@ -29,7 +29,7 @@ export function getPlayerMapPosition(
   const radius = Math.max(0, (Math.min(mapWidth, mapHeight) - resolvedTokenSize - 28) / 2);
   const sortedPlayers = [...players].sort((first, second) => first.seat - second.seat);
   const index = sortedPlayers.findIndex((candidate) => candidate.id === player.id);
-  const angle = (Math.PI * 2 * index) / Math.max(1, sortedPlayers.length) - Math.PI / 2;
+  const angle = (Math.PI * 2 * index) / Math.max(1, sortedPlayers.length) + Math.PI / 2;
 
   return {
     x: centerX + Math.cos(angle) * radius,
