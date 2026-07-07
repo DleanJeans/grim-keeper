@@ -8,6 +8,7 @@ import {
   Map as MapIcon,
   MessageCircle,
   Minus,
+  MoveDiagonal,
   Plus,
   Podcast,
   Pointer,
@@ -97,6 +98,7 @@ export default function GameRoute() {
   const [votingReturnTab, setVotingReturnTab] = useState<GameTab | null>(null);
   const [focusedPlayerId, setFocusedPlayerId] = useState<string | null>(null);
   const [isRotatingMode, setIsRotatingMode] = useState(false);
+  const [isResizingMode, setIsResizingMode] = useState(false);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const game = getGameById(games, id);
   const mapWidth = Math.max(1, width - 40);
@@ -149,6 +151,7 @@ export default function GameRoute() {
 
     if (!trackingMode) {
       setIsRotatingMode(false);
+      setIsResizingMode(false);
       setFocusedPlayerId((currentPlayerId) => (currentPlayerId === playerId ? null : playerId));
       return;
     }
@@ -176,11 +179,13 @@ export default function GameRoute() {
 
     setTrackingMode(mode);
     setIsRotatingMode(false);
+    setIsResizingMode(false);
     setSelectedPlayerIds([focusedPlayerId]);
   }
 
   function handleCancelTracking() {
     setIsRotatingMode(false);
+    setIsResizingMode(false);
     setTrackingMode(null);
     setVotingNominationId(null);
     setVotingReturnTab(null);
@@ -246,6 +251,7 @@ export default function GameRoute() {
   function handleChangeDay(day: number) {
     handleCancelTracking();
     setIsRotatingMode(false);
+    setIsResizingMode(false);
     setActiveDay(activeGame.id, day);
   }
 
@@ -429,6 +435,7 @@ export default function GameRoute() {
               accessibilityRole="button"
               onPress={() => {
                 setIsRotatingMode(false);
+                setIsResizingMode(false);
                 setActiveTab(tab.value);
               }}
               style={{
@@ -796,9 +803,9 @@ export default function GameRoute() {
                   <Check color="#0b1120" size={17} strokeWidth={2.8} />
                 </Pressable>
               </View>
-            ) : (
+            ) : isResizingMode ? (
               <View
-                key="rotate-toggle-action"
+                key="resize-actions"
                 style={{ alignSelf: 'stretch', flexDirection: 'row', gap: 10 }}
               >
                 <Pressable
@@ -812,37 +819,33 @@ export default function GameRoute() {
                     borderColor: activeTokenSize <= minTokenSize ? '#1f2937' : '#334155',
                     borderRadius: 8,
                     borderWidth: 1,
+                    flex: 1,
+                    flexBasis: 0,
+                    flexDirection: 'row',
+                    gap: 6,
                     justifyContent: 'center',
-                    minWidth: 48,
+                    minWidth: 0,
                     opacity: activeTokenSize <= minTokenSize ? 0.48 : 1,
                     paddingVertical: 14,
-                    width: 48,
                   })}
                 >
                   <Minus color="#f8fafc" size={17} strokeWidth={2.7} />
                 </Pressable>
-                <Pressable
-                  accessibilityLabel="Enter rotating mode"
-                  accessibilityRole="button"
-                  onPress={() => setIsRotatingMode(true)}
-                  style={({ pressed }) => ({
+                <View
+                  style={{
                     alignItems: 'center',
-                    backgroundColor: pressed ? '#1f2937' : '#111827',
+                    backgroundColor: '#111827',
                     borderColor: '#334155',
                     borderRadius: 8,
                     borderWidth: 1,
-                    flex: 1,
-                    flexDirection: 'row',
-                    gap: 6,
                     justifyContent: 'center',
+                    paddingHorizontal: 12,
                     paddingVertical: 14,
-                  })}
+                    width: 58,
+                  }}
                 >
-                  <RotateCw color="#f8fafc" size={17} strokeWidth={2.7} />
-                  <Text style={{ color: '#f8fafc', fontWeight: '900' }}>
-                    Rotate · {activeTokenSize}
-                  </Text>
-                </Pressable>
+                  <Text style={{ color: '#f8fafc', fontWeight: '900' }}>{activeTokenSize}</Text>
+                </View>
                 <Pressable
                   accessibilityLabel="Enlarge player tokens"
                   accessibilityRole="button"
@@ -854,14 +857,91 @@ export default function GameRoute() {
                     borderColor: activeTokenSize >= maxTokenSize ? '#1f2937' : '#334155',
                     borderRadius: 8,
                     borderWidth: 1,
+                    flex: 1,
+                    flexBasis: 0,
+                    flexDirection: 'row',
+                    gap: 6,
+                    justifyContent: 'center',
+                    minWidth: 0,
+                    opacity: activeTokenSize >= maxTokenSize ? 0.48 : 1,
+                    paddingVertical: 14,
+                  })}
+                >
+                  <Plus color="#f8fafc" size={17} strokeWidth={2.7} />
+                </Pressable>
+                <Pressable
+                  accessibilityLabel="Done resizing tokens"
+                  accessibilityRole="button"
+                  onPress={() => setIsResizingMode(false)}
+                  style={({ pressed }) => ({
+                    alignItems: 'center',
+                    backgroundColor: pressed ? '#dbeafe' : '#f8fafc',
+                    borderColor: '#f8fafc',
+                    borderRadius: 8,
+                    borderWidth: 1,
                     justifyContent: 'center',
                     minWidth: 48,
-                    opacity: activeTokenSize >= maxTokenSize ? 0.48 : 1,
                     paddingVertical: 14,
                     width: 48,
                   })}
                 >
-                  <Plus color="#f8fafc" size={17} strokeWidth={2.7} />
+                  <Check color="#0b1120" size={17} strokeWidth={2.8} />
+                </Pressable>
+              </View>
+            ) : (
+              <View
+                key="map-mode-actions"
+                style={{ alignSelf: 'stretch', flexDirection: 'row', gap: 10 }}
+              >
+                <Pressable
+                  accessibilityLabel="Enter resize mode"
+                  accessibilityRole="button"
+                  onPress={() => {
+                    setIsRotatingMode(false);
+                    setIsResizingMode(true);
+                  }}
+                  style={({ pressed }) => ({
+                    alignItems: 'center',
+                    backgroundColor: pressed ? '#1f2937' : '#111827',
+                    borderColor: '#334155',
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    flex: 1,
+                    flexBasis: 0,
+                    flexDirection: 'row',
+                    gap: 6,
+                    justifyContent: 'center',
+                    minWidth: 0,
+                    paddingVertical: 14,
+                  })}
+                >
+                  <MoveDiagonal color="#f8fafc" size={17} strokeWidth={2.7} />
+                  <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Resize</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityLabel="Enter rotating mode"
+                  accessibilityRole="button"
+                  onPress={() => {
+                    setIsResizingMode(false);
+                    setIsRotatingMode(true);
+                  }}
+                  style={({ pressed }) => ({
+                    alignItems: 'center',
+                    backgroundColor: pressed ? '#1f2937' : '#111827',
+                    borderColor: '#334155',
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    flex: 1,
+                    flexBasis: 0,
+                    flexDirection: 'row',
+                    gap: 6,
+                    justifyContent: 'center',
+                    minWidth: 0,
+                    paddingVertical: 14,
+                  })}
+                >
+                  <RotateCw color="#f8fafc" size={17} strokeWidth={2.7} />
+                  <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Rotate</Text>
                 </Pressable>
               </View>
             )}
