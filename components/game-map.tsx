@@ -143,7 +143,9 @@ export function GameMap({
           mapWidth={mapWidth}
           onMove={onMovePlayer}
           onSelect={onSelectPlayer}
-          player={player}
+          player={
+            player.death && player.death.day > activeDay ? { ...player, death: undefined } : player
+          }
           tokenSize={tokenSize}
           position={
             positions.get(player.id) ??
