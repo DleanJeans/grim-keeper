@@ -9,6 +9,7 @@ import { getPlayerMapPosition, getTokenSize } from '@/utils/layout-utils';
 type GameMapProps = {
   activeDay: number;
   conversations: Conversation[];
+  disabledPlayerIds?: string[];
   interactionMode?: boolean;
   mapHeight: number;
   mapWidth: number;
@@ -22,6 +23,7 @@ type GameMapProps = {
 export function GameMap({
   activeDay,
   conversations,
+  disabledPlayerIds = [],
   interactionMode = false,
   mapHeight,
   mapWidth,
@@ -38,6 +40,7 @@ export function GameMap({
     ]),
   );
   const groupRepeats = buildConversationGroupRepeats(conversations, activeDay);
+  const disabledPlayerIdSet = new Set(disabledPlayerIds);
   const activeDayNominations = conversations.filter(
     (conversation) => conversation.day === activeDay && conversation.kind === 'nomination',
   );
@@ -130,6 +133,7 @@ export function GameMap({
       {players.map((player) => (
         <PlayerToken
           key={player.id}
+          disabled={disabledPlayerIdSet.has(player.id)}
           interactionMode={interactionMode}
           isInitiator={selectedPlayerIds[0] === player.id}
           isNominated={nominatedIds.has(player.id)}

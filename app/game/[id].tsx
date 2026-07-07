@@ -136,13 +136,23 @@ export default function GameRoute() {
   const trackingCancelFlex = trackingMode === 'nomination' ? 0.82 : 1;
   const trackingConfirmFlex = trackingMode === 'nomination' ? 1.18 : 1;
   const activeTokenSize = getTokenSize(activeGame.tokenSize);
-  const focusedPlayerAlreadyNominatedToday = activeGame.conversations.some(
+  const activeDayNominations = activeGame.conversations.filter(
     (conversation) =>
-      conversation.day === activeGame.activeDay &&
-      conversation.kind === 'nomination' &&
-      conversation.initiatorId === focusedPlayerId,
+      conversation.day === activeGame.activeDay && conversation.kind === 'nomination',
+  );
+  const nominatedPlayerIds = new Set(
+    activeDayNominations.flatMap((nomination) =>
+      nomination.participantIds.filter((playerId) => playerId !== nomination.initiatorId),
+    ),
+  );
+  const focusedPlayerAlreadyNominatedToday = activeDayNominations.some(
+    (nomination) => nomination.initiatorId === focusedPlayerId,
   );
   const nominationDisabled = !!focusedPlayer?.death || focusedPlayerAlreadyNominatedToday;
+  const disabledPlayerIds =
+    trackingMode === 'nomination'
+      ? [...nominatedPlayerIds].filter((playerId) => playerId !== selectedPlayerIds[0])
+      : [];
   const deadPlayerCount = activeGame.players.filter((player) => player.death).length;
   const alivePlayerCount = activeGame.players.length - deadPlayerCount;
 
@@ -164,6 +174,10 @@ export default function GameRoute() {
     }
 
     if (trackingMode === 'nomination') {
+      if (nominatedPlayerIds.has(playerId) && playerId !== selectedPlayerIds[0]) {
+        return;
+      }
+
       setSelectedPlayerIds((currentIds) =>
         currentIds[0] === playerId ? currentIds : [currentIds[0], playerId],
       );
@@ -479,6 +493,7 @@ export default function GameRoute() {
             <GameMap
               activeDay={activeGame.activeDay}
               conversations={activeGame.conversations}
+              disabledPlayerIds={disabledPlayerIds}
               interactionMode={!!trackingMode || !!votingNominationId}
               mapHeight={mapHeight}
               mapWidth={mapWidth}

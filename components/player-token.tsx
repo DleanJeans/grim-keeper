@@ -16,6 +16,7 @@ import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
 type PlayerTokenProps = {
   mapHeight: number;
   mapWidth: number;
+  disabled?: boolean;
   interactionMode?: boolean;
   isInitiator?: boolean;
   isNominated?: boolean;
@@ -29,6 +30,7 @@ type PlayerTokenProps = {
 };
 
 export function PlayerToken({
+  disabled = false,
   interactionMode = false,
   isInitiator = false,
   isNominated = false,
@@ -86,7 +88,7 @@ export function PlayerToken({
       runOnJS(setIsDragReady)(false);
     });
   const tap = Gesture.Tap().onEnd(() => {
-    if (onSelect) {
+    if (onSelect && !disabled) {
       runOnJS(onSelect)(player.id);
     }
   });
@@ -122,7 +124,7 @@ export function PlayerToken({
                     : '#94a3b8',
             borderRadius: tokenSize / 2,
             borderWidth: isSelected ? 3 : 2,
-            opacity: player.death && !isDragReady ? 0.72 : 1,
+            opacity: disabled ? 0.42 : player.death && !isDragReady ? 0.72 : 1,
             height: tokenSize,
             justifyContent: 'center',
             paddingHorizontal: 6,
