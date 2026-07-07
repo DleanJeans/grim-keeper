@@ -44,3 +44,9 @@ export type ConversationRow = {
   talkedToIds: string[];
   repeatedPlayerIds: string[];
 };
+
+export type ConversationGroupRepeat = {
+  dayLabels: string[];
+  dayCount: number;
+  repeated: boolean;
+};

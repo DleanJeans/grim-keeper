@@ -1,4 +1,4 @@
-import type { Conversation, ConversationRow, Player } from '@/types/game';
+import type { Conversation, ConversationGroupRepeat, ConversationRow, Player } from '@/types/game';
 
 export function normalizePlayerName(name: string) {
   return name.trim().replace(/\s+/g, ' ');
@@ -34,6 +34,48 @@ export function getConversationPairs(conversation: Conversation) {
 
 export function getPairKey(firstPlayerId: string, secondPlayerId: string) {
   return [firstPlayerId, secondPlayerId].sort().join(':');
+}
+
+export function getConversationGroupKey(conversation: Conversation) {
+  return [...new Set(conversation.participantIds)].sort().join(':');
+}
+
+export function buildConversationGroupRepeats(
+  conversations: Conversation[],
+  activeDay: number,
+): Map<string, ConversationGroupRepeat> {
+  const groupDays = new Map<string, Set<number>>();
+
+  for (const conversation of conversations) {
+    if (conversation.kind === 'nomination') {
+      continue;
+    }
+
+    const groupKey = getConversationGroupKey(conversation);
+
+    if (!groupDays.has(groupKey)) {
+      groupDays.set(groupKey, new Set());
+    }
+
+    groupDays.get(groupKey)?.add(conversation.day);
+  }
+
+  const groupRepeats = new Map<string, ConversationGroupRepeat>();
+
+  for (const [groupKey, days] of groupDays) {
+    const sortedDays = [...days]
+      .filter((day) => day <= activeDay)
+      .sort((first, second) => first - second);
+    const priorDays = sortedDays.filter((day) => day < activeDay);
+
+    groupRepeats.set(groupKey, {
+      dayLabels: priorDays.map((day) => `D${day}`),
+      dayCount: sortedDays.length,
+      repeated: sortedDays.length > 1,
+    });
+  }
+
+  return groupRepeats;
 }
 
 export function buildConversationRows(

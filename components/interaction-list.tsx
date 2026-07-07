@@ -4,6 +4,7 @@ import { Alert, Pressable, View } from 'react-native';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Conversation, Player } from '@/types/game';
+import { buildConversationGroupRepeats, getConversationGroupKey } from '@/utils/conversation-utils';
 
 type InteractionListProps = {
   activeDay: number;
@@ -22,6 +23,7 @@ export function InteractionList({
   const activeDayConversations = conversations.filter(
     (conversation) => conversation.day === activeDay && conversation.kind !== 'nomination',
   );
+  const groupRepeats = buildConversationGroupRepeats(conversations, activeDay);
 
   if (activeDayConversations.length === 0) {
     return (
@@ -48,13 +50,14 @@ export function InteractionList({
         const talkedToNames = conversation.participantIds
           .filter((playerId) => playerId !== conversation.initiatorId)
           .map((playerId) => playerNames.get(playerId) ?? 'Unknown');
+        const repeat = groupRepeats.get(getConversationGroupKey(conversation));
 
         return (
           <View
             key={conversation.id}
             style={{
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
+              backgroundColor: repeat?.repeated ? '#422006' : colors.surface,
+              borderColor: repeat?.repeated ? '#f59e0b' : colors.border,
               borderRadius: 8,
               borderWidth: 1,
               gap: 12,
@@ -119,6 +122,57 @@ export function InteractionList({
                 <Trash2 color={colors.danger} size={15} strokeWidth={2.6} />
               </Pressable>
             </View>
+            {repeat?.repeated ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                {repeat.dayLabels.map((label) => (
+                  <View
+                    key={label}
+                    style={{
+                      backgroundColor: '#78350f',
+                      borderColor: '#f59e0b',
+                      borderRadius: 999,
+                      borderWidth: 1,
+                      paddingHorizontal: 8,
+                      paddingVertical: 3,
+                    }}
+                  >
+                    <Text
+                      selectable
+                      style={{
+                        color: '#fde68a',
+                        fontSize: 12,
+                        fontWeight: '900',
+                        lineHeight: 16,
+                      }}
+                    >
+                      {label}
+                    </Text>
+                  </View>
+                ))}
+                <View
+                  style={{
+                    backgroundColor: '#78350f',
+                    borderColor: '#f59e0b',
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                  }}
+                >
+                  <Text
+                    selectable
+                    style={{
+                      color: '#fde68a',
+                      fontSize: 12,
+                      fontWeight: '900',
+                      lineHeight: 16,
+                    }}
+                  >
+                    x{repeat.dayCount}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
           </View>
         );
       })}
