@@ -3,6 +3,7 @@ import Svg, { Path } from 'react-native-svg';
 
 import { PlayerToken } from '@/components/player-token';
 import type { Conversation, Player, PlayerPosition } from '@/types/game';
+import { buildConversationGroupRepeats, getConversationGroupKey } from '@/utils/conversation-utils';
 import { getPlayerMapPosition, getTokenSize } from '@/utils/layout-utils';
 
 type GameMapProps = {
@@ -36,6 +37,7 @@ export function GameMap({
       getPlayerMapPosition(player, players, mapWidth, mapHeight, tokenSize),
     ]),
   );
+  const groupRepeats = buildConversationGroupRepeats(conversations, activeDay);
 
   return (
     <View
@@ -63,6 +65,8 @@ export function GameMap({
           )
           .flatMap((conversation) => {
             const initiatorPosition = positions.get(conversation.initiatorId);
+            const repeat = groupRepeats.get(getConversationGroupKey(conversation));
+            const highlighted = repeat?.repeated === true;
 
             if (!initiatorPosition) {
               return [];
@@ -95,10 +99,10 @@ export function GameMap({
                         .filter((position): position is PlayerPosition => !!position),
                     )}
                     fill="none"
-                    stroke="#38bdf8"
+                    stroke={highlighted ? '#f59e0b' : '#38bdf8'}
                     strokeLinecap="round"
-                    strokeOpacity={0.76}
-                    strokeWidth={3}
+                    strokeOpacity={highlighted ? 0.95 : 0.76}
+                    strokeWidth={highlighted ? 4 : 3}
                   />
                 );
               });
