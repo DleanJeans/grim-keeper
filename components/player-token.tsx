@@ -1,4 +1,4 @@
-import { Skull, Swords } from 'lucide-react-native';
+import { FlameKindling, Skull } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -40,7 +40,7 @@ export function PlayerToken({
 }: PlayerTokenProps) {
   const [isDragReady, setIsDragReady] = useState(false);
   const tokenSize = getTokenSize(tokenSizeProp);
-  const DeathIcon = player.death?.kind === 'execution' ? Skull : Swords;
+  const DeathIcon = player.death?.kind === 'execution' ? FlameKindling : Skull;
   const deathIconColor = player.death?.kind === 'execution' ? '#fecaca' : '#bfdbfe';
   const x = useSharedValue(position.x);
   const y = useSharedValue(position.y);
@@ -157,7 +157,7 @@ export function PlayerToken({
               width: 22,
             }}
           >
-            <DeathIcon color={deathIconColor} size={13} strokeWidth={3} />
+            <DeathIcon color={deathIconColor} size={13} strokeWidth={2} />
           </View>
         ) : null}
       </Animated.View>

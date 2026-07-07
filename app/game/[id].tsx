@@ -3,6 +3,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  FlameKindling,
   HeartPulse,
   List,
   Map as MapIcon,
@@ -15,7 +16,6 @@ import {
   RotateCcw,
   RotateCw,
   Skull,
-  Swords,
   Table2,
   Trash2,
   Undo2,
@@ -620,7 +620,7 @@ export default function GameRoute() {
                       paddingVertical: 14,
                     })}
                   >
-                    <Skull color="#fca5a5" size={17} strokeWidth={2.7} />
+                    <FlameKindling color="#fca5a5" size={17} strokeWidth={2.7} />
                     <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Execution</Text>
                   </Pressable>
                   <Pressable
@@ -642,7 +642,7 @@ export default function GameRoute() {
                       paddingVertical: 14,
                     })}
                   >
-                    <Swords color="#93c5fd" size={17} strokeWidth={2.7} />
+                    <Skull color="#93c5fd" size={17} strokeWidth={2.7} />
                     <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Night</Text>
                   </Pressable>
                   <Pressable
