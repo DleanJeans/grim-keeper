@@ -1,4 +1,4 @@
-import { Podcast, Trash2 } from 'lucide-react-native';
+import { MessagesSquare, Trash2 } from 'lucide-react-native';
 import { Alert, Pressable, View } from 'react-native';
 
 import { Text } from '@/components/text';
@@ -86,7 +86,7 @@ export function InteractionList({
                   {initiatorName}
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Podcast color={colors.textMuted} size={14} />
+                  <MessagesSquare color={colors.textMuted} size={14} />
                   <Text
                     selectable
                     style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}
