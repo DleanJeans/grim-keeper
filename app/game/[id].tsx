@@ -136,6 +136,13 @@ export default function GameRoute() {
   const trackingCancelFlex = trackingMode === 'nomination' ? 0.82 : 1;
   const trackingConfirmFlex = trackingMode === 'nomination' ? 1.18 : 1;
   const activeTokenSize = getTokenSize(activeGame.tokenSize);
+  const focusedPlayerAlreadyNominatedToday = activeGame.conversations.some(
+    (conversation) =>
+      conversation.day === activeGame.activeDay &&
+      conversation.kind === 'nomination' &&
+      conversation.initiatorId === focusedPlayerId,
+  );
+  const nominationDisabled = !!focusedPlayer?.death || focusedPlayerAlreadyNominatedToday;
   const deadPlayerCount = activeGame.players.filter((player) => player.death).length;
   const alivePlayerCount = activeGame.players.length - deadPlayerCount;
 
@@ -174,6 +181,10 @@ export default function GameRoute() {
 
   function handleStartTracking(mode: TrackingMode) {
     if (!focusedPlayerId) {
+      return;
+    }
+
+    if (mode === 'nomination' && nominationDisabled) {
       return;
     }
 
@@ -714,11 +725,12 @@ export default function GameRoute() {
                   <Pressable
                     accessibilityLabel={`Track nomination from ${focusedPlayer.name}`}
                     accessibilityRole="button"
+                    disabled={nominationDisabled}
                     onPress={() => handleStartTracking('nomination')}
                     style={({ pressed }) => ({
                       alignItems: 'center',
                       backgroundColor: pressed ? '#1f2937' : '#111827',
-                      borderColor: '#334155',
+                      borderColor: nominationDisabled ? '#1f2937' : '#334155',
                       borderRadius: 8,
                       borderWidth: 1,
                       flex: 1,
@@ -727,11 +739,23 @@ export default function GameRoute() {
                       gap: 6,
                       justifyContent: 'center',
                       minWidth: 0,
+                      opacity: nominationDisabled ? 0.48 : 1,
                       paddingVertical: 14,
                     })}
                   >
-                    <Pointer color="#f8fafc" size={17} strokeWidth={2.7} />
-                    <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Nomination</Text>
+                    <Pointer
+                      color={nominationDisabled ? '#94a3b8' : '#f8fafc'}
+                      size={17}
+                      strokeWidth={2.7}
+                    />
+                    <Text
+                      style={{
+                        color: nominationDisabled ? '#94a3b8' : '#f8fafc',
+                        fontWeight: '900',
+                      }}
+                    >
+                      Nomination
+                    </Text>
                   </Pressable>
                 </View>
               </View>
