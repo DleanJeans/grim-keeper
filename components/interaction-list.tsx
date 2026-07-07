@@ -60,12 +60,12 @@ export function InteractionList({
               borderColor: repeat?.repeated ? '#f59e0b' : colors.border,
               borderRadius: 8,
               borderWidth: 1,
-              gap: 12,
+              gap: 6,
               padding: 10,
               paddingLeft: 20,
             }}
           >
-            <View style={{ alignItems: 'center', flexDirection: 'row', gap: 12 }}>
+            <View style={{ alignItems: 'center', flexDirection: 'row' }}>
               <Text
                 selectable
                 style={{
