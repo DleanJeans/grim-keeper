@@ -1,6 +1,7 @@
-import { Hand, Pencil, Pointer, Trash2 } from 'lucide-react-native';
+import { Hand, Pencil, Trash2 } from 'lucide-react-native';
 import { Alert, Pressable, View } from 'react-native';
 
+import { NomIcon } from '@/components/nom-icon';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Conversation, Player } from '@/types/game';
@@ -84,9 +85,7 @@ export function NominationList({
                   <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
                     {nominatorName}
                   </Text>
-                  <View style={{ transform: [{ rotate: '90deg' }] }}>
-                    <Pointer color={colors.text} size={16} />
-                  </View>
+                  <NomIcon color={colors.text} size={16} />
                   <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
                     {nomineeName}
                   </Text>

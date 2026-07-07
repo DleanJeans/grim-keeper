@@ -1,4 +1,4 @@
-import { FlameKindling, Pointer, Skull, Vote } from 'lucide-react-native';
+import { FlameKindling, Skull, Vote } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -9,6 +9,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
+import { NomIcon } from '@/components/nom-icon';
 import { Text } from '@/components/text';
 import type { Player, PlayerPosition } from '@/types/game';
 import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
@@ -182,7 +183,7 @@ export function PlayerToken({
               width: 22,
             }}
           >
-            <Pointer color="#ddd6fe" size={12} strokeWidth={2.3} />
+            <NomIcon color="#ddd6fe" size={12} strokeWidth={2.3} />
           </View>
         ) : null}
         {isNominated ? (

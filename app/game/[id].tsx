@@ -12,7 +12,6 @@ import {
   Minus,
   MoveDiagonal,
   Plus,
-  Pointer,
   RotateCcw,
   RotateCw,
   Skull,
@@ -31,6 +30,7 @@ import { ConversationTable } from '@/components/conversation-table';
 import { GameMap } from '@/components/game-map';
 import { InteractionList } from '@/components/interaction-list';
 import { NominationList } from '@/components/nomination-list';
+import { NomIcon } from '@/components/nom-icon';
 import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
 import {
@@ -758,7 +758,7 @@ export default function GameRoute() {
                       paddingVertical: 14,
                     })}
                   >
-                    <Pointer
+                    <NomIcon
                       color={nominationDisabled ? '#94a3b8' : '#f8fafc'}
                       size={17}
                       strokeWidth={2.7}
