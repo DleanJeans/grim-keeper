@@ -41,29 +41,12 @@ export default function HomeRoute() {
 
       <View style={{ flexDirection: 'row', gap: 12 }}>
         <HomeActionButton icon="plus" label="New Game" onPress={() => router.push('/create')} />
-        <HomeActionButton icon="users" label="Friends" onPress={() => router.push('/friends')} />
-      </View>
-
-      <View
-        style={{
-          backgroundColor: colors.surface,
-          borderColor: colors.border,
-          borderRadius: 8,
-          borderWidth: 1,
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          padding: 16,
-        }}
-      >
-        <Text selectable style={{ color: colors.text, fontSize: 17, fontWeight: '800' }}>
-          Friends
-        </Text>
-        <Text
-          selectable
-          style={{ color: colors.textMuted, fontSize: 15, fontVariant: ['tabular-nums'] }}
-        >
-          {friends.length}
-        </Text>
+        <HomeActionButton
+          count={friends.length}
+          icon="users"
+          label="Friends"
+          onPress={() => router.push('/friends')}
+        />
       </View>
 
       <View style={{ gap: 12 }}>
@@ -151,7 +134,9 @@ function HomeActionButton({
   icon,
   label,
   onPress,
+  count,
 }: {
+  count?: number;
   icon: 'plus' | 'users';
   label: string;
   onPress: () => void;
@@ -177,6 +162,11 @@ function HomeActionButton({
     >
       <Icon color={colors.onPrimary} size={18} strokeWidth={2.7} />
       <Text style={{ color: colors.onPrimary, fontSize: 16, fontWeight: '800' }}>{label}</Text>
+      {count === undefined ? null : (
+        <Text style={{ color: colors.onPrimary, fontSize: 14, fontVariant: ['tabular-nums'] }}>
+          {count}
+        </Text>
+      )}
     </Pressable>
   );
 }
