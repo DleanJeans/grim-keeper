@@ -5,10 +5,12 @@ import type { TextInput as RNTextInput } from 'react-native';
 import { Keyboard, Pressable, View } from 'react-native';
 import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
 
+import { FriendSuggestions } from '@/components/friend-suggestions';
 import { Text, TextInput } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { hasDuplicatePlayerName, normalizePlayerName } from '@/utils/conversation-utils';
+import { getFriendSummaries } from '@/utils/friend-utils';
 
 type DraftPlayer = {
   id: string;
@@ -17,9 +19,12 @@ type DraftPlayer = {
 
 export default function CreateRoute() {
   const createGame = useGameStore((state) => state.createGame);
+  const games = useGameStore((state) => state.games);
+  const storedFriends = useGameStore((state) => state.friends);
   const inputRef = useRef<RNTextInput>(null);
   const [name, setName] = useState('');
   const [players, setPlayers] = useState<DraftPlayer[]>([]);
+  const friends = useMemo(() => getFriendSummaries(games, storedFriends), [games, storedFriends]);
   const playerOrderKey = useMemo(() => players.map((player) => player.id).join('|'), [players]);
   const playerIndexes = useMemo(
     () => new Map(players.map((player, index) => [player.id, index])),
@@ -32,6 +37,18 @@ export default function CreateRoute() {
   );
   const canAddPlayer = normalizedName.length > 0 && !duplicateName;
   const canStart = players.length >= 2 && !(normalizedName.length > 0 && duplicateName);
+  const suggestedFriends = useMemo(() => {
+    const key = normalizedName.toLocaleLowerCase();
+    const selectedNames = players.map((player) => player.name);
+
+    return friends
+      .filter(
+        (friend) =>
+          !hasDuplicatePlayerName(selectedNames, friend.name) &&
+          (!key || friend.name.toLocaleLowerCase().includes(key)),
+      )
+      .slice(0, 5);
+  }, [friends, normalizedName, players]);
 
   const helperText = useMemo(() => {
     if (duplicateName) {
@@ -53,6 +70,27 @@ export default function CreateRoute() {
     setPlayers((currentPlayers) => [
       ...currentPlayers,
       { id: createDraftId(), name: normalizedName },
+    ]);
+    setName('');
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }
+
+  function handleSelectFriend(friendName: string) {
+    const normalizedFriendName = normalizePlayerName(friendName);
+
+    if (
+      !normalizedFriendName ||
+      hasDuplicatePlayerName(
+        players.map((player) => player.name),
+        normalizedFriendName,
+      )
+    ) {
+      return;
+    }
+
+    setPlayers((currentPlayers) => [
+      ...currentPlayers,
+      { id: createDraftId(), name: normalizedFriendName },
     ]);
     setName('');
     requestAnimationFrame(() => inputRef.current?.focus());
@@ -107,6 +145,8 @@ export default function CreateRoute() {
             }}
           />
         </View>
+
+        <FriendSuggestions friends={suggestedFriends} onSelectFriend={handleSelectFriend} />
 
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <Pressable

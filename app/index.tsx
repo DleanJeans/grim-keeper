@@ -1,13 +1,18 @@
 import { router } from 'expo-router';
-import { ChevronRight, Plus, Trash2 } from 'lucide-react-native';
+import { ChevronRight, Plus, Trash2, Users } from 'lucide-react-native';
+import { useMemo } from 'react';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
 
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
+import { colors } from '@/theme/colors';
+import { getFriendSummaries } from '@/utils/friend-utils';
 
 export default function HomeRoute() {
   const games = useGameStore((state) => state.games);
+  const storedFriends = useGameStore((state) => state.friends);
   const deleteGame = useGameStore((state) => state.deleteGame);
+  const friends = useMemo(() => getFriendSummaries(games, storedFriends), [games, storedFriends]);
 
   function confirmDeleteGame(gameId: string) {
     Alert.alert('Delete saved game?', 'This removes the game and all tracked data.', [
@@ -23,44 +28,52 @@ export default function HomeRoute() {
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
-      style={{ backgroundColor: '#0b1120', flex: 1 }}
+      style={{ backgroundColor: colors.background, flex: 1 }}
       contentContainerStyle={{ gap: 24, padding: 20, paddingBottom: 40 }}
     >
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => router.push('/create')}
-        style={({ pressed }) => ({
-          alignItems: 'center',
-          backgroundColor: pressed ? '#f8fafc' : '#ffffff',
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        <HomeActionButton icon="plus" label="New Game" onPress={() => router.push('/create')} />
+        <HomeActionButton icon="users" label="Friends" onPress={() => router.push('/friends')} />
+      </View>
+
+      <View
+        style={{
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
           borderRadius: 8,
-          borderCurve: 'continuous',
+          borderWidth: 1,
           flexDirection: 'row',
-          gap: 8,
-          justifyContent: 'center',
-          paddingHorizontal: 18,
-          paddingVertical: 14,
-        })}
+          justifyContent: 'space-between',
+          padding: 16,
+        }}
       >
-        <Plus color="#0b1120" size={18} strokeWidth={2.7} />
-        <Text style={{ color: '#0b1120', fontSize: 17, fontWeight: '800' }}>New Game</Text>
-      </Pressable>
+        <Text selectable style={{ color: colors.text, fontSize: 17, fontWeight: '800' }}>
+          Friends
+        </Text>
+        <Text
+          selectable
+          style={{ color: colors.textMuted, fontSize: 15, fontVariant: ['tabular-nums'] }}
+        >
+          {friends.length}
+        </Text>
+      </View>
 
       <View style={{ gap: 12 }}>
-        <Text selectable style={{ color: '#f8fafc', fontSize: 22, fontWeight: '800' }}>
+        <Text selectable style={{ color: colors.text, fontSize: 22, fontWeight: '800' }}>
           Previous games
         </Text>
 
         {games.length === 0 ? (
           <View
             style={{
-              backgroundColor: '#111827',
-              borderColor: '#1f2937',
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
               borderRadius: 8,
               borderWidth: 1,
               padding: 16,
             }}
           >
-            <Text selectable style={{ color: '#94a3b8', fontSize: 16, lineHeight: 22 }}>
+            <Text selectable style={{ color: colors.textMuted, fontSize: 16, lineHeight: 22 }}>
               No games yet.
             </Text>
           </View>
@@ -69,8 +82,8 @@ export default function HomeRoute() {
             <View
               key={game.id}
               style={{
-                backgroundColor: '#111827',
-                borderColor: '#334155',
+                backgroundColor: colors.surface,
+                borderColor: colors.borderStrong,
                 borderRadius: 8,
                 borderWidth: 1,
                 flexDirection: 'row',
@@ -81,7 +94,7 @@ export default function HomeRoute() {
                 accessibilityRole="button"
                 onPress={() => router.push({ pathname: '/game/[id]', params: { id: game.id } })}
                 style={({ pressed }) => ({
-                  backgroundColor: pressed ? '#1f2937' : '#111827',
+                  backgroundColor: pressed ? colors.surfacePressed : colors.surface,
                   borderBottomLeftRadius: 8,
                   borderTopLeftRadius: 8,
                   flex: 1,
@@ -92,14 +105,14 @@ export default function HomeRoute() {
                 })}
               >
                 <View style={{ flex: 1, gap: 8 }}>
-                  <Text selectable style={{ color: '#f8fafc', fontSize: 17, fontWeight: '700' }}>
+                  <Text selectable style={{ color: colors.text, fontSize: 17, fontWeight: '700' }}>
                     {formatGameTitle(game.createdAt)}
                   </Text>
-                  <Text selectable style={{ color: '#94a3b8', fontSize: 14 }}>
+                  <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
                     {game.players.length} players - Day {game.activeDay}
                   </Text>
                 </View>
-                <ChevronRight color="#94a3b8" size={18} strokeWidth={2.5} />
+                <ChevronRight color={colors.textMuted} size={18} strokeWidth={2.5} />
               </Pressable>
               <Pressable
                 accessibilityLabel="Delete saved game"
@@ -107,22 +120,56 @@ export default function HomeRoute() {
                 onPress={() => confirmDeleteGame(game.id)}
                 style={({ pressed }) => ({
                   alignItems: 'center',
-                  backgroundColor: pressed ? '#2a1517' : '#111827',
+                  backgroundColor: pressed ? colors.dangerSurface : colors.surface,
                   borderBottomRightRadius: 8,
-                  borderLeftColor: '#334155',
+                  borderLeftColor: colors.borderStrong,
                   borderLeftWidth: 1,
                   borderTopRightRadius: 8,
                   justifyContent: 'center',
                   paddingHorizontal: 14,
                 })}
               >
-                <Trash2 color="#fca5a5" size={18} strokeWidth={2.6} />
+                <Trash2 color={colors.danger} size={18} strokeWidth={2.6} />
               </Pressable>
             </View>
           ))
         )}
       </View>
     </ScrollView>
+  );
+}
+
+function HomeActionButton({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: 'plus' | 'users';
+  label: string;
+  onPress: () => void;
+}) {
+  const Icon = icon === 'plus' ? Plus : Users;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => ({
+        alignItems: 'center',
+        backgroundColor: pressed ? colors.surfacePressed : colors.primary,
+        borderRadius: 8,
+        borderCurve: 'continuous',
+        flex: 1,
+        flexDirection: 'row',
+        gap: 8,
+        justifyContent: 'center',
+        paddingHorizontal: 14,
+        paddingVertical: 14,
+      })}
+    >
+      <Icon color={colors.onPrimary} size={18} strokeWidth={2.7} />
+      <Text style={{ color: colors.onPrimary, fontSize: 16, fontWeight: '800' }}>{label}</Text>
+    </Pressable>
   );
 }
 

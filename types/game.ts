@@ -37,6 +37,16 @@ export type Game = {
   conversations: Conversation[];
 };
 
+export type Friend = {
+  id: string;
+  name: string;
+  createdAt: string;
+};
+
+export type FriendSummary = Friend & {
+  gamesPlayed: number;
+};
+
 export type ConversationRow = {
   playerId: string;
   playerName: string;

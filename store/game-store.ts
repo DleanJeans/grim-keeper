@@ -3,8 +3,9 @@ import 'expo-sqlite/localStorage/install';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import type { Conversation, Game, Player, PlayerDeath, PlayerPosition } from '@/types/game';
+import type { Conversation, Friend, Game, Player, PlayerDeath, PlayerPosition } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
+import { addMissingFriends, getFriendSummaries, hasFriendName } from '@/utils/friend-utils';
 import { getTokenSize } from '@/utils/layout-utils';
 
 type CreateGameInput = {
@@ -13,6 +14,8 @@ type CreateGameInput = {
 
 type GameState = {
   games: Game[];
+  friends: Friend[];
+  addFriend: (name: string) => void;
   createGame: (input: CreateGameInput) => Game;
   addPlayer: (gameId: string, name: string) => void;
   deleteGame: (gameId: string) => void;
@@ -36,6 +39,31 @@ export const useGameStore = create<GameState>()(
   persist(
     (set) => ({
       games: [],
+      friends: [],
+      addFriend: (name) => {
+        const normalizedName = normalizePlayerName(name);
+
+        if (!normalizedName) {
+          return;
+        }
+
+        set((state) => {
+          const friends = getFriendSummaries(state.games, state.friends);
+
+          if (hasFriendName(friends, normalizedName)) {
+            return state;
+          }
+
+          const createdAt = new Date().toISOString();
+
+          return {
+            friends: [
+              ...state.friends,
+              { id: createId('friend'), name: normalizedName, createdAt },
+            ],
+          };
+        });
+      },
       createGame: ({ playerNames }) => {
         const now = new Date().toISOString();
         const players = playerNames.map<Player>((name, index) => ({
@@ -53,9 +81,15 @@ export const useGameStore = create<GameState>()(
           conversations: [],
         };
 
-        set((state) => ({
-          games: [game, ...state.games],
-        }));
+        set((state) => {
+          const games = [game, ...state.games];
+          const friends = addMissingFriends(state.friends, playerNames, now);
+
+          return {
+            games,
+            friends,
+          };
+        });
 
         return game;
       },
@@ -273,7 +307,7 @@ export const useGameStore = create<GameState>()(
     {
       name: 'grim-keeper-game-store-v1',
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ games: state.games }),
+      partialize: (state) => ({ friends: state.friends, games: state.games }),
     },
   ),
 );
