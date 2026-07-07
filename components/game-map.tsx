@@ -39,6 +39,7 @@ export function GameMap({
       getPlayerMapPosition(player, players, mapWidth, mapHeight, tokenSize),
     ]),
   );
+  const selectedPlayerIdSet = new Set(selectedPlayerIds);
   const groupRepeats = buildConversationGroupRepeats(conversations, activeDay);
   const disabledPlayerIdSet = new Set(disabledPlayerIds);
   const activeDayNominations = conversations.filter(
@@ -107,7 +108,11 @@ export function GameMap({
                     .filter((position): position is PlayerPosition => !!position),
                 );
                 const stroke = highlighted ? '#f59e0b' : '#38bdf8';
-                const opacity = highlighted ? 0.95 : 0.76;
+                const connectedToSelected =
+                  selectedPlayerIdSet.size === 0 ||
+                  selectedPlayerIdSet.has(conversation.initiatorId) ||
+                  selectedPlayerIdSet.has(playerId);
+                const opacity = connectedToSelected ? (highlighted ? 0.95 : 0.76) : 0.18;
 
                 return [
                   <Path
