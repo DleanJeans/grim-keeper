@@ -170,29 +170,23 @@ function getConversationCurve(
   const distance = Math.hypot(deltaX, deltaY);
   const roomDistance = Math.hypot(mapWidth, mapHeight);
   const tokenRadius = getTokenSize(tokenSize) / 2;
-  const end =
-    distance > tokenRadius
-      ? {
-          x: to.x - (deltaX / distance) * tokenRadius,
-          y: to.y - (deltaY / distance) * tokenRadius,
-        }
-      : to;
+  const center = { x: mapWidth / 2, y: mapHeight / 2 };
+  const start = getTokenEdgePoint(from, center, tokenRadius);
+  const end = getTokenEdgePoint(to, center, tokenRadius);
   const curveStrength = Math.max(0, 1 - distance / roomDistance);
   const baseControlOffset = 24 + curveStrength * 64;
-  const midpointX = (from.x + end.x) / 2;
-  const midpointY = (from.y + end.y) / 2;
+  const midpointX = (start.x + end.x) / 2;
+  const midpointY = (start.y + end.y) / 2;
 
   if (distance <= 0) {
     return {
-      arrowPoints: `${from.x},${from.y}`,
-      path: `M ${from.x} ${from.y}`,
+      arrowPoints: `${start.x},${start.y}`,
+      path: `M ${start.x} ${start.y}`,
     };
   }
 
-  const centerX = mapWidth / 2;
-  const centerY = mapHeight / 2;
-  const centerDeltaX = centerX - midpointX;
-  const centerDeltaY = centerY - midpointY;
+  const centerDeltaX = center.x - midpointX;
+  const centerDeltaY = center.y - midpointY;
   const centerDistance = Math.hypot(centerDeltaX, centerDeltaY);
   const centerUnit =
     centerDistance > 0
@@ -209,10 +203,10 @@ function getConversationCurve(
       y: midpointY + centerUnit.y * offset,
     };
 
-    if (!curveOverlapsBlocker(from, control, end, blockers, blockerRadius)) {
+    if (!curveOverlapsBlocker(start, control, end, blockers, blockerRadius)) {
       return {
         arrowPoints: getArrowPoints(end, control),
-        path: `M ${from.x} ${from.y} Q ${control.x} ${control.y} ${end.x} ${end.y}`,
+        path: `M ${start.x} ${start.y} Q ${control.x} ${control.y} ${end.x} ${end.y}`,
       };
     }
   }
@@ -224,7 +218,26 @@ function getConversationCurve(
 
   return {
     arrowPoints: getArrowPoints(end, fallbackControl),
-    path: `M ${from.x} ${from.y} Q ${fallbackControl.x} ${fallbackControl.y} ${end.x} ${end.y}`,
+    path: `M ${start.x} ${start.y} Q ${fallbackControl.x} ${fallbackControl.y} ${end.x} ${end.y}`,
+  };
+}
+
+function getTokenEdgePoint(
+  tokenCenter: PlayerPosition,
+  mapCenter: PlayerPosition,
+  tokenRadius: number,
+) {
+  const deltaX = mapCenter.x - tokenCenter.x;
+  const deltaY = mapCenter.y - tokenCenter.y;
+  const distance = Math.hypot(deltaX, deltaY);
+
+  if (distance <= 0) {
+    return tokenCenter;
+  }
+
+  return {
+    x: tokenCenter.x + (deltaX / distance) * tokenRadius,
+    y: tokenCenter.y + (deltaY / distance) * tokenRadius,
   };
 }
 
