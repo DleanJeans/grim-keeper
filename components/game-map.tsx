@@ -1,5 +1,5 @@
 import { View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Polygon } from 'react-native-svg';
 
 import { PlayerToken } from '@/components/player-token';
 import type { Conversation, Player, PlayerPosition } from '@/types/game';
@@ -74,37 +74,46 @@ export function GameMap({
 
             return conversation.participantIds
               .filter((playerId) => playerId !== conversation.initiatorId)
-              .map((playerId) => {
+              .flatMap((playerId) => {
                 const participantPosition = positions.get(playerId);
 
                 if (!participantPosition) {
-                  return null;
+                  return [];
                 }
 
-                return (
-                  <Path
-                    key={`${conversation.id}-${playerId}`}
-                    d={getConversationCurvePath(
-                      initiatorPosition,
-                      participantPosition,
-                      mapWidth,
-                      mapHeight,
-                      tokenSize,
-                      players
-                        .filter(
-                          (player) =>
-                            player.id !== conversation.initiatorId && player.id !== playerId,
-                        )
-                        .map((player) => positions.get(player.id))
-                        .filter((position): position is PlayerPosition => !!position),
-                    )}
-                    fill="none"
-                    stroke={highlighted ? '#f59e0b' : '#38bdf8'}
-                    strokeLinecap="round"
-                    strokeOpacity={highlighted ? 0.95 : 0.76}
-                    strokeWidth={highlighted ? 4 : 3}
-                  />
+                const curve = getConversationCurve(
+                  initiatorPosition,
+                  participantPosition,
+                  mapWidth,
+                  mapHeight,
+                  tokenSize,
+                  players
+                    .filter(
+                      (player) => player.id !== conversation.initiatorId && player.id !== playerId,
+                    )
+                    .map((player) => positions.get(player.id))
+                    .filter((position): position is PlayerPosition => !!position),
                 );
+                const stroke = highlighted ? '#f59e0b' : '#38bdf8';
+                const opacity = highlighted ? 0.95 : 0.76;
+
+                return [
+                  <Path
+                    key={`${conversation.id}-${playerId}-line`}
+                    d={curve.path}
+                    fill="none"
+                    stroke={stroke}
+                    strokeLinecap="round"
+                    strokeOpacity={opacity}
+                    strokeWidth={highlighted ? 4 : 3}
+                  />,
+                  <Polygon
+                    key={`${conversation.id}-${playerId}-arrow`}
+                    fill={stroke}
+                    opacity={opacity}
+                    points={curve.arrowPoints}
+                  />,
+                ];
               });
           })}
       </Svg>
@@ -131,7 +140,7 @@ export function GameMap({
   );
 }
 
-function getConversationCurvePath(
+function getConversationCurve(
   from: PlayerPosition,
   to: PlayerPosition,
   mapWidth: number,
@@ -143,13 +152,24 @@ function getConversationCurvePath(
   const deltaY = to.y - from.y;
   const distance = Math.hypot(deltaX, deltaY);
   const roomDistance = Math.hypot(mapWidth, mapHeight);
+  const tokenRadius = getTokenSize(tokenSize) / 2;
+  const end =
+    distance > tokenRadius
+      ? {
+          x: to.x - (deltaX / distance) * tokenRadius,
+          y: to.y - (deltaY / distance) * tokenRadius,
+        }
+      : to;
   const curveStrength = Math.max(0, 1 - distance / roomDistance);
   const baseControlOffset = 24 + curveStrength * 64;
-  const midpointX = (from.x + to.x) / 2;
-  const midpointY = (from.y + to.y) / 2;
+  const midpointX = (from.x + end.x) / 2;
+  const midpointY = (from.y + end.y) / 2;
 
   if (distance <= 0) {
-    return `M ${from.x} ${from.y}`;
+    return {
+      arrowPoints: `${from.x},${from.y}`,
+      path: `M ${from.x} ${from.y}`,
+    };
   }
 
   const centerX = mapWidth / 2;
@@ -161,7 +181,7 @@ function getConversationCurvePath(
     centerDistance > 0
       ? { x: centerDeltaX / centerDistance, y: centerDeltaY / centerDistance }
       : { x: 0, y: -1 };
-  const blockerRadius = getTokenSize(tokenSize) / 2 + 8;
+  const blockerRadius = tokenRadius + 8;
   const maxOffset = Math.max(mapWidth, mapHeight);
   const offsetSteps = [1, 1.4, 1.8, 2.3, 2.8, 3.4, 4.1, 5];
 
@@ -172,8 +192,11 @@ function getConversationCurvePath(
       y: midpointY + centerUnit.y * offset,
     };
 
-    if (!curveOverlapsBlocker(from, control, to, blockers, blockerRadius)) {
-      return `M ${from.x} ${from.y} Q ${control.x} ${control.y} ${to.x} ${to.y}`;
+    if (!curveOverlapsBlocker(from, control, end, blockers, blockerRadius)) {
+      return {
+        arrowPoints: getArrowPoints(end, control),
+        path: `M ${from.x} ${from.y} Q ${control.x} ${control.y} ${end.x} ${end.y}`,
+      };
     }
   }
 
@@ -182,7 +205,22 @@ function getConversationCurvePath(
     y: midpointY + centerUnit.y * maxOffset,
   };
 
-  return `M ${from.x} ${from.y} Q ${fallbackControl.x} ${fallbackControl.y} ${to.x} ${to.y}`;
+  return {
+    arrowPoints: getArrowPoints(end, fallbackControl),
+    path: `M ${from.x} ${from.y} Q ${fallbackControl.x} ${fallbackControl.y} ${end.x} ${end.y}`,
+  };
+}
+
+function getArrowPoints(tip: PlayerPosition, control: PlayerPosition) {
+  const angle = Math.atan2(tip.y - control.y, tip.x - control.x);
+  const length = 12;
+  const spread = Math.PI / 7;
+
+  return [
+    `${tip.x},${tip.y}`,
+    `${tip.x - Math.cos(angle - spread) * length},${tip.y - Math.sin(angle - spread) * length}`,
+    `${tip.x - Math.cos(angle + spread) * length},${tip.y - Math.sin(angle + spread) * length}`,
+  ].join(' ');
 }
 
 function curveOverlapsBlocker(
