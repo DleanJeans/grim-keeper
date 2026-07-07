@@ -105,7 +105,7 @@ describe('conversation utils', () => {
       getConversationGroupKey(conversations[2]),
     );
 
-    expect(dayOneRepeat).toEqual({ dayCount: 1, dayLabels: [], repeated: false });
+    expect(dayOneRepeat).toEqual({ dayCount: 2, dayLabels: ['D2'], repeated: true });
     expect(dayTwoRepeat).toEqual({ dayCount: 2, dayLabels: ['D1'], repeated: true });
     expect(dayTwoGroupRepeat).toEqual({ dayCount: 1, dayLabels: [], repeated: false });
   });

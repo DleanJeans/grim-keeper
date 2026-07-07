@@ -63,13 +63,11 @@ export function buildConversationGroupRepeats(
   const groupRepeats = new Map<string, ConversationGroupRepeat>();
 
   for (const [groupKey, days] of groupDays) {
-    const sortedDays = [...days]
-      .filter((day) => day <= activeDay)
-      .sort((first, second) => first - second);
-    const priorDays = sortedDays.filter((day) => day < activeDay);
+    const sortedDays = [...days].sort((first, second) => first - second);
+    const counterpartDays = sortedDays.filter((day) => day !== activeDay);
 
     groupRepeats.set(groupKey, {
-      dayLabels: priorDays.map((day) => `D${day}`),
+      dayLabels: counterpartDays.map((day) => `D${day}`),
       dayCount: sortedDays.length,
       repeated: sortedDays.length > 1,
     });
