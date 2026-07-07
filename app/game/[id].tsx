@@ -492,7 +492,7 @@ export default function GameRoute() {
                     alignItems: 'center',
                     backgroundColor: '#334155',
                     borderRadius: 8,
-                    flex: 1,
+                    flex: 0.75,
                     flexBasis: 0,
                     flexDirection: 'row',
                     gap: 6,
@@ -511,7 +511,7 @@ export default function GameRoute() {
                     alignItems: 'center',
                     backgroundColor: '#16a34a',
                     borderRadius: 8,
-                    flex: 1,
+                    flex: 1.25,
                     flexBasis: 0,
                     flexDirection: 'row',
                     gap: 6,
@@ -532,7 +532,7 @@ export default function GameRoute() {
                       minWidth: 0,
                     }}
                   >
-                    Confirm Votes
+                    Confirm {selectedPlayerIds.length} Votes
                   </Text>
                 </Pressable>
               </View>
