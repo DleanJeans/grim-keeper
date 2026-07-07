@@ -647,7 +647,7 @@ export default function GameRoute() {
                     })}
                   >
                     <FlameKindling color="#fca5a5" size={17} strokeWidth={2.7} />
-                    <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Execution</Text>
+                    <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Execute{focusedPlayer.death?.kind === 'execution' ? 'd' : ''}</Text>
                   </Pressable>
                   <Pressable
                     accessibilityLabel={`Mark ${focusedPlayer.name} dead at night`}
@@ -669,7 +669,7 @@ export default function GameRoute() {
                     })}
                   >
                     <Skull color="#93c5fd" size={17} strokeWidth={2.7} />
-                    <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Night</Text>
+                    <Text style={{ color: '#f8fafc', fontWeight: '900' }}>{focusedPlayer.death?.kind === 'night' ? 'Killed' : 'Night'}</Text>
                   </Pressable>
                   <Pressable
                     accessibilityLabel={`Revive ${focusedPlayer.name}`}
@@ -769,7 +769,7 @@ export default function GameRoute() {
                         fontWeight: '900',
                       }}
                     >
-                      Nomination
+                      {`Nominate${nominationDisabled ? 'd' : ''}`}
                     </Text>
                   </Pressable>
                 </View>
