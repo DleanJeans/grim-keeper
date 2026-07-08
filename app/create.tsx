@@ -121,7 +121,7 @@ export default function CreateRoute() {
             Seat the circle
           </Text>
           <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
-            Add players in any order, then long press to set the final seat order.
+            Add players from the player on the left then clockwise.
           </Text>
         </View>
 
