@@ -136,18 +136,10 @@ export function PlayerToken({
           animatedStyle,
         ]}
       >
-        <Text
-          numberOfLines={2}
-          style={{
-            color: isDragReady ? '#082f49' : player.death ? '#cbd5e1' : '#0b1120',
-            fontSize: 12,
-            fontWeight: '800',
-            lineHeight: 15,
-            textAlign: 'center',
-          }}
-        >
-          {player.name}
-        </Text>
+        <PlayerTokenName
+          color={isDragReady ? '#082f49' : player.death ? '#cbd5e1' : '#0b1120'}
+          name={player.name}
+        />
         {player.death ? (
           <View
             style={{
@@ -207,5 +199,30 @@ export function PlayerToken({
         ) : null}
       </Animated.View>
     </GestureDetector>
+  );
+}
+
+type PlayerTokenNameProps = {
+  color: string;
+  name: string;
+};
+
+function PlayerTokenName({ color, name }: PlayerTokenNameProps) {
+  return (
+    <Text
+      adjustsFontSizeToFit
+      ellipsizeMode="tail"
+      minimumFontScale={0.72}
+      numberOfLines={1}
+      style={{
+        color,
+        fontSize: 12,
+        fontWeight: '800',
+        lineHeight: 15,
+        textAlign: 'center',
+      }}
+    >
+      {name}
+    </Text>
   );
 }

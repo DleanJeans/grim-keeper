@@ -1,9 +1,9 @@
 import type { Player, PlayerPosition } from '@/types/game';
 
 export const defaultTokenSize = 68;
-export const minTokenSize = 52;
-export const maxTokenSize = 92;
-export const tokenSizeStep = 8;
+export const minTokenSize = 40;
+export const maxTokenSize = 100;
+export const tokenSizeStep = 2;
 
 export function getTokenSize(tokenSize = defaultTokenSize) {
   'worklet';
