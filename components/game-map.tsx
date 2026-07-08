@@ -99,51 +99,42 @@ export function GameMap({
                 conversation.day === activeDay && conversation.kind !== 'nomination',
             )
             .flatMap((conversation) => {
-              const initiatorPosition = positions.get(conversation.initiatorId);
               const repeat = groupRepeats.get(getConversationGroupKey(conversation));
               const highlighted = repeat?.repeated === true;
 
-              if (!initiatorPosition) {
-                return [];
-              }
+              return getInteractionCurvePlayerPairs(conversation).flatMap(([fromId, toId]) => {
+                const fromPosition = positions.get(fromId);
+                const toPosition = positions.get(toId);
 
-              return conversation.participantIds
-                .filter((playerId) => playerId !== conversation.initiatorId)
-                .flatMap((playerId) => {
-                  const participantPosition = positions.get(playerId);
+                if (!fromPosition || !toPosition) {
+                  return [];
+                }
 
-                  if (!participantPosition) {
-                    return [];
-                  }
+                const stroke = highlighted ? '#f59e0b' : '#38bdf8';
+                const connectedToSelected =
+                  selectedPlayerIdSet.size === 0 ||
+                  selectedPlayerIdSet.has(fromId) ||
+                  selectedPlayerIdSet.has(toId);
+                const opacity = connectedToSelected ? (highlighted ? 0.95 : 0.76) : 0.18;
 
-                  const stroke = highlighted ? '#f59e0b' : '#38bdf8';
-                  const connectedToSelected =
-                    selectedPlayerIdSet.size === 0 ||
-                    selectedPlayerIdSet.has(conversation.initiatorId) ||
-                    selectedPlayerIdSet.has(playerId);
-                  const opacity = connectedToSelected ? (highlighted ? 0.95 : 0.76) : 0.18;
-
-                  return [
-                    <ConnectionCurve
-                      key={`${conversation.id}-${playerId}-line`}
-                      blockers={players
-                        .filter(
-                          (player) =>
-                            player.id !== conversation.initiatorId && player.id !== playerId,
-                        )
-                        .map((player) => positions.get(player.id))
-                        .filter((position): position is PlayerPosition => !!position)}
-                      from={initiatorPosition}
-                      mapHeight={mapHeight}
-                      mapWidth={mapWidth}
-                      opacity={opacity}
-                      stroke={stroke}
-                      strokeWidth={highlighted ? 4 : 3}
-                      to={participantPosition}
-                      tokenSize={tokenSize}
-                    />,
-                  ];
-                });
+                return [
+                  <ConnectionCurve
+                    key={`${conversation.id}-${fromId}-${toId}-line`}
+                    blockers={players
+                      .filter((player) => player.id !== fromId && player.id !== toId)
+                      .map((player) => positions.get(player.id))
+                      .filter((position): position is PlayerPosition => !!position)}
+                    from={fromPosition}
+                    mapHeight={mapHeight}
+                    mapWidth={mapWidth}
+                    opacity={opacity}
+                    stroke={stroke}
+                    strokeWidth={highlighted ? 4 : 3}
+                    to={toPosition}
+                    tokenSize={tokenSize}
+                  />,
+                ];
+              });
             })}
       </Svg>
 
@@ -172,6 +163,19 @@ export function GameMap({
       ))}
     </View>
   );
+}
+
+function getInteractionCurvePlayerPairs(conversation: Conversation) {
+  const playerIds = [...new Set(conversation.participantIds)];
+  const pairs: [string, string][] = [];
+
+  for (let index = 0; index < playerIds.length; index += 1) {
+    for (let nextIndex = index + 1; nextIndex < playerIds.length; nextIndex += 1) {
+      pairs.push([playerIds[index], playerIds[nextIndex]]);
+    }
+  }
+
+  return pairs;
 }
 
 function ConnectionCurve({
