@@ -28,6 +28,13 @@ export type Conversation = {
   createdAt: string;
 };
 
+export type PlayerDayNote = {
+  day: number;
+  playerId: string;
+  text: string;
+  updatedAt: string;
+};
+
 export type Game = {
   id: string;
   createdAt: string;
@@ -36,6 +43,7 @@ export type Game = {
   tokenSize?: number;
   players: Player[];
   conversations: Conversation[];
+  playerDayNotes?: PlayerDayNote[];
 };
 
 export type Friend = {

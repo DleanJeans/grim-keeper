@@ -22,8 +22,8 @@ import {
   Vote,
   X,
 } from 'lucide-react-native';
-import { useState } from 'react';
-import { Alert, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { AddPlayerModal } from '@/components/add-player-modal';
 import { ConversationTable } from '@/components/conversation-table';
@@ -83,6 +83,7 @@ export default function GameRoute() {
   const addPlayer = useGameStore((state) => state.addPlayer);
   const deletePlayer = useGameStore((state) => state.deletePlayer);
   const setPlayerDeath = useGameStore((state) => state.setPlayerDeath);
+  const setPlayerDayNote = useGameStore((state) => state.setPlayerDayNote);
   const updatePlayerPosition = useGameStore((state) => state.updatePlayerPosition);
   const updatePlayerPositions = useGameStore((state) => state.updatePlayerPositions);
   const addConversation = useGameStore((state) => state.addConversation);
@@ -97,12 +98,21 @@ export default function GameRoute() {
   const [votingNominationId, setVotingNominationId] = useState<string | null>(null);
   const [votingReturnTab, setVotingReturnTab] = useState<GameTab | null>(null);
   const [focusedPlayerId, setFocusedPlayerId] = useState<string | null>(null);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [noteEditorVisible, setNoteEditorVisible] = useState(false);
   const [isRotatingMode, setIsRotatingMode] = useState(false);
   const [isResizingMode, setIsResizingMode] = useState(false);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const game = getGameById(games, id);
   const mapWidth = Math.max(1, width - 40);
   const mapHeight = Math.max(mapWidth, Math.floor(height * 0.52));
+
+  useEffect(() => {
+    if (!focusedPlayerId) {
+      setNoteEditorVisible(false);
+      setNoteDraft('');
+    }
+  }, [focusedPlayerId]);
 
   if (!game) {
     return (
@@ -125,6 +135,12 @@ export default function GameRoute() {
 
   const activeGame = game;
   const focusedPlayer = activeGame.players.find((player) => player.id === focusedPlayerId);
+  const focusedPlayerNote =
+    focusedPlayerId === null
+      ? undefined
+      : activeGame.playerDayNotes?.find(
+          (note) => note.playerId === focusedPlayerId && note.day === activeGame.activeDay,
+        );
   const highlightedPlayerIds = trackingMode
     ? selectedPlayerIds
     : votingNominationId
@@ -169,6 +185,7 @@ export default function GameRoute() {
     if (!trackingMode) {
       setIsRotatingMode(false);
       setIsResizingMode(false);
+      setNoteEditorVisible(false);
       setFocusedPlayerId((currentPlayerId) => (currentPlayerId === playerId ? null : playerId));
       return;
     }
@@ -215,6 +232,7 @@ export default function GameRoute() {
     setVotingNominationId(null);
     setVotingReturnTab(null);
     setFocusedPlayerId(null);
+    setNoteEditorVisible(false);
     setSelectedPlayerIds([]);
   }
 
@@ -315,6 +333,20 @@ export default function GameRoute() {
     }
 
     setPlayerDeath(activeGame.id, focusedPlayer.id, null);
+  }
+
+  function handleShowFocusedPlayerNote() {
+    setNoteDraft(focusedPlayerNote?.text ?? '');
+    setNoteEditorVisible(true);
+  }
+
+  function handleSaveFocusedPlayerNote() {
+    if (!focusedPlayer) {
+      return;
+    }
+
+    setPlayerDayNote(activeGame.id, focusedPlayer.id, activeGame.activeDay, noteDraft);
+    setNoteEditorVisible(false);
   }
 
   function confirmDeletePlayer() {
@@ -786,6 +818,82 @@ export default function GameRoute() {
                       {`Nominate${nominationDisabled ? 'd' : ''}`}
                     </Text>
                   </Pressable>
+                </View>
+
+                <View style={{ gap: 10 }}>
+                  <Pressable
+                    accessibilityLabel={`Add day ${activeGame.activeDay} note for ${focusedPlayer.name}`}
+                    accessibilityRole="button"
+                    onPress={handleShowFocusedPlayerNote}
+                    style={({ pressed }) => ({
+                      alignItems: 'center',
+                      backgroundColor: pressed ? '#1f2937' : '#111827',
+                      borderColor: focusedPlayerNote ? '#38bdf8' : '#334155',
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      flexDirection: 'row',
+                      gap: 6,
+                      justifyContent: 'center',
+                      paddingVertical: 14,
+                    })}
+                  >
+                    <MessageCircle color="#38bdf8" size={17} strokeWidth={2.7} />
+                    <Text style={{ color: '#f8fafc', fontWeight: '900' }}>
+                      {focusedPlayerNote ? 'Edit Note' : 'Note'}
+                    </Text>
+                  </Pressable>
+
+                  {noteEditorVisible ? (
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                      <TextInput
+                        accessibilityLabel={`Day ${activeGame.activeDay} note for ${focusedPlayer.name}`}
+                        multiline
+                        onChangeText={setNoteDraft}
+                        placeholder={`What did ${focusedPlayer.name} say?`}
+                        placeholderTextColor="#64748b"
+                        style={{
+                          backgroundColor: '#111827',
+                          borderColor: '#334155',
+                          borderRadius: 8,
+                          borderWidth: 1,
+                          color: '#f8fafc',
+                          flex: 1,
+                          fontSize: 15,
+                          minHeight: 48,
+                          paddingHorizontal: 12,
+                          paddingVertical: 12,
+                          textAlignVertical: 'top',
+                        }}
+                        value={noteDraft}
+                      />
+                      <Pressable
+                        accessibilityLabel={`Save day ${activeGame.activeDay} note for ${focusedPlayer.name}`}
+                        accessibilityRole="button"
+                        onPress={handleSaveFocusedPlayerNote}
+                        style={({ pressed }) => ({
+                          alignItems: 'center',
+                          backgroundColor: pressed ? '#15803d' : '#16a34a',
+                          borderRadius: 8,
+                          justifyContent: 'center',
+                          minWidth: 48,
+                          width: 48,
+                        })}
+                      >
+                        <Check color="#f8fafc" size={18} strokeWidth={2.8} />
+                      </Pressable>
+                    </View>
+                  ) : focusedPlayerNote ? (
+                    <Text
+                      selectable
+                      style={{
+                        color: '#cbd5e1',
+                        fontSize: 14,
+                        lineHeight: 20,
+                      }}
+                    >
+                      {focusedPlayerNote.text}
+                    </Text>
+                  ) : null}
                 </View>
               </View>
             ) : isRotatingMode ? (

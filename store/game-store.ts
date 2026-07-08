@@ -22,6 +22,7 @@ type GameState = {
   deleteGame: (gameId: string) => void;
   deletePlayer: (gameId: string, playerId: string) => void;
   setPlayerDeath: (gameId: string, playerId: string, death: PlayerDeath | null) => void;
+  setPlayerDayNote: (gameId: string, playerId: string, day: number, text: string) => void;
   setTokenSize: (gameId: string, tokenSize: number) => void;
   setActiveDay: (gameId: string, day: number) => void;
   updatePlayerPosition: (gameId: string, playerId: string, position: PlayerPosition) => void;
@@ -172,6 +173,7 @@ export const useGameStore = create<GameState>()(
               ...game,
               updatedAt: new Date().toISOString(),
               players,
+              playerDayNotes: game.playerDayNotes?.filter((note) => note.playerId !== playerId),
               conversations: game.conversations
                 .filter((conversation) => !conversation.participantIds.includes(playerId))
                 .map((conversation) => ({
@@ -200,6 +202,39 @@ export const useGameStore = create<GameState>()(
                 }
               : game,
           ),
+        }));
+      },
+      setPlayerDayNote: (gameId, playerId, day, text) => {
+        const nextText = text.trim();
+        const updatedAt = new Date().toISOString();
+
+        set((state) => ({
+          games: state.games.map((game) => {
+            if (game.id !== gameId) {
+              return game;
+            }
+
+            const existingNotes = game.playerDayNotes ?? [];
+            const otherNotes = existingNotes.filter(
+              (note) => note.playerId !== playerId || note.day !== day,
+            );
+
+            return {
+              ...game,
+              updatedAt,
+              playerDayNotes: nextText
+                ? [
+                    ...otherNotes,
+                    {
+                      day,
+                      playerId,
+                      text: nextText,
+                      updatedAt,
+                    },
+                  ]
+                : otherNotes,
+            };
+          }),
         }));
       },
       setTokenSize: (gameId, tokenSize) => {
