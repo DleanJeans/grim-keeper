@@ -148,6 +148,7 @@ export default function GameRoute() {
       : focusedPlayerId
         ? [focusedPlayerId]
         : [];
+  const hideConnectionCurves = trackingMode === 'nomination' || !!votingNominationId;
   const trackingConfirmLabel = trackingMode === 'nomination' ? 'Confirm Nomination' : 'Confirm';
   const trackingCancelFlex = trackingMode === 'nomination' ? 0.82 : 1;
   const trackingConfirmFlex = trackingMode === 'nomination' ? 1.18 : 1;
@@ -526,9 +527,11 @@ export default function GameRoute() {
               activeDay={activeGame.activeDay}
               conversations={activeGame.conversations}
               disabledPlayerIds={disabledPlayerIds}
+              hideConnectionCurves={hideConnectionCurves}
               interactionMode={!!trackingMode || !!votingNominationId}
               mapHeight={mapHeight}
               mapWidth={mapWidth}
+              nominationCurvePlayerIds={trackingMode === 'nomination' ? selectedPlayerIds : []}
               players={activeGame.players}
               tokenSize={activeTokenSize}
               onMovePlayer={(playerId, position) =>

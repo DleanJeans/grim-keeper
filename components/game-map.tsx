@@ -10,9 +10,11 @@ type GameMapProps = {
   activeDay: number;
   conversations: Conversation[];
   disabledPlayerIds?: string[];
+  hideConnectionCurves?: boolean;
   interactionMode?: boolean;
   mapHeight: number;
   mapWidth: number;
+  nominationCurvePlayerIds?: string[];
   players: Player[];
   tokenSize: number;
   onMovePlayer: (playerId: string, position: PlayerPosition) => void;
@@ -24,9 +26,11 @@ export function GameMap({
   activeDay,
   conversations,
   disabledPlayerIds = [],
+  hideConnectionCurves = false,
   interactionMode = false,
   mapHeight,
   mapWidth,
+  nominationCurvePlayerIds = [],
   onMovePlayer,
   onSelectPlayer,
   players,
@@ -40,6 +44,7 @@ export function GameMap({
     ]),
   );
   const selectedPlayerIdSet = new Set(selectedPlayerIds);
+  const [nominatorId, nomineeId] = nominationCurvePlayerIds;
   const groupRepeats = buildConversationGroupRepeats(conversations, activeDay);
   const disabledPlayerIdSet = new Set(disabledPlayerIds);
   const activeDayNominations = conversations.filter(
@@ -72,67 +77,74 @@ export function GameMap({
         style={{ position: 'absolute' }}
         width={mapWidth}
       >
-        {conversations
-          .filter(
-            (conversation) => conversation.day === activeDay && conversation.kind !== 'nomination',
-          )
-          .flatMap((conversation) => {
-            const initiatorPosition = positions.get(conversation.initiatorId);
-            const repeat = groupRepeats.get(getConversationGroupKey(conversation));
-            const highlighted = repeat?.repeated === true;
+        {nominatorId && nomineeId && (
+          <ConnectionCurve
+            blockers={players
+              .filter((player) => player.id !== nominatorId && player.id !== nomineeId)
+              .map((player) => positions.get(player.id))
+              .filter((position): position is PlayerPosition => !!position)}
+            from={positions.get(nominatorId)}
+            mapHeight={mapHeight}
+            mapWidth={mapWidth}
+            stroke="#a78bfa"
+            strokeWidth={4}
+            to={positions.get(nomineeId)}
+            tokenSize={tokenSize}
+          />
+        )}
+        {!hideConnectionCurves &&
+          conversations
+            .filter(
+              (conversation) =>
+                conversation.day === activeDay && conversation.kind !== 'nomination',
+            )
+            .flatMap((conversation) => {
+              const initiatorPosition = positions.get(conversation.initiatorId);
+              const repeat = groupRepeats.get(getConversationGroupKey(conversation));
+              const highlighted = repeat?.repeated === true;
 
-            if (!initiatorPosition) {
-              return [];
-            }
+              if (!initiatorPosition) {
+                return [];
+              }
 
-            return conversation.participantIds
-              .filter((playerId) => playerId !== conversation.initiatorId)
-              .flatMap((playerId) => {
-                const participantPosition = positions.get(playerId);
+              return conversation.participantIds
+                .filter((playerId) => playerId !== conversation.initiatorId)
+                .flatMap((playerId) => {
+                  const participantPosition = positions.get(playerId);
 
-                if (!participantPosition) {
-                  return [];
-                }
+                  if (!participantPosition) {
+                    return [];
+                  }
 
-                const curve = getConversationCurve(
-                  initiatorPosition,
-                  participantPosition,
-                  mapWidth,
-                  mapHeight,
-                  tokenSize,
-                  players
-                    .filter(
-                      (player) => player.id !== conversation.initiatorId && player.id !== playerId,
-                    )
-                    .map((player) => positions.get(player.id))
-                    .filter((position): position is PlayerPosition => !!position),
-                );
-                const stroke = highlighted ? '#f59e0b' : '#38bdf8';
-                const connectedToSelected =
-                  selectedPlayerIdSet.size === 0 ||
-                  selectedPlayerIdSet.has(conversation.initiatorId) ||
-                  selectedPlayerIdSet.has(playerId);
-                const opacity = connectedToSelected ? (highlighted ? 0.95 : 0.76) : 0.18;
+                  const stroke = highlighted ? '#f59e0b' : '#38bdf8';
+                  const connectedToSelected =
+                    selectedPlayerIdSet.size === 0 ||
+                    selectedPlayerIdSet.has(conversation.initiatorId) ||
+                    selectedPlayerIdSet.has(playerId);
+                  const opacity = connectedToSelected ? (highlighted ? 0.95 : 0.76) : 0.18;
 
-                return [
-                  <Path
-                    key={`${conversation.id}-${playerId}-line`}
-                    d={curve.path}
-                    fill="none"
-                    stroke={stroke}
-                    strokeLinecap="round"
-                    strokeOpacity={opacity}
-                    strokeWidth={highlighted ? 4 : 3}
-                  />,
-                  <Polygon
-                    key={`${conversation.id}-${playerId}-arrow`}
-                    fill={stroke}
-                    opacity={opacity}
-                    points={curve.arrowPoints}
-                  />,
-                ];
-              });
-          })}
+                  return [
+                    <ConnectionCurve
+                      key={`${conversation.id}-${playerId}-line`}
+                      blockers={players
+                        .filter(
+                          (player) =>
+                            player.id !== conversation.initiatorId && player.id !== playerId,
+                        )
+                        .map((player) => positions.get(player.id))
+                        .filter((position): position is PlayerPosition => !!position)}
+                      from={initiatorPosition}
+                      mapHeight={mapHeight}
+                      mapWidth={mapWidth}
+                      opacity={opacity}
+                      stroke={stroke}
+                      strokeWidth={highlighted ? 4 : 3}
+                      to={participantPosition}
+                      tokenSize={tokenSize}
+                    />,
+                  ];
+                });
+            })}
       </Svg>
 
       {players.map((player) => (
@@ -159,6 +171,48 @@ export function GameMap({
         />
       ))}
     </View>
+  );
+}
+
+function ConnectionCurve({
+  blockers,
+  from,
+  mapHeight,
+  mapWidth,
+  opacity = 0.9,
+  stroke,
+  strokeWidth,
+  to,
+  tokenSize,
+}: {
+  blockers: PlayerPosition[];
+  from?: PlayerPosition;
+  mapHeight: number;
+  mapWidth: number;
+  opacity?: number;
+  stroke: string;
+  strokeWidth: number;
+  to?: PlayerPosition;
+  tokenSize: number;
+}) {
+  if (!from || !to) {
+    return null;
+  }
+
+  const curve = getConversationCurve(from, to, mapWidth, mapHeight, tokenSize, blockers);
+
+  return (
+    <>
+      <Path
+        d={curve.path}
+        fill="none"
+        stroke={stroke}
+        strokeLinecap="round"
+        strokeOpacity={opacity}
+        strokeWidth={strokeWidth}
+      />
+      <Polygon fill={stroke} opacity={opacity} points={curve.arrowPoints} />
+    </>
   );
 }
 
