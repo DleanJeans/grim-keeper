@@ -77,8 +77,8 @@ export default function CreateRoute() {
       { id: createDraftId(), name: normalizedName },
     ]);
     setName('');
-    setNameFocused(false);
-    inputRef.current?.blur();
+    setNameFocused(true);
+    requestAnimationFrame(() => inputRef.current?.focus());
   }
 
   function handleSelectFriend(friendName: string) {
@@ -99,8 +99,8 @@ export default function CreateRoute() {
       { id: createDraftId(), name: normalizedFriendName },
     ]);
     setName('');
-    setNameFocused(false);
-    inputRef.current?.blur();
+    setNameFocused(true);
+    requestAnimationFrame(() => inputRef.current?.focus());
   }
 
   function handleStart() {
