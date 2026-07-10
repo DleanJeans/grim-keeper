@@ -16,6 +16,7 @@ type GameMapProps = {
   mapWidth: number;
   nominationCurvePlayerIds?: string[];
   players: Player[];
+  rearrangeMode?: boolean;
   tokenSize: number;
   onMovePlayer: (playerId: string, position: PlayerPosition) => void;
   onSelectPlayer?: (playerId: string) => void;
@@ -34,6 +35,7 @@ export function GameMap({
   onMovePlayer,
   onSelectPlayer,
   players,
+  rearrangeMode = false,
   selectedPlayerIds = [],
   tokenSize,
 }: GameMapProps) {
@@ -154,6 +156,7 @@ export function GameMap({
           player={
             player.death && player.death.day > activeDay ? { ...player, death: undefined } : player
           }
+          rearrangeMode={rearrangeMode}
           tokenSize={tokenSize}
           position={
             positions.get(player.id) ??

@@ -25,6 +25,7 @@ type PlayerTokenProps = {
   isSelected?: boolean;
   player: Player;
   position: PlayerPosition;
+  rearrangeMode?: boolean;
   tokenSize: number;
   onMove: (playerId: string, position: PlayerPosition) => void;
   onSelect?: (playerId: string) => void;
@@ -43,6 +44,7 @@ export function PlayerToken({
   onSelect,
   player,
   position,
+  rearrangeMode = false,
   tokenSize: tokenSizeProp,
 }: PlayerTokenProps) {
   const [isDragReady, setIsDragReady] = useState(false);
@@ -62,7 +64,6 @@ export function PlayerToken({
   }, [position.x, position.y, startX, startY, x, y]);
 
   const pan = Gesture.Pan()
-    .activateAfterLongPress(250)
     .onStart(() => {
       startX.value = x.value;
       startY.value = y.value;
@@ -100,7 +101,8 @@ export function PlayerToken({
   }));
 
   return (
-    <GestureDetector gesture={interactionMode ? tap : Gesture.Race(tap, pan)}>
+    <GestureDetector gesture={rearrangeMode ? pan : tap}
+    >
       <Animated.View
         style={[
           {

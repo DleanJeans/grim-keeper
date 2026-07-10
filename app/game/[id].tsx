@@ -30,6 +30,7 @@ import { ConversationTable } from '@/components/conversation-table';
 import { DeathLog } from '@/components/death-log';
 import { GameMap } from '@/components/game-map';
 import { InteractionList } from '@/components/interaction-list';
+import { MapModeButton } from '@/components/map-mode-button';
 import { NomIcon } from '@/components/nom-icon';
 import { NominationList } from '@/components/nomination-list';
 import { Text } from '@/components/text';
@@ -102,7 +103,7 @@ export default function GameRoute() {
   const [noteDraft, setNoteDraft] = useState('');
   const [noteEditorVisible, setNoteEditorVisible] = useState(false);
   const [isRotatingMode, setIsRotatingMode] = useState(false);
-  const [isResizingMode, setIsResizingMode] = useState(false);
+  const [isRearrangeMode, setIsRearrangeMode] = useState(false);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const game = getGameById(games, id);
   const mapWidth = Math.max(1, width - 40);
@@ -186,7 +187,7 @@ export default function GameRoute() {
 
     if (!trackingMode) {
       setIsRotatingMode(false);
-      setIsResizingMode(false);
+      setIsRearrangeMode(false);
       setNoteEditorVisible(false);
       setFocusedPlayerId((currentPlayerId) => (currentPlayerId === playerId ? null : playerId));
       return;
@@ -223,13 +224,13 @@ export default function GameRoute() {
 
     setTrackingMode(mode);
     setIsRotatingMode(false);
-    setIsResizingMode(false);
+    setIsRearrangeMode(false);
     setSelectedPlayerIds([focusedPlayerId]);
   }
 
   function handleCancelTracking() {
     setIsRotatingMode(false);
-    setIsResizingMode(false);
+    setIsRearrangeMode(false);
     setTrackingMode(null);
     setVotingNominationId(null);
     setVotingReturnTab(null);
@@ -296,7 +297,7 @@ export default function GameRoute() {
   function handleChangeDay(day: number) {
     handleCancelTracking();
     setIsRotatingMode(false);
-    setIsResizingMode(false);
+    setIsRearrangeMode(false);
     setActiveDay(activeGame.id, day);
   }
 
@@ -494,7 +495,7 @@ export default function GameRoute() {
               accessibilityRole="button"
               onPress={() => {
                 setIsRotatingMode(false);
-                setIsResizingMode(false);
+                setIsRearrangeMode(false);
                 setActiveTab(tab.value);
               }}
               style={{
@@ -534,6 +535,7 @@ export default function GameRoute() {
               mapWidth={mapWidth}
               nominationCurvePlayerIds={trackingMode === 'nomination' ? selectedPlayerIds : []}
               players={activeGame.players}
+              rearrangeMode={isRearrangeMode}
               tokenSize={activeTokenSize}
               onMovePlayer={(playerId, position) =>
                 updatePlayerPosition(activeGame.id, playerId, position)
@@ -949,28 +951,15 @@ export default function GameRoute() {
                   <RotateCw color="#f8fafc" size={17} strokeWidth={2.7} />
                   <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Right</Text>
                 </Pressable>
-                <Pressable
+                <MapModeButton
                   accessibilityLabel="Done rotating tokens"
-                  accessibilityRole="button"
                   onPress={() => setIsRotatingMode(false)}
-                  style={({ pressed }) => ({
-                    alignItems: 'center',
-                    backgroundColor: pressed ? '#dbeafe' : '#f8fafc',
-                    borderColor: '#f8fafc',
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    justifyContent: 'center',
-                    minWidth: 48,
-                    paddingVertical: 14,
-                    width: 48,
-                  })}
-                >
-                  <Check color="#0b1120" size={17} strokeWidth={2.8} />
-                </Pressable>
+                  variant="confirm"
+                />
               </View>
-            ) : isResizingMode ? (
+            ) : isRearrangeMode ? (
               <View
-                key="resize-actions"
+                key="rearrange-actions"
                 style={{ alignSelf: 'stretch', flexDirection: 'row', gap: 10 }}
               >
                 <Pressable
@@ -1034,80 +1023,35 @@ export default function GameRoute() {
                 >
                   <Plus color="#f8fafc" size={17} strokeWidth={2.7} />
                 </Pressable>
-                <Pressable
-                  accessibilityLabel="Done resizing tokens"
-                  accessibilityRole="button"
-                  onPress={() => setIsResizingMode(false)}
-                  style={({ pressed }) => ({
-                    alignItems: 'center',
-                    backgroundColor: pressed ? '#dbeafe' : '#f8fafc',
-                    borderColor: '#f8fafc',
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    justifyContent: 'center',
-                    minWidth: 48,
-                    paddingVertical: 14,
-                    width: 48,
-                  })}
-                >
-                  <Check color="#0b1120" size={17} strokeWidth={2.8} />
-                </Pressable>
+                <MapModeButton
+                  accessibilityLabel="Done rearranging tokens"
+                  onPress={() => setIsRearrangeMode(false)}
+                  variant="confirm"
+                />
               </View>
             ) : (
               <View
                 key="map-mode-actions"
                 style={{ alignSelf: 'stretch', flexDirection: 'row', gap: 10 }}
               >
-                <Pressable
-                  accessibilityLabel="Enter resize mode"
-                  accessibilityRole="button"
+                <MapModeButton
+                  accessibilityLabel="Enter rearrange mode"
+                  icon={MoveDiagonal}
+                  label="Rearrange"
                   onPress={() => {
                     setIsRotatingMode(false);
-                    setIsResizingMode(true);
+                    setIsRearrangeMode(true);
                   }}
-                  style={({ pressed }) => ({
-                    alignItems: 'center',
-                    backgroundColor: pressed ? '#1f2937' : '#111827',
-                    borderColor: '#334155',
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    flex: 1,
-                    flexBasis: 0,
-                    flexDirection: 'row',
-                    gap: 6,
-                    justifyContent: 'center',
-                    minWidth: 0,
-                    paddingVertical: 14,
-                  })}
-                >
-                  <MoveDiagonal color="#f8fafc" size={17} strokeWidth={2.7} />
-                  <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Resize</Text>
-                </Pressable>
-                <Pressable
+                />
+                <MapModeButton
                   accessibilityLabel="Enter rotating mode"
-                  accessibilityRole="button"
+                  icon={RotateCw}
+                  label="Rotate"
                   onPress={() => {
-                    setIsResizingMode(false);
+                    setIsRearrangeMode(false);
                     setIsRotatingMode(true);
                   }}
-                  style={({ pressed }) => ({
-                    alignItems: 'center',
-                    backgroundColor: pressed ? '#1f2937' : '#111827',
-                    borderColor: '#334155',
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    flex: 1,
-                    flexBasis: 0,
-                    flexDirection: 'row',
-                    gap: 6,
-                    justifyContent: 'center',
-                    minWidth: 0,
-                    paddingVertical: 14,
-                  })}
-                >
-                  <RotateCw color="#f8fafc" size={17} strokeWidth={2.7} />
-                  <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Rotate</Text>
-                </Pressable>
+                />
               </View>
             )}
           </>
