@@ -27,6 +27,7 @@ import { Alert, Pressable, ScrollView, TextInput, useWindowDimensions, View } fr
 
 import { AddPlayerModal } from '@/components/add-player-modal';
 import { ConversationTable } from '@/components/conversation-table';
+import { DeathLog } from '@/components/death-log';
 import { GameMap } from '@/components/game-map';
 import { InteractionList } from '@/components/interaction-list';
 import { NomIcon } from '@/components/nom-icon';
@@ -1179,6 +1180,8 @@ export default function GameRoute() {
             )}
           </View>
         )}
+
+        <DeathLog activeDay={activeGame.activeDay} players={activeGame.players} />
       </ScrollView>
     </>
   );
