@@ -35,6 +35,7 @@ import { NomIcon } from '@/components/nom-icon';
 import { NominationList } from '@/components/nomination-list';
 import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
+import { getLastDayWithData } from '@/utils/game-utils';
 import {
   getTokenSize,
   maxTokenSize,
@@ -181,6 +182,7 @@ export default function GameRoute() {
     isPlayerCurrentlyDead(player, activeGame.activeDay),
   ).length;
   const alivePlayerCount = activeGame.players.length - deadPlayerCount;
+  const lastDayWithData = getLastDayWithData(activeGame);
 
   function handleSelectPlayer(playerId: string) {
     if (votingNominationId) {
@@ -397,7 +399,7 @@ export default function GameRoute() {
       <Stack.Screen
         options={{
           headerBackVisible: false,
-          title: `Day ${activeGame.activeDay}`,
+          title: `Day ${activeGame.activeDay}/${lastDayWithData}`,
           headerLeft: () => (
             <View style={{ alignItems: 'center', flexDirection: 'row', gap: 8 }}>
               <View style={{ alignItems: 'center', flexDirection: 'row', gap: 3 }}>
@@ -447,7 +449,7 @@ export default function GameRoute() {
                   textAlign: 'center',
                 }}
               >
-                Day {activeGame.activeDay}
+                Day {activeGame.activeDay}/{lastDayWithData}
               </Text>
               <Pressable
                 accessibilityLabel="Next day"

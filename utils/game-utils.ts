@@ -1,0 +1,29 @@
+import type { Game } from '@/types/game';
+
+export function getLastDayWithData(game: Game): number {
+  let lastDay = 0;
+
+  for (const conversation of game.conversations) {
+    if (conversation.day > lastDay) {
+      lastDay = conversation.day;
+    }
+  }
+
+  for (const note of game.playerDayNotes ?? []) {
+    if (note.day > lastDay) {
+      lastDay = note.day;
+    }
+  }
+
+  for (const player of game.players) {
+    if (player.death && player.death.day > lastDay) {
+      lastDay = player.death.day;
+    }
+
+    if (player.revive && player.revive.day > lastDay) {
+      lastDay = player.revive.day;
+    }
+  }
+
+  return Math.max(1, lastDay);
+}

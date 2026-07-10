@@ -8,6 +8,7 @@ import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { getFriendSummaries } from '@/utils/friend-utils';
+import { getLastDayWithData } from '@/utils/game-utils';
 
 export default function HomeRoute() {
   const appUserName = useGameStore((state) => state.appUserName);
@@ -100,7 +101,7 @@ export default function HomeRoute() {
                     {formatGameTitle(game.createdAt)}
                   </Text>
                   <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
-                    {game.players.length} players - Day {game.activeDay}
+                    {game.players.length} players - Day {game.activeDay}/{getLastDayWithData(game)}
                   </Text>
                 </View>
                 <ChevronRight color={colors.textMuted} size={18} strokeWidth={2.5} />
