@@ -9,12 +9,18 @@ export type PlayerDeath = {
   updatedAt: string;
 };
 
+export type PlayerRevive = {
+  day: number;
+  updatedAt: string;
+};
+
 export type Player = {
   id: string;
   isAppUser?: boolean;
   name: string;
   seat: number;
   death?: PlayerDeath;
+  revive?: PlayerRevive;
   position?: PlayerPosition;
 };
 

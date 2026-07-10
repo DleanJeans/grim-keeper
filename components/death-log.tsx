@@ -1,25 +1,31 @@
-import { FlameKindling, Skull } from 'lucide-react-native';
+import { FlameKindling, HeartPulse, Skull } from 'lucide-react-native';
 import { View } from 'react-native';
 
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { Player, PlayerDeath } from '@/types/game';
+import type { Player, PlayerDeath, PlayerRevive } from '@/types/game';
 
 type DeathLogProps = {
   activeDay: number;
   players: Player[];
 };
 
-type DeathEntry = {
+type DeathLogEntry = {
   death: PlayerDeath;
   player: Player;
 };
 
+type ReviveLogEntry = {
+  player: Player;
+  revive: PlayerRevive;
+};
+
 const executionColor = '#fca5a5';
 const nightColor = '#93c5fd';
+const reviveColor = '#86efac';
 
 export function DeathLog({ activeDay, players }: DeathLogProps) {
-  const entries = collectDeathEntries(players, activeDay);
+  const entries = collectLogEntries(players, activeDay);
 
   return (
     <View
@@ -55,23 +61,23 @@ export function DeathLog({ activeDay, players }: DeathLogProps) {
       </View>
 
       {entries.length === 0 ? (
-        <Text
-          selectable
-          style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}
-        >
+        <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
           No deaths recorded yet.
         </Text>
       ) : (
         entries.map((entry) => (
-          <DeathLogRow
-            activeDay={activeDay}
-            entry={entry}
-            key={`${entry.player.id}-${entry.death.day}-${entry.death.kind}`}
-          />
+          <DeathLogRow activeDay={activeDay} entry={entry} key={getLogEntryKey(entry)} />
         ))
       )}
     </View>
   );
+}
+
+function getLogEntryKey(entry: DeathLogEntry | ReviveLogEntry): string {
+  if ('death' in entry) {
+    return `death-${entry.player.id}-${entry.death.day}-${entry.death.kind}`;
+  }
+  return `revive-${entry.player.id}-${entry.revive.day}`;
 }
 
 function DeathLogRow({
@@ -79,8 +85,16 @@ function DeathLogRow({
   entry,
 }: {
   activeDay: number;
-  entry: DeathEntry;
+  entry: DeathLogEntry | ReviveLogEntry;
 }) {
+  return 'death' in entry ? (
+    <DeathLogDeathRow activeDay={activeDay} entry={entry} />
+  ) : (
+    <DeathLogReviveRow activeDay={activeDay} entry={entry} />
+  );
+}
+
+function DeathLogDeathRow({ activeDay, entry }: { activeDay: number; entry: DeathLogEntry }) {
   const isExecution = entry.death.kind === 'execution';
   const accent = isExecution ? executionColor : nightColor;
   const Icon = isExecution ? FlameKindling : Skull;
@@ -136,10 +150,7 @@ function DeathLogRow({
         >
           {entry.player.name}
         </Text>
-        <Text
-          selectable
-          style={{ color: accent, fontSize: 14, fontWeight: '800', lineHeight: 20 }}
-        >
+        <Text selectable style={{ color: accent, fontSize: 14, fontWeight: '800', lineHeight: 20 }}>
           {actionLabel}
         </Text>
       </View>
@@ -147,8 +158,72 @@ function DeathLogRow({
   );
 }
 
-function collectDeathEntries(players: Player[], activeDay: number): DeathEntry[] {
-  return players
+function DeathLogReviveRow({ activeDay, entry }: { activeDay: number; entry: ReviveLogEntry }) {
+  const accent = reviveColor;
+  const dayLabel = `R${entry.revive.day}`;
+  const isCurrent = entry.revive.day === activeDay;
+
+  return (
+    <View
+      style={{
+        alignItems: 'center',
+        backgroundColor: isCurrent ? colors.surfaceRaised : 'transparent',
+        borderColor: isCurrent ? accent : colors.border,
+        borderRadius: 6,
+        borderWidth: 1,
+        flexDirection: 'row',
+        gap: 10,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+      }}
+    >
+      <View
+        style={{
+          alignItems: 'center',
+          backgroundColor: colors.background,
+          borderColor: accent,
+          borderRadius: 6,
+          borderWidth: 1,
+          flexDirection: 'row',
+          gap: 4,
+          minWidth: 56,
+          paddingHorizontal: 6,
+          paddingVertical: 4,
+        }}
+      >
+        <Text
+          selectable
+          style={{
+            color: accent,
+            fontSize: 12,
+            fontVariant: ['tabular-nums'],
+            fontWeight: '900',
+          }}
+        >
+          {dayLabel}
+        </Text>
+        <HeartPulse color={accent} size={13} strokeWidth={2.6} />
+      </View>
+      <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
+        <Text
+          selectable
+          style={{ color: colors.text, fontSize: 15, fontWeight: '800', lineHeight: 20 }}
+        >
+          {entry.player.name}
+        </Text>
+        <Text selectable style={{ color: accent, fontSize: 14, fontWeight: '800', lineHeight: 20 }}>
+          Revived
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function collectLogEntries(
+  players: Player[],
+  activeDay: number,
+): Array<DeathLogEntry | ReviveLogEntry> {
+  const deathEntries: DeathLogEntry[] = players
     .filter((player): player is Player & { death: PlayerDeath } => {
       if (!player.death) {
         return false;
@@ -156,17 +231,42 @@ function collectDeathEntries(players: Player[], activeDay: number): DeathEntry[]
 
       return player.death.day <= activeDay;
     })
-    .map((player) => ({ death: player.death, player }))
-    .sort((first, second) => {
-      if (first.death.day !== second.death.day) {
-        return first.death.day - second.death.day;
+    .map((player) => ({ death: player.death, player }));
+
+  const reviveEntries: ReviveLogEntry[] = players
+    .filter((player): player is Player & { revive: PlayerRevive } => {
+      if (!player.revive) {
+        return false;
       }
 
-      // Night kills for the same day should appear before that day's executions
-      if (first.death.kind !== second.death.kind) {
-        return first.death.kind === 'night' ? -1 : 1;
-      }
+      return player.revive.day <= activeDay;
+    })
+    .map((player) => ({ player, revive: player.revive }));
 
-      return first.player.name.localeCompare(second.player.name);
-    });
+  return [...deathEntries, ...reviveEntries].sort((first, second) => {
+    const firstDay = 'death' in first ? first.death.day : first.revive.day;
+    const secondDay = 'death' in second ? second.death.day : second.revive.day;
+    const firstIsRevive = 'revive' in first;
+    const secondIsRevive = 'revive' in second;
+
+    if (firstDay !== secondDay) {
+      return firstDay - secondDay;
+    }
+
+    // Within the same day: night deaths, executions, then revives
+    if (firstIsRevive !== secondIsRevive) {
+      return firstIsRevive ? 1 : -1;
+    }
+
+    if (!firstIsRevive && !secondIsRevive) {
+      const firstDeath = (first as DeathLogEntry).death;
+      const secondDeath = (second as DeathLogEntry).death;
+
+      if (firstDeath.kind !== secondDeath.kind) {
+        return firstDeath.kind === 'night' ? -1 : 1;
+      }
+    }
+
+    return first.player.name.localeCompare(second.player.name);
+  });
 }

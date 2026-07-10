@@ -17,7 +17,6 @@ import {
   Skull,
   Table2,
   Trash2,
-  Undo2,
   UserPlus,
   Vote,
   X,
@@ -28,6 +27,7 @@ import { Alert, Pressable, ScrollView, TextInput, useWindowDimensions, View } fr
 import { AddPlayerModal } from '@/components/add-player-modal';
 import { ConversationTable } from '@/components/conversation-table';
 import { DeathLog } from '@/components/death-log';
+import { FocusedPlayerDeathActions } from '@/components/focused-player-death-actions';
 import { GameMap } from '@/components/game-map';
 import { InteractionList } from '@/components/interaction-list';
 import { MapModeButton } from '@/components/map-mode-button';
@@ -42,6 +42,7 @@ import {
   rotatePlayerMapPositions,
   tokenSizeStep,
 } from '@/utils/layout-utils';
+import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 
 type GameTab = 'map' | 'interactions' | 'nominations';
 type InteractionSubtab = 'list' | 'table';
@@ -85,6 +86,7 @@ export default function GameRoute() {
   const addPlayer = useGameStore((state) => state.addPlayer);
   const deletePlayer = useGameStore((state) => state.deletePlayer);
   const setPlayerDeath = useGameStore((state) => state.setPlayerDeath);
+  const setPlayerRevive = useGameStore((state) => state.setPlayerRevive);
   const setPlayerDayNote = useGameStore((state) => state.setPlayerDayNote);
   const updatePlayerPosition = useGameStore((state) => state.updatePlayerPosition);
   const updatePlayerPositions = useGameStore((state) => state.updatePlayerPositions);
@@ -137,6 +139,9 @@ export default function GameRoute() {
 
   const activeGame = game;
   const focusedPlayer = activeGame.players.find((player) => player.id === focusedPlayerId);
+  const focusedPlayerIsDead = focusedPlayer
+    ? isPlayerCurrentlyDead(focusedPlayer, activeGame.activeDay)
+    : false;
   const focusedPlayerNote =
     focusedPlayerId === null
       ? undefined
@@ -167,12 +172,14 @@ export default function GameRoute() {
   const focusedPlayerAlreadyNominatedToday = activeDayNominations.some(
     (nomination) => nomination.initiatorId === focusedPlayerId,
   );
-  const nominationDisabled = !!focusedPlayer?.death || focusedPlayerAlreadyNominatedToday;
+  const nominationDisabled = focusedPlayerIsDead || focusedPlayerAlreadyNominatedToday;
   const disabledPlayerIds =
     trackingMode === 'nomination'
       ? [...nominatedPlayerIds].filter((playerId) => playerId !== selectedPlayerIds[0])
       : [];
-  const deadPlayerCount = activeGame.players.filter((player) => player.death).length;
+  const deadPlayerCount = activeGame.players.filter((player) =>
+    isPlayerCurrentlyDead(player, activeGame.activeDay),
+  ).length;
   const alivePlayerCount = activeGame.players.length - deadPlayerCount;
 
   function handleSelectPlayer(playerId: string) {
@@ -326,6 +333,17 @@ export default function GameRoute() {
     setPlayerDeath(activeGame.id, focusedPlayer.id, {
       day: activeGame.activeDay,
       kind,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  function handleReviveFocusedPlayer() {
+    if (!focusedPlayer?.death) {
+      return;
+    }
+
+    setPlayerRevive(activeGame.id, focusedPlayer.id, {
+      day: activeGame.activeDay,
       updatedAt: new Date().toISOString(),
     });
   }
@@ -672,7 +690,9 @@ export default function GameRoute() {
                       alignItems: 'center',
                       backgroundColor: pressed ? '#1f2937' : '#111827',
                       borderColor:
-                        focusedPlayer.death?.kind === 'execution' ? '#fca5a5' : '#334155',
+                        focusedPlayerIsDead && focusedPlayer.death?.kind === 'execution'
+                          ? '#fca5a5'
+                          : '#334155',
                       borderRadius: 8,
                       borderWidth: 1,
                       flex: 1,
@@ -686,7 +706,8 @@ export default function GameRoute() {
                   >
                     <FlameKindling color="#fca5a5" size={17} strokeWidth={2.7} />
                     <Text style={{ color: '#f8fafc', fontWeight: '900' }}>
-                      Execute{focusedPlayer.death?.kind === 'execution' ? 'd' : ''}
+                      Execute
+                      {focusedPlayerIsDead && focusedPlayer.death?.kind === 'execution' ? 'd' : ''}
                     </Text>
                   </Pressable>
                   <Pressable
@@ -696,7 +717,10 @@ export default function GameRoute() {
                     style={({ pressed }) => ({
                       alignItems: 'center',
                       backgroundColor: pressed ? '#1f2937' : '#111827',
-                      borderColor: focusedPlayer.death?.kind === 'night' ? '#93c5fd' : '#334155',
+                      borderColor:
+                        focusedPlayerIsDead && focusedPlayer.death?.kind === 'night'
+                          ? '#93c5fd'
+                          : '#334155',
                       borderRadius: 8,
                       borderWidth: 1,
                       flex: 1,
@@ -710,34 +734,21 @@ export default function GameRoute() {
                   >
                     <Skull color="#93c5fd" size={17} strokeWidth={2.7} />
                     <Text style={{ color: '#f8fafc', fontWeight: '900' }}>
-                      {focusedPlayer.death?.kind === 'night' ? 'Killed' : 'Night'}
+                      {focusedPlayerIsDead && focusedPlayer.death?.kind === 'night'
+                        ? 'Killed'
+                        : 'Night'}
                     </Text>
                   </Pressable>
-                  <Pressable
-                    accessibilityLabel={`Revive ${focusedPlayer.name}`}
-                    accessibilityRole="button"
-                    disabled={!focusedPlayer.death}
-                    onPress={handleUndoFocusedPlayerDeath}
-                    style={({ pressed }) => ({
-                      alignItems: 'center',
-                      backgroundColor: pressed ? '#1f2937' : '#111827',
-                      borderColor: focusedPlayer.death ? '#334155' : '#1f2937',
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      flex: 0.72,
-                      flexBasis: 0,
-                      flexDirection: 'row',
-                      gap: 6,
-                      justifyContent: 'center',
-                      minWidth: 0,
-                      opacity: focusedPlayer.death ? 1 : 0.48,
-                      paddingVertical: 14,
-                    })}
-                  >
-                    <Undo2 color="#f8fafc" size={17} strokeWidth={2.7} />
-                    <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Revive</Text>
-                  </Pressable>
                 </View>
+
+                <FocusedPlayerDeathActions
+                  canRevive={focusedPlayerIsDead}
+                  canUndo={focusedPlayerIsDead}
+                  isAlive={!focusedPlayerIsDead}
+                  onRevive={handleReviveFocusedPlayer}
+                  onUndo={handleUndoFocusedPlayerDeath}
+                  playerName={focusedPlayer.name}
+                />
 
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                   <Pressable

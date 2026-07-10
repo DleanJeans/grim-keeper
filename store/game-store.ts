@@ -3,7 +3,15 @@ import 'expo-sqlite/localStorage/install';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import type { Conversation, Friend, Game, Player, PlayerDeath, PlayerPosition } from '@/types/game';
+import type {
+  Conversation,
+  Friend,
+  Game,
+  Player,
+  PlayerDeath,
+  PlayerPosition,
+  PlayerRevive,
+} from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
 import { addMissingFriends, getFriendSummaries, hasFriendName } from '@/utils/friend-utils';
 import { getTokenSize } from '@/utils/layout-utils';
@@ -22,6 +30,7 @@ type GameState = {
   deleteGame: (gameId: string) => void;
   deletePlayer: (gameId: string, playerId: string) => void;
   setPlayerDeath: (gameId: string, playerId: string, death: PlayerDeath | null) => void;
+  setPlayerRevive: (gameId: string, playerId: string, revive: PlayerRevive | null) => void;
   setPlayerDayNote: (gameId: string, playerId: string, day: number, text: string) => void;
   setTokenSize: (gameId: string, tokenSize: number) => void;
   setActiveDay: (gameId: string, day: number) => void;
@@ -196,6 +205,27 @@ export const useGameStore = create<GameState>()(
                       ? {
                           ...player,
                           death: death ?? undefined,
+                          revive: death ? undefined : player.revive,
+                        }
+                      : player,
+                  ),
+                }
+              : game,
+          ),
+        }));
+      },
+      setPlayerRevive: (gameId, playerId, revive) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? {
+                  ...game,
+                  updatedAt: new Date().toISOString(),
+                  players: game.players.map((player) =>
+                    player.id === playerId
+                      ? {
+                          ...player,
+                          revive: revive ?? undefined,
                         }
                       : player,
                   ),

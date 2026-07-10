@@ -5,6 +5,7 @@ import { PlayerToken } from '@/components/player-token';
 import type { Conversation, Player, PlayerPosition } from '@/types/game';
 import { buildConversationGroupRepeats, getConversationGroupKey } from '@/utils/conversation-utils';
 import { getPlayerMapPosition, getTokenSize } from '@/utils/layout-utils';
+import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 
 type GameMapProps = {
   activeDay: number;
@@ -153,9 +154,7 @@ export function GameMap({
           mapWidth={mapWidth}
           onMove={onMovePlayer}
           onSelect={onSelectPlayer}
-          player={
-            player.death && player.death.day > activeDay ? { ...player, death: undefined } : player
-          }
+          player={stripFutureAndRevivedDeath(player, activeDay)}
           rearrangeMode={rearrangeMode}
           tokenSize={tokenSize}
           position={
@@ -356,4 +355,20 @@ function getQuadraticPoint(
     x: inverse * inverse * from.x + 2 * inverse * progress * control.x + progress * progress * to.x,
     y: inverse * inverse * from.y + 2 * inverse * progress * control.y + progress * progress * to.y,
   };
+}
+
+function stripFutureAndRevivedDeath(player: Player, activeDay: number): Player {
+  if (!player.death) {
+    return player;
+  }
+
+  if (player.death.day > activeDay) {
+    return { ...player, death: undefined };
+  }
+
+  if (!isPlayerCurrentlyDead(player, activeDay)) {
+    return { ...player, death: undefined };
+  }
+
+  return player;
 }
