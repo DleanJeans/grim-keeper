@@ -107,10 +107,10 @@ export function PlayerToken({
             alignItems: 'center',
             backgroundColor: isDragReady
               ? '#38bdf8'
-              : isSelected
-                ? '#bbf7d0'
-                : player.death
-                  ? '#1f2937'
+              : player.death
+                ? '#1f2937'
+                : isSelected
+                  ? '#bbf7d0'
                   : isInitiator
                     ? '#fde68a'
                     : '#f8fafc',
