@@ -1,8 +1,8 @@
 import { MessageCircle } from 'lucide-react-native';
 import { Pressable } from 'react-native';
 
-import { Text } from '@/components/text';
 import { onDarkTextStrong, outlinedActionStyle } from '@/components/game/styles';
+import { Text } from '@/components/text';
 
 type InteractionButtonProps = {
   flex?: number;
@@ -19,7 +19,7 @@ export function InteractionButton({ flex = 1, onPress, playerName }: Interaction
       style={({ pressed }) => outlinedActionStyle({ pressed, flex })}
     >
       <MessageCircle color="#f8fafc" size={17} strokeWidth={2.7} />
-      <Text style={onDarkTextStrong}>Interaction</Text>
+      <Text style={onDarkTextStrong}>Track Interaction</Text>
     </Pressable>
   );
 }
