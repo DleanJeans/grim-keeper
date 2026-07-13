@@ -5,7 +5,6 @@ import { AddPlayerModal } from '@/components/game/add-player-modal';
 import { FocusedDeathActionPanel } from '@/components/game/death-actions';
 import { DeathLog } from '@/components/game/death-log';
 import { DeleteFocusedPlayerButton } from '@/components/game/delete-focused-player-button';
-import { FocusedPlayerActions } from '@/components/game/focused-player-actions';
 import { GameMap } from '@/components/game/game-map';
 import {
   type GameRouteContextValue,
@@ -20,6 +19,7 @@ import { HeaderTitle } from '@/components/game/header-title';
 import { InteractionsTab } from '@/components/game/interactions-tab';
 import { MapModeActions } from '@/components/game/map-mode-actions';
 import { NominationList } from '@/components/game/nomination-list';
+import { PlayerNotes } from '@/components/game/player-notes';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
 import { RotateActions } from '@/components/game/rotate-actions';
 import { TrackingConfirmActions } from '@/components/game/tracking-confirm-actions';
@@ -505,8 +505,8 @@ export default function GameRoute() {
           <GameMap />
 
           {focusedPlayer ? (
-            <View key="focused-player-actions">
-              <FocusedPlayerActions />
+            <View key="player-notes">
+              <PlayerNotes />
             </View>
           ) : isRotatingMode ? (
             <View key="rotate-actions">

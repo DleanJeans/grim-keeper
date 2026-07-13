@@ -33,10 +33,19 @@ const noteTextStyle = {
   lineHeight: 20,
 };
 
-export function FocusedPlayerActions() {
+const noteDayHeaderStyle = {
+  color: '#94a3b8',
+  fontSize: 12,
+  fontWeight: '800' as const,
+  letterSpacing: 0.5,
+  textTransform: 'uppercase' as const,
+};
+
+export function PlayerNotes() {
   const {
     activeDay,
     focusedPlayer,
+    game,
     noteDraft,
     noteEditorVisible,
     focusedPlayerNote: note,
@@ -48,6 +57,11 @@ export function FocusedPlayerActions() {
   if (!focusedPlayer) {
     return null;
   }
+
+  const playerNotes = (game.playerDayNotes ?? [])
+    .filter((entry) => entry.playerId === focusedPlayer.id)
+    .slice()
+    .sort((a, b) => b.day - a.day);
 
   return (
     <View style={{ alignSelf: 'stretch', gap: 10 }}>
@@ -84,10 +98,19 @@ export function FocusedPlayerActions() {
               <Check color="#f8fafc" size={18} strokeWidth={2.8} />
             </Pressable>
           </View>
-        ) : note ? (
-          <Text selectable style={noteTextStyle}>
-            {note.text}
-          </Text>
+        ) : null}
+
+        {playerNotes.length > 0 ? (
+          <View style={{ gap: 6 }}>
+            {playerNotes.map((entry) => (
+              <View key={entry.day} style={{ gap: 4 }}>
+                <Text style={noteDayHeaderStyle}>Day {entry.day}</Text>
+                <Text selectable style={noteTextStyle}>
+                  {entry.text}
+                </Text>
+              </View>
+            ))}
+          </View>
         ) : null}
       </View>
     </View>
