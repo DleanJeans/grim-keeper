@@ -1,8 +1,8 @@
 import { Skull } from 'lucide-react-native';
 import { Pressable } from 'react-native';
 
-import { Text } from '@/components/text';
 import { onDarkTextStrong, outlinedActionStyle } from '@/components/game/styles';
+import { Text } from '@/components/text';
 
 type NightKillButtonProps = {
   disabled?: boolean;

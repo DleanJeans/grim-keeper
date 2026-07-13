@@ -1,7 +1,7 @@
 export { ExecuteButton } from './execute-button';
 export { NightKillButton } from './night-kill-button';
-export { UndoDeathButton } from './undo-death-button';
 export { ReviveButton } from './revive-button';
+export { UndoDeathButton } from './undo-death-button';
 
 import { View } from 'react-native';
 
@@ -32,35 +32,43 @@ export function FocusedDeathActionPanel() {
   }
 
   const deathKind = focusedPlayer.death?.kind;
-  const canExecute = !(focusedPlayerIsDead && deathKind === 'execution');
-  const canNightKill = !(focusedPlayerIsDead && deathKind === 'night');
 
   return (
-    <View style={{ alignSelf: 'stretch', gap: 10, marginBottom: 12 }}>
-      <View style={innerActionRow}>
-        <ExecuteButton
-          disabled={!canExecute}
-          onPress={() => onSetDeath('execution')}
-          playerName={focusedPlayer.name}
-        />
-        <NightKillButton
-          disabled={!canNightKill}
-          onPress={() => onSetDeath('night')}
-          playerName={focusedPlayer.name}
-        />
-        <UndoDeathButton
-          disabled={!focusedPlayerIsDead}
-          onPress={onUndoDeath}
-          playerName={focusedPlayer.name}
-        />
-      </View>
-      <View style={innerActionRow}>
-        <ReviveButton
-          disabled={!focusedPlayerIsDead}
-          onPress={onRevive}
-          playerName={focusedPlayer.name}
-        />
-      </View>
+    <View style={{ alignSelf: 'stretch', gap: 10, marginBottom: 24 }}>
+      {focusedPlayerIsDead ? (
+        <View style={innerActionRow}>
+          {deathKind === 'execution' ? (
+            <ExecuteButton
+              disabled
+              onPress={() => onSetDeath('execution')}
+              playerName={focusedPlayer.name}
+            />
+          ) : (
+            <NightKillButton
+              disabled
+              onPress={() => onSetDeath('night')}
+              playerName={focusedPlayer.name}
+            />
+          )}
+          <UndoDeathButton onPress={onUndoDeath} playerName={focusedPlayer.name} />
+        </View>
+      ) : (
+        <View style={innerActionRow}>
+          <ExecuteButton
+            onPress={() => onSetDeath('execution')}
+            playerName={focusedPlayer.name}
+          />
+          <NightKillButton
+            onPress={() => onSetDeath('night')}
+            playerName={focusedPlayer.name}
+          />
+        </View>
+      )}
+      {focusedPlayerIsDead && (
+        <View style={innerActionRow}>
+          <ReviveButton onPress={onRevive} playerName={focusedPlayer.name} />
+        </View>
+      )}
     </View>
   );
 }
