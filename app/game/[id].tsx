@@ -1,86 +1,33 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
-import {
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  FlameKindling,
-  HeartPulse,
-  List,
-  MessageCircle,
-  MessagesSquare,
-  Minus,
-  MoveDiagonal,
-  Plus,
-  RotateCcw,
-  RotateCw,
-  Skull,
-  Table2,
-  Trash2,
-  UserPlus,
-  Vote,
-  X,
-} from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
-
-import { AddPlayerModal } from '@/components/add-player-modal';
-import { ConversationTable } from '@/components/conversation-table';
-import { DeathLog } from '@/components/death-log';
+import { Alert, ScrollView, useWindowDimensions, View } from 'react-native';
+import { AddPlayerModal } from '@/components/game/add-player-modal';
+import { DeathLog } from '@/components/game/death-log';
+import { FocusedPlayerActions } from '@/components/game/focused-player-actions';
+import { GameMap } from '@/components/game/game-map';
+import { GameTabs } from '@/components/game/game-tabs';
+import { HeaderLeft } from '@/components/game/header-left';
+import { HeaderRight } from '@/components/game/header-right';
+import { HeaderTitle } from '@/components/game/header-title';
+import { InteractionsTab } from '@/components/game/interactions-tab';
+import { MapModeActions } from '@/components/game/map-mode-actions';
+import { NominationList } from '@/components/game/nomination-list';
+import { RearrangeActions } from '@/components/game/rearrange-actions';
+import { RotateActions } from '@/components/game/rotate-actions';
+import { TrackingConfirmActions } from '@/components/game/tracking-confirm-actions';
+import { VoteConfirmActions } from '@/components/game/vote-confirm-actions';
 import {
-  FocusedPlayerDeathActions,
-  FocusedPlayerUndoDeathButton,
-} from '@/components/focused-player-death-actions';
-import { GameMap } from '@/components/game-map';
-import { InteractionList } from '@/components/interaction-list';
-import { MapModeButton } from '@/components/map-mode-button';
-import { NomIcon } from '@/components/nom-icon';
-import { NominationList } from '@/components/nomination-list';
+  type GameRouteContextValue,
+  GameRouteProvider,
+  type GameTab,
+  type TrackingMode,
+} from '@/components/game/game-route-context';
 import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
+import type { PlayerPosition } from '@/types/game';
 import { getLastDayWithData } from '@/utils/game-utils';
-import {
-  getTokenSize,
-  maxTokenSize,
-  minTokenSize,
-  rotatePlayerMapPositions,
-  tokenSizeStep,
-} from '@/utils/layout-utils';
+import { getTokenSize, rotatePlayerMapPositions } from '@/utils/layout-utils';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
-
-type GameTab = 'interactions' | 'nominations' | 'deaths';
-type InteractionSubtab = 'list' | 'table';
-type TrackingMode = 'interaction' | 'nomination';
-
-const gameTabs: { flex: number; label: string; value: GameTab }[] = [
-  { flex: 1.3, label: 'Interactions', value: 'interactions' },
-  { flex: 0.85, label: 'Noms', value: 'nominations' },
-  { flex: 0.85, label: 'Deaths', value: 'deaths' },
-];
-const interactionSubtabs: { label: string; value: InteractionSubtab }[] = [
-  { label: 'List', value: 'list' },
-  { label: 'Table', value: 'table' },
-];
-const rotationStepRadians = Math.PI / 8;
-
-function renderGameTabIcon(tab: GameTab, color: string) {
-  switch (tab) {
-    case 'interactions':
-      return <MessagesSquare color={color} size={15} strokeWidth={2.5} />;
-    case 'nominations':
-      return <Vote color={color} size={15} strokeWidth={2.5} />;
-    case 'deaths':
-      return <Skull color={color} size={15} strokeWidth={2.5} />;
-  }
-}
-
-function renderInteractionSubtabIcon(tab: InteractionSubtab, color: string) {
-  switch (tab) {
-    case 'list':
-      return <List color={color} size={15} strokeWidth={2.5} />;
-    case 'table':
-      return <Table2 color={color} size={15} strokeWidth={2.5} />;
-  }
-}
 
 export default function GameRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -99,7 +46,6 @@ export default function GameRoute() {
   const setActiveDay = useGameStore((state) => state.setActiveDay);
   const setTokenSize = useGameStore((state) => state.setTokenSize);
   const [activeTab, setActiveTab] = useState<GameTab>('interactions');
-  const [interactionSubtab, setInteractionSubtab] = useState<InteractionSubtab>('list');
   const [addPlayerVisible, setAddPlayerVisible] = useState(false);
   const [trackingMode, setTrackingMode] = useState<TrackingMode | null>(null);
   const [votingNominationId, setVotingNominationId] = useState<string | null>(null);
@@ -185,6 +131,41 @@ export default function GameRoute() {
   ).length;
   const alivePlayerCount = activeGame.players.length - deadPlayerCount;
   const lastDayWithData = getLastDayWithData(activeGame);
+
+  function exitMapModes() {
+    setIsRotatingMode(false);
+    setIsRearrangeMode(false);
+  }
+
+  function exitRotateMode() {
+    setIsRotatingMode(false);
+  }
+
+  function exitRearrangeMode() {
+    setIsRearrangeMode(false);
+  }
+
+  function enterRotateMode() {
+    setIsRearrangeMode(false);
+    setIsRotatingMode(true);
+  }
+
+  function enterRearrangeMode() {
+    setIsRotatingMode(false);
+    setIsRearrangeMode(true);
+  }
+
+  function handleAddPlayer(name: string) {
+    addPlayer(activeGame.id, name);
+  }
+
+  function handleDeleteConversation(conversationId: string) {
+    deleteConversation(activeGame.id, conversationId);
+  }
+
+  function handleDeleteNomination(nominationId: string) {
+    deleteConversation(activeGame.id, nominationId);
+  }
 
   function handleSelectPlayer(playerId: string) {
     if (votingNominationId) {
@@ -329,6 +310,10 @@ export default function GameRoute() {
     setTokenSize(activeGame.id, activeTokenSize + sizeDelta);
   }
 
+  function handleMovePlayer(playerId: string, position: PlayerPosition) {
+    updatePlayerPosition(activeGame.id, playerId, position);
+  }
+
   function handleSetFocusedPlayerDeath(kind: 'execution' | 'night') {
     if (!focusedPlayer) {
       return;
@@ -396,6 +381,71 @@ export default function GameRoute() {
     );
   }
 
+  const contextValue: GameRouteContextValue = {
+    game: activeGame,
+    players: activeGame.players,
+    conversations: activeGame.conversations,
+    activeDay: activeGame.activeDay,
+    lastDayWithData,
+    activeTokenSize,
+    alivePlayerCount,
+    deadPlayerCount,
+    disabledPlayerIds,
+    nominatedPlayerIds,
+    hideConnectionCurves,
+    interactionMode: !!trackingMode || !!votingNominationId,
+    mapWidth,
+    mapHeight,
+    nominationCurvePlayerIds: trackingMode === 'nomination' ? selectedPlayerIds : [],
+    activeTab,
+    addPlayerVisible,
+    trackingMode,
+    votingNominationId,
+    votingReturnTab,
+    focusedPlayerId,
+    focusedPlayer,
+    focusedPlayerIsDead,
+    focusedPlayerNote,
+    nominationDisabled,
+    noteDraft,
+    noteEditorVisible,
+    isRotatingMode,
+    isRearrangeMode,
+    selectedPlayerIds,
+    highlightedPlayerIds,
+    trackingConfirmLabel,
+    trackingCancelFlex,
+    trackingConfirmFlex,
+    setActiveTab,
+    setAddPlayerVisible,
+    setNoteDraft,
+    exitMapModes,
+    exitRotateMode,
+    exitRearrangeMode,
+    handleSelectPlayer,
+    handleMovePlayer,
+    handleStartTracking,
+    handleCancelTracking,
+    handleConfirmTracking,
+    handleConfirmVotes,
+    handleCancelVoting,
+    handleEditNominationVotes,
+    handleChangeDay,
+    handleRotateTokens,
+    handleResizeTokens,
+    handleSetFocusedPlayerDeath,
+    handleReviveFocusedPlayer,
+    handleUndoFocusedPlayerDeath,
+    handleShowFocusedPlayerNote,
+    handleSaveFocusedPlayerNote,
+    confirmDeletePlayer,
+    handleDeleteConversation,
+    handleDeleteNomination,
+    handleAddPlayer,
+    enterRearrangeMode,
+    enterRotateMode,
+  };
+
   return (
     <>
       <Stack.Screen
@@ -403,786 +453,79 @@ export default function GameRoute() {
           headerBackVisible: false,
           title: `Day ${activeGame.activeDay}/${lastDayWithData}`,
           headerLeft: () => (
-            <View style={{ alignItems: 'center', flexDirection: 'row', gap: 8 }}>
-              <View style={{ alignItems: 'center', flexDirection: 'row', gap: 3 }}>
-                <HeartPulse color="#86efac" size={16} strokeWidth={2.7} />
-                <Text style={{ color: '#f8fafc', fontSize: 14, fontWeight: '900' }}>
-                  {alivePlayerCount}
-                </Text>
-              </View>
-              <View style={{ alignItems: 'center', flexDirection: 'row', gap: 3 }}>
-                <Skull color="#fca5a5" size={16} strokeWidth={2.7} />
-                <Text style={{ color: '#f8fafc', fontSize: 14, fontWeight: '900' }}>
-                  {deadPlayerCount}
-                </Text>
-              </View>
-            </View>
+            <HeaderLeft alivePlayerCount={alivePlayerCount} deadPlayerCount={deadPlayerCount} />
           ),
           headerTitle: () => (
-            <View style={{ alignItems: 'center', flexDirection: 'row', gap: 8 }}>
-              <Pressable
-                accessibilityLabel="Previous day"
-                accessibilityRole="button"
-                disabled={activeGame.activeDay === 1}
-                onPress={() => handleChangeDay(activeGame.activeDay - 1)}
-                style={({ pressed }) => ({
-                  alignItems: 'center',
-                  backgroundColor: activeGame.activeDay === 1 ? '#1f2937' : '#334155',
-                  borderRadius: 8,
-                  height: 32,
-                  justifyContent: 'center',
-                  opacity: pressed ? 0.75 : 1,
-                  width: 34,
-                })}
-              >
-                <ChevronLeft
-                  color={activeGame.activeDay === 1 ? '#64748b' : '#f8fafc'}
-                  size={15}
-                  strokeWidth={2.7}
-                />
-              </Pressable>
-              <Text
-                selectable
-                style={{
-                  color: '#f8fafc',
-                  fontSize: 15,
-                  fontWeight: '900',
-                  minWidth: 54,
-                  textAlign: 'center',
-                }}
-              >
-                Day {activeGame.activeDay}/{lastDayWithData}
-              </Text>
-              <Pressable
-                accessibilityLabel="Next day"
-                accessibilityRole="button"
-                onPress={() => handleChangeDay(activeGame.activeDay + 1)}
-                style={({ pressed }) => ({
-                  alignItems: 'center',
-                  backgroundColor: pressed ? '#475569' : '#334155',
-                  borderRadius: 8,
-                  height: 32,
-                  justifyContent: 'center',
-                  width: 34,
-                })}
-              >
-                <ChevronRight color="#f8fafc" size={15} strokeWidth={2.7} />
-              </Pressable>
-            </View>
+            <HeaderTitle
+              activeDay={activeGame.activeDay}
+              lastDayWithData={lastDayWithData}
+              onChangeDay={handleChangeDay}
+            />
           ),
-          headerRight: () => (
-            <View style={{ flexDirection: 'row' }}>
-              <Pressable
-                accessibilityLabel="Add missing player"
-                accessibilityRole="button"
-                onPress={() => setAddPlayerVisible(true)}
-                style={({ pressed }) => ({
-                  alignItems: 'center',
-                  backgroundColor: pressed ? '#1f2937' : '#111827',
-                  borderColor: '#334155',
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  flexDirection: 'row',
-                  gap: 6,
-                  paddingHorizontal: 10,
-                  paddingVertical: 7,
-                })}
-              >
-                <UserPlus color="#f8fafc" size={15} strokeWidth={2.5} />
-                <Text style={{ color: '#f8fafc', fontSize: 13, fontWeight: '900' }}>Player</Text>
-              </Pressable>
-            </View>
-          ),
+          headerRight: () => <HeaderRight onAddPlayer={() => setAddPlayerVisible(true)} />,
         }}
       />
 
-      <AddPlayerModal
-        players={activeGame.players}
-        visible={addPlayerVisible}
-        onAddPlayer={(name) => addPlayer(activeGame.id, name)}
-        onClose={() => setAddPlayerVisible(false)}
-      />
-
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={{ backgroundColor: '#0b1120', flex: 1 }}
-        contentContainerStyle={{ gap: 20, padding: 20, paddingBottom: 40 }}
-      >
-        <GameMap
-          activeDay={activeGame.activeDay}
-          conversations={activeGame.conversations}
-          disabledPlayerIds={disabledPlayerIds}
-          hideConnectionCurves={hideConnectionCurves}
-          interactionMode={!!trackingMode || !!votingNominationId}
-          mapHeight={mapHeight}
-          mapWidth={mapWidth}
-          nominationCurvePlayerIds={trackingMode === 'nomination' ? selectedPlayerIds : []}
+      <GameRouteProvider value={contextValue}>
+        <AddPlayerModal
           players={activeGame.players}
-          rearrangeMode={isRearrangeMode}
-          tokenSize={activeTokenSize}
-          onMovePlayer={(playerId, position) =>
-            updatePlayerPosition(activeGame.id, playerId, position)
-          }
-          onSelectPlayer={handleSelectPlayer}
-          selectedPlayerIds={highlightedPlayerIds}
+          visible={addPlayerVisible}
+          onAddPlayer={handleAddPlayer}
+          onClose={() => setAddPlayerVisible(false)}
         />
 
-        {votingNominationId ? (
-          <View
-            key="vote-actions"
-            style={{ alignSelf: 'stretch', flexDirection: 'row', gap: 12 }}
-          >
-            <Pressable
-              accessibilityRole="button"
-              onPress={handleCancelVoting}
-              style={{
-                alignItems: 'center',
-                backgroundColor: '#334155',
-                borderRadius: 8,
-                flex: 0.75,
-                flexBasis: 0,
-                flexDirection: 'row',
-                gap: 6,
-                justifyContent: 'center',
-                minWidth: 0,
-                paddingVertical: 14,
-              }}
-            >
-              <X color="#f8fafc" size={17} strokeWidth={2.7} />
-              <Text style={{ color: '#f8fafc', fontWeight: '800' }}>Cancel</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={handleConfirmVotes}
-              style={{
-                alignItems: 'center',
-                backgroundColor: '#16a34a',
-                borderRadius: 8,
-                flex: 1.25,
-                flexBasis: 0,
-                flexDirection: 'row',
-                gap: 6,
-                justifyContent: 'center',
-                minWidth: 0,
-                paddingVertical: 14,
-              }}
-            >
-              <Check color="#f8fafc" size={17} strokeWidth={2.7} />
-              <Text
-                adjustsFontSizeToFit
-                minimumFontScale={0.72}
-                numberOfLines={1}
-                style={{
-                  color: '#f8fafc',
-                  flexShrink: 1,
-                  fontWeight: '800',
-                  minWidth: 0,
-                }}
-              >
-                Confirm {selectedPlayerIds.length} Votes
-              </Text>
-            </Pressable>
-          </View>
-        ) : trackingMode ? (
-          <View
-            key="tracking-actions"
-            style={{ alignSelf: 'stretch', flexDirection: 'row', gap: 12 }}
-          >
-            <Pressable
-              accessibilityRole="button"
-              onPress={handleCancelTracking}
-              style={{
-                alignItems: 'center',
-                backgroundColor: '#334155',
-                borderRadius: 8,
-                flex: trackingCancelFlex,
-                flexBasis: 0,
-                flexDirection: 'row',
-                gap: 6,
-                justifyContent: 'center',
-                minWidth: 0,
-                paddingVertical: 14,
-              }}
-            >
-              <X color="#f8fafc" size={17} strokeWidth={2.7} />
-              <Text style={{ color: '#f8fafc', fontWeight: '800' }}>Cancel</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              disabled={selectedPlayerIds.length < 2}
-              onPress={handleConfirmTracking}
-              style={{
-                alignItems: 'center',
-                backgroundColor: selectedPlayerIds.length < 2 ? '#334155' : '#16a34a',
-                borderRadius: 8,
-                flex: trackingConfirmFlex,
-                flexBasis: 0,
-                flexDirection: 'row',
-                gap: 6,
-                justifyContent: 'center',
-                minWidth: 0,
-                paddingVertical: 14,
-              }}
-            >
-              <Check
-                color={selectedPlayerIds.length < 2 ? '#94a3b8' : '#f8fafc'}
-                size={17}
-                strokeWidth={2.7}
-              />
-              <Text
-                adjustsFontSizeToFit
-                minimumFontScale={0.72}
-                numberOfLines={1}
-                style={{
-                  color: selectedPlayerIds.length < 2 ? '#94a3b8' : '#f8fafc',
-                  flexShrink: 1,
-                  fontWeight: '800',
-                  minWidth: 0,
-                }}
-              >
-                {trackingConfirmLabel}
-              </Text>
-            </Pressable>
-          </View>
-        ) : focusedPlayer ? (
-          <View key="focused-player-actions" style={{ alignSelf: 'stretch', gap: 10 }}>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              {!(focusedPlayerIsDead && focusedPlayer.death?.kind === 'night') && (
-                <Pressable
-                  accessibilityLabel={`Mark ${focusedPlayer.name} dead by execution`}
-                  accessibilityRole="button"
-                  disabled={focusedPlayerIsDead && focusedPlayer.death?.kind === 'execution'}
-                  onPress={() => handleSetFocusedPlayerDeath('execution')}
-                  style={({ pressed }) => ({
-                    alignItems: 'center',
-                    backgroundColor: pressed ? '#1f2937' : '#111827',
-                    borderColor:
-                      focusedPlayerIsDead && focusedPlayer.death?.kind === 'execution'
-                        ? '#1f2937'
-                        : '#fca5a5',
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    flex: 1,
-                    flexBasis: 0,
-                    flexDirection: 'row',
-                    gap: 6,
-                    justifyContent: 'center',
-                    minWidth: 0,
-                    opacity:
-                      focusedPlayerIsDead && focusedPlayer.death?.kind === 'execution'
-                        ? 0.48
-                        : 1,
-                    paddingVertical: 14,
-                  })}
-                >
-                  <FlameKindling
-                    color={
-                      focusedPlayerIsDead && focusedPlayer.death?.kind === 'execution'
-                        ? '#94a3b8'
-                        : '#fca5a5'
-                    }
-                    size={17}
-                    strokeWidth={2.7}
-                  />
-                  <Text
-                    style={{
-                      color: '#f8fafc',
-                      fontWeight: '900',
-                    }}
-                  >
-                    Execute
-                    {focusedPlayerIsDead && focusedPlayer.death?.kind === 'execution'
-                      ? 'd'
-                      : ''}
-                  </Text>
-                </Pressable>
-              )}
-              {!(focusedPlayerIsDead && focusedPlayer.death?.kind === 'execution') && (
-                <Pressable
-                  accessibilityLabel={`Mark ${focusedPlayer.name} dead at night`}
-                  accessibilityRole="button"
-                  disabled={focusedPlayerIsDead && focusedPlayer.death?.kind === 'night'}
-                  onPress={() => handleSetFocusedPlayerDeath('night')}
-                  style={({ pressed }) => ({
-                    alignItems: 'center',
-                    backgroundColor: pressed ? '#1f2937' : '#111827',
-                    borderColor:
-                      focusedPlayerIsDead && focusedPlayer.death?.kind === 'night'
-                        ? '#1f2937'
-                        : '#93c5fd',
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    flex: 1,
-                    flexBasis: 0,
-                    flexDirection: 'row',
-                    gap: 6,
-                    justifyContent: 'center',
-                    minWidth: 0,
-                    opacity:
-                      focusedPlayerIsDead && focusedPlayer.death?.kind === 'night' ? 0.48 : 1,
-                    paddingVertical: 14,
-                  })}
-                >
-                  <Skull
-                    color={
-                      focusedPlayerIsDead && focusedPlayer.death?.kind === 'night'
-                        ? '#94a3b8'
-                        : '#93c5fd'
-                    }
-                    size={17}
-                    strokeWidth={2.7}
-                  />
-                  <Text
-                    style={{
-                      color: '#f8fafc',
-                      fontWeight: '900',
-                    }}
-                  >
-                    {focusedPlayerIsDead && focusedPlayer.death?.kind === 'night'
-                      ? 'Killed'
-                      : 'Night Kill'}
-                  </Text>
-                </Pressable>
-              )}
-              <FocusedPlayerUndoDeathButton
-                disabled={!focusedPlayerIsDead}
-                onPress={handleUndoFocusedPlayerDeath}
-                playerName={focusedPlayer.name}
-              />
-            </View>
-
-            <FocusedPlayerDeathActions
-              canRevive={focusedPlayerIsDead}
-              isAlive={!focusedPlayerIsDead}
-              onRevive={handleReviveFocusedPlayer}
-              playerName={focusedPlayer.name}
-            />
-
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <Pressable
-                accessibilityLabel={`Delete ${focusedPlayer.name}`}
-                accessibilityRole="button"
-                disabled={focusedPlayer.isAppUser}
-                onPress={confirmDeletePlayer}
-                style={({ pressed }) => ({
-                  alignItems: 'center',
-                  backgroundColor: focusedPlayer.isAppUser
-                    ? '#1f2937'
-                    : pressed
-                      ? '#2a1517'
-                      : '#111827',
-                  borderColor: focusedPlayer.isAppUser ? '#334155' : '#fca5a5',
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  justifyContent: 'center',
-                  minWidth: 48,
-                  opacity: focusedPlayer.isAppUser ? 0.48 : 1,
-                  paddingVertical: 14,
-                })}
-              >
-                <Trash2
-                  color={focusedPlayer.isAppUser ? '#94a3b8' : '#fca5a5'}
-                  size={17}
-                  strokeWidth={2.7}
-                />
-              </Pressable>
-              <Pressable
-                accessibilityLabel={`Track interaction from ${focusedPlayer.name}`}
-                accessibilityRole="button"
-                onPress={() => handleStartTracking('interaction')}
-                style={({ pressed }) => ({
-                  alignItems: 'center',
-                  backgroundColor: pressed ? '#1f2937' : '#111827',
-                  borderColor: '#334155',
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  flex: 1,
-                  flexBasis: 0,
-                  flexDirection: 'row',
-                  gap: 6,
-                  justifyContent: 'center',
-                  minWidth: 0,
-                  paddingVertical: 14,
-                })}
-              >
-                <MessageCircle color="#f8fafc" size={17} strokeWidth={2.7} />
-                <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Interaction</Text>
-              </Pressable>
-              <Pressable
-                accessibilityLabel={`Track nomination from ${focusedPlayer.name}`}
-                accessibilityRole="button"
-                disabled={nominationDisabled}
-                onPress={() => handleStartTracking('nomination')}
-                style={({ pressed }) => ({
-                  alignItems: 'center',
-                  backgroundColor: pressed ? '#1f2937' : '#111827',
-                  borderColor: nominationDisabled ? '#1f2937' : '#334155',
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  flex: 1,
-                  flexBasis: 0,
-                  flexDirection: 'row',
-                  gap: 6,
-                  justifyContent: 'center',
-                  minWidth: 0,
-                  opacity: nominationDisabled ? 0.48 : 1,
-                  paddingVertical: 14,
-                })}
-              >
-                <NomIcon
-                  color={nominationDisabled ? '#94a3b8' : '#f8fafc'}
-                  size={17}
-                  strokeWidth={2.7}
-                />
-                <Text
-                  style={{
-                    color: nominationDisabled ? '#94a3b8' : '#f8fafc',
-                    fontWeight: '900',
-                  }}
-                >
-                  {`Nominate${nominationDisabled ? 'd' : ''}`}
-                </Text>
-              </Pressable>
-            </View>
-
-            <View style={{ gap: 10 }}>
-              <Pressable
-                accessibilityLabel={`Add day ${activeGame.activeDay} note for ${focusedPlayer.name}`}
-                accessibilityRole="button"
-                onPress={handleShowFocusedPlayerNote}
-                style={({ pressed }) => ({
-                  alignItems: 'center',
-                  backgroundColor: pressed ? '#1f2937' : '#111827',
-                  borderColor: focusedPlayerNote ? '#38bdf8' : '#334155',
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  flexDirection: 'row',
-                  gap: 6,
-                  justifyContent: 'center',
-                  paddingVertical: 14,
-                })}
-              >
-                <MessageCircle color="#38bdf8" size={17} strokeWidth={2.7} />
-                <Text style={{ color: '#f8fafc', fontWeight: '900' }}>
-                  {focusedPlayerNote ? 'Edit Note' : 'Note'}
-                </Text>
-              </Pressable>
-
-              {noteEditorVisible ? (
-                <View style={{ flexDirection: 'row', gap: 10 }}>
-                  <TextInput
-                    accessibilityLabel={`Day ${activeGame.activeDay} note for ${focusedPlayer.name}`}
-                    multiline
-                    onChangeText={setNoteDraft}
-                    placeholder={`What did ${focusedPlayer.name} say?`}
-                    placeholderTextColor="#64748b"
-                    style={{
-                      backgroundColor: '#111827',
-                      borderColor: '#334155',
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      color: '#f8fafc',
-                      flex: 1,
-                      fontSize: 15,
-                      minHeight: 48,
-                      paddingHorizontal: 12,
-                      paddingVertical: 12,
-                      textAlignVertical: 'top',
-                    }}
-                    value={noteDraft}
-                  />
-                  <Pressable
-                    accessibilityLabel={`Save day ${activeGame.activeDay} note for ${focusedPlayer.name}`}
-                    accessibilityRole="button"
-                    onPress={handleSaveFocusedPlayerNote}
-                    style={({ pressed }) => ({
-                      alignItems: 'center',
-                      backgroundColor: pressed ? '#15803d' : '#16a34a',
-                      borderRadius: 8,
-                      justifyContent: 'center',
-                      minWidth: 48,
-                      width: 48,
-                    })}
-                  >
-                    <Check color="#f8fafc" size={18} strokeWidth={2.8} />
-                  </Pressable>
-                </View>
-              ) : focusedPlayerNote ? (
-                <Text
-                  selectable
-                  style={{
-                    color: '#cbd5e1',
-                    fontSize: 14,
-                    lineHeight: 20,
-                  }}
-                >
-                  {focusedPlayerNote.text}
-                </Text>
-              ) : null}
-            </View>
-          </View>
-        ) : isRotatingMode ? (
-          <View
-            key="rotate-actions"
-            style={{ alignSelf: 'stretch', flexDirection: 'row', gap: 10 }}
-          >
-            <Pressable
-              accessibilityLabel="Rotate tokens left"
-              accessibilityRole="button"
-              onPress={() => handleRotateTokens(-rotationStepRadians)}
-              style={({ pressed }) => ({
-                alignItems: 'center',
-                backgroundColor: pressed ? '#1f2937' : '#111827',
-                borderColor: '#334155',
-                borderRadius: 8,
-                borderWidth: 1,
-                flex: 1,
-                flexBasis: 0,
-                flexDirection: 'row',
-                gap: 6,
-                justifyContent: 'center',
-                minWidth: 0,
-                paddingVertical: 14,
-              })}
-            >
-              <RotateCcw color="#f8fafc" size={17} strokeWidth={2.7} />
-              <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Left</Text>
-            </Pressable>
-            <Pressable
-              accessibilityLabel="Rotate tokens right"
-              accessibilityRole="button"
-              onPress={() => handleRotateTokens(rotationStepRadians)}
-              style={({ pressed }) => ({
-                alignItems: 'center',
-                backgroundColor: pressed ? '#1f2937' : '#111827',
-                borderColor: '#334155',
-                borderRadius: 8,
-                borderWidth: 1,
-                flex: 1,
-                flexBasis: 0,
-                flexDirection: 'row',
-                gap: 6,
-                justifyContent: 'center',
-                minWidth: 0,
-                paddingVertical: 14,
-              })}
-            >
-              <RotateCw color="#f8fafc" size={17} strokeWidth={2.7} />
-              <Text style={{ color: '#f8fafc', fontWeight: '900' }}>Right</Text>
-            </Pressable>
-            <MapModeButton
-              accessibilityLabel="Done rotating tokens"
-              onPress={() => setIsRotatingMode(false)}
-              variant="confirm"
-            />
-          </View>
-        ) : isRearrangeMode ? (
-          <View
-            key="rearrange-actions"
-            style={{ alignSelf: 'stretch', flexDirection: 'row', gap: 10 }}
-          >
-            <Pressable
-              accessibilityLabel="Shrink player tokens"
-              accessibilityRole="button"
-              disabled={activeTokenSize <= minTokenSize}
-              onPress={() => handleResizeTokens(-tokenSizeStep)}
-              style={({ pressed }) => ({
-                alignItems: 'center',
-                backgroundColor: pressed ? '#1f2937' : '#111827',
-                borderColor: activeTokenSize <= minTokenSize ? '#1f2937' : '#334155',
-                borderRadius: 8,
-                borderWidth: 1,
-                flex: 1,
-                flexBasis: 0,
-                flexDirection: 'row',
-                gap: 6,
-                justifyContent: 'center',
-                minWidth: 0,
-                opacity: activeTokenSize <= minTokenSize ? 0.48 : 1,
-                paddingVertical: 14,
-              })}
-            >
-              <Minus color="#f8fafc" size={17} strokeWidth={2.7} />
-            </Pressable>
-            <View
-              style={{
-                alignItems: 'center',
-                backgroundColor: '#111827',
-                borderColor: '#334155',
-                borderRadius: 8,
-                borderWidth: 1,
-                justifyContent: 'center',
-                paddingHorizontal: 12,
-                paddingVertical: 14,
-                width: 58,
-              }}
-            >
-              <Text style={{ color: '#f8fafc', fontWeight: '900' }}>{activeTokenSize}</Text>
-            </View>
-            <Pressable
-              accessibilityLabel="Enlarge player tokens"
-              accessibilityRole="button"
-              disabled={activeTokenSize >= maxTokenSize}
-              onPress={() => handleResizeTokens(tokenSizeStep)}
-              style={({ pressed }) => ({
-                alignItems: 'center',
-                backgroundColor: pressed ? '#1f2937' : '#111827',
-                borderColor: activeTokenSize >= maxTokenSize ? '#1f2937' : '#334155',
-                borderRadius: 8,
-                borderWidth: 1,
-                flex: 1,
-                flexBasis: 0,
-                flexDirection: 'row',
-                gap: 6,
-                justifyContent: 'center',
-                minWidth: 0,
-                opacity: activeTokenSize >= maxTokenSize ? 0.48 : 1,
-                paddingVertical: 14,
-              })}
-            >
-              <Plus color="#f8fafc" size={17} strokeWidth={2.7} />
-            </Pressable>
-            <MapModeButton
-              accessibilityLabel="Done rearranging tokens"
-              onPress={() => setIsRearrangeMode(false)}
-              variant="confirm"
-            />
-          </View>
-        ) : (
-          <View
-            key="map-mode-actions"
-            style={{ alignSelf: 'stretch', flexDirection: 'row', gap: 10 }}
-          >
-            <MapModeButton
-              accessibilityLabel="Enter rearrange mode"
-              icon={MoveDiagonal}
-              label="Rearrange"
-              onPress={() => {
-                setIsRotatingMode(false);
-                setIsRearrangeMode(true);
-              }}
-            />
-            <MapModeButton
-              accessibilityLabel="Enter rotating mode"
-              icon={RotateCw}
-              label="Rotate"
-              onPress={() => {
-                setIsRearrangeMode(false);
-                setIsRotatingMode(true);
-              }}
-            />
-          </View>
-        )}
-
-        <View
-          style={{ backgroundColor: '#111827', borderRadius: 8, flexDirection: 'row', padding: 4 }}
+        <ScrollView
+          contentInsetAdjustmentBehavior="automatic"
+          style={{ backgroundColor: '#0b1120', flex: 1 }}
+          contentContainerStyle={{ gap: 20, padding: 20, paddingBottom: 40 }}
         >
-          {gameTabs.map((tab) => (
-            <Pressable
-              key={tab.value}
-              accessibilityRole="button"
-              onPress={() => {
-                setIsRotatingMode(false);
-                setIsRearrangeMode(false);
-                setActiveTab(tab.value);
-              }}
-              style={{
-                alignItems: 'center',
-                backgroundColor: activeTab === tab.value ? '#f8fafc' : 'transparent',
-                borderRadius: 6,
-                flex: tab.flex,
-                flexDirection: 'row',
-                gap: 4,
-                justifyContent: 'center',
-                paddingVertical: 10,
-              }}
-            >
-              {renderGameTabIcon(tab.value, activeTab === tab.value ? '#0b1120' : '#94a3b8')}
-              <Text
-                style={{
-                  color: activeTab === tab.value ? '#0b1120' : '#94a3b8',
-                  fontSize: 13,
-                  fontWeight: '800',
-                }}
-              >
-                {tab.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+          <GameMap />
 
-        {activeTab === 'nominations' ? (
-          <NominationList
-            activeDay={activeGame.activeDay}
-            conversations={activeGame.conversations}
-            players={activeGame.players}
-            onDeleteNomination={(nominationId) => deleteConversation(activeGame.id, nominationId)}
-            onEditVotes={handleEditNominationVotes}
-          />
-        ) : activeTab === 'deaths' ? (
-          <DeathLog activeDay={activeGame.activeDay} players={activeGame.players} />
-        ) : (
-          <View style={{ gap: 12 }}>
-            <View
-              style={{
-                backgroundColor: '#111827',
-                borderRadius: 8,
-                flexDirection: 'row',
-                padding: 4,
-              }}
-            >
-              {interactionSubtabs.map((tab) => (
-                <Pressable
-                  key={tab.value}
-                  accessibilityRole="button"
-                  onPress={() => setInteractionSubtab(tab.value)}
-                  style={{
-                    alignItems: 'center',
-                    backgroundColor: interactionSubtab === tab.value ? '#f8fafc' : 'transparent',
-                    borderRadius: 6,
-                    flex: 1,
-                    flexDirection: 'row',
-                    gap: 5,
-                    justifyContent: 'center',
-                    paddingVertical: 10,
-                  }}
-                >
-                  {renderInteractionSubtabIcon(
-                    tab.value,
-                    interactionSubtab === tab.value ? '#0b1120' : '#94a3b8',
-                  )}
-                  <Text
-                    style={{
-                      color: interactionSubtab === tab.value ? '#0b1120' : '#94a3b8',
-                      fontSize: 13,
-                      fontWeight: '800',
-                    }}
-                  >
-                    {tab.label}
-                  </Text>
-                </Pressable>
-              ))}
+          {votingNominationId ? (
+            <View key="vote-actions">
+              <VoteConfirmActions />
             </View>
+          ) : trackingMode ? (
+            <View key="tracking-actions">
+              <TrackingConfirmActions />
+            </View>
+          ) : focusedPlayer ? (
+            <View key="focused-player-actions">
+              <FocusedPlayerActions />
+            </View>
+          ) : isRotatingMode ? (
+            <View key="rotate-actions">
+              <RotateActions />
+            </View>
+          ) : isRearrangeMode ? (
+            <View key="rearrange-actions">
+              <RearrangeActions />
+            </View>
+          ) : (
+            <View key="map-mode-actions">
+              <MapModeActions />
+            </View>
+          )}
 
-            {interactionSubtab === 'table' ? (
-              <ConversationTable
-                activeDay={activeGame.activeDay}
-                conversations={activeGame.conversations}
-                players={activeGame.players}
-              />
-            ) : (
-              <InteractionList
-                activeDay={activeGame.activeDay}
-                conversations={activeGame.conversations}
-                players={activeGame.players}
-                onDeleteConversation={(conversationId) =>
-                  deleteConversation(activeGame.id, conversationId)
-                }
-              />
-            )}
+          <View key="tab-bar">
+            <GameTabs />
           </View>
-        )}
-      </ScrollView>
+
+          {activeTab === 'nominations' ? (
+            <View key="nominations-tab">
+              <NominationList />
+            </View>
+          ) : activeTab === 'deaths' ? (
+            <View key="deaths-tab">
+              <DeathLog activeDay={activeGame.activeDay} players={activeGame.players} />
+            </View>
+          ) : (
+            <View key="interactions-tab">
+              <InteractionsTab />
+            </View>
+          )}
+        </ScrollView>
+      </GameRouteProvider>
     </>
   );
 }

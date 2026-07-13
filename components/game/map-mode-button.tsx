@@ -67,9 +67,7 @@ export function MapModeButton({
       })}
     >
       {Icon ? <Icon color={iconColor} size={17} strokeWidth={2.7} /> : null}
-      {label ? (
-        <Text style={{ color: '#f8fafc', fontWeight: '900' }}>{label}</Text>
-      ) : null}
+      {label ? <Text style={{ color: '#f8fafc', fontWeight: '900' }}>{label}</Text> : null}
     </Pressable>
   );
 }

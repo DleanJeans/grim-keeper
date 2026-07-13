@@ -1,26 +1,13 @@
 import { Hand, Pencil, Trash2 } from 'lucide-react-native';
 import { Alert, Pressable, View } from 'react-native';
-
-import { NomIcon } from '@/components/nom-icon';
+import { NomIcon } from '@/components/game/nom-icon';
+import { useGameRouteContext } from '@/components/game/game-route-context';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { Conversation, Player } from '@/types/game';
 
-type NominationListProps = {
-  activeDay: number;
-  conversations: Conversation[];
-  players: Player[];
-  onDeleteNomination: (nominationId: string) => void;
-  onEditVotes: (nominationId: string, voterIds: string[]) => void;
-};
-
-export function NominationList({
-  activeDay,
-  conversations,
-  onDeleteNomination,
-  onEditVotes,
-  players,
-}: NominationListProps) {
+export function NominationList() {
+  const { activeDay, conversations, players, handleDeleteNomination, handleEditNominationVotes } =
+    useGameRouteContext();
   const playerNames = new Map(players.map((player) => [player.id, player.name]));
   const nominations = conversations.filter(
     (conversation) => conversation.day === activeDay && conversation.kind === 'nomination',
@@ -93,7 +80,7 @@ export function NominationList({
               </View>
               <Pressable
                 accessibilityRole="button"
-                onPress={() => onEditVotes(nomination.id, nomination.voterIds ?? [])}
+                onPress={() => handleEditNominationVotes(nomination.id, nomination.voterIds ?? [])}
                 style={({ pressed }) => ({
                   alignItems: 'center',
                   backgroundColor: pressed ? colors.surfacePressed : colors.surfaceRaised,
@@ -117,7 +104,7 @@ export function NominationList({
                     {
                       text: 'Delete',
                       style: 'destructive',
-                      onPress: () => onDeleteNomination(nomination.id),
+                      onPress: () => handleDeleteNomination(nomination.id),
                     },
                   ])
                 }

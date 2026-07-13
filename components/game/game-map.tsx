@@ -1,49 +1,34 @@
 import { View } from 'react-native';
 import Svg, { Path, Polygon } from 'react-native-svg';
-
-import { PlayerToken } from '@/components/player-token';
-import type { Conversation, Player, PlayerPosition } from '@/types/game';
+import { PlayerToken } from '@/components/game/player-token';
+import { useGameRouteContext } from '@/components/game/game-route-context';
+import type { Player, PlayerPosition } from '@/types/game';
 import { buildConversationGroupRepeats, getConversationGroupKey } from '@/utils/conversation-utils';
 import { getPlayerMapPosition, getTokenSize } from '@/utils/layout-utils';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 
-type GameMapProps = {
-  activeDay: number;
-  conversations: Conversation[];
-  disabledPlayerIds?: string[];
-  hideConnectionCurves?: boolean;
-  interactionMode?: boolean;
-  mapHeight: number;
-  mapWidth: number;
-  nominationCurvePlayerIds?: string[];
-  players: Player[];
-  rearrangeMode?: boolean;
-  tokenSize: number;
-  onMovePlayer: (playerId: string, position: PlayerPosition) => void;
-  onSelectPlayer?: (playerId: string) => void;
-  selectedPlayerIds?: string[];
-};
+export function GameMap() {
+  const {
+    activeDay,
+    conversations,
+    disabledPlayerIds,
+    hideConnectionCurves,
+    interactionMode,
+    mapWidth,
+    mapHeight,
+    nominationCurvePlayerIds,
+    players,
+    isRearrangeMode,
+    activeTokenSize,
+    selectedPlayerIds,
+    handleMovePlayer,
+    handleSelectPlayer,
+  } = useGameRouteContext();
 
-export function GameMap({
-  activeDay,
-  conversations,
-  disabledPlayerIds = [],
-  hideConnectionCurves = false,
-  interactionMode = false,
-  mapHeight,
-  mapWidth,
-  nominationCurvePlayerIds = [],
-  onMovePlayer,
-  onSelectPlayer,
-  players,
-  rearrangeMode = false,
-  selectedPlayerIds = [],
-  tokenSize,
-}: GameMapProps) {
   const positions = new Map(
     players.map((player) => [
       player.id,
-      getPlayerMapPosition(player, players, mapWidth, mapHeight, tokenSize),
+      getPlayerMapPosition(player, players, mapWidth, mapHeight, activeTokenSize),
     ]),
   );
   const selectedPlayerIdSet = new Set(selectedPlayerIds);
@@ -92,7 +77,7 @@ export function GameMap({
             stroke="#a78bfa"
             strokeWidth={4}
             to={positions.get(nomineeId)}
-            tokenSize={tokenSize}
+            tokenSize={activeTokenSize}
           />
         )}
         {!hideConnectionCurves &&
@@ -134,7 +119,7 @@ export function GameMap({
                     stroke={stroke}
                     strokeWidth={highlighted ? 4 : 3}
                     to={toPosition}
-                    tokenSize={tokenSize}
+                    tokenSize={activeTokenSize}
                   />,
                 ];
               });
@@ -152,14 +137,14 @@ export function GameMap({
           isSelected={selectedPlayerIds.includes(player.id)}
           mapHeight={mapHeight}
           mapWidth={mapWidth}
-          onMove={onMovePlayer}
-          onSelect={onSelectPlayer}
+          onMove={handleMovePlayer}
+          onSelect={handleSelectPlayer}
           player={stripFutureAndRevivedDeath(player, activeDay)}
-          rearrangeMode={rearrangeMode}
-          tokenSize={tokenSize}
+          rearrangeMode={isRearrangeMode}
+          tokenSize={activeTokenSize}
           position={
             positions.get(player.id) ??
-            getPlayerMapPosition(player, players, mapWidth, mapHeight, tokenSize)
+            getPlayerMapPosition(player, players, mapWidth, mapHeight, activeTokenSize)
           }
         />
       ))}
@@ -167,7 +152,7 @@ export function GameMap({
   );
 }
 
-function getInteractionCurvePlayerPairs(conversation: Conversation) {
+function getInteractionCurvePlayerPairs(conversation: { participantIds: string[] }) {
   const playerIds = [...new Set(conversation.participantIds)];
   const pairs: [string, string][] = [];
 

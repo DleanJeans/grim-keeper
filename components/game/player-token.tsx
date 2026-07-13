@@ -9,7 +9,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
-import { NomIcon } from '@/components/nom-icon';
+import { NomIcon } from '@/components/game/nom-icon';
 import { Text } from '@/components/text';
 import type { Player, PlayerPosition } from '@/types/game';
 import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
@@ -101,8 +101,7 @@ export function PlayerToken({
   }));
 
   return (
-    <GestureDetector gesture={rearrangeMode ? pan : tap}
-    >
+    <GestureDetector gesture={rearrangeMode ? pan : tap}>
       <Animated.View
         style={[
           {
