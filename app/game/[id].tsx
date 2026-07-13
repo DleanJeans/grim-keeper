@@ -2,10 +2,17 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, useWindowDimensions, View } from 'react-native';
 import { AddPlayerModal } from '@/components/game/add-player-modal';
-import { DeathLog } from '@/components/game/death-log';
 import { FocusedDeathActionPanel } from '@/components/game/death-actions';
+import { DeathLog } from '@/components/game/death-log';
+import { DeleteFocusedPlayerButton } from '@/components/game/delete-focused-player-button';
 import { FocusedPlayerActions } from '@/components/game/focused-player-actions';
 import { GameMap } from '@/components/game/game-map';
+import {
+  type GameRouteContextValue,
+  GameRouteProvider,
+  type GameTab,
+  type TrackingMode,
+} from '@/components/game/game-route-context';
 import { GameTabs } from '@/components/game/game-tabs';
 import { HeaderLeft } from '@/components/game/header-left';
 import { HeaderRight } from '@/components/game/header-right';
@@ -17,12 +24,6 @@ import { RearrangeActions } from '@/components/game/rearrange-actions';
 import { RotateActions } from '@/components/game/rotate-actions';
 import { TrackingConfirmActions } from '@/components/game/tracking-confirm-actions';
 import { VoteConfirmActions } from '@/components/game/vote-confirm-actions';
-import {
-  type GameRouteContextValue,
-  GameRouteProvider,
-  type GameTab,
-  type TrackingMode,
-} from '@/components/game/game-route-context';
 import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
 import type { PlayerPosition } from '@/types/game';
@@ -462,7 +463,16 @@ export default function GameRoute() {
               onChangeDay={handleChangeDay}
             />
           ),
-          headerRight: () => <HeaderRight onAddPlayer={() => setAddPlayerVisible(true)} />,
+          headerRight: () =>
+            focusedPlayer && !focusedPlayer.isAppUser ? (
+              <DeleteFocusedPlayerButton
+                isAppUser={false}
+                onConfirm={confirmDeletePlayer}
+                playerName={focusedPlayer.name}
+              />
+            ) : (
+              <HeaderRight onAddPlayer={() => setAddPlayerVisible(true)} />
+            ),
         }}
       />
 

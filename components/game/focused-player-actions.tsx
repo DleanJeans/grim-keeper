@@ -1,4 +1,4 @@
-import { Check, MessageCircle, Trash2 } from 'lucide-react-native';
+import { Check, MessageCircle } from 'lucide-react-native';
 import { Pressable, TextInput, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { innerActionRow, onDarkTextStrong, outlinedActionStyle } from '@/components/game/styles';
@@ -41,7 +41,6 @@ export function FocusedPlayerActions() {
     noteEditorVisible,
     focusedPlayerNote: note,
     setNoteDraft: onChangeNoteDraft,
-    confirmDeletePlayer: onConfirmDeletePlayer,
     handleSaveFocusedPlayerNote: onSaveNote,
     handleShowFocusedPlayerNote: onShowNote,
   } = useGameRouteContext();
@@ -52,32 +51,6 @@ export function FocusedPlayerActions() {
 
   return (
     <View style={{ alignSelf: 'stretch', gap: 10 }}>
-      <View style={innerActionRow}>
-        <Pressable
-          accessibilityLabel={`Delete ${focusedPlayer.name}`}
-          accessibilityRole="button"
-          disabled={focusedPlayer.isAppUser}
-          onPress={onConfirmDeletePlayer}
-          style={({ pressed }) => ({
-            alignItems: 'center',
-            backgroundColor: focusedPlayer.isAppUser ? '#1f2937' : pressed ? '#2a1517' : '#111827',
-            borderColor: focusedPlayer.isAppUser ? '#334155' : '#fca5a5',
-            borderRadius: 8,
-            borderWidth: 1,
-            justifyContent: 'center',
-            minWidth: 48,
-            opacity: focusedPlayer.isAppUser ? 0.48 : 1,
-            paddingVertical: 14,
-          })}
-        >
-          <Trash2
-            color={focusedPlayer.isAppUser ? '#94a3b8' : '#fca5a5'}
-            size={17}
-            strokeWidth={2.7}
-          />
-        </Pressable>
-      </View>
-
       <View style={{ gap: 10 }}>
         <Pressable
           accessibilityLabel={`Add day ${activeDay} note for ${focusedPlayer.name}`}
