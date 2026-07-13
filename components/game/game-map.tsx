@@ -1,7 +1,7 @@
 import { View } from 'react-native';
 import Svg, { Path, Polygon } from 'react-native-svg';
-import { PlayerToken } from '@/components/game/player-token';
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { PlayerToken } from '@/components/game/player-token';
 import type { Player, PlayerPosition } from '@/types/game';
 import { buildConversationGroupRepeats, getConversationGroupKey } from '@/utils/conversation-utils';
 import { getPlayerMapPosition, getTokenSize } from '@/utils/layout-utils';
@@ -13,6 +13,7 @@ export function GameMap() {
     conversations,
     disabledPlayerIds,
     hideConnectionCurves,
+    historicalNominationCurvePlayerIds,
     interactionMode,
     mapWidth,
     mapHeight,
@@ -23,6 +24,7 @@ export function GameMap() {
     highlightedPlayerIds,
     handleMovePlayer,
     handleSelectPlayer,
+    trackingMode,
   } = useGameRouteContext();
 
   const positions = new Map(
@@ -33,6 +35,9 @@ export function GameMap() {
   );
   const selectedPlayerIdSet = new Set(highlightedPlayerIds);
   const [nominatorId, nomineeId] = nominationCurvePlayerIds;
+  const [historicalNominatorId, historicalNomineeId] = historicalNominationCurvePlayerIds;
+  const showHistoricalNominationCurve =
+    !trackingMode && historicalNominatorId !== undefined && historicalNomineeId !== undefined;
   const groupRepeats = buildConversationGroupRepeats(conversations, activeDay);
   const disabledPlayerIdSet = new Set(disabledPlayerIds);
   const activeDayNominations = conversations.filter(
@@ -77,6 +82,24 @@ export function GameMap() {
             stroke="#a78bfa"
             strokeWidth={4}
             to={positions.get(nomineeId)}
+            tokenSize={activeTokenSize}
+          />
+        )}
+        {showHistoricalNominationCurve && (
+          <ConnectionCurve
+            blockers={players
+              .filter(
+                (player) =>
+                  player.id !== historicalNominatorId && player.id !== historicalNomineeId,
+              )
+              .map((player) => positions.get(player.id))
+              .filter((position): position is PlayerPosition => !!position)}
+            from={positions.get(historicalNominatorId)}
+            mapHeight={mapHeight}
+            mapWidth={mapWidth}
+            stroke="#a78bfa"
+            strokeWidth={4}
+            to={positions.get(historicalNomineeId)}
             tokenSize={activeTokenSize}
           />
         )}

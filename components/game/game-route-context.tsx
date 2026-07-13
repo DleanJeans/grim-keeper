@@ -20,6 +20,7 @@ export type GameRouteContextValue = {
 
   // Map-derived flags
   hideConnectionCurves: boolean;
+  historicalNominationCurvePlayerIds: string[];
   interactionMode: boolean;
   mapWidth: number;
   mapHeight: number;

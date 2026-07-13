@@ -120,6 +120,18 @@ export default function GameRoute() {
   const focusedPlayerAlreadyNominatedToday = activeDayNominations.some(
     (nomination) => nomination.initiatorId === focusedPlayerId,
   );
+  const focusedPlayerNomination = focusedPlayerId
+    ? activeDayNominations.find((nomination) => nomination.initiatorId === focusedPlayerId)
+    : undefined;
+  const focusedPlayerNomineeId = focusedPlayerNomination
+    ? (focusedPlayerNomination.participantIds.find(
+        (playerId) => playerId !== focusedPlayerNomination.initiatorId,
+      ) ?? null)
+    : null;
+  const historicalNominationCurvePlayerIds =
+    focusedPlayerNomineeId !== null && focusedPlayerNomination
+      ? [focusedPlayerNomination.initiatorId, focusedPlayerNomineeId]
+      : [];
   const nominationDisabled = focusedPlayerIsDead || focusedPlayerAlreadyNominatedToday;
   const disabledPlayerIds =
     trackingMode === 'nomination'
@@ -397,6 +409,7 @@ export default function GameRoute() {
     disabledPlayerIds,
     nominatedPlayerIds,
     hideConnectionCurves,
+    historicalNominationCurvePlayerIds,
     interactionMode: !!trackingMode || !!votingNominationId,
     mapWidth,
     mapHeight,

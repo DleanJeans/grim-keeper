@@ -5,6 +5,7 @@ import { onDarkTextStrong, outlinedActionStyle } from '@/components/game/styles'
 import { Text } from '@/components/text';
 
 type NominateButtonProps = {
+  alreadyNominatedName?: string;
   dead?: boolean;
   disabled?: boolean;
   flex?: number;
@@ -13,13 +14,20 @@ type NominateButtonProps = {
 };
 
 export function NominateButton({
+  alreadyNominatedName,
   dead = false,
   disabled = false,
   flex = 1,
   onPress,
   playerName,
 }: NominateButtonProps) {
-  const label = dead ? 'Dead player cannot nominate' : disabled ? 'Nominated' : 'Nominate';
+  const label = dead
+    ? 'Dead player cannot nominate'
+    : disabled && alreadyNominatedName
+      ? `Already Nominated ${alreadyNominatedName}`
+      : disabled
+        ? 'Already Nominated'
+        : 'Nominate';
   return (
     <Pressable
       accessibilityLabel={`Track nomination from ${playerName}`}

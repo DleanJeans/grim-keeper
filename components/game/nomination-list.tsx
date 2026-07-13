@@ -1,8 +1,9 @@
 import { Hand, Pencil, Trash2 } from 'lucide-react-native';
 import { Alert, Pressable, View } from 'react-native';
+
 import { NominateButton } from '@/components/game/action-buttons/nominate-button';
-import { NomIcon } from '@/components/game/nom-icon';
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { NomIcon } from '@/components/game/nom-icon';
 import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
@@ -25,12 +26,24 @@ export function NominationList() {
   const nominations = conversations.filter(
     (conversation) => conversation.day === activeDay && conversation.kind === 'nomination',
   );
+  const focusedPlayerNomination = focusedPlayer
+    ? nominations.find((nomination) => nomination.initiatorId === focusedPlayer.id)
+    : undefined;
+  const focusedPlayerNomineeId = focusedPlayerNomination
+    ? focusedPlayerNomination.participantIds.find(
+        (playerId) => playerId !== focusedPlayerNomination.initiatorId,
+      )
+    : undefined;
+  const focusedPlayerNomineeName = focusedPlayerNomineeId
+    ? (playerNames.get(focusedPlayerNomineeId) ?? 'Unknown')
+    : undefined;
 
   return (
     <View style={{ gap: 10 }}>
       {focusedPlayer && !trackingMode && !votingNominationId ? (
         <View style={innerActionRow}>
           <NominateButton
+            alreadyNominatedName={focusedPlayerNomineeName}
             dead={focusedPlayerIsDead}
             disabled={nominationDisabled}
             onPress={() => handleStartTracking('nomination')}
