@@ -27,7 +27,10 @@ import { Alert, Pressable, ScrollView, TextInput, useWindowDimensions, View } fr
 import { AddPlayerModal } from '@/components/add-player-modal';
 import { ConversationTable } from '@/components/conversation-table';
 import { DeathLog } from '@/components/death-log';
-import { FocusedPlayerDeathActions } from '@/components/focused-player-death-actions';
+import {
+  FocusedPlayerDeathActions,
+  FocusedPlayerUndoDeathButton,
+} from '@/components/focused-player-death-actions';
 import { GameMap } from '@/components/game-map';
 import { InteractionList } from '@/components/interaction-list';
 import { MapModeButton } from '@/components/map-mode-button';
@@ -741,14 +744,17 @@ export default function GameRoute() {
                         : 'Night'}
                     </Text>
                   </Pressable>
+                  <FocusedPlayerUndoDeathButton
+                    disabled={!focusedPlayerIsDead}
+                    onPress={handleUndoFocusedPlayerDeath}
+                    playerName={focusedPlayer.name}
+                  />
                 </View>
 
                 <FocusedPlayerDeathActions
                   canRevive={focusedPlayerIsDead}
-                  canUndo={focusedPlayerIsDead}
                   isAlive={!focusedPlayerIsDead}
                   onRevive={handleReviveFocusedPlayer}
-                  onUndo={handleUndoFocusedPlayerDeath}
                   playerName={focusedPlayer.name}
                 />
 
