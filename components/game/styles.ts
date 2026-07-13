@@ -56,6 +56,7 @@ export const confirmRowStyle: ViewStyle = {
   alignSelf: 'stretch',
   flexDirection: 'row',
   gap: 12,
+  marginBottom: 12,
 };
 
 /**

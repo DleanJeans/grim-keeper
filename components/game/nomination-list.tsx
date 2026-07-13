@@ -18,6 +18,8 @@ export function NominationList() {
     handleStartTracking,
     nominationDisabled,
     players,
+    trackingMode,
+    votingNominationId,
   } = useGameRouteContext();
   const playerNames = new Map(players.map((player) => [player.id, player.name]));
   const nominations = conversations.filter(
@@ -26,7 +28,7 @@ export function NominationList() {
 
   return (
     <View style={{ gap: 10 }}>
-      {focusedPlayer ? (
+      {focusedPlayer && !trackingMode && !votingNominationId ? (
         <View style={innerActionRow}>
           <NominateButton
             dead={focusedPlayerIsDead}

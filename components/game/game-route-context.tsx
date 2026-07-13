@@ -43,11 +43,6 @@ export type GameRouteContextValue = {
   selectedPlayerIds: string[];
   highlightedPlayerIds: string[];
 
-  // Action-row derived props
-  trackingConfirmLabel: string;
-  trackingCancelFlex: number;
-  trackingConfirmFlex: number;
-
   // Handlers
   setActiveTab: (tab: GameTab) => void;
   setAddPlayerVisible: (visible: boolean) => void;

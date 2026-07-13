@@ -106,9 +106,6 @@ export default function GameRoute() {
         ? [focusedPlayerId]
         : [];
   const hideConnectionCurves = trackingMode === 'nomination' || !!votingNominationId;
-  const trackingConfirmLabel = trackingMode === 'nomination' ? 'Confirm Nomination' : 'Confirm';
-  const trackingCancelFlex = trackingMode === 'nomination' ? 0.82 : 1;
-  const trackingConfirmFlex = trackingMode === 'nomination' ? 1.18 : 1;
   const activeTokenSize = getTokenSize(activeGame.tokenSize);
   const activeDayNominations = activeGame.conversations.filter(
     (conversation) =>
@@ -272,6 +269,11 @@ export default function GameRoute() {
 
   function handleCancelVoting() {
     const returnTab = votingReturnTab;
+    if (votingNominationId) {
+      // The nomination was added to the log by handleConfirmTracking before
+      // we entered vote-confirming. Cancelling now should drop it entirely.
+      deleteConversation(activeGame.id, votingNominationId);
+    }
     handleCancelTracking();
 
     if (returnTab) {
@@ -414,9 +416,6 @@ export default function GameRoute() {
     isRearrangeMode,
     selectedPlayerIds,
     highlightedPlayerIds,
-    trackingConfirmLabel,
-    trackingCancelFlex,
-    trackingConfirmFlex,
     setActiveTab,
     setAddPlayerVisible,
     setNoteDraft,
@@ -482,15 +481,7 @@ export default function GameRoute() {
         >
           <GameMap />
 
-          {votingNominationId ? (
-            <View key="vote-actions">
-              <VoteConfirmActions />
-            </View>
-          ) : trackingMode ? (
-            <View key="tracking-actions">
-              <TrackingConfirmActions />
-            </View>
-          ) : focusedPlayer ? (
+          {focusedPlayer ? (
             <View key="focused-player-actions">
               <FocusedPlayerActions />
             </View>
@@ -514,6 +505,15 @@ export default function GameRoute() {
 
           {activeTab === 'nominations' ? (
             <View key="nominations-tab">
+              {votingNominationId ? (
+                <View key="vote-actions">
+                  <VoteConfirmActions />
+                </View>
+              ) : trackingMode ? (
+                <View key="tracking-actions">
+                  <TrackingConfirmActions />
+                </View>
+              ) : null}
               <NominationList />
             </View>
           ) : activeTab === 'deaths' ? (

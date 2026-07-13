@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 import { InteractionButton } from '@/components/game/action-buttons/interaction-button';
 import { ConversationTable } from '@/components/game/conversation-table';
 import { InteractionList } from '@/components/game/interaction-list';
+import { TrackingConfirmActions } from '@/components/game/tracking-confirm-actions';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { innerActionRow, tabBarButtonStyle, tabBarContainer, tabBarLabelStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
@@ -32,12 +33,15 @@ export function InteractionsTab() {
     handleDeleteConversation,
     handleStartTracking,
     players,
+    trackingMode,
   } = useGameRouteContext();
   const [subtab, setSubtab] = useState<InteractionSubtab>('list');
 
   return (
     <View style={{ gap: 12 }}>
-      {focusedPlayer ? (
+      {trackingMode === 'interaction' ? (
+        <TrackingConfirmActions />
+      ) : focusedPlayer ? (
         <View style={innerActionRow}>
           <InteractionButton
             onPress={() => handleStartTracking('interaction')}

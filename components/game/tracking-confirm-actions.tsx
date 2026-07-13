@@ -13,13 +13,35 @@ const confirmTextBase = {
 
 export function TrackingConfirmActions() {
   const {
+    focusedPlayer,
+    players,
     selectedPlayerIds,
-    trackingConfirmLabel: confirmLabel,
-    trackingCancelFlex: cancelFlex,
-    trackingConfirmFlex: confirmFlex,
+    trackingMode,
     handleCancelTracking: onCancel,
     handleConfirmTracking: onConfirm,
   } = useGameRouteContext();
+
+  const { confirmLabel, cancelFlex, confirmFlex } = (() => {
+    if (trackingMode === 'nomination') {
+      // handleStartTracking seeds selectedPlayerIds with the nominator (focused
+      // player); the actual nominee is the first player the user taps after
+      // that, so it sits at index 1. Voters fill the rest.
+      const nomineeId = selectedPlayerIds[1];
+      const nominee = players.find((player) => player.id === nomineeId);
+      return {
+        confirmLabel: nominee ? `Confirm: ${nominee.name}` : 'Confirm Nomination',
+        cancelFlex: 0.82,
+        confirmFlex: 1.18,
+      };
+    }
+    // 'interaction' (or any future mode): fall back to focused player name.
+    return {
+      confirmLabel: focusedPlayer ? `Confirm: ${focusedPlayer.name}` : 'Confirm',
+      cancelFlex: 1,
+      confirmFlex: 1,
+    };
+  })();
+
   const disabled = selectedPlayerIds.length < 2;
   return (
     <View style={confirmRowStyle}>
