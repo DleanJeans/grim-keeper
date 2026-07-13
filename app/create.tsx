@@ -5,7 +5,7 @@ import type { TextInput as RNTextInput } from 'react-native';
 import { Keyboard, Pressable, View } from 'react-native';
 import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
 
-import { FriendSuggestions } from '@/components/friend-suggestions';
+import { FriendSuggestions } from '@/components/friends/friend-suggestions';
 import { Text, TextInput } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
