@@ -20,11 +20,10 @@ export type GameRouteContextValue = {
 
   // Map-derived flags
   hideConnectionCurves: boolean;
-  historicalNominationCurvePlayerIds: string[];
   interactionMode: boolean;
   mapWidth: number;
   mapHeight: number;
-  nominationCurvePlayerIds: string[];
+  nominationCurves: { conversationId: string; initiatorId: string; nomineeId: string }[];
 
   // Transient state
   activeTab: GameTab;

@@ -120,18 +120,19 @@ export default function GameRoute() {
   const focusedPlayerAlreadyNominatedToday = activeDayNominations.some(
     (nomination) => nomination.initiatorId === focusedPlayerId,
   );
-  const focusedPlayerNomination = focusedPlayerId
-    ? activeDayNominations.find((nomination) => nomination.initiatorId === focusedPlayerId)
-    : undefined;
-  const focusedPlayerNomineeId = focusedPlayerNomination
-    ? (focusedPlayerNomination.participantIds.find(
-        (playerId) => playerId !== focusedPlayerNomination.initiatorId,
-      ) ?? null)
-    : null;
-  const historicalNominationCurvePlayerIds =
-    focusedPlayerNomineeId !== null && focusedPlayerNomination
-      ? [focusedPlayerNomination.initiatorId, focusedPlayerNomineeId]
-      : [];
+  const nominationCurves = activeDayNominations
+    .map((nomination) => {
+      const nomineeId = nomination.participantIds.find(
+        (playerId) => playerId !== nomination.initiatorId,
+      );
+      return nomineeId
+        ? { conversationId: nomination.id, initiatorId: nomination.initiatorId, nomineeId }
+        : null;
+    })
+    .filter(
+      (curve): curve is { conversationId: string; initiatorId: string; nomineeId: string } =>
+        !!curve,
+    );
   const nominationDisabled = focusedPlayerIsDead || focusedPlayerAlreadyNominatedToday;
   const disabledPlayerIds =
     trackingMode === 'nomination'
@@ -409,11 +410,10 @@ export default function GameRoute() {
     disabledPlayerIds,
     nominatedPlayerIds,
     hideConnectionCurves,
-    historicalNominationCurvePlayerIds,
     interactionMode: !!trackingMode || !!votingNominationId,
     mapWidth,
     mapHeight,
-    nominationCurvePlayerIds: trackingMode === 'nomination' ? selectedPlayerIds : [],
+    nominationCurves,
     activeTab,
     addPlayerVisible,
     trackingMode,
