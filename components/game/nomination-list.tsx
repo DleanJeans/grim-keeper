@@ -12,6 +12,7 @@ export function NominationList() {
     activeDay,
     conversations,
     focusedPlayer,
+    focusedPlayerIsDead,
     handleDeleteNomination,
     handleEditNominationVotes,
     handleStartTracking,
@@ -28,6 +29,7 @@ export function NominationList() {
       {focusedPlayer ? (
         <View style={innerActionRow}>
           <NominateButton
+            dead={focusedPlayerIsDead}
             disabled={nominationDisabled}
             onPress={() => handleStartTracking('nomination')}
             playerName={focusedPlayer.name}
@@ -86,18 +88,26 @@ export function NominationList() {
                     Nomination {index + 1}
                   </Text>
                   <View style={{ alignItems: 'center', flexDirection: 'row', gap: 6 }}>
-                    <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
+                    <Text
+                      selectable
+                      style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
+                    >
                       {nominatorName}
                     </Text>
                     <NomIcon color={colors.text} size={16} />
-                    <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
+                    <Text
+                      selectable
+                      style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
+                    >
                       {nomineeName}
                     </Text>
                   </View>
                 </View>
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() => handleEditNominationVotes(nomination.id, nomination.voterIds ?? [])}
+                  onPress={() =>
+                    handleEditNominationVotes(nomination.id, nomination.voterIds ?? [])
+                  }
                   style={({ pressed }) => ({
                     alignItems: 'center',
                     backgroundColor: pressed ? colors.surfacePressed : colors.surfaceRaised,

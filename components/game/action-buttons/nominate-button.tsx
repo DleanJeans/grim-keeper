@@ -1,17 +1,25 @@
 import { Pressable } from 'react-native';
 
 import { NomIcon } from '@/components/game/nom-icon';
-import { Text } from '@/components/text';
 import { onDarkTextStrong, outlinedActionStyle } from '@/components/game/styles';
+import { Text } from '@/components/text';
 
 type NominateButtonProps = {
+  dead?: boolean;
   disabled?: boolean;
   flex?: number;
   onPress: () => void;
   playerName: string;
 };
 
-export function NominateButton({ disabled = false, flex = 1, onPress, playerName }: NominateButtonProps) {
+export function NominateButton({
+  dead = false,
+  disabled = false,
+  flex = 1,
+  onPress,
+  playerName,
+}: NominateButtonProps) {
+  const label = dead ? 'Dead player cannot nominate' : disabled ? 'Nominated' : 'Nominate';
   return (
     <Pressable
       accessibilityLabel={`Track nomination from ${playerName}`}
@@ -27,7 +35,7 @@ export function NominateButton({ disabled = false, flex = 1, onPress, playerName
           color: disabled ? '#94a3b8' : '#f8fafc',
         }}
       >
-        {disabled ? 'Nominated' : 'Nominate'}
+        {label}
       </Text>
     </Pressable>
   );
