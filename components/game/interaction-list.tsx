@@ -9,8 +9,9 @@ import { buildConversationGroupRepeats, getConversationGroupKey } from '@/utils/
 type InteractionListProps = {
   activeDay: number;
   conversations: Conversation[];
-  players: Player[];
   onDeleteConversation: (conversationId: string) => void;
+  players: Player[];
+  selectedPlayerId?: string | null;
 };
 
 export function InteractionList({
@@ -18,14 +19,22 @@ export function InteractionList({
   conversations,
   onDeleteConversation,
   players,
+  selectedPlayerId = null,
 }: InteractionListProps) {
   const playerNames = new Map(players.map((player) => [player.id, player.name]));
   const activeDayConversations = conversations.filter(
     (conversation) => conversation.day === activeDay && conversation.kind !== 'nomination',
   );
+  const visibleConversations = selectedPlayerId
+    ? activeDayConversations.filter(
+        (conversation) =>
+          conversation.initiatorId === selectedPlayerId ||
+          conversation.participantIds.includes(selectedPlayerId),
+      )
+    : activeDayConversations;
   const groupRepeats = buildConversationGroupRepeats(conversations, activeDay);
 
-  if (activeDayConversations.length === 0) {
+  if (visibleConversations.length === 0) {
     return (
       <View
         style={{
@@ -45,7 +54,8 @@ export function InteractionList({
 
   return (
     <View style={{ gap: 10 }}>
-      {activeDayConversations.map((conversation, index) => {
+      {visibleConversations.map((conversation) => {
+        const dayIndex = activeDayConversations.findIndex((c) => c.id === conversation.id);
         const initiatorName = playerNames.get(conversation.initiatorId) ?? 'Unknown';
         const talkedToNames = conversation.participantIds
           .filter((playerId) => playerId !== conversation.initiatorId)
@@ -76,7 +86,7 @@ export function InteractionList({
                   width: 28,
                 }}
               >
-                {index + 1}.
+                {dayIndex + 1}.
               </Text>
               <View style={{ flex: 1, gap: 6, flexDirection: 'row' }}>
                 <Text

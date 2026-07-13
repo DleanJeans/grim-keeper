@@ -30,6 +30,7 @@ export function InteractionsTab() {
     activeDay,
     conversations,
     focusedPlayer,
+    focusedPlayerId,
     handleDeleteConversation,
     handleStartTracking,
     players,
@@ -74,6 +75,7 @@ export function InteractionsTab() {
           activeDay={activeDay}
           conversations={conversations}
           players={players}
+          selectedPlayerId={focusedPlayerId}
           onDeleteConversation={handleDeleteConversation}
         />
       )}
