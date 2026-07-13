@@ -125,7 +125,6 @@ function DeathLogDeathRow({ activeDay, entry }: { activeDay: number; entry: Deat
           borderWidth: 1,
           flexDirection: 'row',
           gap: 4,
-          minWidth: 56,
           paddingHorizontal: 6,
           paddingVertical: 4,
         }}
@@ -186,7 +185,6 @@ function DeathLogReviveRow({ activeDay, entry }: { activeDay: number; entry: Rev
           borderWidth: 1,
           flexDirection: 'row',
           gap: 4,
-          minWidth: 56,
           paddingHorizontal: 6,
           paddingVertical: 4,
         }}
