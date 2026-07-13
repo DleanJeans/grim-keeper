@@ -69,7 +69,12 @@ export function InteractionsTab() {
       </View>
 
       {subtab === 'table' ? (
-        <ConversationTable activeDay={activeDay} conversations={conversations} players={players} />
+        <ConversationTable
+          activeDay={activeDay}
+          conversations={conversations}
+          players={players}
+          selectedPlayerId={focusedPlayerId}
+        />
       ) : (
         <InteractionList
           activeDay={activeDay}

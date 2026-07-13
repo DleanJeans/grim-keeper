@@ -76,6 +76,53 @@ export function buildConversationGroupRepeats(
   return groupRepeats;
 }
 
+export function buildClosureFromPlayer(
+  rootPlayerId: string,
+  conversations: Conversation[],
+  activeDay: number,
+): Set<string> {
+  const closure = new Set<string>([rootPlayerId]);
+  const activeDayConversations = conversations.filter(
+    (conversation) => conversation.day === activeDay && conversation.kind !== 'nomination',
+  );
+  const adjacency = new Map<string, Set<string>>();
+
+  for (const conversation of activeDayConversations) {
+    for (const playerId of conversation.participantIds) {
+      if (!adjacency.has(playerId)) {
+        adjacency.set(playerId, new Set());
+      }
+    }
+    for (const playerId of conversation.participantIds) {
+      for (const otherPlayerId of conversation.participantIds) {
+        if (otherPlayerId !== playerId) {
+          adjacency.get(playerId)?.add(otherPlayerId);
+        }
+      }
+    }
+  }
+
+  const queue: string[] = [rootPlayerId];
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current) {
+      continue;
+    }
+    const neighbours = adjacency.get(current);
+    if (!neighbours) {
+      continue;
+    }
+    for (const neighbour of neighbours) {
+      if (!closure.has(neighbour)) {
+        closure.add(neighbour);
+        queue.push(neighbour);
+      }
+    }
+  }
+
+  return closure;
+}
+
 export function buildConversationRows(
   players: Player[],
   conversations: Conversation[],

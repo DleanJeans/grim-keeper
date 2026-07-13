@@ -2,16 +2,48 @@ import { View } from 'react-native';
 
 import { Text } from '@/components/text';
 import type { Conversation, Player } from '@/types/game';
-import { buildConversationRows } from '@/utils/conversation-utils';
+import {
+  buildClosureFromPlayer,
+  buildConversationRows,
+} from '@/utils/conversation-utils';
 
 type ConversationTableProps = {
   activeDay: number;
   conversations: Conversation[];
   players: Player[];
+  selectedPlayerId?: string | null;
 };
 
-export function ConversationTable({ activeDay, conversations, players }: ConversationTableProps) {
-  const rows = buildConversationRows(players, conversations, activeDay);
+export function ConversationTable({
+  activeDay,
+  conversations,
+  players,
+  selectedPlayerId = null,
+}: ConversationTableProps) {
+  const allRows = buildConversationRows(players, conversations, activeDay);
+  const closure = selectedPlayerId
+    ? buildClosureFromPlayer(selectedPlayerId, conversations, activeDay)
+    : null;
+  const rows = closure
+    ? allRows
+        .map((row) => {
+          if (!closure.has(row.playerId)) {
+            return null;
+          }
+          const talkedToIds = row.talkedToIds.filter((id) => closure.has(id));
+          const playerNames = new Map(players.map((player) => [player.id, player.name]));
+          return {
+            ...row,
+            talkedToIds,
+            talkedTo: talkedToIds.map((id) => playerNames.get(id) ?? 'Unknown'),
+            repeatedPlayerIds: row.repeatedPlayerIds.filter((id) => closure.has(id)),
+          };
+        })
+        .filter(
+          (row): row is NonNullable<typeof row> =>
+            row !== null && (row.playerId === selectedPlayerId || row.talkedToIds.length > 0),
+        )
+    : allRows;
 
   return (
     <View
