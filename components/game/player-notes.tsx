@@ -1,8 +1,9 @@
-import { Check, MessageCircle } from 'lucide-react-native';
+import { Check, MessageCircle, Pencil } from 'lucide-react-native';
 import { Pressable, TextInput, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { innerActionRow, onDarkTextStrong, outlinedActionStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
+import { colors } from '@/theme/colors';
 
 const noteTextInputStyle = {
   backgroundColor: '#111827',
@@ -41,27 +42,53 @@ const noteDayHeaderStyle = {
   textTransform: 'uppercase' as const,
 };
 
+const noteRowHeaderStyle = {
+  alignItems: 'center' as const,
+  flexDirection: 'row' as const,
+  gap: 6,
+};
+
+const noteEditIconStyle = {
+  alignItems: 'center' as const,
+  borderRadius: 6,
+  justifyContent: 'center' as const,
+  paddingHorizontal: 6,
+  paddingVertical: 4,
+};
+
+const noteEmptyBodyStyle = {
+  color: '#64748b',
+  fontSize: 13,
+  fontStyle: 'italic' as const,
+  lineHeight: 18,
+};
+
 export function PlayerNotes() {
   const {
     activeDay,
     focusedPlayer,
     game,
+    lastDayWithData,
     noteDraft,
-    noteEditorVisible,
-    focusedPlayerNote: note,
+    noteEditingDay,
+    focusedPlayerNote: currentDayNote,
     setNoteDraft: onChangeNoteDraft,
-    handleSaveFocusedPlayerNote: onSaveNote,
-    handleShowFocusedPlayerNote: onShowNote,
+    handleShowPlayerNoteForDay: onShowNote,
+    handleSavePlayerNote: onSaveNote,
   } = useGameRouteContext();
 
   if (!focusedPlayer) {
     return null;
   }
 
-  const playerNotes = (game.playerDayNotes ?? [])
-    .filter((entry) => entry.playerId === focusedPlayer.id)
-    .slice()
-    .sort((a, b) => b.day - a.day);
+  const lastDay = Math.max(lastDayWithData, activeDay);
+  const noteByDay = new Map<number, string>();
+  for (const entry of game.playerDayNotes ?? []) {
+    if (entry.playerId === focusedPlayer.id) {
+      noteByDay.set(entry.day, entry.text);
+    }
+  }
+  const days = Array.from({ length: lastDay }, (_, i) => lastDay - i);
 
   return (
     <View style={{ alignSelf: 'stretch', gap: 10 }}>
@@ -69,47 +96,64 @@ export function PlayerNotes() {
         <Pressable
           accessibilityLabel={`Add day ${activeDay} note for ${focusedPlayer.name}`}
           accessibilityRole="button"
-          onPress={onShowNote}
+          onPress={() => onShowNote(activeDay)}
           style={({ pressed }) =>
-            outlinedActionStyle({ pressed, borderColor: note ? '#38bdf8' : '#334155' })
+            outlinedActionStyle({ pressed, borderColor: currentDayNote ? '#38bdf8' : '#334155' })
           }
         >
           <MessageCircle color="#38bdf8" size={17} strokeWidth={2.7} />
-          <Text style={onDarkTextStrong}>{note ? 'Edit Note' : 'Note'}</Text>
+          <Text style={onDarkTextStrong}>{currentDayNote ? 'Edit Note' : 'Note'}</Text>
         </Pressable>
 
-        {noteEditorVisible ? (
-          <View style={innerActionRow}>
-            <TextInput
-              accessibilityLabel={`Day ${activeDay} note for ${focusedPlayer.name}`}
-              multiline
-              onChangeText={onChangeNoteDraft}
-              placeholder={`What did ${focusedPlayer.name} say?`}
-              placeholderTextColor="#64748b"
-              style={noteTextInputStyle}
-              value={noteDraft}
-            />
-            <Pressable
-              accessibilityLabel={`Save day ${activeDay} note for ${focusedPlayer.name}`}
-              accessibilityRole="button"
-              onPress={onSaveNote}
-              style={noteSaveButtonStyle}
-            >
-              <Check color="#f8fafc" size={18} strokeWidth={2.8} />
-            </Pressable>
-          </View>
-        ) : null}
-
-        {playerNotes.length > 0 ? (
+        {lastDay > 0 ? (
           <View style={{ gap: 6 }}>
-            {playerNotes.map((entry) => (
-              <View key={entry.day} style={{ gap: 4 }}>
-                <Text style={noteDayHeaderStyle}>Day {entry.day}</Text>
-                <Text selectable style={noteTextStyle}>
-                  {entry.text}
-                </Text>
-              </View>
-            ))}
+            {days.map((day) => {
+              const text = noteByDay.get(day);
+              const isEditing = noteEditingDay === day;
+              return (
+                <View key={day} style={{ gap: 4 }}>
+                  <View style={noteRowHeaderStyle}>
+                    <Text style={noteDayHeaderStyle}>Day {day}</Text>
+                    <Pressable
+                      accessibilityLabel={`Edit day ${day} note for ${focusedPlayer.name}`}
+                      accessibilityRole="button"
+                      hitSlop={8}
+                      onPress={() => onShowNote(day)}
+                      style={noteEditIconStyle}
+                    >
+                      <Pencil color={colors.textMuted} size={14} strokeWidth={2.5} />
+                    </Pressable>
+                  </View>
+                  {isEditing ? (
+                    <View style={innerActionRow}>
+                      <TextInput
+                        accessibilityLabel={`Day ${day} note for ${focusedPlayer.name}`}
+                        multiline
+                        onChangeText={onChangeNoteDraft}
+                        placeholder={`What did ${focusedPlayer.name} say?`}
+                        placeholderTextColor="#64748b"
+                        style={noteTextInputStyle}
+                        value={noteDraft}
+                      />
+                      <Pressable
+                        accessibilityLabel={`Save day ${day} note for ${focusedPlayer.name}`}
+                        accessibilityRole="button"
+                        onPress={onSaveNote}
+                        style={noteSaveButtonStyle}
+                      >
+                        <Check color="#f8fafc" size={18} strokeWidth={2.8} />
+                      </Pressable>
+                    </View>
+                  ) : text ? (
+                    <Text selectable style={noteTextStyle}>
+                      {text}
+                    </Text>
+                  ) : (
+                    <Text style={noteEmptyBodyStyle}>No note.</Text>
+                  )}
+                </View>
+              );
+            })}
           </View>
         ) : null}
       </View>

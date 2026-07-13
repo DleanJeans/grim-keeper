@@ -55,6 +55,7 @@ export default function GameRoute() {
   const [focusedPlayerId, setFocusedPlayerId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
   const [noteEditorVisible, setNoteEditorVisible] = useState(false);
+  const [noteEditingDay, setNoteEditingDay] = useState<number | null>(null);
   const [isRotatingMode, setIsRotatingMode] = useState(false);
   const [isRearrangeMode, setIsRearrangeMode] = useState(false);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
@@ -66,6 +67,7 @@ export default function GameRoute() {
     if (!focusedPlayerId) {
       setNoteEditorVisible(false);
       setNoteDraft('');
+      setNoteEditingDay(null);
     }
   }, [focusedPlayerId]);
 
@@ -362,18 +364,26 @@ export default function GameRoute() {
     setPlayerDeath(activeGame.id, focusedPlayer.id, null);
   }
 
-  function handleShowFocusedPlayerNote() {
-    setNoteDraft(focusedPlayerNote?.text ?? '');
-    setNoteEditorVisible(true);
-  }
-
-  function handleSaveFocusedPlayerNote() {
+  function handleShowPlayerNoteForDay(day: number) {
     if (!focusedPlayer) {
       return;
     }
+    const existing = activeGame.playerDayNotes?.find(
+      (n) => n.playerId === focusedPlayer.id && n.day === day,
+    );
+    setNoteEditingDay(day);
+    setNoteDraft(existing?.text ?? '');
+    setNoteEditorVisible(true);
+  }
 
-    setPlayerDayNote(activeGame.id, focusedPlayer.id, activeGame.activeDay, noteDraft);
+  function handleSavePlayerNote() {
+    if (!focusedPlayer || noteEditingDay === null) {
+      return;
+    }
+
+    setPlayerDayNote(activeGame.id, focusedPlayer.id, noteEditingDay, noteDraft);
     setNoteEditorVisible(false);
+    setNoteEditingDay(null);
   }
 
   function confirmDeletePlayer() {
@@ -426,6 +436,7 @@ export default function GameRoute() {
     nominationDisabled,
     noteDraft,
     noteEditorVisible,
+    noteEditingDay,
     isRotatingMode,
     isRearrangeMode,
     selectedPlayerIds,
@@ -450,8 +461,8 @@ export default function GameRoute() {
     handleSetFocusedPlayerDeath,
     handleReviveFocusedPlayer,
     handleUndoFocusedPlayerDeath,
-    handleShowFocusedPlayerNote,
-    handleSaveFocusedPlayerNote,
+    handleShowPlayerNoteForDay,
+    handleSavePlayerNote,
     confirmDeletePlayer,
     handleDeleteConversation,
     handleDeleteNomination,
