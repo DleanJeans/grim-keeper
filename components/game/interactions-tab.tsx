@@ -1,10 +1,11 @@
 import { List, Table2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
+import { InteractionButton } from '@/components/game/action-buttons/interaction-button';
 import { ConversationTable } from '@/components/game/conversation-table';
 import { InteractionList } from '@/components/game/interaction-list';
 import { useGameRouteContext } from '@/components/game/game-route-context';
-import { tabBarButtonStyle, tabBarContainer, tabBarLabelStyle } from '@/components/game/styles';
+import { innerActionRow, tabBarButtonStyle, tabBarContainer, tabBarLabelStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
 
 type InteractionSubtab = 'list' | 'table';
@@ -24,11 +25,27 @@ function renderInteractionSubtabIcon(tab: InteractionSubtab, color: string) {
 }
 
 export function InteractionsTab() {
-  const { activeDay, conversations, players, handleDeleteConversation } = useGameRouteContext();
+  const {
+    activeDay,
+    conversations,
+    focusedPlayer,
+    handleDeleteConversation,
+    handleStartTracking,
+    players,
+  } = useGameRouteContext();
   const [subtab, setSubtab] = useState<InteractionSubtab>('list');
 
   return (
     <View style={{ gap: 12 }}>
+      {focusedPlayer ? (
+        <View style={innerActionRow}>
+          <InteractionButton
+            onPress={() => handleStartTracking('interaction')}
+            playerName={focusedPlayer.name}
+          />
+        </View>
+      ) : null}
+
       <View style={tabBarContainer}>
         {interactionSubtabs.map((tab) => {
           const active = subtab === tab.value;

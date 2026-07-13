@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Alert, ScrollView, useWindowDimensions, View } from 'react-native';
 import { AddPlayerModal } from '@/components/game/add-player-modal';
 import { DeathLog } from '@/components/game/death-log';
+import { FocusedDeathActionPanel } from '@/components/game/death-actions';
 import { FocusedPlayerActions } from '@/components/game/focused-player-actions';
 import { GameMap } from '@/components/game/game-map';
 import { GameTabs } from '@/components/game/game-tabs';
@@ -517,6 +518,7 @@ export default function GameRoute() {
             </View>
           ) : activeTab === 'deaths' ? (
             <View key="deaths-tab">
+              <FocusedDeathActionPanel />
               <DeathLog activeDay={activeGame.activeDay} players={activeGame.players} />
             </View>
           ) : (

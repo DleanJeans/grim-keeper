@@ -1,10 +1,5 @@
-import { Check, FlameKindling, MessageCircle, Skull, Trash2 } from 'lucide-react-native';
+import { Check, MessageCircle, Trash2 } from 'lucide-react-native';
 import { Pressable, TextInput, View } from 'react-native';
-import {
-  FocusedPlayerDeathActions,
-  FocusedPlayerUndoDeathButton,
-} from '@/components/game/focused-player-death-actions';
-import { NomIcon } from '@/components/game/nom-icon';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { innerActionRow, onDarkTextStrong, outlinedActionStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
@@ -42,84 +37,21 @@ export function FocusedPlayerActions() {
   const {
     activeDay,
     focusedPlayer,
-    focusedPlayerIsDead,
     noteDraft,
     noteEditorVisible,
     focusedPlayerNote: note,
-    nominationDisabled,
     setNoteDraft: onChangeNoteDraft,
     confirmDeletePlayer: onConfirmDeletePlayer,
-    handleReviveFocusedPlayer: onRevive,
     handleSaveFocusedPlayerNote: onSaveNote,
-    handleSetFocusedPlayerDeath: onSetDeath,
     handleShowFocusedPlayerNote: onShowNote,
-    handleStartTracking: onStartTracking,
-    handleUndoFocusedPlayerDeath: onUndoDeath,
   } = useGameRouteContext();
 
   if (!focusedPlayer) {
     return null;
   }
 
-  const deathKind = focusedPlayer.death?.kind;
-  const canExecute = !(focusedPlayerIsDead && deathKind === 'execution');
-  const canNightKill = !(focusedPlayerIsDead && deathKind === 'night');
-
   return (
     <View style={{ alignSelf: 'stretch', gap: 10 }}>
-      <View style={innerActionRow}>
-        {canNightKill && (
-          <Pressable
-            accessibilityLabel={`Mark ${focusedPlayer.name} dead by execution`}
-            accessibilityRole="button"
-            disabled={!canExecute}
-            onPress={() => onSetDeath('execution')}
-            style={({ pressed }) =>
-              outlinedActionStyle({
-                pressed,
-                disabled: !canExecute,
-                borderColor: '#fca5a5',
-                flex: 1,
-              })
-            }
-          >
-            <FlameKindling color={canExecute ? '#fca5a5' : '#94a3b8'} size={17} strokeWidth={2.7} />
-            <Text style={onDarkTextStrong}>{canExecute ? 'Execute' : 'Executed'}</Text>
-          </Pressable>
-        )}
-        {canExecute && (
-          <Pressable
-            accessibilityLabel={`Mark ${focusedPlayer.name} dead at night`}
-            accessibilityRole="button"
-            disabled={!canNightKill}
-            onPress={() => onSetDeath('night')}
-            style={({ pressed }) =>
-              outlinedActionStyle({
-                pressed,
-                disabled: !canNightKill,
-                borderColor: '#93c5fd',
-                flex: 1,
-              })
-            }
-          >
-            <Skull color={canNightKill ? '#93c5fd' : '#94a3b8'} size={17} strokeWidth={2.7} />
-            <Text style={onDarkTextStrong}>{canNightKill ? 'Night Kill' : 'Killed'}</Text>
-          </Pressable>
-        )}
-        <FocusedPlayerUndoDeathButton
-          disabled={!focusedPlayerIsDead}
-          onPress={onUndoDeath}
-          playerName={focusedPlayer.name}
-        />
-      </View>
-
-      <FocusedPlayerDeathActions
-        canRevive={focusedPlayerIsDead}
-        isAlive={!focusedPlayerIsDead}
-        onRevive={onRevive}
-        playerName={focusedPlayer.name}
-      />
-
       <View style={innerActionRow}>
         <Pressable
           accessibilityLabel={`Delete ${focusedPlayer.name}`}
@@ -143,34 +75,6 @@ export function FocusedPlayerActions() {
             size={17}
             strokeWidth={2.7}
           />
-        </Pressable>
-        <Pressable
-          accessibilityLabel={`Track interaction from ${focusedPlayer.name}`}
-          accessibilityRole="button"
-          onPress={() => onStartTracking('interaction')}
-          style={({ pressed }) => outlinedActionStyle({ pressed, flex: 1 })}
-        >
-          <MessageCircle color="#f8fafc" size={17} strokeWidth={2.7} />
-          <Text style={onDarkTextStrong}>Interaction</Text>
-        </Pressable>
-        <Pressable
-          accessibilityLabel={`Track nomination from ${focusedPlayer.name}`}
-          accessibilityRole="button"
-          disabled={nominationDisabled}
-          onPress={() => onStartTracking('nomination')}
-          style={({ pressed }) =>
-            outlinedActionStyle({ pressed, disabled: nominationDisabled, flex: 1 })
-          }
-        >
-          <NomIcon color={nominationDisabled ? '#94a3b8' : '#f8fafc'} size={17} strokeWidth={2.7} />
-          <Text
-            style={{
-              ...onDarkTextStrong,
-              color: nominationDisabled ? '#94a3b8' : '#f8fafc',
-            }}
-          >
-            {nominationDisabled ? 'Nominated' : 'Nominate'}
-          </Text>
         </Pressable>
       </View>
 
