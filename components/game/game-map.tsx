@@ -20,7 +20,7 @@ export function GameMap() {
     players,
     isRearrangeMode,
     activeTokenSize,
-    selectedPlayerIds,
+    highlightedPlayerIds,
     handleMovePlayer,
     handleSelectPlayer,
   } = useGameRouteContext();
@@ -31,7 +31,7 @@ export function GameMap() {
       getPlayerMapPosition(player, players, mapWidth, mapHeight, activeTokenSize),
     ]),
   );
-  const selectedPlayerIdSet = new Set(selectedPlayerIds);
+  const selectedPlayerIdSet = new Set(highlightedPlayerIds);
   const [nominatorId, nomineeId] = nominationCurvePlayerIds;
   const groupRepeats = buildConversationGroupRepeats(conversations, activeDay);
   const disabledPlayerIdSet = new Set(disabledPlayerIds);
@@ -131,10 +131,10 @@ export function GameMap() {
           key={player.id}
           disabled={disabledPlayerIdSet.has(player.id)}
           interactionMode={interactionMode}
-          isInitiator={selectedPlayerIds[0] === player.id}
+          isInitiator={highlightedPlayerIds[0] === player.id}
           isNominated={nominatedIds.has(player.id)}
           isNominator={nominatorIds.has(player.id)}
-          isSelected={selectedPlayerIds.includes(player.id)}
+          isSelected={highlightedPlayerIds.includes(player.id)}
           mapHeight={mapHeight}
           mapWidth={mapWidth}
           onMove={handleMovePlayer}

@@ -33,7 +33,6 @@ type PlayerTokenProps = {
 
 export function PlayerToken({
   disabled = false,
-  interactionMode = false,
   isInitiator = false,
   isNominated = false,
   isNominator = false,
@@ -108,21 +107,21 @@ export function PlayerToken({
             alignItems: 'center',
             backgroundColor: isDragReady
               ? '#38bdf8'
-              : player.death
-                ? '#1f2937'
-                : isInitiator
-                  ? '#fde68a'
-                  : isSelected
-                    ? '#bbf7d0'
+              : isSelected
+                ? '#bbf7d0'
+                : player.death
+                  ? '#1f2937'
+                  : isInitiator
+                    ? '#fde68a'
                     : '#f8fafc',
             borderColor: isDragReady
               ? '#e0f2fe'
-              : player.death
-                ? '#64748b'
-                : isInitiator
-                  ? '#f59e0b'
-                  : isSelected
-                    ? '#22c55e'
+              : isSelected
+                ? '#22c55e'
+                : player.death
+                  ? '#64748b'
+                  : isInitiator
+                    ? '#f59e0b'
                     : '#94a3b8',
             borderRadius: tokenSize / 2,
             borderWidth: isSelected ? 3 : 2,
