@@ -687,63 +687,103 @@ export default function GameRoute() {
             ) : focusedPlayer ? (
               <View key="focused-player-actions" style={{ alignSelf: 'stretch', gap: 10 }}>
                 <View style={{ flexDirection: 'row', gap: 10 }}>
-                  <Pressable
-                    accessibilityLabel={`Mark ${focusedPlayer.name} dead by execution`}
-                    accessibilityRole="button"
-                    onPress={() => handleSetFocusedPlayerDeath('execution')}
-                    style={({ pressed }) => ({
-                      alignItems: 'center',
-                      backgroundColor: pressed ? '#1f2937' : '#111827',
-                      borderColor:
-                        focusedPlayerIsDead && focusedPlayer.death?.kind === 'execution'
-                          ? '#fca5a5'
-                          : '#334155',
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      flex: 1,
-                      flexBasis: 0,
-                      flexDirection: 'row',
-                      gap: 6,
-                      justifyContent: 'center',
-                      minWidth: 0,
-                      paddingVertical: 14,
-                    })}
-                  >
-                    <FlameKindling color="#fca5a5" size={17} strokeWidth={2.7} />
-                    <Text style={{ color: '#f8fafc', fontWeight: '900' }}>
-                      Execute
-                      {focusedPlayerIsDead && focusedPlayer.death?.kind === 'execution' ? 'd' : ''}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    accessibilityLabel={`Mark ${focusedPlayer.name} dead at night`}
-                    accessibilityRole="button"
-                    onPress={() => handleSetFocusedPlayerDeath('night')}
-                    style={({ pressed }) => ({
-                      alignItems: 'center',
-                      backgroundColor: pressed ? '#1f2937' : '#111827',
-                      borderColor:
-                        focusedPlayerIsDead && focusedPlayer.death?.kind === 'night'
-                          ? '#93c5fd'
-                          : '#334155',
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      flex: 1,
-                      flexBasis: 0,
-                      flexDirection: 'row',
-                      gap: 6,
-                      justifyContent: 'center',
-                      minWidth: 0,
-                      paddingVertical: 14,
-                    })}
-                  >
-                    <Skull color="#93c5fd" size={17} strokeWidth={2.7} />
-                    <Text style={{ color: '#f8fafc', fontWeight: '900' }}>
-                      {focusedPlayerIsDead && focusedPlayer.death?.kind === 'night'
-                        ? 'Killed'
-                        : 'Night'}
-                    </Text>
-                  </Pressable>
+                  {!(focusedPlayerIsDead && focusedPlayer.death?.kind === 'night') && (
+                    <Pressable
+                      accessibilityLabel={`Mark ${focusedPlayer.name} dead by execution`}
+                      accessibilityRole="button"
+                      disabled={focusedPlayerIsDead && focusedPlayer.death?.kind === 'execution'}
+                      onPress={() => handleSetFocusedPlayerDeath('execution')}
+                      style={({ pressed }) => ({
+                        alignItems: 'center',
+                        backgroundColor: pressed ? '#1f2937' : '#111827',
+                        borderColor:
+                          focusedPlayerIsDead && focusedPlayer.death?.kind === 'execution'
+                            ? '#1f2937'
+                            : '#fca5a5',
+                        borderRadius: 8,
+                        borderWidth: 1,
+                        flex: 1,
+                        flexBasis: 0,
+                        flexDirection: 'row',
+                        gap: 6,
+                        justifyContent: 'center',
+                        minWidth: 0,
+                        opacity:
+                          focusedPlayerIsDead && focusedPlayer.death?.kind === 'execution'
+                            ? 0.48
+                            : 1,
+                        paddingVertical: 14,
+                      })}
+                    >
+                      <FlameKindling
+                        color={
+                          focusedPlayerIsDead && focusedPlayer.death?.kind === 'execution'
+                            ? '#94a3b8'
+                            : '#fca5a5'
+                        }
+                        size={17}
+                        strokeWidth={2.7}
+                      />
+                      <Text
+                        style={{
+                          color: '#f8fafc',
+                          fontWeight: '900',
+                        }}
+                      >
+                        Execute
+                        {focusedPlayerIsDead && focusedPlayer.death?.kind === 'execution'
+                          ? 'd'
+                          : ''}
+                      </Text>
+                    </Pressable>
+                  )}
+                  {!(focusedPlayerIsDead && focusedPlayer.death?.kind === 'execution') && (
+                    <Pressable
+                      accessibilityLabel={`Mark ${focusedPlayer.name} dead at night`}
+                      accessibilityRole="button"
+                      disabled={focusedPlayerIsDead && focusedPlayer.death?.kind === 'night'}
+                      onPress={() => handleSetFocusedPlayerDeath('night')}
+                      style={({ pressed }) => ({
+                        alignItems: 'center',
+                        backgroundColor: pressed ? '#1f2937' : '#111827',
+                        borderColor:
+                          focusedPlayerIsDead && focusedPlayer.death?.kind === 'night'
+                            ? '#1f2937'
+                            : '#93c5fd',
+                        borderRadius: 8,
+                        borderWidth: 1,
+                        flex: 1,
+                        flexBasis: 0,
+                        flexDirection: 'row',
+                        gap: 6,
+                        justifyContent: 'center',
+                        minWidth: 0,
+                        opacity:
+                          focusedPlayerIsDead && focusedPlayer.death?.kind === 'night' ? 0.48 : 1,
+                        paddingVertical: 14,
+                      })}
+                    >
+                      <Skull
+                        color={
+                          focusedPlayerIsDead && focusedPlayer.death?.kind === 'night'
+                            ? '#94a3b8'
+                            : '#93c5fd'
+                        }
+                        size={17}
+                        strokeWidth={2.7}
+                      />
+                      <Text
+                        style={{
+                          color: '#f8fafc',
+                          fontWeight: '900',
+                        }}
+                      >
+                        {focusedPlayerIsDead && focusedPlayer.death?.kind === 'night'
+                          ? 'Killed'
+                          : 'Night Kill'}
+                      </Text>
+                    </Pressable>
+                  )}
                   <FocusedPlayerUndoDeathButton
                     disabled={!focusedPlayerIsDead}
                     onPress={handleUndoFocusedPlayerDeath}
