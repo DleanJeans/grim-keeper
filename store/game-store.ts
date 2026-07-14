@@ -11,6 +11,9 @@ import type {
   PlayerDeath,
   PlayerPosition,
   PlayerRevive,
+  PlayerRoleAssignment,
+  Role,
+  StoredScript,
 } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
 import { addMissingFriends, getFriendSummaries, hasFriendName } from '@/utils/friend-utils';
@@ -18,19 +21,33 @@ import { getTokenSize } from '@/utils/layout-utils';
 
 type CreateGameInput = {
   playerNames: string[];
+  script?: StoredScript;
 };
 
 type GameState = {
   appUserName: string;
   games: Game[];
   friends: Friend[];
+  roleCatalog: Role[];
+  scripts: StoredScript[];
   addFriend: (name: string) => void;
   createGame: (input: CreateGameInput) => Game;
+  saveScript: (script: StoredScript) => void;
+  updateScript: (script: StoredScript) => void;
+  deleteScript: (scriptId: string) => void;
+  setRoleCatalog: (roles: Role[]) => void;
   addPlayer: (gameId: string, name: string) => void;
   deleteGame: (gameId: string) => void;
   deletePlayer: (gameId: string, playerId: string) => void;
   setPlayerDeath: (gameId: string, playerId: string, death: PlayerDeath | null) => void;
   setPlayerRevive: (gameId: string, playerId: string, revive: PlayerRevive | null) => void;
+  setPlayerRoleAssignment: (
+    gameId: string,
+    playerId: string,
+    day: number,
+    kind: PlayerRoleAssignment['kind'],
+    roleIds: string[],
+  ) => void;
   setPlayerDayNote: (gameId: string, playerId: string, day: number, text: string) => void;
   setTokenSize: (gameId: string, tokenSize: number) => void;
   setActiveDay: (gameId: string, day: number) => void;
@@ -53,6 +70,8 @@ export const useGameStore = create<GameState>()(
       appUserName: 'You',
       games: [],
       friends: [],
+      roleCatalog: [],
+      scripts: [],
       addFriend: (name) => {
         const normalizedName = normalizePlayerName(name);
 
@@ -84,7 +103,7 @@ export const useGameStore = create<GameState>()(
           };
         });
       },
-      createGame: ({ playerNames }) => {
+      createGame: ({ playerNames, script }) => {
         const now = new Date().toISOString();
         const appUserName = normalizePlayerName(get().appUserName) || 'You';
         const appUserKey = appUserName.toLocaleLowerCase();
@@ -105,6 +124,7 @@ export const useGameStore = create<GameState>()(
           tokenSize: getTokenSize(),
           players,
           conversations: [],
+          script: script ? { ...script, roles: [...script.roles] } : undefined,
         };
 
         set((state) => {
@@ -118,6 +138,38 @@ export const useGameStore = create<GameState>()(
         });
 
         return game;
+      },
+      saveScript: (script) => {
+        set((state) => {
+          const existingIndex = state.scripts.findIndex(
+            (existingScript) =>
+              existingScript.id === script.id ||
+              (script.remoteId !== undefined && existingScript.remoteId === script.remoteId),
+          );
+
+          if (existingIndex < 0) {
+            return { scripts: [...state.scripts, script] };
+          }
+
+          const scripts = [...state.scripts];
+          scripts[existingIndex] = { ...script, id: state.scripts[existingIndex].id };
+          return { scripts };
+        });
+      },
+      updateScript: (script) => {
+        set((state) => ({
+          scripts: state.scripts.map((existingScript) =>
+            existingScript.id === script.id ? script : existingScript,
+          ),
+        }));
+      },
+      deleteScript: (scriptId) => {
+        set((state) => ({
+          scripts: state.scripts.filter((script) => script.id !== scriptId),
+        }));
+      },
+      setRoleCatalog: (roles) => {
+        set({ roleCatalog: dedupeRoles(roles) });
       },
       addPlayer: (gameId, name) => {
         const normalizedName = normalizePlayerName(name);
@@ -226,6 +278,39 @@ export const useGameStore = create<GameState>()(
                       ? {
                           ...player,
                           revive: revive ?? undefined,
+                        }
+                      : player,
+                  ),
+                }
+              : game,
+          ),
+        }));
+      },
+      setPlayerRoleAssignment: (gameId, playerId, day, kind, roleIds) => {
+        const assignment: PlayerRoleAssignment = {
+          day,
+          kind,
+          roleIds: [...new Set(roleIds)],
+          updatedAt: new Date().toISOString(),
+        };
+
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? {
+                  ...game,
+                  updatedAt: new Date().toISOString(),
+                  players: game.players.map((player) =>
+                    player.id === playerId
+                      ? {
+                          ...player,
+                          roleAssignments: [
+                            ...(player.roleAssignments ?? []).filter(
+                              (existingAssignment) =>
+                                existingAssignment.day !== day || existingAssignment.kind !== kind,
+                            ),
+                            assignment,
+                          ],
                         }
                       : player,
                   ),
@@ -401,6 +486,8 @@ export const useGameStore = create<GameState>()(
         appUserName: state.appUserName,
         friends: state.friends,
         games: state.games,
+        roleCatalog: state.roleCatalog,
+        scripts: state.scripts,
       }),
     },
   ),
@@ -412,4 +499,8 @@ export function getGameById(games: Game[], gameId: string | undefined) {
 
 function createId(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function dedupeRoles(roles: Role[]) {
+  return [...new Map(roles.map((role) => [role.id, role])).values()];
 }
