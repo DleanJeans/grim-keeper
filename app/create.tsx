@@ -1,11 +1,12 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { GripVertical, Play, Plus } from 'lucide-react-native';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TextInput as RNTextInput } from 'react-native';
 import { Keyboard, Pressable, View } from 'react-native';
 import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
 
 import { FriendSuggestions } from '@/components/friends/friend-suggestions';
+import { GameScriptPicker } from '@/components/scripts/game-script-picker';
 import { Text, TextInput } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
@@ -18,14 +19,18 @@ type DraftPlayer = {
 };
 
 export default function CreateRoute() {
+  const { scriptId: scriptIdParam } = useLocalSearchParams<{ scriptId?: string }>();
   const appUserName = useGameStore((state) => state.appUserName);
   const createGame = useGameStore((state) => state.createGame);
   const games = useGameStore((state) => state.games);
+  const scripts = useGameStore((state) => state.scripts);
   const storedFriends = useGameStore((state) => state.friends);
   const inputRef = useRef<RNTextInput>(null);
   const [name, setName] = useState('');
   const [nameFocused, setNameFocused] = useState(false);
   const [players, setPlayers] = useState<DraftPlayer[]>([]);
+  const [selectedScriptId, setSelectedScriptId] = useState<string | null>(scriptIdParam ?? null);
+  const selectedScript = scripts.find((script) => script.id === selectedScriptId);
   const friends = useMemo(
     () => getFriendSummaries(games, storedFriends, appUserName),
     [appUserName, games, storedFriends],
@@ -54,6 +59,12 @@ export default function CreateRoute() {
       )
       .slice(0, 5);
   }, [appUserName, friends, normalizedName, players]);
+
+  useEffect(() => {
+    if (scriptIdParam) {
+      setSelectedScriptId(scriptIdParam);
+    }
+  }, [scriptIdParam]);
 
   const helperText = useMemo(() => {
     if (duplicateName) {
@@ -109,7 +120,10 @@ export default function CreateRoute() {
     }
 
     Keyboard.dismiss();
-    const game = createGame({ playerNames: players.map((player) => player.name) });
+    const game = createGame({
+      playerNames: players.map((player) => player.name),
+      script: selectedScript,
+    });
     router.replace({ pathname: '/game/[id]', params: { id: game.id } });
   }
 
@@ -124,6 +138,13 @@ export default function CreateRoute() {
             Add players from the player on the left then clockwise.
           </Text>
         </View>
+
+        <GameScriptPicker
+          onBrowse={() => router.push({ pathname: '/scripts', params: { selectForGame: 'true' } })}
+          onSelect={setSelectedScriptId}
+          scripts={scripts}
+          selectedScriptId={selectedScriptId}
+        />
 
         <View style={{ gap: 8 }}>
           <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '700' }}>
