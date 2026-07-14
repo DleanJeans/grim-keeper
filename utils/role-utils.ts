@@ -75,6 +75,10 @@ export function mergeScriptRoles(content: unknown, catalog: Role[]): Role[] {
   return [...rolesById.values()];
 }
 
+export function normalizeRoleCatalog(content: unknown) {
+  return mergeScriptRoles(content, []);
+}
+
 export function addRoleToScript(script: StoredScript, role: Role): StoredScript {
   if (script.roles.some((scriptRole) => scriptRole.id === role.id)) {
     return script;
