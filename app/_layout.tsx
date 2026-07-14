@@ -6,7 +6,7 @@ import { ChevronLeft } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import { OfficialScriptsLoader } from '@/components/scripts/official-scripts-loader';
 import { useAppFonts } from '@/hooks/use-app-fonts';
 import { colors } from '@/theme/colors';
 
@@ -103,6 +103,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={grimKeeperTheme}>
+        <OfficialScriptsLoader />
         <Stack
           screenOptions={{
             contentStyle: { backgroundColor: colors.background },
