@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ChevronRight, Plus, Trash2, Users } from 'lucide-react-native';
+import { ChevronRight, Plus, ScrollText, Trash2, Users } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
 
@@ -14,6 +14,7 @@ export default function HomeRoute() {
   const appUserName = useGameStore((state) => state.appUserName);
   const games = useGameStore((state) => state.games);
   const storedFriends = useGameStore((state) => state.friends);
+  const scripts = useGameStore((state) => state.scripts);
   const deleteGame = useGameStore((state) => state.deleteGame);
   const setAppUserName = useGameStore((state) => state.setAppUserName);
   const friends = useMemo(
@@ -49,6 +50,13 @@ export default function HomeRoute() {
           onPress={() => router.push('/friends')}
         />
       </View>
+
+      <HomeActionButton
+        count={scripts.length}
+        icon="scripts"
+        label="Scripts"
+        onPress={() => router.push('/scripts')}
+      />
 
       <View style={{ gap: 12 }}>
         <Text selectable style={{ color: colors.text, fontSize: 22, fontWeight: '800' }}>
@@ -138,11 +146,11 @@ function HomeActionButton({
   count,
 }: {
   count?: number;
-  icon: 'plus' | 'users';
+  icon: 'plus' | 'scripts' | 'users';
   label: string;
   onPress: () => void;
 }) {
-  const Icon = icon === 'plus' ? Plus : Users;
+  const Icon = icon === 'plus' ? Plus : icon === 'scripts' ? ScrollText : Users;
 
   return (
     <Pressable
