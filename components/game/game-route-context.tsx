@@ -1,6 +1,12 @@
 import { createContext, useContext } from 'react';
 
-import type { Conversation, Game, Player, PlayerPosition } from '@/types/game';
+import type {
+  Conversation,
+  Game,
+  Player,
+  PlayerPosition,
+  PlayerRoleAssignment,
+} from '@/types/game';
 
 export type GameTab = 'interactions' | 'nominations' | 'deaths' | 'notes';
 export type TrackingMode = 'interaction' | 'nomination';
@@ -40,6 +46,8 @@ export type GameRouteContextValue = {
   isRearrangeMode: boolean;
   selectedPlayerIds: string[];
   highlightedPlayerIds: string[];
+  roleAssignmentKind: PlayerRoleAssignment['kind'] | null;
+  roleAssignmentRoleIds: string[];
 
   // Handlers
   setActiveTab: (tab: GameTab) => void;
@@ -59,6 +67,10 @@ export type GameRouteContextValue = {
   handleChangeDay: (day: number) => void;
   handleRotateTokens: (angleRadians: number) => void;
   handleResizeTokens: (sizeDelta: number) => void;
+  handleStartRoleAssignment: (kind: PlayerRoleAssignment['kind']) => void;
+  handleCancelRoleAssignment: () => void;
+  handleToggleRoleAssignment: (roleId: string) => void;
+  handleSaveRoleAssignment: () => void;
   handleSetFocusedPlayerDeath: (kind: 'execution' | 'night') => void;
   handleReviveFocusedPlayer: () => void;
   handleUndoFocusedPlayerDeath: () => void;

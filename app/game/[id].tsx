@@ -21,15 +21,17 @@ import { MapModeActions } from '@/components/game/map-mode-actions';
 import { NominationList } from '@/components/game/nomination-list';
 import { NotesTab } from '@/components/game/notes-tab';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
+import { RoleAssignmentActions } from '@/components/game/role-assignment-actions';
 import { RotateActions } from '@/components/game/rotate-actions';
 import { TrackingConfirmActions } from '@/components/game/tracking-confirm-actions';
 import { VoteConfirmActions } from '@/components/game/vote-confirm-actions';
 import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
-import type { PlayerPosition } from '@/types/game';
+import type { PlayerPosition, PlayerRoleAssignment } from '@/types/game';
 import { getLastDayWithData } from '@/utils/game-utils';
 import { getTokenSize, rotatePlayerMapPositions } from '@/utils/layout-utils';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
+import { getRoleAssignmentForDay } from '@/utils/role-utils';
 
 export default function GameRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -39,6 +41,7 @@ export default function GameRoute() {
   const deletePlayer = useGameStore((state) => state.deletePlayer);
   const setPlayerDeath = useGameStore((state) => state.setPlayerDeath);
   const setPlayerRevive = useGameStore((state) => state.setPlayerRevive);
+  const setPlayerRoleAssignment = useGameStore((state) => state.setPlayerRoleAssignment);
   const setPlayerDayNote = useGameStore((state) => state.setPlayerDayNote);
   const updatePlayerPosition = useGameStore((state) => state.updatePlayerPosition);
   const updatePlayerPositions = useGameStore((state) => state.updatePlayerPositions);
@@ -59,6 +62,10 @@ export default function GameRoute() {
   const [isRotatingMode, setIsRotatingMode] = useState(false);
   const [isRearrangeMode, setIsRearrangeMode] = useState(false);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
+  const [roleAssignmentKind, setRoleAssignmentKind] = useState<PlayerRoleAssignment['kind'] | null>(
+    null,
+  );
+  const [roleAssignmentRoleIds, setRoleAssignmentRoleIds] = useState<string[]>([]);
   const game = getGameById(games, id);
   const mapWidth = Math.max(1, width - 40);
   const mapHeight = Math.max(mapWidth, Math.floor(height * 0.52));
@@ -168,6 +175,9 @@ export default function GameRoute() {
   }
 
   function handleSelectPlayer(playerId: string) {
+    setRoleAssignmentKind(null);
+    setRoleAssignmentRoleIds([]);
+
     if (votingNominationId) {
       setSelectedPlayerIds((currentIds) =>
         currentIds.includes(playerId)
@@ -227,6 +237,8 @@ export default function GameRoute() {
     setVotingReturnTab(null);
     setFocusedPlayerId(null);
     setSelectedPlayerIds([]);
+    setRoleAssignmentKind(null);
+    setRoleAssignmentRoleIds([]);
   }
 
   function handleConfirmTracking() {
@@ -311,6 +323,47 @@ export default function GameRoute() {
 
   function handleResizeTokens(sizeDelta: number) {
     setTokenSize(activeGame.id, activeTokenSize + sizeDelta);
+  }
+
+  function handleStartRoleAssignment(kind: PlayerRoleAssignment['kind']) {
+    if (!focusedPlayer || !activeGame.script) {
+      return;
+    }
+
+    const currentAssignment = getRoleAssignmentForDay(
+      focusedPlayer.roleAssignments,
+      activeGame.activeDay,
+    );
+    setRoleAssignmentKind(kind);
+    setRoleAssignmentRoleIds(currentAssignment?.roleIds ?? []);
+  }
+
+  function handleCancelRoleAssignment() {
+    setRoleAssignmentKind(null);
+    setRoleAssignmentRoleIds([]);
+  }
+
+  function handleToggleRoleAssignment(roleId: string) {
+    setRoleAssignmentRoleIds((currentRoleIds) =>
+      currentRoleIds.includes(roleId)
+        ? currentRoleIds.filter((currentRoleId) => currentRoleId !== roleId)
+        : [...currentRoleIds, roleId],
+    );
+  }
+
+  function handleSaveRoleAssignment() {
+    if (!focusedPlayer || !roleAssignmentKind || !activeGame.script) {
+      return;
+    }
+
+    setPlayerRoleAssignment(
+      activeGame.id,
+      focusedPlayer.id,
+      activeGame.activeDay,
+      roleAssignmentKind,
+      roleAssignmentRoleIds,
+    );
+    handleCancelRoleAssignment();
   }
 
   function handleMovePlayer(playerId: string, position: PlayerPosition) {
@@ -424,6 +477,8 @@ export default function GameRoute() {
     isRearrangeMode,
     selectedPlayerIds,
     highlightedPlayerIds,
+    roleAssignmentKind,
+    roleAssignmentRoleIds,
     setActiveTab,
     setAddPlayerVisible,
     setNoteDraft,
@@ -441,6 +496,10 @@ export default function GameRoute() {
     handleChangeDay,
     handleRotateTokens,
     handleResizeTokens,
+    handleStartRoleAssignment,
+    handleCancelRoleAssignment,
+    handleToggleRoleAssignment,
+    handleSaveRoleAssignment,
     handleSetFocusedPlayerDeath,
     handleReviveFocusedPlayer,
     handleUndoFocusedPlayerDeath,
@@ -511,6 +570,8 @@ export default function GameRoute() {
               <MapModeActions />
             </View>
           )}
+
+          <RoleAssignmentActions />
 
           <View key="tab-bar">
             <GameTabs />
