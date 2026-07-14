@@ -4,17 +4,17 @@ import { Pressable } from 'react-native';
 import { onDarkTextStrong, outlinedActionStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
 
-type NightKillButtonProps = {
+type KillButtonProps = {
   disabled?: boolean;
   flex?: number;
   onPress: () => void;
   playerName: string;
 };
 
-export function NightKillButton({ disabled = false, flex = 1, onPress, playerName }: NightKillButtonProps) {
+export function KillButton({ disabled = false, flex = 1, onPress, playerName }: KillButtonProps) {
   return (
     <Pressable
-      accessibilityLabel={`Mark ${playerName} dead at night`}
+      accessibilityLabel={`Mark ${playerName} dead`}
       accessibilityRole="button"
       disabled={disabled}
       onPress={onPress}
@@ -28,7 +28,7 @@ export function NightKillButton({ disabled = false, flex = 1, onPress, playerNam
       }
     >
       <Skull color={disabled ? '#94a3b8' : '#93c5fd'} size={17} strokeWidth={2.7} />
-      <Text style={onDarkTextStrong}>{disabled ? 'Killed' : 'Night Kill'}</Text>
+      <Text style={onDarkTextStrong}>{disabled ? 'Killed' : 'Kill'}</Text>
     </Pressable>
   );
 }

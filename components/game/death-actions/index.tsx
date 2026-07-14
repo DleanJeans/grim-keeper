@@ -1,5 +1,5 @@
 export { ExecuteButton } from './execute-button';
-export { NightKillButton } from './night-kill-button';
+export { KillButton } from './kill-button';
 export { ReviveButton } from './revive-button';
 export { UndoDeathButton } from './undo-death-button';
 
@@ -9,12 +9,12 @@ import { useGameRouteContext } from '@/components/game/game-route-context';
 import { innerActionRow } from '@/components/game/styles';
 
 import { ExecuteButton } from './execute-button';
-import { NightKillButton } from './night-kill-button';
+import { KillButton } from './kill-button';
 import { ReviveButton } from './revive-button';
 import { UndoDeathButton } from './undo-death-button';
 
 /**
- * Composed death-action panel for the Deaths tab — Execute / Night Kill /
+ * Composed death-action panel for the Deaths tab — Execute / Kill /
  * Undo Death in one row, Revive in a second row. Operates on the player
  * currently focused in the route context.
  */
@@ -44,7 +44,7 @@ export function FocusedDeathActionPanel() {
               playerName={focusedPlayer.name}
             />
           ) : (
-            <NightKillButton
+            <KillButton
               disabled
               onPress={() => onSetDeath('night')}
               playerName={focusedPlayer.name}
@@ -54,14 +54,8 @@ export function FocusedDeathActionPanel() {
         </View>
       ) : (
         <View style={innerActionRow}>
-          <ExecuteButton
-            onPress={() => onSetDeath('execution')}
-            playerName={focusedPlayer.name}
-          />
-          <NightKillButton
-            onPress={() => onSetDeath('night')}
-            playerName={focusedPlayer.name}
-          />
+          <ExecuteButton onPress={() => onSetDeath('execution')} playerName={focusedPlayer.name} />
+          <KillButton onPress={() => onSetDeath('night')} playerName={focusedPlayer.name} />
         </View>
       )}
       {focusedPlayerIsDead && (
