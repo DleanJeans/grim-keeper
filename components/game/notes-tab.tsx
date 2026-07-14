@@ -1,10 +1,10 @@
 import { Check, Pencil } from 'lucide-react-native';
 import { Pressable, TextInput, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { PlayerNoteSection } from '@/components/game/player-notes';
 import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { Player } from '@/types/game';
 
 const noteTextInputStyle = {
   backgroundColor: '#111827',
@@ -35,14 +35,6 @@ const noteTextStyle = {
   lineHeight: 20,
 };
 
-const noteDayHeaderStyle = {
-  color: '#94a3b8',
-  fontSize: 12,
-  fontWeight: '800' as const,
-  letterSpacing: 0.5,
-  textTransform: 'uppercase' as const,
-};
-
 const noteRowHeaderStyle = {
   alignItems: 'center' as const,
   flexDirection: 'row' as const,
@@ -57,14 +49,20 @@ const noteEditIconStyle = {
   paddingVertical: 4,
 };
 
-export function PlayerNoteRow({
+const noteRowPlayerNameStyle = {
+  color: '#f8fafc',
+  fontSize: 14,
+  fontWeight: '800' as const,
+};
+
+function DayNoteRow({
   player,
   day,
   text,
 }: {
-  player: Player;
+  player: { id: string; name: string };
   day: number;
-  text?: string;
+  text: string;
 }) {
   const {
     noteDraft,
@@ -80,7 +78,7 @@ export function PlayerNoteRow({
   return (
     <View style={{ gap: 4 }}>
       <View style={noteRowHeaderStyle}>
-        <Text style={noteDayHeaderStyle}>Day {day}</Text>
+        <Text style={noteRowPlayerNameStyle}>{player.name}</Text>
         <Pressable
           accessibilityLabel={`Edit day ${day} note for ${player.name}`}
           accessibilityRole="button"
@@ -111,36 +109,44 @@ export function PlayerNoteRow({
             <Check color="#f8fafc" size={18} strokeWidth={2.8} />
           </Pressable>
         </View>
-      ) : text ? (
+      ) : (
         <Text selectable style={noteTextStyle}>
           {text}
         </Text>
-      ) : null}
+      )}
     </View>
   );
 }
 
-export function PlayerNoteSection({ player }: { player: Player }) {
-  const { activeDay, game, lastDayWithData } = useGameRouteContext();
+export function NotesTab() {
+  const { activeDay, focusedPlayer, game, players } = useGameRouteContext();
 
-  const lastDay = Math.max(lastDayWithData, activeDay);
-  const noteByDay = new Map<number, string>();
-  for (const entry of game.playerDayNotes ?? []) {
-    if (entry.playerId === player.id) {
-      noteByDay.set(entry.day, entry.text);
-    }
+  if (focusedPlayer) {
+    return <PlayerNoteSection player={focusedPlayer} />;
   }
-  const days = Array.from({ length: lastDay }, (_, i) => lastDay - i);
 
-  if (lastDay === 0) {
+  const dayNotes = (game.playerDayNotes ?? [])
+    .filter((entry) => entry.day === activeDay)
+    .slice()
+    .sort((a, b) => a.playerId.localeCompare(b.playerId));
+
+  if (dayNotes.length === 0) {
     return null;
   }
 
+  const playerById = new Map(players.map((p) => [p.id, p]));
+
   return (
-    <View style={{ gap: 6 }}>
-      {days.map((day) => (
-        <PlayerNoteRow key={day} day={day} player={player} text={noteByDay.get(day)} />
-      ))}
+    <View style={{ gap: 10 }}>
+      {dayNotes.map((entry) => {
+        const player = playerById.get(entry.playerId);
+        if (!player) {
+          return null;
+        }
+        return (
+          <DayNoteRow day={activeDay} key={entry.playerId} player={player} text={entry.text} />
+        );
+      })}
     </View>
   );
 }

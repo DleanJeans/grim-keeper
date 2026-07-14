@@ -1,8 +1,8 @@
 import { createContext, useContext } from 'react';
 
-import type { Conversation, Game, Player, PlayerDayNote, PlayerPosition } from '@/types/game';
+import type { Conversation, Game, Player, PlayerPosition } from '@/types/game';
 
-export type GameTab = 'interactions' | 'nominations' | 'deaths';
+export type GameTab = 'interactions' | 'nominations' | 'deaths' | 'notes';
 export type TrackingMode = 'interaction' | 'nomination';
 
 export type GameRouteContextValue = {
@@ -34,10 +34,8 @@ export type GameRouteContextValue = {
   focusedPlayerId: string | null;
   focusedPlayer: Player | undefined;
   focusedPlayerIsDead: boolean;
-  focusedPlayerNote: PlayerDayNote | undefined;
   nominationDisabled: boolean;
   noteDraft: string;
-  noteEditorVisible: boolean;
   isRotatingMode: boolean;
   isRearrangeMode: boolean;
   selectedPlayerIds: string[];
@@ -64,9 +62,10 @@ export type GameRouteContextValue = {
   handleSetFocusedPlayerDeath: (kind: 'execution' | 'night') => void;
   handleReviveFocusedPlayer: () => void;
   handleUndoFocusedPlayerDeath: () => void;
-  handleShowPlayerNoteForDay: (day: number) => void;
+  handleShowPlayerNoteForDay: (playerId: string, day: number) => void;
   handleSavePlayerNote: () => void;
   noteEditingDay: number | null;
+  noteEditingPlayerId: string | null;
   confirmDeletePlayer: () => void;
   handleDeleteConversation: (conversationId: string) => void;
   handleDeleteNomination: (nominationId: string) => void;

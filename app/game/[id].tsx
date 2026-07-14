@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Alert, ScrollView, useWindowDimensions, View } from 'react-native';
 import { AddPlayerModal } from '@/components/game/add-player-modal';
 import { FocusedDeathActionPanel } from '@/components/game/death-actions';
@@ -19,7 +19,7 @@ import { HeaderTitle } from '@/components/game/header-title';
 import { InteractionsTab } from '@/components/game/interactions-tab';
 import { MapModeActions } from '@/components/game/map-mode-actions';
 import { NominationList } from '@/components/game/nomination-list';
-import { PlayerNotes } from '@/components/game/player-notes';
+import { NotesTab } from '@/components/game/notes-tab';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
 import { RotateActions } from '@/components/game/rotate-actions';
 import { TrackingConfirmActions } from '@/components/game/tracking-confirm-actions';
@@ -54,22 +54,14 @@ export default function GameRoute() {
   const [votingReturnTab, setVotingReturnTab] = useState<GameTab | null>(null);
   const [focusedPlayerId, setFocusedPlayerId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
-  const [noteEditorVisible, setNoteEditorVisible] = useState(false);
   const [noteEditingDay, setNoteEditingDay] = useState<number | null>(null);
+  const [noteEditingPlayerId, setNoteEditingPlayerId] = useState<string | null>(null);
   const [isRotatingMode, setIsRotatingMode] = useState(false);
   const [isRearrangeMode, setIsRearrangeMode] = useState(false);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const game = getGameById(games, id);
   const mapWidth = Math.max(1, width - 40);
   const mapHeight = Math.max(mapWidth, Math.floor(height * 0.52));
-
-  useEffect(() => {
-    if (!focusedPlayerId) {
-      setNoteEditorVisible(false);
-      setNoteDraft('');
-      setNoteEditingDay(null);
-    }
-  }, [focusedPlayerId]);
 
   if (!game) {
     return (
@@ -95,12 +87,6 @@ export default function GameRoute() {
   const focusedPlayerIsDead = focusedPlayer
     ? isPlayerCurrentlyDead(focusedPlayer, activeGame.activeDay)
     : false;
-  const focusedPlayerNote =
-    focusedPlayerId === null
-      ? undefined
-      : activeGame.playerDayNotes?.find(
-          (note) => note.playerId === focusedPlayerId && note.day === activeGame.activeDay,
-        );
   const highlightedPlayerIds = trackingMode
     ? selectedPlayerIds
     : votingNominationId
@@ -194,7 +180,6 @@ export default function GameRoute() {
     if (!trackingMode) {
       setIsRotatingMode(false);
       setIsRearrangeMode(false);
-      setNoteEditorVisible(false);
       setFocusedPlayerId((currentPlayerId) => (currentPlayerId === playerId ? null : playerId));
       return;
     }
@@ -241,7 +226,6 @@ export default function GameRoute() {
     setVotingNominationId(null);
     setVotingReturnTab(null);
     setFocusedPlayerId(null);
-    setNoteEditorVisible(false);
     setSelectedPlayerIds([]);
   }
 
@@ -364,25 +348,25 @@ export default function GameRoute() {
     setPlayerDeath(activeGame.id, focusedPlayer.id, null);
   }
 
-  function handleShowPlayerNoteForDay(day: number) {
-    if (!focusedPlayer) {
+  function handleShowPlayerNoteForDay(playerId: string, day: number) {
+    if (!activeGame.players.some((p) => p.id === playerId)) {
       return;
     }
     const existing = activeGame.playerDayNotes?.find(
-      (n) => n.playerId === focusedPlayer.id && n.day === day,
+      (n) => n.playerId === playerId && n.day === day,
     );
+    setNoteEditingPlayerId(playerId);
     setNoteEditingDay(day);
     setNoteDraft(existing?.text ?? '');
-    setNoteEditorVisible(true);
   }
 
   function handleSavePlayerNote() {
-    if (!focusedPlayer || noteEditingDay === null) {
+    if (noteEditingPlayerId === null || noteEditingDay === null) {
       return;
     }
 
-    setPlayerDayNote(activeGame.id, focusedPlayer.id, noteEditingDay, noteDraft);
-    setNoteEditorVisible(false);
+    setPlayerDayNote(activeGame.id, noteEditingPlayerId, noteEditingDay, noteDraft);
+    setNoteEditingPlayerId(null);
     setNoteEditingDay(null);
   }
 
@@ -432,11 +416,10 @@ export default function GameRoute() {
     focusedPlayerId,
     focusedPlayer,
     focusedPlayerIsDead,
-    focusedPlayerNote,
     nominationDisabled,
     noteDraft,
-    noteEditorVisible,
     noteEditingDay,
+    noteEditingPlayerId,
     isRotatingMode,
     isRearrangeMode,
     selectedPlayerIds,
@@ -515,11 +498,7 @@ export default function GameRoute() {
         >
           <GameMap />
 
-          {focusedPlayer ? (
-            <View key="player-notes">
-              <PlayerNotes />
-            </View>
-          ) : isRotatingMode ? (
+          {isRotatingMode ? (
             <View key="rotate-actions">
               <RotateActions />
             </View>
@@ -554,6 +533,10 @@ export default function GameRoute() {
             <View key="deaths-tab">
               <FocusedDeathActionPanel />
               <DeathLog activeDay={activeGame.activeDay} players={activeGame.players} />
+            </View>
+          ) : activeTab === 'notes' ? (
+            <View key="notes-tab">
+              <NotesTab />
             </View>
           ) : (
             <View key="interactions-tab">
