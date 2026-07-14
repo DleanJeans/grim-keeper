@@ -39,18 +39,28 @@ export function getLogEntryKey(entry: DeathLogEntry | ReviveLogEntry): string {
 export function DeathLogRow({
   activeDay,
   entry,
+  killerDescription,
 }: {
   activeDay: number;
   entry: DeathLogEntry | ReviveLogEntry;
+  killerDescription?: string;
 }) {
   return 'death' in entry ? (
-    <DeathLogDeathRow activeDay={activeDay} entry={entry} />
+    <DeathLogDeathRow activeDay={activeDay} entry={entry} killerDescription={killerDescription} />
   ) : (
     <DeathLogReviveRow activeDay={activeDay} entry={entry} />
   );
 }
 
-function DeathLogDeathRow({ activeDay, entry }: { activeDay: number; entry: DeathLogEntry }) {
+function DeathLogDeathRow({
+  activeDay,
+  entry,
+  killerDescription,
+}: {
+  activeDay: number;
+  entry: DeathLogEntry;
+  killerDescription?: string;
+}) {
   const isExecution = entry.death.kind === 'execution';
   const accent = isExecution ? executionColor : nightColor;
   const Icon = isExecution ? FlameKindling : Skull;
@@ -67,6 +77,7 @@ function DeathLogDeathRow({ activeDay, entry }: { activeDay: number; entry: Deat
         dayLabel,
         isCurrent: entry.death.day === activeDay,
       }}
+      subtitle={killerDescription}
       playerName={entry.player.name}
     />
   );
@@ -90,10 +101,12 @@ function DeathLogReviveRow({ activeDay, entry }: { activeDay: number; entry: Rev
 
 function DeathLogEntryRow({
   playerName,
+  subtitle,
   presentation: { Icon, accent, actionLabel, dayLabel, isCurrent },
 }: {
   playerName: string;
   presentation: RowPresentation;
+  subtitle?: string;
 }) {
   return (
     <View
@@ -109,12 +122,19 @@ function DeathLogEntryRow({
         <Icon color={accent} size={13} strokeWidth={2.6} />
       </View>
       <View style={styles.body}>
-        <Text selectable style={styles.playerName}>
-          {playerName}
-        </Text>
-        <Text selectable style={[styles.action, { color: accent }]}>
-          {actionLabel}
-        </Text>
+        <View style={styles.titleRow}>
+          <Text selectable style={styles.playerName}>
+            {playerName}
+          </Text>
+          <Text selectable style={[styles.action, { color: accent }]}>
+            {actionLabel}
+          </Text>
+        </View>
+        {subtitle ? (
+          <Text selectable style={styles.subtitle}>
+            {subtitle}
+          </Text>
+        ) : null}
       </View>
     </View>
   );
@@ -160,8 +180,17 @@ const styles = StyleSheet.create({
   },
   body: {
     flex: 1,
+    gap: 2,
+  },
+  titleRow: {
+    alignItems: 'center',
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 4,
+  },
+  subtitle: {
+    color: colors.textMuted,
+    fontSize: 12,
+    lineHeight: 17,
   },
 });

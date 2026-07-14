@@ -3,11 +3,11 @@ export { KillButton } from './kill-button';
 export { ReviveButton } from './revive-button';
 export { UndoDeathButton } from './undo-death-button';
 
+import { useState } from 'react';
 import { View } from 'react-native';
-
+import { KillAttributionPanel } from '@/components/game/death-actions/kill-attribution-panel';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { innerActionRow } from '@/components/game/styles';
-
 import { ExecuteButton } from './execute-button';
 import { KillButton } from './kill-button';
 import { ReviveButton } from './revive-button';
@@ -19,6 +19,7 @@ import { UndoDeathButton } from './undo-death-button';
  * currently focused in the route context.
  */
 export function FocusedDeathActionPanel() {
+  const [showKillAttribution, setShowKillAttribution] = useState(false);
   const {
     focusedPlayer,
     focusedPlayerIsDead,
@@ -29,6 +30,18 @@ export function FocusedDeathActionPanel() {
 
   if (!focusedPlayer) {
     return null;
+  }
+
+  if (!focusedPlayerIsDead && showKillAttribution) {
+    return (
+      <KillAttributionPanel
+        onCancel={() => setShowKillAttribution(false)}
+        onConfirm={(attribution) => {
+          onSetDeath('night', attribution);
+          setShowKillAttribution(false);
+        }}
+      />
+    );
   }
 
   const deathKind = focusedPlayer.death?.kind;
@@ -55,7 +68,10 @@ export function FocusedDeathActionPanel() {
       ) : (
         <View style={innerActionRow}>
           <ExecuteButton onPress={() => onSetDeath('execution')} playerName={focusedPlayer.name} />
-          <KillButton onPress={() => onSetDeath('night')} playerName={focusedPlayer.name} />
+          <KillButton
+            onPress={() => setShowKillAttribution(true)}
+            playerName={focusedPlayer.name}
+          />
         </View>
       )}
       {focusedPlayerIsDead && (

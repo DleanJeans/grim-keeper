@@ -27,7 +27,7 @@ import { TrackingConfirmActions } from '@/components/game/tracking-confirm-actio
 import { VoteConfirmActions } from '@/components/game/vote-confirm-actions';
 import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
-import type { PlayerPosition, PlayerRoleAssignment } from '@/types/game';
+import type { KillAttribution, PlayerPosition, PlayerRoleAssignment } from '@/types/game';
 import { getLastDayWithData } from '@/utils/game-utils';
 import { getTokenSize, rotatePlayerMapPositions } from '@/utils/layout-utils';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
@@ -371,7 +371,7 @@ export default function GameRoute() {
     updatePlayerPosition(activeGame.id, playerId, position);
   }
 
-  function handleSetFocusedPlayerDeath(kind: 'execution' | 'night') {
+  function handleSetFocusedPlayerDeath(kind: 'execution' | 'night', attribution?: KillAttribution) {
     if (!focusedPlayer) {
       return;
     }
@@ -379,6 +379,7 @@ export default function GameRoute() {
     setPlayerDeath(activeGame.id, focusedPlayer.id, {
       day: activeGame.activeDay,
       kind,
+      ...attribution,
       updatedAt: new Date().toISOString(),
     });
   }
@@ -596,7 +597,11 @@ export default function GameRoute() {
           ) : activeTab === 'deaths' ? (
             <View key="deaths-tab">
               <FocusedDeathActionPanel />
-              <DeathLog activeDay={activeGame.activeDay} players={activeGame.players} />
+              <DeathLog
+                activeDay={activeGame.activeDay}
+                players={activeGame.players}
+                script={activeGame.script}
+              />
             </View>
           ) : activeTab === 'notes' ? (
             <View key="notes-tab">

@@ -3,6 +3,7 @@ import { createContext, useContext } from 'react';
 import type {
   Conversation,
   Game,
+  KillAttribution,
   Player,
   PlayerPosition,
   PlayerRoleAssignment,
@@ -73,7 +74,7 @@ export type GameRouteContextValue = {
   handleToggleRoleAssignment: (roleId: string) => void;
   handleSaveRoleAssignment: () => void;
   setShowRoles: (show: boolean) => void;
-  handleSetFocusedPlayerDeath: (kind: 'execution' | 'night') => void;
+  handleSetFocusedPlayerDeath: (kind: 'execution' | 'night', attribution?: KillAttribution) => void;
   handleReviveFocusedPlayer: () => void;
   handleUndoFocusedPlayerDeath: () => void;
   handleShowPlayerNoteForDay: (playerId: string, day: number) => void;

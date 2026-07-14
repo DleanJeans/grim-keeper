@@ -29,12 +29,17 @@ export type PlayerRoleAssignment = {
   updatedAt: string;
 };
 
+export type KillAttribution = {
+  killerPlayerId?: string;
+  killerRoleIds?: string[];
+};
+
 export type PlayerDeath = {
   day: number;
   kind: 'execution' | 'night';
   updatedAt: string;
-  killerPlayerId?: string;
-  killerRoleIds?: string[];
+  killerPlayerId?: KillAttribution['killerPlayerId'];
+  killerRoleIds?: KillAttribution['killerRoleIds'];
 };
 
 export type PlayerRevive = {

@@ -3,7 +3,8 @@ import { View } from 'react-native';
 
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { Player } from '@/types/game';
+import type { Player, StoredScript } from '@/types/game';
+import { getRoleNames } from '@/utils/role-utils';
 
 import { collectLogEntries } from './entries';
 import { DeathLogRow, getLogEntryKey } from './row';
@@ -11,10 +12,12 @@ import { DeathLogRow, getLogEntryKey } from './row';
 type DeathLogProps = {
   activeDay: number;
   players: Player[];
+  script?: StoredScript;
 };
 
-export function DeathLog({ activeDay, players }: DeathLogProps) {
+export function DeathLog({ activeDay, players, script }: DeathLogProps) {
   const entries = collectLogEntries(players, activeDay);
+  const playerById = new Map(players.map((player) => [player.id, player]));
 
   return (
     <View
@@ -54,10 +57,40 @@ export function DeathLog({ activeDay, players }: DeathLogProps) {
           No deaths recorded yet.
         </Text>
       ) : (
-        entries.map((entry) => (
-          <DeathLogRow activeDay={activeDay} entry={entry} key={getLogEntryKey(entry)} />
-        ))
+        entries.map((entry) => {
+          const killerDescription = getKillerDescription(entry, playerById, script);
+
+          return (
+            <DeathLogRow
+              activeDay={activeDay}
+              entry={entry}
+              key={getLogEntryKey(entry)}
+              killerDescription={killerDescription}
+            />
+          );
+        })
       )}
     </View>
   );
+}
+
+function getKillerDescription(
+  entry: Parameters<typeof DeathLogRow>[0]['entry'],
+  playerById: Map<string, Player>,
+  script: StoredScript | undefined,
+) {
+  if (!('death' in entry) || entry.death.kind !== 'night') {
+    return undefined;
+  }
+
+  const killerName = entry.death.killerPlayerId
+    ? playerById.get(entry.death.killerPlayerId)?.name
+    : undefined;
+  const roleNames = getRoleNames(entry.death.killerRoleIds ?? [], script?.roles ?? []);
+
+  if (!killerName && roleNames.length === 0) {
+    return undefined;
+  }
+
+  return `Killed by ${killerName ?? 'unknown'}${roleNames.length ? ` as ${roleNames.join(' / ')}` : ''}`;
 }
