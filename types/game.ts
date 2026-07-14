@@ -3,10 +3,38 @@ export type PlayerPosition = {
   y: number;
 };
 
+export type Role = {
+  id: string;
+  name: string;
+  team?: string;
+  edition?: string;
+  imageUrl?: string;
+};
+
+export type StoredScript = {
+  id: string;
+  remoteId?: number;
+  name: string;
+  version: string;
+  scriptType?: string;
+  author?: string;
+  roles: Role[];
+  updatedAt: string;
+};
+
+export type PlayerRoleAssignment = {
+  day: number;
+  kind: 'claim' | 'confirm';
+  roleIds: string[];
+  updatedAt: string;
+};
+
 export type PlayerDeath = {
   day: number;
   kind: 'execution' | 'night';
   updatedAt: string;
+  killerPlayerId?: string;
+  killerRoleIds?: string[];
 };
 
 export type PlayerRevive = {
@@ -20,6 +48,7 @@ export type Player = {
   name: string;
   seat: number;
   death?: PlayerDeath;
+  roleAssignments?: PlayerRoleAssignment[];
   revive?: PlayerRevive;
   position?: PlayerPosition;
 };
@@ -49,6 +78,7 @@ export type Game = {
   tokenSize?: number;
   players: Player[];
   conversations: Conversation[];
+  script?: StoredScript;
   playerDayNotes?: PlayerDayNote[];
 };
 
