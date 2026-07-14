@@ -1,6 +1,6 @@
 import { FlameKindling, Skull, Vote } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { ImageBackground, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
@@ -25,7 +25,10 @@ type PlayerTokenProps = {
   isSelected?: boolean;
   player: Player;
   position: PlayerPosition;
+  roleIconUrl?: string;
+  roleNames?: string[];
   rearrangeMode?: boolean;
+  showRoleDetails?: boolean;
   tokenSize: number;
   onMove: (playerId: string, position: PlayerPosition) => void;
   onSelect?: (playerId: string) => void;
@@ -43,7 +46,10 @@ export function PlayerToken({
   onSelect,
   player,
   position,
+  roleIconUrl,
+  roleNames = [],
   rearrangeMode = false,
+  showRoleDetails = false,
   tokenSize: tokenSizeProp,
 }: PlayerTokenProps) {
   const [isDragReady, setIsDragReady] = useState(false);
@@ -136,10 +142,32 @@ export function PlayerToken({
           animatedStyle,
         ]}
       >
-        <PlayerTokenName
-          color={isDragReady ? '#082f49' : player.death ? '#cbd5e1' : '#0b1120'}
-          name={player.name}
-        />
+        {roleIconUrl ? (
+          <ImageBackground
+            source={{ uri: roleIconUrl }}
+            style={[StyleSheet.absoluteFill, { borderRadius: tokenSize / 2 }]}
+            imageStyle={{ borderRadius: tokenSize / 2, opacity: 0.48 }}
+          />
+        ) : null}
+        <View
+          style={{
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            zIndex: 1,
+          }}
+        >
+          <PlayerTokenName
+            color={isDragReady ? '#082f49' : player.death ? '#cbd5e1' : '#0b1120'}
+            name={player.name}
+          />
+          {showRoleDetails && roleNames.length > 0 ? (
+            <PlayerTokenRoles
+              color={isDragReady ? '#082f49' : player.death ? '#cbd5e1' : '#0b1120'}
+              roleNames={roleNames}
+            />
+          ) : null}
+        </View>
         {player.death ? (
           <View
             style={{
@@ -223,6 +251,28 @@ function PlayerTokenName({ color, name }: PlayerTokenNameProps) {
       }}
     >
       {name}
+    </Text>
+  );
+}
+
+function PlayerTokenRoles({ color, roleNames }: { color: string; roleNames: string[] }) {
+  return (
+    <Text
+      adjustsFontSizeToFit
+      ellipsizeMode="tail"
+      minimumFontScale={0.6}
+      numberOfLines={1}
+      selectable
+      style={{
+        color,
+        fontSize: 8.5,
+        fontWeight: '900',
+        lineHeight: 11,
+        maxWidth: '100%',
+        textAlign: 'center',
+      }}
+    >
+      {roleNames.join(' / ')}
     </Text>
   );
 }

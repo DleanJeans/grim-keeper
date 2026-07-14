@@ -48,6 +48,7 @@ export type GameRouteContextValue = {
   highlightedPlayerIds: string[];
   roleAssignmentKind: PlayerRoleAssignment['kind'] | null;
   roleAssignmentRoleIds: string[];
+  showRoles: boolean;
 
   // Handlers
   setActiveTab: (tab: GameTab) => void;
@@ -71,6 +72,7 @@ export type GameRouteContextValue = {
   handleCancelRoleAssignment: () => void;
   handleToggleRoleAssignment: (roleId: string) => void;
   handleSaveRoleAssignment: () => void;
+  setShowRoles: (show: boolean) => void;
   handleSetFocusedPlayerDeath: (kind: 'execution' | 'night') => void;
   handleReviveFocusedPlayer: () => void;
   handleUndoFocusedPlayerDeath: () => void;

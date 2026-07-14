@@ -57,6 +57,23 @@ export function getRoleNames(roleIds: string[], roles: Role[]) {
   return roleIds.map((roleId) => roleById.get(roleId)?.name ?? formatRoleId(roleId));
 }
 
+export function getRolesForDay(
+  assignments: PlayerRoleAssignment[] | undefined,
+  day: number,
+  roles: Role[],
+) {
+  const assignment = getRoleAssignmentForDay(assignments, day);
+  if (!assignment) {
+    return [];
+  }
+
+  const rolesById = new Map(roles.map((role) => [role.id, role]));
+  return assignment.roleIds.flatMap((roleId) => {
+    const role = rolesById.get(roleId);
+    return role ? [role] : [];
+  });
+}
+
 export function mergeScriptRoles(content: unknown, catalog: Role[]): Role[] {
   if (!Array.isArray(content)) {
     return [];

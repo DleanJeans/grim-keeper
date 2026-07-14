@@ -66,6 +66,7 @@ export default function GameRoute() {
     null,
   );
   const [roleAssignmentRoleIds, setRoleAssignmentRoleIds] = useState<string[]>([]);
+  const [showRoles, setShowRoles] = useState(false);
   const game = getGameById(games, id);
   const mapWidth = Math.max(1, width - 40);
   const mapHeight = Math.max(mapWidth, Math.floor(height * 0.52));
@@ -479,6 +480,7 @@ export default function GameRoute() {
     highlightedPlayerIds,
     roleAssignmentKind,
     roleAssignmentRoleIds,
+    showRoles,
     setActiveTab,
     setAddPlayerVisible,
     setNoteDraft,
@@ -500,6 +502,7 @@ export default function GameRoute() {
     handleCancelRoleAssignment,
     handleToggleRoleAssignment,
     handleSaveRoleAssignment,
+    setShowRoles,
     handleSetFocusedPlayerDeath,
     handleReviveFocusedPlayer,
     handleUndoFocusedPlayerDeath,

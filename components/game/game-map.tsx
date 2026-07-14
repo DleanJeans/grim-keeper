@@ -6,10 +6,11 @@ import {
 } from '@/components/game/connection-curve';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { PlayerToken } from '@/components/game/player-token';
-import type { Player, PlayerPosition } from '@/types/game';
+import type { Player, PlayerPosition, Role } from '@/types/game';
 import { buildConversationGroupRepeats, getConversationGroupKey } from '@/utils/conversation-utils';
 import { getPlayerMapPosition } from '@/utils/layout-utils';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
+import { getRoleIconUrl, getRolesForDay } from '@/utils/role-utils';
 
 export function GameMap() {
   const {
@@ -26,9 +27,11 @@ export function GameMap() {
     players,
     isRearrangeMode,
     activeTokenSize,
+    game,
     highlightedPlayerIds,
     handleMovePlayer,
     handleSelectPlayer,
+    showRoles,
   } = useGameRouteContext();
 
   const positions = new Map(
@@ -149,28 +152,90 @@ export function GameMap() {
       </Svg>
 
       {players.map((player) => (
-        <PlayerToken
+        <PlayerTokenForMap
           key={player.id}
+          activeDay={activeDay}
+          activeTokenSize={activeTokenSize}
           disabled={disabledPlayerIdSet.has(player.id)}
+          gameRoles={game.script?.roles ?? []}
+          handleMovePlayer={handleMovePlayer}
+          handleSelectPlayer={handleSelectPlayer}
+          highlightedPlayerIds={highlightedPlayerIds}
           interactionMode={interactionMode}
-          isInitiator={highlightedPlayerIds[0] === player.id}
           isNominated={nominatedIds.has(player.id)}
           isNominator={nominatorIds.has(player.id)}
-          isSelected={highlightedPlayerIds.includes(player.id)}
+          isRearrangeMode={isRearrangeMode}
           mapHeight={mapHeight}
           mapWidth={mapWidth}
-          onMove={handleMovePlayer}
-          onSelect={handleSelectPlayer}
           player={stripFutureAndRevivedDeath(player, activeDay)}
-          rearrangeMode={isRearrangeMode}
-          tokenSize={activeTokenSize}
           position={
             positions.get(player.id) ??
             getPlayerMapPosition(player, players, mapWidth, mapHeight, activeTokenSize)
           }
+          showRoles={showRoles}
         />
       ))}
     </View>
+  );
+}
+
+function PlayerTokenForMap({
+  activeDay,
+  activeTokenSize,
+  disabled,
+  gameRoles,
+  handleMovePlayer,
+  handleSelectPlayer,
+  highlightedPlayerIds,
+  interactionMode,
+  isNominated,
+  isNominator,
+  isRearrangeMode,
+  mapHeight,
+  mapWidth,
+  player,
+  position,
+  showRoles,
+}: {
+  activeDay: number;
+  activeTokenSize: number;
+  disabled: boolean;
+  gameRoles: Role[];
+  handleMovePlayer: (playerId: string, position: PlayerPosition) => void;
+  handleSelectPlayer: (playerId: string) => void;
+  highlightedPlayerIds: string[];
+  interactionMode: boolean;
+  isNominated: boolean;
+  isNominator: boolean;
+  isRearrangeMode: boolean;
+  mapHeight: number;
+  mapWidth: number;
+  player: Player;
+  position: PlayerPosition;
+  showRoles: boolean;
+}) {
+  const roles = getRolesForDay(player.roleAssignments, activeDay, gameRoles);
+
+  return (
+    <PlayerToken
+      disabled={disabled}
+      interactionMode={interactionMode}
+      isInitiator={highlightedPlayerIds[0] === player.id}
+      isNominated={isNominated}
+      isNominator={isNominator}
+      isSelected={highlightedPlayerIds.includes(player.id)}
+      mapHeight={mapHeight}
+      mapWidth={mapWidth}
+      onMove={handleMovePlayer}
+      onSelect={handleSelectPlayer}
+      player={player}
+      position={position}
+      rearrangeMode={isRearrangeMode}
+      roleIconUrl={roles[0] ? getRoleIconUrl(roles[0]) : undefined}
+      roleNames={roles.map((role) => role.name)}
+      showRoleDetails={showRoles || highlightedPlayerIds.includes(player.id)}
+      tokenSize={activeTokenSize}
+    />
   );
 }
 

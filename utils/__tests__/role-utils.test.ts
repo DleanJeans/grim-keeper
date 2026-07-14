@@ -2,6 +2,7 @@ import {
   getRoleAssignmentForDay,
   getRoleIconUrl,
   getRoleNames,
+  getRolesForDay,
   mergeScriptRoles,
 } from '@/utils/role-utils';
 
@@ -64,5 +65,15 @@ describe('role utilities', () => {
 
   it('formats unknown role ids for display', () => {
     expect(getRoleNames(['custom_role'], [])).toEqual(['Custom Role']);
+  });
+
+  it('returns the visible role metadata for a player on a day', () => {
+    expect(
+      getRolesForDay(
+        [{ day: 2, kind: 'confirm', roleIds: ['imp'], updatedAt: '2026-07-14T00:00:00.000Z' }],
+        2,
+        [{ id: 'imp', name: 'Imp', team: 'demon', edition: 'tb' }],
+      ),
+    ).toEqual([{ id: 'imp', name: 'Imp', team: 'demon', edition: 'tb' }]);
   });
 });
