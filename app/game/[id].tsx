@@ -1,10 +1,8 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, useWindowDimensions, View } from 'react-native';
-import { AddPlayerModal } from '@/components/game/add-player-modal';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { FocusedDeathActionPanel } from '@/components/game/death-actions';
 import { DeathLog } from '@/components/game/death-log';
-import { DeleteFocusedPlayerButton } from '@/components/game/delete-focused-player-button';
 import { GameMap } from '@/components/game/game-map';
 import {
   type GameRouteContextValue,
@@ -14,7 +12,6 @@ import {
 } from '@/components/game/game-route-context';
 import { GameTabs } from '@/components/game/game-tabs';
 import { HeaderLeft } from '@/components/game/header-left';
-import { HeaderRight } from '@/components/game/header-right';
 import { HeaderTitle } from '@/components/game/header-title';
 import { InteractionsTab } from '@/components/game/interactions-tab';
 import { MapModeActions } from '@/components/game/map-mode-actions';
@@ -37,8 +34,6 @@ export default function GameRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { height, width } = useWindowDimensions();
   const games = useGameStore((state) => state.games);
-  const addPlayer = useGameStore((state) => state.addPlayer);
-  const deletePlayer = useGameStore((state) => state.deletePlayer);
   const setPlayerDeath = useGameStore((state) => state.setPlayerDeath);
   const setPlayerRevive = useGameStore((state) => state.setPlayerRevive);
   const setPlayerRoleAssignment = useGameStore((state) => state.setPlayerRoleAssignment);
@@ -51,7 +46,6 @@ export default function GameRoute() {
   const setActiveDay = useGameStore((state) => state.setActiveDay);
   const setTokenSize = useGameStore((state) => state.setTokenSize);
   const [activeTab, setActiveTab] = useState<GameTab>('interactions');
-  const [addPlayerVisible, setAddPlayerVisible] = useState(false);
   const [trackingMode, setTrackingMode] = useState<TrackingMode | null>(null);
   const [votingNominationId, setVotingNominationId] = useState<string | null>(null);
   const [votingReturnTab, setVotingReturnTab] = useState<GameTab | null>(null);
@@ -161,10 +155,6 @@ export default function GameRoute() {
   function enterRearrangeMode() {
     setIsRotatingMode(false);
     setIsRearrangeMode(true);
-  }
-
-  function handleAddPlayer(name: string) {
-    addPlayer(activeGame.id, name);
   }
 
   function handleDeleteConversation(conversationId: string) {
@@ -425,28 +415,6 @@ export default function GameRoute() {
     setNoteEditingDay(null);
   }
 
-  function confirmDeletePlayer() {
-    if (!focusedPlayer || focusedPlayer.isAppUser) {
-      return;
-    }
-
-    Alert.alert(
-      'Delete player?',
-      `Delete ${focusedPlayer.name} and remove their related interactions, nominations, and votes?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            deletePlayer(activeGame.id, focusedPlayer.id);
-            handleCancelTracking();
-          },
-        },
-      ],
-    );
-  }
-
   const contextValue: GameRouteContextValue = {
     game: activeGame,
     players: activeGame.players,
@@ -464,7 +432,6 @@ export default function GameRoute() {
     mapHeight,
     nominationCurves,
     activeTab,
-    addPlayerVisible,
     trackingMode,
     votingNominationId,
     votingReturnTab,
@@ -483,7 +450,6 @@ export default function GameRoute() {
     roleAssignmentRoleIds,
     showRoles,
     setActiveTab,
-    setAddPlayerVisible,
     setNoteDraft,
     exitMapModes,
     exitRotateMode,
@@ -509,10 +475,8 @@ export default function GameRoute() {
     handleUndoFocusedPlayerDeath,
     handleShowPlayerNoteForDay,
     handleSavePlayerNote,
-    confirmDeletePlayer,
     handleDeleteConversation,
     handleDeleteNomination,
-    handleAddPlayer,
     enterRearrangeMode,
     enterRotateMode,
   };
@@ -524,7 +488,11 @@ export default function GameRoute() {
           headerBackVisible: false,
           title: `Day ${activeGame.activeDay}/${lastDayWithData}`,
           headerLeft: () => (
-            <HeaderLeft alivePlayerCount={alivePlayerCount} deadPlayerCount={deadPlayerCount} />
+            <HeaderLeft
+              alivePlayerCount={alivePlayerCount}
+              deadPlayerCount={deadPlayerCount}
+              onEdit={() => router.push({ pathname: '/create', params: { gameId: activeGame.id } })}
+            />
           ),
           headerTitle: () => (
             <HeaderTitle
@@ -533,27 +501,10 @@ export default function GameRoute() {
               onChangeDay={handleChangeDay}
             />
           ),
-          headerRight: () =>
-            focusedPlayer && !focusedPlayer.isAppUser ? (
-              <DeleteFocusedPlayerButton
-                isAppUser={false}
-                onConfirm={confirmDeletePlayer}
-                playerName={focusedPlayer.name}
-              />
-            ) : (
-              <HeaderRight onAddPlayer={() => setAddPlayerVisible(true)} />
-            ),
         }}
       />
 
       <GameRouteProvider value={contextValue}>
-        <AddPlayerModal
-          players={activeGame.players}
-          visible={addPlayerVisible}
-          onAddPlayer={handleAddPlayer}
-          onClose={() => setAddPlayerVisible(false)}
-        />
-
         <ScrollView
           contentInsetAdjustmentBehavior="automatic"
           style={{ backgroundColor: '#0b1120', flex: 1 }}

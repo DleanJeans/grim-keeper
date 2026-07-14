@@ -34,7 +34,6 @@ export type GameRouteContextValue = {
 
   // Transient state
   activeTab: GameTab;
-  addPlayerVisible: boolean;
   trackingMode: TrackingMode | null;
   votingNominationId: string | null;
   votingReturnTab: GameTab | null;
@@ -53,7 +52,6 @@ export type GameRouteContextValue = {
 
   // Handlers
   setActiveTab: (tab: GameTab) => void;
-  setAddPlayerVisible: (visible: boolean) => void;
   setNoteDraft: (text: string) => void;
   exitMapModes: () => void;
   exitRotateMode: () => void;
@@ -81,10 +79,8 @@ export type GameRouteContextValue = {
   handleSavePlayerNote: () => void;
   noteEditingDay: number | null;
   noteEditingPlayerId: string | null;
-  confirmDeletePlayer: () => void;
   handleDeleteConversation: (conversationId: string) => void;
   handleDeleteNomination: (nominationId: string) => void;
-  handleAddPlayer: (name: string) => void;
   enterRearrangeMode: () => void;
   enterRotateMode: () => void;
 };
