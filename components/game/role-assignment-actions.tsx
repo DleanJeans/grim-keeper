@@ -6,6 +6,7 @@ import { RolePicker } from '@/components/game/role-picker';
 import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
+import { isTravelerRole } from '@/utils/role-utils';
 
 export function RoleAssignmentActions() {
   const {
@@ -25,6 +26,10 @@ export function RoleAssignmentActions() {
   }
 
   const actionLabel = roleAssignmentKind === 'confirm' ? 'Confirm roles' : 'Claim roles';
+  const selectableRoles =
+    roleAssignmentKind === 'claim'
+      ? game.script.roles.filter((role) => !isTravelerRole(role))
+      : game.script.roles;
 
   return (
     <View style={{ gap: 10 }}>
@@ -64,7 +69,7 @@ export function RoleAssignmentActions() {
           </View>
           <RolePicker
             onToggleRole={handleToggleRoleAssignment}
-            roles={game.script.roles}
+            roles={selectableRoles}
             sectioned
             selectedRoleIds={roleAssignmentRoleIds}
           />

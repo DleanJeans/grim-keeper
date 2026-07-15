@@ -344,8 +344,16 @@ export default function GameRoute() {
       focusedPlayer.roleAssignments,
       activeGame.activeDay,
     );
+    const currentRoleIds = currentAssignment?.roleIds ?? [];
+    const travelerRoleIds = new Set(
+      activeGame.script.roles.filter(isTravelerRole).map((role) => role.id),
+    );
     setRoleAssignmentKind(kind);
-    setRoleAssignmentRoleIds(currentAssignment?.roleIds ?? []);
+    setRoleAssignmentRoleIds(
+      kind === 'claim'
+        ? currentRoleIds.filter((roleId) => !travelerRoleIds.has(roleId))
+        : currentRoleIds,
+    );
   }
 
   function handleCancelRoleAssignment() {

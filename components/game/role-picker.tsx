@@ -76,7 +76,7 @@ function getRoleSections(roles: Role[]) {
   const knownTeams = new Set(['townsfolk', 'outsider', 'minion', 'demon']);
   const otherRoles = roles.filter((role) => !knownTeams.has(role.team?.toLocaleLowerCase() ?? ''));
 
-  return otherRoles.length > 0 ? [...sections, { label: 'Other', roles: otherRoles }] : sections;
+  return otherRoles.length > 0 ? [...sections, { label: 'Traveler', roles: otherRoles }] : sections;
 }
 
 function RoleChoiceButton({
