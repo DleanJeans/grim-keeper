@@ -47,13 +47,14 @@ export default function CreateRoute() {
     : draftPlayers;
   const fixedPlayerName =
     editingGame?.players.find((player) => player.isAppUser)?.name ?? appUserName;
+  const legacyScript = editingGame?.script;
   const availableScripts = useMemo(() => {
-    if (!editingGame?.script || scripts.some((script) => script.id === editingGame.script.id)) {
+    if (!legacyScript || scripts.some((script) => script.id === legacyScript.id)) {
       return scripts;
     }
 
-    return [editingGame.script, ...scripts];
-  }, [editingGame?.script, scripts]);
+    return [legacyScript, ...scripts];
+  }, [legacyScript, scripts]);
   const selectedScriptId = draftSelectedScriptId;
   const selectedScript = availableScripts.find((script) => script.id === selectedScriptId);
   const friends = useMemo(
