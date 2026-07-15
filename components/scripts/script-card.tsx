@@ -1,4 +1,4 @@
-import { Check, ChevronDown, ChevronUp, Trash2 } from 'lucide-react-native';
+import { Check, ChevronDown, ChevronUp, Eye, Trash2 } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
 import { Text } from '@/components/text';
@@ -15,6 +15,7 @@ type ScriptCardProps = {
   onDelete: () => void;
   onEdit: () => void;
   onSelect: () => void;
+  onView: () => void;
   onUpdate: (script: StoredScript) => void;
 };
 
@@ -24,6 +25,7 @@ export function ScriptCard({
   onDelete,
   onEdit,
   onSelect,
+  onView,
   onUpdate,
   roleCatalog,
   script,
@@ -57,6 +59,7 @@ export function ScriptCard({
         {canSelect ? (
           <ScriptCardButton icon={Check} label="Select" onPress={onSelect} variant="primary" />
         ) : null}
+        <ScriptCardButton icon={Eye} label="View" onPress={onView} />
         <ScriptCardButton
           icon={editing ? ChevronUp : ChevronDown}
           label={editing ? 'Close' : 'Customize'}

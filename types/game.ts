@@ -4,6 +4,7 @@ export type PlayerPosition = {
 };
 
 export type Role = {
+  ability?: string;
   id: string;
   name: string;
   team?: string;

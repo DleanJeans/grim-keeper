@@ -36,11 +36,13 @@ export default function ScriptsRoute() {
   const [catalogError, setCatalogError] = useState('');
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [editingScriptId, setEditingScriptId] = useState<string | null>(null);
+  const shouldRefreshRoleCatalog =
+    roleCatalog.length === 0 || !roleCatalog.some((role) => role.ability);
 
   useEffect(() => {
     let active = true;
 
-    if (roleCatalog.length === 0) {
+    if (shouldRefreshRoleCatalog) {
       fetchRoleCatalog()
         .then((catalog) => {
           if (active) {
@@ -59,7 +61,7 @@ export default function ScriptsRoute() {
     return () => {
       active = false;
     };
-  }, [roleCatalog.length, setRoleCatalog]);
+  }, [setRoleCatalog, shouldRefreshRoleCatalog]);
 
   useEffect(() => {
     let active = true;
@@ -105,7 +107,7 @@ export default function ScriptsRoute() {
 
     try {
       let catalog = roleCatalog;
-      if (catalog.length === 0) {
+      if (catalog.length === 0 || !catalog.some((role) => role.ability)) {
         catalog = await fetchRoleCatalog();
         setRoleCatalog(catalog);
       }
@@ -136,6 +138,10 @@ export default function ScriptsRoute() {
       pathname: '/create',
       params: { ...(gameId ? { gameId } : {}), scriptId: script.id },
     });
+  }
+
+  function handleViewScript(scriptId: string) {
+    router.push({ pathname: '/scripts/[id]', params: { id: scriptId } });
   }
 
   function confirmDeleteScript(script: StoredScript) {
@@ -181,6 +187,7 @@ export default function ScriptsRoute() {
           onEdit={(scriptId) =>
             setEditingScriptId((currentId) => (currentId === scriptId ? null : scriptId))
           }
+          onView={handleViewScript}
           onSelect={handleSelectScript}
           onUpdate={updateScript}
         />
@@ -270,6 +277,7 @@ function SavedScriptsSection({
   onDelete,
   onEdit,
   onSelect,
+  onView,
   onUpdate,
   roleCatalog,
   scripts,
@@ -279,6 +287,7 @@ function SavedScriptsSection({
   onDelete: (script: StoredScript) => void;
   onEdit: (scriptId: string) => void;
   onSelect: (script: StoredScript) => void;
+  onView: (scriptId: string) => void;
   onUpdate: (script: StoredScript) => void;
   roleCatalog: StoredScript['roles'];
   scripts: StoredScript[];
@@ -311,6 +320,7 @@ function SavedScriptsSection({
             onDelete={() => onDelete(script)}
             onEdit={() => onEdit(script.id)}
             onSelect={() => onSelect(script)}
+            onView={() => onView(script.id)}
             onUpdate={onUpdate}
             roleCatalog={roleCatalog}
             script={script}

@@ -200,6 +200,7 @@ function normalizeRole(item: unknown, catalogById: Map<string, Role>): Role | un
 
   const catalogRole = catalogById.get(id);
   const role: Role = {
+    ability: (typeof candidate.ability === 'string' && candidate.ability) || catalogRole?.ability,
     id,
     name:
       (typeof candidate.name === 'string' && candidate.name) ||
