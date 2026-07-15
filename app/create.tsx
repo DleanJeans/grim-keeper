@@ -6,7 +6,7 @@ import { Keyboard, Pressable, View } from 'react-native';
 import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
 
 import { FriendSuggestions } from '@/components/friends/friend-suggestions';
-import { RolePicker } from '@/components/game/role-picker';
+import { TravelerRolePicker } from '@/components/game/traveler-role-picker';
 import { GameScriptPicker } from '@/components/scripts/game-script-picker';
 import { Text, TextInput } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
@@ -246,29 +246,12 @@ export default function CreateRoute() {
             selectedScriptId={selectedScriptId}
           />
 
-          <View style={{ gap: 8 }}>
-            <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '700' }}>
-              Traveler characters
-            </Text>
-            {selectedScript ? (
-              travelerRoles.length > 0 ? (
-                <RolePicker
-                  description="Add traveler characters to this game's script."
-                  onToggleRole={handleToggleTravelerRole}
-                  roles={travelerRoles}
-                  selectedRoleIds={selectedTravelerRoleIds}
-                />
-              ) : (
-                <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
-                  Traveler characters are unavailable offline.
-                </Text>
-              )
-            ) : (
-              <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
-                Select a game script to add traveler characters.
-              </Text>
-            )}
-          </View>
+          <TravelerRolePicker
+            onToggleRole={handleToggleTravelerRole}
+            roles={travelerRoles}
+            selectedRoleIds={selectedTravelerRoleIds}
+            selectedScriptName={selectedScript?.name}
+          />
 
           <View style={{ gap: 8 }}>
             <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '700' }}>

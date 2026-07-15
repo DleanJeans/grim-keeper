@@ -27,6 +27,11 @@ export function GameScriptPicker({
     setPickerOpen(false);
   }
 
+  function handleBrowse() {
+    setPickerOpen(false);
+    onBrowse();
+  }
+
   return (
     <View style={{ gap: 8 }}>
       <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '700' }}>
@@ -59,26 +64,6 @@ export function GameScriptPicker({
             </Text>
           </View>
           <ChevronDown color={colors.textMuted} size={18} strokeWidth={2.6} />
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          onPress={onBrowse}
-          style={({ pressed }) => ({
-            alignItems: 'center',
-            backgroundColor: pressed ? colors.surfacePressed : colors.surfaceRaised,
-            borderColor: colors.borderStrong,
-            borderRadius: 8,
-            borderWidth: 1,
-            flexDirection: 'row',
-            gap: 8,
-            justifyContent: 'center',
-            paddingHorizontal: 12,
-            paddingVertical: 12,
-          })}
-        >
-          <BookOpen color={colors.text} size={17} strokeWidth={2.5} />
-          <Text style={{ color: colors.text, fontWeight: '800' }}>Select or download a script</Text>
-          <ChevronRight color={colors.textMuted} size={16} strokeWidth={2.5} />
         </Pressable>
       </View>
       <Modal
@@ -134,7 +119,7 @@ export function GameScriptPicker({
               contentInsetAdjustmentBehavior="automatic"
               nestedScrollEnabled
               showsVerticalScrollIndicator
-              style={{ flexShrink: 1 }}
+              style={{ flexGrow: 0, flexShrink: 1 }}
             >
               <ScriptOption
                 description="Assign roles later from the game screen"
@@ -152,6 +137,28 @@ export function GameScriptPicker({
                 />
               ))}
             </ScrollView>
+            <Pressable
+              accessibilityRole="button"
+              onPress={handleBrowse}
+              style={({ pressed }) => ({
+                alignItems: 'center',
+                backgroundColor: pressed ? colors.surfacePressed : colors.surfaceRaised,
+                borderColor: colors.borderStrong,
+                borderRadius: 8,
+                borderWidth: 1,
+                flexDirection: 'row',
+                gap: 8,
+                justifyContent: 'center',
+                paddingHorizontal: 12,
+                paddingVertical: 12,
+              })}
+            >
+              <BookOpen color={colors.text} size={17} strokeWidth={2.5} />
+              <Text style={{ color: colors.text, fontWeight: '800' }}>
+                Select or download a script
+              </Text>
+              <ChevronRight color={colors.textMuted} size={16} strokeWidth={2.5} />
+            </Pressable>
           </View>
         </View>
       </Modal>
