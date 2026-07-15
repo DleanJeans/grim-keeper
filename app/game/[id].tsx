@@ -487,7 +487,8 @@ export default function GameRoute() {
         options={{
           headerBackVisible: false,
           title: `Day ${activeGame.activeDay}/${lastDayWithData}`,
-          headerLeft: () => (
+          headerLeft: () => null,
+          headerRight: () => (
             <HeaderLeft
               alivePlayerCount={alivePlayerCount}
               deadPlayerCount={deadPlayerCount}
