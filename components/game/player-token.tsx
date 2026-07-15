@@ -17,7 +17,32 @@ import type { Player, PlayerPosition, Role } from '@/types/game';
 import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
 import { getRoleIconUrl, isTravelerRole } from '@/utils/role-utils';
 
-const playerTokenBadgeSize = 18;
+const PLAYER_TOKEN_BADGE_SIZE = 18;
+const playerTokenColors = {
+  backgroundDefault: '#f8fafc',
+  backgroundDeath: '#1f2937',
+  backgroundDragReady: '#38bdf8',
+  backgroundInitiator: '#fde68a',
+  backgroundSelected: '#bbf7d0',
+  badgeConfirmedBackground: '#166534',
+  badgeConfirmedIcon: '#dcfce7',
+  badgeDeathExecutionBackground: '#7f1d1d',
+  badgeDeathNightBackground: '#1e3a8a',
+  badgeNominatedBackground: '#713f12',
+  badgeNominatedIcon: '#fef3c7',
+  badgeNominatorBackground: '#312e81',
+  badgeNominatorIcon: '#ddd6fe',
+  borderDefault: '#94a3b8',
+  borderDeath: '#64748b',
+  borderDragReady: '#e0f2fe',
+  borderInitiator: '#f59e0b',
+  borderSelected: '#22c55e',
+  deathExecutionIcon: '#fecaca',
+  deathNightIcon: '#bfdbfe',
+  textDefault: '#0b1120',
+  textDeath: '#cbd5e1',
+  textDragReady: '#082f49',
+} as const;
 
 type PlayerTokenProps = {
   mapHeight: number;
@@ -68,7 +93,10 @@ export function PlayerToken({
   const visibleRoles = showRoleDetails ? displayedRoles : displayedRoles.filter(isTravelerRole);
   const backgroundRole = visibleRoles.find(isTravelerRole) ?? visibleRoles[0];
   const DeathIcon = player.death?.kind === 'execution' ? FlameKindling : Skull;
-  const deathIconColor = player.death?.kind === 'execution' ? '#fecaca' : '#bfdbfe';
+  const deathIconColor =
+    player.death?.kind === 'execution'
+      ? playerTokenColors.deathExecutionIcon
+      : playerTokenColors.deathNightIcon;
   const x = useSharedValue(position.x);
   const y = useSharedValue(position.y);
   const startX = useSharedValue(position.x);
@@ -125,23 +153,23 @@ export function PlayerToken({
           {
             alignItems: 'center',
             backgroundColor: isDragReady
-              ? '#38bdf8'
+              ? playerTokenColors.backgroundDragReady
               : player.death
-                ? '#1f2937'
+                ? playerTokenColors.backgroundDeath
                 : isSelected
-                  ? '#bbf7d0'
+                  ? playerTokenColors.backgroundSelected
                   : isInitiator
-                    ? '#fde68a'
-                    : '#f8fafc',
+                    ? playerTokenColors.backgroundInitiator
+                    : playerTokenColors.backgroundDefault,
             borderColor: isDragReady
-              ? '#e0f2fe'
+              ? playerTokenColors.borderDragReady
               : isSelected
-                ? '#22c55e'
+                ? playerTokenColors.borderSelected
                 : player.death
-                  ? '#64748b'
+                  ? playerTokenColors.borderDeath
                   : isInitiator
-                    ? '#f59e0b'
-                    : '#94a3b8',
+                    ? playerTokenColors.borderInitiator
+                    : playerTokenColors.borderDefault,
             borderRadius: tokenSize / 2,
             borderWidth: isSelected ? 3 : 2,
             opacity: disabled ? 0.42 : player.death && !isDragReady ? 0.72 : 1,
@@ -171,14 +199,24 @@ export function PlayerToken({
           }}
         >
           <PlayerTokenContent
-            color={isDragReady ? '#082f49' : player.death ? '#cbd5e1' : '#0b1120'}
+            color={
+              isDragReady
+                ? playerTokenColors.textDragReady
+                : player.death
+                  ? playerTokenColors.textDeath
+                  : playerTokenColors.textDefault
+            }
             name={player.name}
             roles={visibleRoles}
           />
         </View>
         {player.death ? (
           <PlayerTokenEdgeBadge
-            backgroundColor={player.death.kind === 'execution' ? '#7f1d1d' : '#1e3a8a'}
+            backgroundColor={
+              player.death.kind === 'execution'
+                ? playerTokenColors.badgeDeathExecutionBackground
+                : playerTokenColors.badgeDeathNightBackground
+            }
             position={{ bottom: -2, right: -2 }}
           >
             <DeathIcon color={deathIconColor} size={13} strokeWidth={2} />
@@ -186,26 +224,26 @@ export function PlayerToken({
         ) : null}
         {isNominator ? (
           <PlayerTokenEdgeBadge
-            backgroundColor="#312e81"
+            backgroundColor={playerTokenColors.badgeNominatorBackground}
             position={{ left: -2, top: -2 }}
           >
-            <NomIcon color="#ddd6fe" size={12} strokeWidth={2.3} />
+            <NomIcon color={playerTokenColors.badgeNominatorIcon} size={12} strokeWidth={2.3} />
           </PlayerTokenEdgeBadge>
         ) : null}
         {isNominated ? (
           <PlayerTokenEdgeBadge
-            backgroundColor="#713f12"
+            backgroundColor={playerTokenColors.badgeNominatedBackground}
             position={{ right: -2, top: -2 }}
           >
-            <Vote color="#fef3c7" size={12} strokeWidth={2.3} />
+            <Vote color={playerTokenColors.badgeNominatedIcon} size={12} strokeWidth={2.3} />
           </PlayerTokenEdgeBadge>
         ) : null}
         {rolesConfirmed && visibleRoles.length > 0 && !visibleRoles.some(isTravelerRole) ? (
           <PlayerTokenEdgeBadge
-            backgroundColor="#166534"
-            position={{ right: -10, top: tokenSize / 2 - playerTokenBadgeSize / 2 }}
+            backgroundColor={playerTokenColors.badgeConfirmedBackground}
+            position={{ right: -10, top: tokenSize / 2 - PLAYER_TOKEN_BADGE_SIZE / 2 }}
           >
-            <CircleCheck color="#dcfce7" size={12} strokeWidth={2.8} />
+            <CircleCheck color={playerTokenColors.badgeConfirmedIcon} size={12} strokeWidth={2.8} />
           </PlayerTokenEdgeBadge>
         ) : null}
       </Animated.View>
@@ -296,11 +334,11 @@ function PlayerTokenEdgeBadge({
         {
           alignItems: 'center',
           backgroundColor,
-          borderRadius: playerTokenBadgeSize / 2,
-          height: playerTokenBadgeSize,
+          borderRadius: PLAYER_TOKEN_BADGE_SIZE / 2,
+          height: PLAYER_TOKEN_BADGE_SIZE,
           justifyContent: 'center',
           position: 'absolute',
-          width: playerTokenBadgeSize,
+          width: PLAYER_TOKEN_BADGE_SIZE,
         },
         position,
       ]}
