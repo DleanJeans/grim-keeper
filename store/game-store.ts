@@ -21,6 +21,7 @@ import { getTokenSize } from '@/utils/layout-utils';
 
 type CreateGameInput = {
   playerNames: string[];
+  travelerNames?: string[];
   script?: StoredScript;
 };
 
@@ -37,7 +38,7 @@ type GameState = {
   deleteScript: (scriptId: string) => void;
   setGameScript: (gameId: string, script?: StoredScript) => void;
   setRoleCatalog: (roles: Role[]) => void;
-  addPlayer: (gameId: string, name: string) => void;
+  addPlayer: (gameId: string, name: string, isTraveler?: boolean) => void;
   deleteGame: (gameId: string) => void;
   deletePlayer: (gameId: string, playerId: string) => void;
   setPlayerDeath: (gameId: string, playerId: string, death: PlayerDeath | null) => void;
@@ -104,19 +105,25 @@ export const useGameStore = create<GameState>()(
           };
         });
       },
-      createGame: ({ playerNames, script }) => {
+      createGame: ({ playerNames, script, travelerNames = [] }) => {
         const now = new Date().toISOString();
         const appUserName = normalizePlayerName(get().appUserName) || 'You';
         const appUserKey = appUserName.toLocaleLowerCase();
         const otherPlayerNames = playerNames.filter(
           (name) => normalizePlayerName(name).toLocaleLowerCase() !== appUserKey,
         );
-        const players = [appUserName, ...otherPlayerNames].map<Player>((name, index) => ({
-          id: createId('player'),
-          isAppUser: index === 0,
-          name: normalizePlayerName(name),
-          seat: index,
-        }));
+        const otherTravelerNames = travelerNames.filter(
+          (name) => normalizePlayerName(name).toLocaleLowerCase() !== appUserKey,
+        );
+        const players = [appUserName, ...otherPlayerNames, ...otherTravelerNames].map<Player>(
+          (name, index) => ({
+            id: createId('player'),
+            isAppUser: index === 0,
+            isTraveler: index > otherPlayerNames.length ? true : undefined,
+            name: normalizePlayerName(name),
+            seat: index,
+          }),
+        );
         const game: Game = {
           id: createId('game'),
           createdAt: now,
@@ -130,7 +137,11 @@ export const useGameStore = create<GameState>()(
 
         set((state) => {
           const games = [game, ...state.games];
-          const friends = addMissingFriends(state.friends, otherPlayerNames, now);
+          const friends = addMissingFriends(
+            state.friends,
+            [...otherPlayerNames, ...otherTravelerNames],
+            now,
+          );
 
           return {
             games,
@@ -185,7 +196,7 @@ export const useGameStore = create<GameState>()(
       setRoleCatalog: (roles) => {
         set({ roleCatalog: dedupeRoles(roles) });
       },
-      addPlayer: (gameId, name) => {
+      addPlayer: (gameId, name, isTraveler = false) => {
         const normalizedName = normalizePlayerName(name);
 
         if (!normalizedName) {
@@ -215,6 +226,7 @@ export const useGameStore = create<GameState>()(
                 ...game.players,
                 {
                   id: createId('player'),
+                  isTraveler: isTraveler || undefined,
                   name: normalizedName,
                   seat: Math.max(-1, ...game.players.map((player) => player.seat)) + 1,
                 },

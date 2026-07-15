@@ -18,6 +18,8 @@ type DraftPlayer = {
   name: string;
 };
 
+type ParticipantKind = 'player' | 'traveler';
+
 export default function CreateRoute() {
   const { gameId: gameIdParam, scriptId: scriptIdParam } = useLocalSearchParams<{
     gameId?: string;
@@ -35,6 +37,8 @@ export default function CreateRoute() {
   const [name, setName] = useState('');
   const [nameFocused, setNameFocused] = useState(false);
   const [draftPlayers, setDraftPlayers] = useState<DraftPlayer[]>([]);
+  const [draftTravelers, setDraftTravelers] = useState<DraftPlayer[]>([]);
+  const [participantKind, setParticipantKind] = useState<ParticipantKind>('player');
   const [draftSelectedScriptId, setDraftSelectedScriptId] = useState<string | null>(
     scriptIdParam ?? null,
   );
@@ -42,9 +46,14 @@ export default function CreateRoute() {
   const isEditing = Boolean(gameIdParam);
   const players = editingGame
     ? editingGame.players
-        .filter((player) => !player.isAppUser)
+        .filter((player) => !player.isAppUser && !player.isTraveler)
         .map(({ id, name }) => ({ id, name }))
     : draftPlayers;
+  const travelers = editingGame
+    ? editingGame.players
+        .filter((player) => !player.isAppUser && player.isTraveler)
+        .map(({ id, name }) => ({ id, name }))
+    : draftTravelers;
   const fixedPlayerName =
     editingGame?.players.find((player) => player.isAppUser)?.name ?? appUserName;
   const legacyScript = editingGame?.script;
@@ -57,6 +66,14 @@ export default function CreateRoute() {
   }, [legacyScript, scripts]);
   const selectedScriptId = draftSelectedScriptId;
   const selectedScript = availableScripts.find((script) => script.id === selectedScriptId);
+  const selectedNames = useMemo(
+    () => [
+      fixedPlayerName,
+      ...players.map((player) => player.name),
+      ...travelers.map((traveler) => traveler.name),
+    ],
+    [fixedPlayerName, players, travelers],
+  );
   const friends = useMemo(
     () => getFriendSummaries(games, storedFriends, appUserName),
     [appUserName, games, storedFriends],
@@ -67,15 +84,11 @@ export default function CreateRoute() {
     [players],
   );
   const normalizedName = normalizePlayerName(name);
-  const duplicateName = hasDuplicatePlayerName(
-    [fixedPlayerName, ...players.map((player) => player.name)],
-    name,
-  );
+  const duplicateName = hasDuplicatePlayerName(selectedNames, name);
   const canAddPlayer = normalizedName.length > 0 && !duplicateName;
   const canStart = players.length >= 1 && !(normalizedName.length > 0 && duplicateName);
   const suggestedFriends = useMemo(() => {
     const key = normalizedName.toLocaleLowerCase();
-    const selectedNames = [fixedPlayerName, ...players.map((player) => player.name)];
 
     return friends
       .filter(
@@ -84,7 +97,7 @@ export default function CreateRoute() {
           (!key || friend.name.toLocaleLowerCase().includes(key)),
       )
       .slice(0, 5);
-  }, [fixedPlayerName, friends, normalizedName, players]);
+  }, [friends, normalizedName, selectedNames]);
 
   useEffect(() => {
     if (scriptIdParam) {
@@ -103,18 +116,28 @@ export default function CreateRoute() {
       return 'Add at least 1 other player.';
     }
 
+    if (participantKind === 'traveler') {
+      return 'Travelers are added after the main player seats.';
+    }
+
     return isEditing
       ? 'Add or remove players, choose a script, then tap Done.'
       : 'Long press a player to drag them into seat order.';
-  }, [duplicateName, isEditing, players.length]);
+  }, [duplicateName, isEditing, participantKind, players.length]);
 
-  function handleAddPlayer() {
+  function handleAddParticipant() {
     if (!canAddPlayer) {
       return;
     }
 
+    const isTraveler = participantKind === 'traveler';
     if (isEditing && editingGame) {
-      addPlayer(editingGame.id, normalizedName);
+      addPlayer(editingGame.id, normalizedName, isTraveler);
+    } else if (isTraveler) {
+      setDraftTravelers((currentTravelers) => [
+        ...currentTravelers,
+        { id: createDraftId(), name: normalizedName },
+      ]);
     } else {
       setDraftPlayers((currentPlayers) => [
         ...currentPlayers,
@@ -129,18 +152,18 @@ export default function CreateRoute() {
   function handleSelectFriend(friendName: string) {
     const normalizedFriendName = normalizePlayerName(friendName);
 
-    if (
-      !normalizedFriendName ||
-      hasDuplicatePlayerName(
-        [fixedPlayerName, ...players.map((player) => player.name)],
-        normalizedFriendName,
-      )
-    ) {
+    if (!normalizedFriendName || hasDuplicatePlayerName(selectedNames, normalizedFriendName)) {
       return;
     }
 
+    const isTraveler = participantKind === 'traveler';
     if (isEditing && editingGame) {
-      addPlayer(editingGame.id, normalizedFriendName);
+      addPlayer(editingGame.id, normalizedFriendName, isTraveler);
+    } else if (isTraveler) {
+      setDraftTravelers((currentTravelers) => [
+        ...currentTravelers,
+        { id: createDraftId(), name: normalizedFriendName },
+      ]);
     } else {
       setDraftPlayers((currentPlayers) => [
         ...currentPlayers,
@@ -159,6 +182,9 @@ export default function CreateRoute() {
     }
 
     setDraftPlayers((currentPlayers) => currentPlayers.filter((player) => player.id !== playerId));
+    setDraftTravelers((currentTravelers) =>
+      currentTravelers.filter((traveler) => traveler.id !== playerId),
+    );
   }
 
   function handleStart() {
@@ -177,6 +203,7 @@ export default function CreateRoute() {
     const game = createGame({
       playerNames: players.map((player) => player.name),
       script: selectedScript,
+      travelerNames: travelers.map((traveler) => traveler.name),
     });
     router.replace({ pathname: '/game/[id]', params: { id: game.id } });
   }
@@ -214,7 +241,22 @@ export default function CreateRoute() {
 
           <View style={{ gap: 8 }}>
             <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '700' }}>
-              Player name
+              Add participant as
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <ParticipantKindButton
+                kind="player"
+                onPress={() => setParticipantKind('player')}
+                selected={participantKind === 'player'}
+              />
+              <ParticipantKindButton
+                kind="traveler"
+                onPress={() => setParticipantKind('traveler')}
+                selected={participantKind === 'traveler'}
+              />
+            </View>
+            <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '700' }}>
+              {participantKind === 'traveler' ? 'Traveler name' : 'Player name'}
             </Text>
             <TextInput
               autoCapitalize="words"
@@ -224,7 +266,7 @@ export default function CreateRoute() {
               onBlur={() => setNameFocused(false)}
               onChangeText={setName}
               onFocus={() => setNameFocused(true)}
-              onSubmitEditing={handleAddPlayer}
+              onSubmitEditing={handleAddParticipant}
               returnKeyType="done"
               submitBehavior="submit"
               value={name}
@@ -250,7 +292,7 @@ export default function CreateRoute() {
             <Pressable
               accessibilityRole="button"
               disabled={!canAddPlayer}
-              onPress={handleAddPlayer}
+              onPress={handleAddParticipant}
               style={({ pressed }) => ({
                 alignItems: 'center',
                 backgroundColor: !canAddPlayer
@@ -277,7 +319,7 @@ export default function CreateRoute() {
               <Text
                 style={{ color: canAddPlayer ? colors.text : colors.onDisabled, fontWeight: '800' }}
               >
-                Add
+                {participantKind === 'traveler' ? 'Add traveler' : 'Add'}
               </Text>
             </Pressable>
 
@@ -371,6 +413,11 @@ export default function CreateRoute() {
             contentContainerStyle={{ gap: 10, padding: 20, paddingTop: 4, paddingBottom: 40 }}
             data={players}
             keyExtractor={(item) => item.id}
+            ListFooterComponent={
+              travelers.length > 0 ? (
+                <TravelersSection onRemove={handleRemovePlayer} travelers={travelers} />
+              ) : null
+            }
             onDragEnd={({ data }) => {
               if (!isEditing) {
                 setDraftPlayers(data);
@@ -386,6 +433,9 @@ export default function CreateRoute() {
             )}
           />
         )}
+        {players.length === 0 ? (
+          <TravelersSection onRemove={handleRemovePlayer} travelers={travelers} />
+        ) : null}
       </View>
     </>
   );
@@ -417,6 +467,115 @@ function FixedPlayerRow({ name }: { name: string }) {
       <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '800' }}>
         You
       </Text>
+    </View>
+  );
+}
+
+function ParticipantKindButton({
+  kind,
+  onPress,
+  selected,
+}: {
+  kind: ParticipantKind;
+  onPress: () => void;
+  selected: boolean;
+}) {
+  const label = kind === 'traveler' ? 'Traveler' : 'Player';
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        alignItems: 'center',
+        backgroundColor: pressed || selected ? colors.surfacePressed : colors.surface,
+        borderColor: selected ? colors.primary : colors.border,
+        borderRadius: 8,
+        borderWidth: 1,
+        flex: 1,
+        justifyContent: 'center',
+        paddingVertical: 11,
+      })}
+    >
+      <Text style={{ color: selected ? colors.primary : colors.text, fontWeight: '800' }}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function TravelersSection({
+  onRemove,
+  travelers,
+}: {
+  onRemove: (playerId: string) => void;
+  travelers: DraftPlayer[];
+}) {
+  if (travelers.length === 0) {
+    return null;
+  }
+
+  return (
+    <View style={{ gap: 8, paddingTop: 16 }}>
+      <View style={{ gap: 2 }}>
+        <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
+          Travelers
+        </Text>
+        <Text selectable style={{ color: colors.textMuted, fontSize: 13 }}>
+          Travelers are added after the main player seats.
+        </Text>
+      </View>
+      {travelers.map((traveler) => (
+        <TravelerRow key={traveler.id} onRemove={onRemove} traveler={traveler} />
+      ))}
+    </View>
+  );
+}
+
+function TravelerRow({
+  onRemove,
+  traveler,
+}: {
+  onRemove: (playerId: string) => void;
+  traveler: DraftPlayer;
+}) {
+  return (
+    <View
+      style={{
+        alignItems: 'center',
+        backgroundColor: colors.surface,
+        borderColor: colors.border,
+        borderRadius: 8,
+        borderWidth: 1,
+        flexDirection: 'row',
+        gap: 12,
+        minHeight: 54,
+        padding: 16,
+      }}
+    >
+      <Text selectable style={{ color: colors.text, flex: 1, fontSize: 17, fontWeight: '700' }}>
+        {traveler.name}
+      </Text>
+      <Text selectable style={{ color: colors.primary, fontSize: 13, fontWeight: '800' }}>
+        Traveler
+      </Text>
+      <Pressable
+        accessibilityLabel={`Remove ${traveler.name}`}
+        accessibilityRole="button"
+        hitSlop={6}
+        onPress={() => onRemove(traveler.id)}
+        style={({ pressed }) => ({
+          alignItems: 'center',
+          backgroundColor: pressed ? colors.surfacePressed : 'transparent',
+          borderRadius: 8,
+          height: 30,
+          justifyContent: 'center',
+          width: 30,
+        })}
+      >
+        <Trash2 color={colors.danger} size={17} strokeWidth={2.5} />
+      </Pressable>
     </View>
   );
 }
