@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, View } from 'react-native';
 
 import { RolePicker } from '@/components/game/role-picker';
+import { RoleIcon } from '@/components/role-icon';
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Role } from '@/types/game';
@@ -75,12 +76,15 @@ export function TravelerRolePicker({
         })}
       >
         <View style={{ flex: 1, gap: 2 }}>
-          <Text
-            selectable
-            style={{ color: disabled ? colors.onDisabled : colors.text, fontWeight: '800' }}
-          >
-            {summary}
-          </Text>
+          <View style={{ alignItems: 'center', flexDirection: 'row', gap: 6 }}>
+            {selectedTravelerRole ? <RoleIcon role={selectedTravelerRole} size={20} /> : null}
+            <Text
+              selectable
+              style={{ color: disabled ? colors.onDisabled : colors.text, fontWeight: '800' }}
+            >
+              {summary}
+            </Text>
+          </View>
           <Text
             selectable
             style={{ color: disabled ? colors.onDisabled : colors.textMuted, fontSize: 12 }}
