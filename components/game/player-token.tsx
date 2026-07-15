@@ -10,7 +10,6 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { NomIcon } from '@/components/game/nom-icon';
-import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
 import type { Player, PlayerPosition, Role } from '@/types/game';
 import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
@@ -257,31 +256,21 @@ function PlayerTokenName({ color, name }: PlayerTokenNameProps) {
 
 function PlayerTokenRoles({ color, roles }: { color: string; roles: Role[] }) {
   return (
-    <View
+    <Text
+      adjustsFontSizeToFit
+      ellipsizeMode="tail"
+      minimumFontScale={0.6}
+      numberOfLines={1}
+      selectable
       style={{
-        alignItems: 'center',
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 2,
-        justifyContent: 'center',
+        color,
+        fontSize: 8.5,
+        fontWeight: '900',
+        lineHeight: 11,
         maxWidth: '100%',
       }}
     >
-      {roles.map((role) => (
-        <View key={role.id} style={{ alignItems: 'center', flexDirection: 'row', gap: 1 }}>
-          <RoleIcon role={role} size={9} />
-          <Text
-            adjustsFontSizeToFit
-            ellipsizeMode="tail"
-            minimumFontScale={0.6}
-            numberOfLines={1}
-            selectable
-            style={{ color, fontSize: 8.5, fontWeight: '900', lineHeight: 11 }}
-          >
-            {role.name}
-          </Text>
-        </View>
-      ))}
-    </View>
+      {roles.map((role) => role.name).join(' / ')}
+    </Text>
   );
 }
