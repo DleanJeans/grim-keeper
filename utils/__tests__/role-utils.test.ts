@@ -3,6 +3,7 @@ import {
   getRoleIconUrl,
   getRoleNames,
   getRolesForDay,
+  getRolesForDayOrPrevious,
   isTravelerRole,
   mergeScriptRoles,
 } from '@/utils/role-utils';
@@ -83,5 +84,21 @@ describe('role utilities', () => {
         [{ id: 'imp', name: 'Imp', team: 'demon', edition: 'tb' }],
       ),
     ).toEqual([{ id: 'imp', name: 'Imp', team: 'demon', edition: 'tb' }]);
+  });
+
+  it('falls back to the most recent prior role assignment', () => {
+    expect(
+      getRolesForDayOrPrevious(
+        [
+          { day: 1, kind: 'claim', roleIds: ['empath'], updatedAt: '2026-07-14T00:00:00.000Z' },
+          { day: 2, kind: 'claim', roleIds: ['imp'], updatedAt: '2026-07-14T00:01:00.000Z' },
+        ],
+        3,
+        [
+          { id: 'empath', name: 'Empath', team: 'townsfolk' },
+          { id: 'imp', name: 'Imp', team: 'demon' },
+        ],
+      ),
+    ).toEqual([{ id: 'imp', name: 'Imp', team: 'demon' }]);
   });
 });

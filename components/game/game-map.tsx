@@ -10,7 +10,7 @@ import type { Player, PlayerPosition, Role } from '@/types/game';
 import { buildConversationGroupRepeats, getConversationGroupKey } from '@/utils/conversation-utils';
 import { getPlayerMapPosition } from '@/utils/layout-utils';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
-import { getRoleIconUrl, getRolesForDay } from '@/utils/role-utils';
+import { getRoleIconUrl, getRolesForDayOrPrevious } from '@/utils/role-utils';
 
 export function GameMap() {
   const {
@@ -214,7 +214,7 @@ function PlayerTokenForMap({
   position: PlayerPosition;
   showRoles: boolean;
 }) {
-  const roles = getRolesForDay(player.roleAssignments, activeDay, gameRoles);
+  const roles = getRolesForDayOrPrevious(player.roleAssignments, activeDay, gameRoles);
   const visibleRoles = showRoles ? roles : [];
 
   return (

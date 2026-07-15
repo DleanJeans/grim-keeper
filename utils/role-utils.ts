@@ -67,6 +67,23 @@ export function getRolesForDay(
   roles: Role[],
 ) {
   const assignment = getRoleAssignmentForDay(assignments, day);
+  return getRolesForAssignment(assignment, roles);
+}
+
+export function getRolesForDayOrPrevious(
+  assignments: PlayerRoleAssignment[] | undefined,
+  day: number,
+  roles: Role[],
+) {
+  const eligibleAssignments = (assignments ?? []).filter((assignment) => assignment.day <= day);
+  const latestDay = Math.max(...eligibleAssignments.map((assignment) => assignment.day));
+  const assignment =
+    latestDay > 0 ? getRoleAssignmentForDay(eligibleAssignments, latestDay) : undefined;
+
+  return getRolesForAssignment(assignment, roles);
+}
+
+function getRolesForAssignment(assignment: PlayerRoleAssignment | undefined, roles: Role[]) {
   if (!assignment) {
     return [];
   }
