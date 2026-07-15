@@ -4,10 +4,12 @@ import { View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
+import { colors } from '@/theme/colors';
 import type { Player } from '@/types/game';
 import { getRoleDisplayForDayOrPrevious } from '@/utils/role-utils';
 
 type PlayerNameWithRoleProps = {
+  bordered?: boolean;
   player: Player;
   roleIconSize?: number;
   style?: StyleProp<ViewStyle>;
@@ -15,8 +17,9 @@ type PlayerNameWithRoleProps = {
 };
 
 export function PlayerNameWithRole({
+  bordered = false,
   player,
-  roleIconSize = 16,
+  roleIconSize = 24,
   style,
   textStyle,
 }: PlayerNameWithRoleProps) {
@@ -32,10 +35,16 @@ export function PlayerNameWithRole({
       style={[
         {
           alignItems: 'center',
+          backgroundColor: bordered ? colors.surfaceRaised : undefined,
+          borderColor: bordered ? colors.borderStrong : undefined,
+          borderRadius: bordered ? 999 : undefined,
+          borderWidth: bordered ? 1 : undefined,
           flexDirection: 'row',
           flexShrink: 1,
-          gap: 4,
+          gap: 0,
           minWidth: 0,
+          paddingHorizontal: bordered ? 8 : undefined,
+          paddingVertical: bordered ? 3 : undefined,
         },
         style,
       ]}

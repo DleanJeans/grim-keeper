@@ -1,4 +1,4 @@
-import { Hand, Pencil, Trash2 } from 'lucide-react-native';
+import { Pencil, Trash2 } from 'lucide-react-native';
 import { Alert, Pressable, View } from 'react-native';
 
 import { NominateButton } from '@/components/game/action-buttons/nominate-button';
@@ -7,6 +7,7 @@ import { HighlightVotersButton } from '@/components/game/highlight-voters-button
 import { NomIcon } from '@/components/game/nom-icon';
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { innerActionRow } from '@/components/game/styles';
+import { VoterList } from '@/components/game/voter-list';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import { isFlowerGirlRole } from '@/utils/role-utils';
@@ -85,11 +86,6 @@ export function NominationList() {
             (playerId) => playerId !== nomination.initiatorId,
           );
           const nominee = nomineeId ? playerById.get(nomineeId) : undefined;
-          const voterPlayers = (nomination.voterIds ?? []).map((playerId) => ({
-            playerId,
-            player: playerById.get(playerId),
-          }));
-
           return (
             <View
               key={nomination.id}
@@ -192,41 +188,7 @@ export function NominationList() {
                   <Trash2 color={colors.danger} size={15} strokeWidth={2.6} />
                 </Pressable>
               </View>
-              <View
-                style={{ alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 5 }}
-              >
-                <Hand color={colors.textMuted} size={12} />
-                {voterPlayers.length > 0 ? (
-                  voterPlayers.map(({ playerId, player }) =>
-                    player ? (
-                      <PlayerNameWithRole
-                        key={player.id}
-                        player={player}
-                        roleIconSize={14}
-                        textStyle={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}
-                      />
-                    ) : (
-                      <Text
-                        key={playerId}
-                        selectable
-                        style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}
-                      >
-                        Unknown
-                      </Text>
-                    ),
-                  )
-                ) : (
-                  <Text
-                    selectable
-                    style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}
-                  >
-                    No votes recorded
-                  </Text>
-                )}
-                <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
-                  ({voterPlayers.length})
-                </Text>
-              </View>
+              <VoterList players={players} voterIds={nomination.voterIds ?? []} />
             </View>
           );
         })
