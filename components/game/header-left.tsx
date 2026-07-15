@@ -1,4 +1,4 @@
-import { Pencil } from 'lucide-react-native';
+import { Settings } from 'lucide-react-native';
 import { Pressable } from 'react-native';
 
 type HeaderLeftProps = {
@@ -9,7 +9,7 @@ export function HeaderLeft({ onEdit }: HeaderLeftProps) {
   return (
     <Pressable
       accessibilityHint="Open Create to add or remove players"
-      accessibilityLabel="Edit players"
+      accessibilityLabel="Edit game"
       accessibilityRole="button"
       hitSlop={8}
       onPress={onEdit}
@@ -22,7 +22,7 @@ export function HeaderLeft({ onEdit }: HeaderLeftProps) {
         width: 32,
       })}
     >
-      <Pencil color="#f8fafc" size={17} strokeWidth={2.5} />
+      <Settings color="#f8fafc" size={19} strokeWidth={2.3} />
     </Pressable>
   );
 }

@@ -2,9 +2,11 @@ import { Check, Pencil } from 'lucide-react-native';
 import { Pressable, TextInput, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { innerActionRow } from '@/components/game/styles';
+import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { Player } from '@/types/game';
+import type { Player, Role } from '@/types/game';
+import { getRoleAssignmentForDay, getRolesByIds } from '@/utils/role-utils';
 
 const noteTextInputStyle = {
   backgroundColor: '#111827',
@@ -70,12 +72,19 @@ export function PlayerNoteRow({
     noteDraft,
     noteEditingDay,
     noteEditingPlayerId,
+    game,
+    showRoles,
     setNoteDraft: onChangeNoteDraft,
     handleShowPlayerNoteForDay: onShowNote,
     handleSavePlayerNote: onSaveNote,
   } = useGameRouteContext();
 
   const isEditing = noteEditingDay === day && noteEditingPlayerId === player.id;
+  const roleAssignment = showRoles
+    ? getRoleAssignmentForDay(player.roleAssignments, day)
+    : undefined;
+  const roles =
+    roleAssignment && game.script ? getRolesByIds(roleAssignment.roleIds, game.script.roles) : [];
 
   return (
     <View style={{ gap: 4 }}>
@@ -116,6 +125,34 @@ export function PlayerNoteRow({
           {text}
         </Text>
       ) : null}
+      {roleAssignment && roles.length > 0 ? (
+        <PlayerNoteRoleAssignment kind={roleAssignment.kind} roles={roles} />
+      ) : null}
+    </View>
+  );
+}
+
+function PlayerNoteRoleAssignment({ kind, roles }: { kind: 'claim' | 'confirm'; roles: Role[] }) {
+  return (
+    <View style={{ alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+      <Text
+        style={{
+          color: kind === 'confirm' ? '#86efac' : '#fcd34d',
+          fontSize: 12,
+          fontWeight: '900',
+        }}
+      >
+        {kind === 'confirm' ? 'Confirm' : 'Claim'}
+      </Text>
+      {kind === 'confirm' ? <Check color="#86efac" size={14} strokeWidth={3} /> : null}
+      {roles.map((role) => (
+        <View key={role.id} style={{ alignItems: 'center', flexDirection: 'row', gap: 3 }}>
+          <RoleIcon role={role} size={18} />
+          <Text selectable style={{ color: colors.textMuted, fontSize: 12, fontWeight: '700' }}>
+            {role.name}
+          </Text>
+        </View>
+      ))}
     </View>
   );
 }

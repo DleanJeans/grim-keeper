@@ -160,17 +160,13 @@ export function PlayerToken({
             zIndex: 1,
           }}
         >
-          <PlayerTokenName
+          <PlayerTokenContent
             color={isDragReady ? '#082f49' : player.death ? '#cbd5e1' : '#0b1120'}
             name={player.name}
+            roles={visibleRoles}
+            rolesConfirmed={rolesConfirmed}
+            showRoleDetails={showRoleDetails}
           />
-          {visibleRoles.length > 0 ? (
-            <PlayerTokenRoles
-              color={isDragReady ? '#082f49' : player.death ? '#cbd5e1' : '#0b1120'}
-              roles={visibleRoles}
-              rolesConfirmed={rolesConfirmed}
-            />
-          ) : null}
         </View>
         {player.death ? (
           <View
@@ -231,6 +227,37 @@ export function PlayerToken({
         ) : null}
       </Animated.View>
     </GestureDetector>
+  );
+}
+
+function PlayerTokenContent({
+  color,
+  name,
+  roles,
+  rolesConfirmed,
+  showRoleDetails,
+}: {
+  color: string;
+  name: string;
+  roles: Role[];
+  rolesConfirmed: boolean;
+  showRoleDetails: boolean;
+}) {
+  const roleDetails =
+    roles.length > 0 ? (
+      <PlayerTokenRoles color={color} roles={roles} rolesConfirmed={rolesConfirmed} />
+    ) : null;
+
+  return showRoleDetails ? (
+    <>
+      {roleDetails}
+      <PlayerTokenName color={color} name={name} />
+    </>
+  ) : (
+    <>
+      <PlayerTokenName color={color} name={name} />
+      {roleDetails}
+    </>
   );
 }
 

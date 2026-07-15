@@ -19,6 +19,7 @@ import { NominationList } from '@/components/game/nomination-list';
 import { NotesTab } from '@/components/game/notes-tab';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
 import { RotateActions } from '@/components/game/rotate-actions';
+import { RevealRolesButton } from '@/components/game/show-roles-button';
 import { TrackingConfirmActions } from '@/components/game/tracking-confirm-actions';
 import { VoteConfirmActions } from '@/components/game/vote-confirm-actions';
 import { Text } from '@/components/text';
@@ -515,11 +516,13 @@ export default function GameRoute() {
         options={{
           headerBackVisible: false,
           title: `Day ${activeGame.activeDay}/${lastDayWithData}`,
-          headerLeft: () => null,
-          headerRight: () => (
+          headerLeft: () => (
             <HeaderLeft
               onEdit={() => router.push({ pathname: '/create', params: { gameId: activeGame.id } })}
             />
+          ),
+          headerRight: () => (
+            <RevealRolesButton onRevealRolesChange={setShowRoles} showRoles={showRoles} />
           ),
           headerTitle: () => (
             <HeaderTitle
