@@ -218,6 +218,7 @@ function PlayerTokenForMap({
 
   return (
     <PlayerToken
+      confirmedRoleIds={roleDisplay.kind === 'confirm' ? roleDisplay.roleIds : undefined}
       disabled={disabled}
       interactionMode={interactionMode}
       isInitiator={highlightedPlayerIds[0] === player.id}

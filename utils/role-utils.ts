@@ -101,6 +101,7 @@ export function getRoleDisplayForDayOrPrevious(
 
   return {
     kind: assignment?.kind,
+    roleIds: assignment?.roleIds ?? [],
     roles: getRolesForAssignment(assignment, roles),
   };
 }

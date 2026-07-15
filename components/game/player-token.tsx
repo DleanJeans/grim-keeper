@@ -18,6 +18,7 @@ import { getRoleIconUrl, isTravelerRole } from '@/utils/role-utils';
 type PlayerTokenProps = {
   mapHeight: number;
   mapWidth: number;
+  confirmedRoleIds?: string[];
   disabled?: boolean;
   interactionMode?: boolean;
   isInitiator?: boolean;
@@ -36,6 +37,7 @@ type PlayerTokenProps = {
 };
 
 export function PlayerToken({
+  confirmedRoleIds,
   disabled = false,
   isInitiator = false,
   isNominated = false,
@@ -55,7 +57,11 @@ export function PlayerToken({
 }: PlayerTokenProps) {
   const [isDragReady, setIsDragReady] = useState(false);
   const tokenSize = getTokenSize(tokenSizeProp);
-  const visibleRoles = showRoleDetails ? roles : roles.filter(isTravelerRole);
+  const displayedRoles =
+    rolesConfirmed && confirmedRoleIds
+      ? roles.filter((role) => confirmedRoleIds.includes(role.id))
+      : roles;
+  const visibleRoles = showRoleDetails ? displayedRoles : displayedRoles.filter(isTravelerRole);
   const backgroundRole = visibleRoles.find(isTravelerRole) ?? visibleRoles[0];
   const DeathIcon = player.death?.kind === 'execution' ? FlameKindling : Skull;
   const deathIconColor = player.death?.kind === 'execution' ? '#fecaca' : '#bfdbfe';

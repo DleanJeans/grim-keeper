@@ -133,6 +133,7 @@ describe('role utilities', () => {
       ),
     ).toEqual({
       kind: 'confirm',
+      roleIds: ['imp'],
       roles: [{ id: 'imp', name: 'Imp', team: 'demon' }],
     });
   });
