@@ -41,7 +41,7 @@ export function ExecuteButton({
         size={compact ? 15 : 17}
         strokeWidth={2.7}
       />
-      {compact ? null : <Text style={onDarkTextStrong}>{disabled ? 'Executed' : 'Execute'}</Text>}
+      <Text style={onDarkTextStrong}>{disabled ? 'Executed' : 'Execute'}</Text>
     </Pressable>
   );
 }
