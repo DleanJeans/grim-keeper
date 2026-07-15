@@ -18,6 +18,7 @@ import type {
 import { normalizePlayerName } from '@/utils/conversation-utils';
 import { addMissingFriends, getFriendSummaries, hasFriendName } from '@/utils/friend-utils';
 import { getTokenSize } from '@/utils/layout-utils';
+import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 
 type CreateGameInput = {
   playerNames: string[];
@@ -551,6 +552,7 @@ export const useGameStore = create<GameState>()(
       },
       updateNominationVotes: (gameId, nominationId, voterIds) => {
         const uniqueVoterIds = [...new Set(voterIds)];
+        const voterIdSet = new Set(uniqueVoterIds);
 
         set((state) => ({
           games: state.games.map((game) =>
@@ -558,6 +560,11 @@ export const useGameStore = create<GameState>()(
               ? {
                   ...game,
                   updatedAt: new Date().toISOString(),
+                  players: game.players.map((player) =>
+                    voterIdSet.has(player.id) && isPlayerCurrentlyDead(player, game.activeDay)
+                      ? { ...player, deadVoteUsed: true }
+                      : player,
+                  ),
                   conversations: game.conversations.map((conversation) =>
                     conversation.id === nominationId
                       ? { ...conversation, voterIds: uniqueVoterIds }

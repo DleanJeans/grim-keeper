@@ -15,3 +15,7 @@ export function isPlayerCurrentlyDead(player: Player, activeDay: number): boolea
 
   return true;
 }
+
+export function hasDeadVoteAvailable(player: Player, activeDay: number): boolean {
+  return isPlayerCurrentlyDead(player, activeDay) && player.deadVoteUsed !== true;
+}

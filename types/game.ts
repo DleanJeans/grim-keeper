@@ -58,6 +58,7 @@ export type Player = {
   name: string;
   seat: number;
   death?: PlayerDeath;
+  deadVoteUsed?: boolean;
   roleAssignments?: PlayerRoleAssignment[];
   revive?: PlayerRevive;
   position?: PlayerPosition;

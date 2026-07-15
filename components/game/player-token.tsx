@@ -11,6 +11,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
+import { DeadVoteIcon } from '@/components/game/dead-vote-icon';
 import { NomIcon } from '@/components/game/nom-icon';
 import { Text } from '@/components/text';
 import type { Player, PlayerPosition, Role } from '@/types/game';
@@ -28,6 +29,8 @@ const Colors = {
   backgroundSelected: '#bbf7d0',
   badgeConfirmedBackground: '#166534',
   badgeConfirmedIcon: '#dcfce7',
+  badgeDeadVoteBackground: '#166534',
+  badgeDeadVoteIcon: '#dcfce7',
   badgeDeathExecutionBackground: '#7f1d1d',
   badgeDeathNightBackground: '#1e3a8a',
   badgeNominatedBackground: '#713f12',
@@ -96,9 +99,7 @@ export function PlayerToken({
   const backgroundRole = visibleRoles.find(isTravelerRole) ?? visibleRoles[0];
   const DeathIcon = player.death?.kind === 'execution' ? FlameKindling : Skull;
   const deathIconColor =
-    player.death?.kind === 'execution'
-      ? Colors.deathExecutionIcon
-      : Colors.deathNightIcon;
+    player.death?.kind === 'execution' ? Colors.deathExecutionIcon : Colors.deathNightIcon;
   const x = useSharedValue(position.x);
   const y = useSharedValue(position.y);
   const startX = useSharedValue(position.x);
@@ -226,6 +227,14 @@ export function PlayerToken({
             position={{ bottom: -2, right: -2 }}
           >
             <DeathIcon color={deathIconColor} size={13} strokeWidth={2} />
+          </PlayerTokenEdgeBadge>
+        ) : null}
+        {player.death && player.deadVoteUsed !== true ? (
+          <PlayerTokenEdgeBadge
+            backgroundColor={Colors.badgeDeadVoteBackground}
+            position={{ bottom: -2, left: -2 }}
+          >
+            <DeadVoteIcon color={Colors.badgeDeadVoteIcon} />
           </PlayerTokenEdgeBadge>
         ) : null}
         {isNominator ? (

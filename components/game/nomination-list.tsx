@@ -198,7 +198,7 @@ export function NominationList() {
                   <Trash2 color={colors.danger} size={15} strokeWidth={2.6} />
                 </Pressable>
               </View>
-              <VoterList players={players} voterIds={voterIds} />
+              <VoterList day={nomination.day} players={players} voterIds={voterIds} />
               <Pressable
                 accessibilityLabel={`Edit ${voterIds.length} votes`}
                 accessibilityRole="button"

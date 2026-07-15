@@ -26,7 +26,7 @@ import { getGameById, useGameStore } from '@/store/game-store';
 import type { KillAttribution, PlayerPosition, PlayerRoleAssignment } from '@/types/game';
 import { getLastDayWithData } from '@/utils/game-utils';
 import { getTokenSize, rotatePlayerMapPositions } from '@/utils/layout-utils';
-import { isPlayerCurrentlyDead } from '@/utils/player-utils';
+import { hasDeadVoteAvailable, isPlayerCurrentlyDead } from '@/utils/player-utils';
 import {
   addRoleToScript,
   getRoleAssignmentForDay,
@@ -131,10 +131,22 @@ export default function GameRoute() {
         !!curve,
     );
   const nominationDisabled = focusedPlayerIsDead || focusedPlayerAlreadyNominatedToday;
+  const deadVoteUnavailablePlayerIds = new Set(
+    activeGame.players
+      .filter(
+        (player) =>
+          isPlayerCurrentlyDead(player, activeGame.activeDay) && player.deadVoteUsed === true,
+      )
+      .map((player) => player.id),
+  );
   const disabledPlayerIds =
     trackingMode === 'nomination'
       ? [...nominatedPlayerIds].filter((playerId) => playerId !== selectedPlayerIds[0])
-      : [];
+      : votingNominationId
+        ? [...deadVoteUnavailablePlayerIds].filter(
+            (playerId) => !selectedPlayerIds.includes(playerId),
+          )
+        : [];
   const gameRoles = activeGame.script?.roles ?? [];
   const focusedPlayerRoleDisplay = focusedPlayer
     ? getRoleDisplayForDayOrPrevious(focusedPlayer.roleAssignments, activeGame.activeDay, gameRoles)
@@ -185,6 +197,16 @@ export default function GameRoute() {
     setRoleAssignmentRoleIds([]);
 
     if (votingNominationId) {
+      const player = activeGame.players.find((currentPlayer) => currentPlayer.id === playerId);
+      if (
+        player &&
+        !selectedPlayerIds.includes(playerId) &&
+        !hasDeadVoteAvailable(player, activeGame.activeDay) &&
+        isPlayerCurrentlyDead(player, activeGame.activeDay)
+      ) {
+        return;
+      }
+
       setSelectedPlayerIds((currentIds) =>
         currentIds.includes(playerId)
           ? currentIds.filter((currentId) => currentId !== playerId)

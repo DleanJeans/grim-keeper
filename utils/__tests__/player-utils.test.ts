@@ -1,5 +1,5 @@
 import type { Player, PlayerDeath, PlayerRevive } from '@/types/game';
-import { isPlayerCurrentlyDead } from '@/utils/player-utils';
+import { hasDeadVoteAvailable, isPlayerCurrentlyDead } from '@/utils/player-utils';
 
 function makePlayer(overrides: Partial<Player> = {}): Player {
   return {
@@ -44,5 +44,24 @@ describe('isPlayerCurrentlyDead', () => {
     expect(isPlayerCurrentlyDead(player, 2)).toBe(true);
     expect(isPlayerCurrentlyDead(player, 3)).toBe(false);
     expect(isPlayerCurrentlyDead(player, 4)).toBe(false);
+  });
+});
+
+describe('hasDeadVoteAvailable', () => {
+  it('returns true for a dead player who has not used their dead vote', () => {
+    expect(hasDeadVoteAvailable(makePlayer({ death: makeDeath(2) }), 2)).toBe(true);
+  });
+
+  it('returns false after the dead vote is used', () => {
+    expect(hasDeadVoteAvailable(makePlayer({ death: makeDeath(2), deadVoteUsed: true }), 2)).toBe(
+      false,
+    );
+  });
+
+  it('returns false for a living or revived player', () => {
+    expect(hasDeadVoteAvailable(makePlayer(), 2)).toBe(false);
+    expect(
+      hasDeadVoteAvailable(makePlayer({ death: makeDeath(2), revive: makeRevive(3) }), 3),
+    ).toBe(false);
   });
 });
