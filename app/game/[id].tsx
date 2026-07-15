@@ -347,10 +347,11 @@ export default function GameRoute() {
   }
 
   function handleToggleRoleAssignment(roleId: string) {
-    setRoleAssignmentRoleIds((currentRoleIds) => (currentRoleIds[0] === roleId ? [] : [roleId]));
+    const nextRoleIds = roleAssignmentRoleIds[0] === roleId ? [] : [roleId];
+    handleSaveRoleAssignment(nextRoleIds);
   }
 
-  function handleSaveRoleAssignment() {
+  function handleSaveRoleAssignment(roleIds = roleAssignmentRoleIds.slice(0, 1)) {
     if (!focusedPlayer || !roleAssignmentKind || !activeGame.script) {
       return;
     }
@@ -360,7 +361,7 @@ export default function GameRoute() {
       focusedPlayer.id,
       activeGame.activeDay,
       roleAssignmentKind,
-      roleAssignmentRoleIds.slice(0, 1),
+      roleIds,
     );
     handleCancelRoleAssignment();
   }
