@@ -1,10 +1,12 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { GripVertical, Play, Plus, Trash2 } from 'lucide-react-native';
+import { Play, Plus } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TextInput as RNTextInput } from 'react-native';
 import { Keyboard, Pressable, View } from 'react-native';
-import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
+import DraggableFlatList from 'react-native-draggable-flatlist';
 import { CreateHeaderDoneButton } from '@/components/create/create-header-done-button';
+import { FixedPlayerRow } from '@/components/create/fixed-player-row';
+import { type DraftPlayer, PlayerRow } from '@/components/create/player-row';
 import { FriendSuggestions } from '@/components/friends/friend-suggestions';
 import { TravelerRolePicker } from '@/components/game/traveler-role-picker';
 import { GameScriptPicker } from '@/components/scripts/game-script-picker';
@@ -14,11 +16,6 @@ import { colors } from '@/theme/colors';
 import { hasDuplicatePlayerName, normalizePlayerName } from '@/utils/conversation-utils';
 import { getFriendSummaries } from '@/utils/friend-utils';
 import { isTravelerRole } from '@/utils/role-utils';
-
-type DraftPlayer = {
-  id: string;
-  name: string;
-};
 
 export default function CreateRoute() {
   const { gameId: gameIdParam, scriptId: scriptIdParam } = useLocalSearchParams<{
@@ -422,9 +419,11 @@ export default function CreateRoute() {
             }}
             renderItem={(params) => (
               <PlayerRow
-                {...params}
-                isEditing={isEditing}
+                drag={params.drag}
                 index={(playerIndexes.get(params.item.id) ?? params.getIndex() ?? 0) + 1}
+                isActive={params.isActive}
+                isEditing={isEditing}
+                item={params.item}
                 onRemove={handleRemovePlayer}
               />
             )}
@@ -432,100 +431,6 @@ export default function CreateRoute() {
         )}
       </View>
     </>
-  );
-}
-
-function FixedPlayerRow({ name }: { name: string }) {
-  return (
-    <View
-      style={{
-        backgroundColor: colors.surfaceRaised,
-        borderColor: colors.primary,
-        borderRadius: 8,
-        borderWidth: 1,
-        flexDirection: 'row',
-        gap: 12,
-        minHeight: 46,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-      }}
-    >
-      <Text
-        selectable
-        style={{ color: colors.textMuted, fontVariant: ['tabular-nums'], width: 24 }}
-      >
-        1
-      </Text>
-      <Text selectable style={{ color: colors.text, flex: 1, fontSize: 17, fontWeight: '800' }}>
-        {name}
-      </Text>
-      <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '800' }}>
-        You
-      </Text>
-    </View>
-  );
-}
-
-function PlayerRow({
-  drag,
-  index,
-  isActive,
-  item,
-  isEditing,
-  onRemove,
-}: RenderItemParams<DraftPlayer> & {
-  index: number;
-  isEditing: boolean;
-  onRemove: (playerId: string) => void;
-}) {
-  return (
-    <View
-      style={{
-        alignItems: 'center',
-        backgroundColor: isActive ? colors.surfacePressed : colors.surface,
-        borderColor: isActive ? colors.primary : colors.border,
-        borderRadius: 8,
-        borderWidth: 1,
-        flexDirection: 'row',
-        gap: 12,
-        minHeight: 46,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-      }}
-    >
-      <Pressable
-        accessibilityRole="button"
-        onLongPress={isEditing ? undefined : drag}
-        style={{ alignItems: 'center', flex: 1, flexDirection: 'row', gap: 12 }}
-      >
-        <Text
-          selectable
-          style={{ color: colors.textMuted, fontVariant: ['tabular-nums'], width: 24 }}
-        >
-          {index + 1}
-        </Text>
-        <Text selectable style={{ color: colors.text, flex: 1, fontSize: 17, fontWeight: '700' }}>
-          {item.name}
-        </Text>
-        {isEditing ? null : <GripVertical color={colors.textSubtle} size={18} strokeWidth={2.5} />}
-      </Pressable>
-      <Pressable
-        accessibilityLabel={`Remove ${item.name}`}
-        accessibilityRole="button"
-        hitSlop={6}
-        onPress={() => onRemove(item.id)}
-        style={({ pressed }) => ({
-          alignItems: 'center',
-          backgroundColor: pressed ? colors.surfacePressed : 'transparent',
-          borderRadius: 8,
-          height: 30,
-          justifyContent: 'center',
-          width: 30,
-        })}
-      >
-        <Trash2 color={colors.danger} size={17} strokeWidth={2.5} />
-      </Pressable>
-    </View>
   );
 }
 
