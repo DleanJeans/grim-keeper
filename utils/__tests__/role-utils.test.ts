@@ -23,6 +23,21 @@ describe('role utilities', () => {
     expect(assignment?.roleIds).toEqual(['imp']);
   });
 
+  it('loads only the requested assignment kind for editing', () => {
+    const assignments = [
+      {
+        day: 1,
+        kind: 'claim' as const,
+        roleIds: ['empath'],
+        updatedAt: '2026-07-14T00:00:00.000Z',
+      },
+      { day: 1, kind: 'confirm' as const, roleIds: ['imp'], updatedAt: '2026-07-14T00:01:00.000Z' },
+    ];
+
+    expect(getRoleAssignmentForDay(assignments, 1, 'claim')?.roleIds).toEqual(['empath']);
+    expect(getRoleAssignmentForDay(assignments, 1, 'confirm')?.roleIds).toEqual(['imp']);
+  });
+
   it('keeps an empty confirmation as an override', () => {
     const assignment = getRoleAssignmentForDay(
       [

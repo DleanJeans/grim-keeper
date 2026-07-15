@@ -49,8 +49,13 @@ export function isTravelerRole(role: Role) {
 export function getRoleAssignmentForDay(
   assignments: PlayerRoleAssignment[] | undefined,
   day: number,
+  kind?: PlayerRoleAssignment['kind'],
 ) {
   const dayAssignments = (assignments ?? []).filter((assignment) => assignment.day === day);
+  if (kind) {
+    return getLatestAssignment(dayAssignments, kind);
+  }
+
   return (
     getLatestAssignment(dayAssignments, 'confirm') ?? getLatestAssignment(dayAssignments, 'claim')
   );

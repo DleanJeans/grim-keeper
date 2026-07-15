@@ -327,6 +327,7 @@ export default function GameRoute() {
     const currentAssignment = getRoleAssignmentForDay(
       focusedPlayer.roleAssignments,
       activeGame.activeDay,
+      kind,
     );
     const currentRoleIds = currentAssignment?.roleIds ?? [];
     const travelerRoleIds = new Set(
