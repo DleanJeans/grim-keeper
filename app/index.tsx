@@ -105,9 +105,19 @@ export default function HomeRoute() {
                 })}
               >
                 <View style={{ flex: 1, gap: 8 }}>
-                  <Text selectable style={{ color: colors.text, fontSize: 17, fontWeight: '700' }}>
-                    {game.script?.name ?? formatGameTitle(game.createdAt)}
-                  </Text>
+                  <View style={{ gap: 2 }}>
+                    <Text
+                      selectable
+                      style={{ color: colors.text, fontSize: 17, fontWeight: '700' }}
+                    >
+                      {game.script?.name ?? formatGameDate(game.createdAt)}
+                    </Text>
+                    {game.script ? (
+                      <Text selectable style={{ color: colors.textMuted, fontSize: 13 }}>
+                        {formatGameDate(game.createdAt)}
+                      </Text>
+                    ) : null}
+                  </View>
                   <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
                     {game.players.length} players - Day {game.activeDay}/{getLastDayWithData(game)}
                   </Text>
@@ -180,7 +190,7 @@ function HomeActionButton({
   );
 }
 
-function formatGameTitle(createdAt: string) {
+function formatGameDate(createdAt: string) {
   return new Intl.DateTimeFormat(undefined, {
     day: 'numeric',
     hour: 'numeric',
