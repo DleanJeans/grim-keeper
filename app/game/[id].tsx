@@ -87,6 +87,7 @@ export default function GameRoute() {
   }
 
   const activeGame = game;
+  const gameScriptId = activeGame.script?.id;
   const focusedPlayer = activeGame.players.find((player) => player.id === focusedPlayerId);
   const focusedPlayerIsDead = focusedPlayer
     ? isPlayerCurrentlyDead(focusedPlayer, activeGame.activeDay)
@@ -497,6 +498,11 @@ export default function GameRoute() {
           headerLeft: () => (
             <HeaderLeft
               onEdit={() => router.push({ pathname: '/create', params: { gameId: activeGame.id } })}
+              onViewScript={
+                gameScriptId
+                  ? () => router.push({ pathname: '/scripts/[id]', params: { id: gameScriptId } })
+                  : undefined
+              }
             />
           ),
           headerRight: () => (
