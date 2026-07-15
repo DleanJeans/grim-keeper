@@ -1,6 +1,7 @@
 import { Eye } from 'lucide-react-native';
 import { Pressable } from 'react-native';
 
+import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 
 export function RevealRolesButton({
@@ -10,6 +11,7 @@ export function RevealRolesButton({
   onRevealRolesChange: (show: boolean) => void;
   showRoles: boolean;
 }) {
+  const color = showRoles ? colors.primary : colors.textMuted;
   return (
     <Pressable
       accessibilityHint="Hold to reveal every player role"
@@ -25,12 +27,15 @@ export function RevealRolesButton({
         borderColor: showRoles ? colors.primary : colors.borderStrong,
         borderRadius: 8,
         borderWidth: 1,
+        flexDirection: 'row',
+        gap: 6,
         justifyContent: 'center',
-        height: 32,
-        width: 32,
+        paddingHorizontal: 8,
+        paddingVertical: 6,
       })}
     >
-      <Eye color={showRoles ? colors.primary : colors.textMuted} size={17} strokeWidth={2.6} />
+      <Eye color={color} size={17} strokeWidth={2.6} />
+      <Text style={{ color, fontSize: 10 }}>Roles</Text>
     </Pressable>
   );
 }
