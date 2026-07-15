@@ -25,6 +25,7 @@ export function TravelerRolePicker({
   const selectedTravelerRoleIds = selectedRoleIds.filter((roleId) =>
     roles.some((role) => role.id === roleId),
   );
+  const selectedTravelerRole = roles.find((role) => selectedTravelerRoleIds.includes(role.id));
   const disabled = roles.length === 0;
   const filteredRoles = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
@@ -42,8 +43,8 @@ export function TravelerRolePicker({
   const summary =
     roles.length === 0
       ? 'Traveler characters are unavailable offline'
-      : selectedTravelerRoleIds.length > 0
-        ? `${selectedTravelerRoleIds.length} selected`
+      : selectedTravelerRole
+        ? `${selectedTravelerRole.name} selected`
         : 'None selected';
 
   return (

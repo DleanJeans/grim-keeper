@@ -18,6 +18,11 @@ const roleEditionDirectories: Record<string, string> = {
 const alignedGoodTeams = new Set(['outsider', 'townsfolk']);
 const alignedEvilTeams = new Set(['demon', 'minion']);
 
+export const travelerClaimRoles: Role[] = [
+  { iconColor: '#60a5fa', id: 'good_traveler', name: 'Good Traveler', team: 'traveller' },
+  { iconColor: '#f87171', id: 'evil_traveler', name: 'Evil Traveler', team: 'traveller' },
+];
+
 export function getRoleIconUrl(role: Role) {
   if (role.imageUrl) {
     return role.imageUrl;

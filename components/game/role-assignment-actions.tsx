@@ -10,7 +10,12 @@ import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Role } from '@/types/game';
-import { getRoleOwnerNamesForDay, isTravelerRole } from '@/utils/role-utils';
+import {
+  getRoleDisplayForDayOrPrevious,
+  getRoleOwnerNamesForDay,
+  isTravelerRole,
+  travelerClaimRoles,
+} from '@/utils/role-utils';
 
 export function RoleAssignmentActions() {
   const {
@@ -38,6 +43,19 @@ export function RoleAssignmentActions() {
       : selectableRoles;
   const regularRoles = assignmentRoles.filter((role) => !isTravelerRole(role));
   const travelerRoles = assignmentRoles.filter(isTravelerRole);
+  const effectiveRoleDisplay = getRoleDisplayForDayOrPrevious(
+    focusedPlayer.roleAssignments,
+    game.activeDay,
+    game.script.roles,
+  );
+  const hasConfirmedTravelerRole =
+    effectiveRoleDisplay.kind === 'confirm' && effectiveRoleDisplay.roles.some(isTravelerRole);
+  const travelerAssignmentRoles =
+    roleAssignmentKind === 'claim'
+      ? hasConfirmedTravelerRole
+        ? travelerClaimRoles
+        : []
+      : travelerRoles;
   const roleOwnerNames = showRoles
     ? getRoleOwnerNamesForDay(players, game.activeDay, selectableRoles)
     : undefined;
@@ -97,11 +115,15 @@ export function RoleAssignmentActions() {
             sectioned
             selectedRoleIds={roleAssignmentRoleIds}
           />
-          {roleAssignmentKind === 'confirm' ? (
+          {roleAssignmentKind === 'confirm' || hasConfirmedTravelerRole ? (
             <TravelerRolePicker
-              description="Choose one traveler role to confirm for this player."
+              description={
+                roleAssignmentKind === 'confirm'
+                  ? 'Choose one traveler role to confirm for this player.'
+                  : 'Choose a good or evil traveler claim for this player.'
+              }
               onToggleRole={handleToggleRoleAssignment}
-              roles={travelerRoles}
+              roles={travelerAssignmentRoles}
               selectedRoleIds={roleAssignmentRoleIds}
             />
           ) : null}
