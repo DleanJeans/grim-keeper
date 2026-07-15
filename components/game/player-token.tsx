@@ -165,7 +165,6 @@ export function PlayerToken({
             name={player.name}
             roles={visibleRoles}
             rolesConfirmed={rolesConfirmed}
-            showRoleDetails={showRoleDetails}
           />
         </View>
         {player.death ? (
@@ -235,28 +234,21 @@ function PlayerTokenContent({
   name,
   roles,
   rolesConfirmed,
-  showRoleDetails,
 }: {
   color: string;
   name: string;
   roles: Role[];
   rolesConfirmed: boolean;
-  showRoleDetails: boolean;
 }) {
   const roleDetails =
     roles.length > 0 ? (
       <PlayerTokenRoles color={color} roles={roles} rolesConfirmed={rolesConfirmed} />
     ) : null;
 
-  return showRoleDetails ? (
+  return (
     <>
       {roleDetails}
       <PlayerTokenName color={color} name={name} />
-    </>
-  ) : (
-    <>
-      <PlayerTokenName color={color} name={name} />
-      {roleDetails}
     </>
   );
 }
