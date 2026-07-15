@@ -1,11 +1,13 @@
 import { Check, Pencil } from 'lucide-react-native';
 import { Pressable, TextInput, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { PlayerNoteSection } from '@/components/game/player-notes';
 import { RoleAssignmentActions } from '@/components/game/role-assignment-actions';
 import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
+import type { Player } from '@/types/game';
 
 const noteTextInputStyle = {
   backgroundColor: '#111827',
@@ -56,15 +58,7 @@ const noteRowPlayerNameStyle = {
   fontWeight: '800' as const,
 };
 
-function DayNoteRow({
-  player,
-  day,
-  text,
-}: {
-  player: { id: string; name: string };
-  day: number;
-  text: string;
-}) {
+function DayNoteRow({ player, day, text }: { player: Player; day: number; text: string }) {
   const {
     noteDraft,
     noteEditingDay,
@@ -79,7 +73,7 @@ function DayNoteRow({
   return (
     <View style={{ gap: 4 }}>
       <View style={noteRowHeaderStyle}>
-        <Text style={noteRowPlayerNameStyle}>{player.name}</Text>
+        <PlayerNameWithRole player={player} textStyle={noteRowPlayerNameStyle} />
         <Pressable
           accessibilityLabel={`Edit day ${day} note for ${player.name}`}
           accessibilityRole="button"

@@ -1,11 +1,14 @@
-import { Pressable } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { NomIcon } from '@/components/game/nom-icon';
+import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { onDarkTextStrong, outlinedActionStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
+import type { Player } from '@/types/game';
 
 type NominateButtonProps = {
   alreadyNominatedName?: string;
+  alreadyNominatedPlayer?: Player;
   dead?: boolean;
   disabled?: boolean;
   flex?: number;
@@ -15,6 +18,7 @@ type NominateButtonProps = {
 
 export function NominateButton({
   alreadyNominatedName,
+  alreadyNominatedPlayer,
   dead = false,
   disabled = false,
   flex = 1,
@@ -37,14 +41,25 @@ export function NominateButton({
       style={({ pressed }) => outlinedActionStyle({ pressed, disabled, flex })}
     >
       <NomIcon color={disabled ? '#94a3b8' : '#f8fafc'} size={17} strokeWidth={2.7} />
-      <Text
-        style={{
-          ...onDarkTextStrong,
-          color: disabled ? '#94a3b8' : '#f8fafc',
-        }}
-      >
-        {label}
-      </Text>
+      {disabled && alreadyNominatedPlayer ? (
+        <View style={{ alignItems: 'center', flexDirection: 'row', gap: 4, minWidth: 0 }}>
+          <Text style={{ ...onDarkTextStrong, color: '#94a3b8' }}>Already Nominated</Text>
+          <PlayerNameWithRole
+            player={alreadyNominatedPlayer}
+            roleIconSize={14}
+            textStyle={{ ...onDarkTextStrong, color: '#94a3b8' }}
+          />
+        </View>
+      ) : (
+        <Text
+          style={{
+            ...onDarkTextStrong,
+            color: disabled ? '#94a3b8' : '#f8fafc',
+          }}
+        >
+          {label}
+        </Text>
+      )}
     </Pressable>
   );
 }

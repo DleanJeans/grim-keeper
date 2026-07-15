@@ -2,23 +2,24 @@ import { FlameKindling, HeartPulse, Skull } from 'lucide-react-native';
 import type { ComponentType } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { PlayerDeath, PlayerRevive, Role } from '@/types/game';
+import type { Player, PlayerDeath, PlayerRevive, Role } from '@/types/game';
 
 export type DeathLogEntry = {
   death: PlayerDeath;
-  player: { id: string; name: string };
+  player: Player;
 };
 
 export type ReviveLogEntry = {
-  player: { id: string; name: string };
+  player: Player;
   revive: PlayerRevive;
 };
 
 type KillerDescription = {
-  killerNames: string[];
+  killerPlayers: Player[];
   killerRoles: Role[];
 };
 
@@ -84,7 +85,7 @@ function DeathLogDeathRow({
         isCurrent: entry.death.day === activeDay,
       }}
       killerDescription={killerDescription}
-      playerName={entry.player.name}
+      player={entry.player}
     />
   );
 }
@@ -100,18 +101,18 @@ function DeathLogReviveRow({ activeDay, entry }: { activeDay: number; entry: Rev
         dayLabel: `R${entry.revive.day}`,
         isCurrent: entry.revive.day === activeDay,
       }}
-      playerName={entry.player.name}
+      player={entry.player}
     />
   );
 }
 
 function DeathLogEntryRow({
-  playerName,
+  player,
   killerDescription,
   presentation: { Icon, accent, actionLabel, dayLabel, isCurrent },
 }: {
   killerDescription?: KillerDescription;
-  playerName: string;
+  player: Player;
   presentation: RowPresentation;
 }) {
   return (
@@ -129,9 +130,7 @@ function DeathLogEntryRow({
       </View>
       <View style={styles.body}>
         <View style={styles.titleRow}>
-          <Text selectable style={styles.playerName}>
-            {playerName}
-          </Text>
+          <PlayerNameWithRole player={player} textStyle={styles.playerName} />
           <Text selectable style={[styles.action, { color: accent }]}>
             {actionLabel}
           </Text>
@@ -142,8 +141,8 @@ function DeathLogEntryRow({
   );
 }
 
-function KillerDescriptionView({ killerNames, killerRoles }: KillerDescription) {
-  if (killerNames.length === 0) {
+function KillerDescriptionView({ killerPlayers, killerRoles }: KillerDescription) {
+  if (killerPlayers.length === 0) {
     return (
       <View style={styles.killerDescription}>
         <Text selectable style={styles.subtitle}>
@@ -159,9 +158,23 @@ function KillerDescriptionView({ killerNames, killerRoles }: KillerDescription) 
   return (
     <View style={styles.killerDescription}>
       <Text selectable style={styles.subtitle}>
-        Killed by: {killerNames.join(', ')}
-        {killerRoles.length > 0 ? ' as' : ''}
+        Killed by:
       </Text>
+      {killerPlayers.map((player, index) => (
+        <View key={player.id} style={styles.killerName}>
+          <PlayerNameWithRole player={player} roleIconSize={14} textStyle={styles.subtitle} />
+          {index < killerPlayers.length - 1 ? (
+            <Text selectable style={styles.subtitle}>
+              ,
+            </Text>
+          ) : null}
+        </View>
+      ))}
+      {killerRoles.length > 0 ? (
+        <Text selectable style={styles.subtitle}>
+          as
+        </Text>
+      ) : null}
       {killerRoles.map((role) => (
         <KillerRoleView key={role.id} role={role} />
       ))}
@@ -238,6 +251,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 5,
+  },
+  killerName: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 1,
   },
   roleName: {
     alignItems: 'center',

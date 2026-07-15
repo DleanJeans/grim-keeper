@@ -1,6 +1,7 @@
 import { MessagesSquare, Trash2 } from 'lucide-react-native';
 import { Alert, Pressable, View } from 'react-native';
 
+import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Conversation, Player } from '@/types/game';
@@ -21,7 +22,7 @@ export function InteractionList({
   players,
   selectedPlayerId = null,
 }: InteractionListProps) {
-  const playerNames = new Map(players.map((player) => [player.id, player.name]));
+  const playerById = new Map(players.map((player) => [player.id, player]));
   const activeDayConversations = conversations.filter(
     (conversation) => conversation.day === activeDay && conversation.kind !== 'nomination',
   );
@@ -56,10 +57,10 @@ export function InteractionList({
     <View style={{ gap: 10 }}>
       {visibleConversations.map((conversation) => {
         const dayIndex = activeDayConversations.findIndex((c) => c.id === conversation.id);
-        const initiatorName = playerNames.get(conversation.initiatorId) ?? 'Unknown';
-        const talkedToNames = conversation.participantIds
+        const initiator = playerById.get(conversation.initiatorId);
+        const talkedToPlayers = conversation.participantIds
           .filter((playerId) => playerId !== conversation.initiatorId)
-          .map((playerId) => playerNames.get(playerId) ?? 'Unknown');
+          .map((playerId) => ({ playerId, player: playerById.get(playerId) }));
         const repeat = groupRepeats.get(getConversationGroupKey(conversation));
 
         return (
@@ -89,20 +90,55 @@ export function InteractionList({
                 {dayIndex + 1}.
               </Text>
               <View style={{ flex: 1, gap: 6, flexDirection: 'row' }}>
-                <Text
-                  selectable
-                  style={{ color: colors.text, fontSize: 16, fontWeight: '800', lineHeight: 21 }}
-                >
-                  {initiatorName}
-                </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <MessagesSquare color={colors.textMuted} size={14} />
+                {initiator ? (
+                  <PlayerNameWithRole
+                    player={initiator}
+                    textStyle={{
+                      color: colors.text,
+                      fontSize: 16,
+                      fontWeight: '800',
+                      lineHeight: 21,
+                    }}
+                  />
+                ) : (
                   <Text
                     selectable
-                    style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}
+                    style={{ color: colors.text, fontSize: 16, fontWeight: '800', lineHeight: 21 }}
                   >
-                    {talkedToNames.join(', ')}
+                    Unknown
                   </Text>
+                )}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <MessagesSquare color={colors.textMuted} size={14} />
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, flexShrink: 1 }}>
+                    {talkedToPlayers.length === 0 ? (
+                      <Text
+                        selectable
+                        style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}
+                      >
+                        Unknown
+                      </Text>
+                    ) : (
+                      talkedToPlayers.map(({ playerId, player }) =>
+                        player ? (
+                          <PlayerNameWithRole
+                            key={player.id}
+                            player={player}
+                            roleIconSize={14}
+                            textStyle={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}
+                          />
+                        ) : (
+                          <Text
+                            key={playerId}
+                            selectable
+                            style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}
+                          >
+                            Unknown
+                          </Text>
+                        ),
+                      )
+                    )}
+                  </View>
                 </View>
               </View>
               <Pressable

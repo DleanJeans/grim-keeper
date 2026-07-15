@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
+import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Player } from '@/types/game';
@@ -32,7 +33,7 @@ export function KillerPlayerPicker({
         {selectablePlayers.map((player) => (
           <KillerOption
             key={player.id}
-            label={player.name}
+            player={player}
             selected={selectedPlayerIds.includes(player.id)}
             onPress={() => onToggle(player.id)}
           />
@@ -45,15 +46,19 @@ export function KillerPlayerPicker({
 function KillerOption({
   label,
   onPress,
+  player,
   selected,
 }: {
-  label: string;
+  label?: string;
   onPress: () => void;
+  player?: Player;
   selected: boolean;
 }) {
+  const displayLabel = player?.name ?? label ?? 'Unknown';
+
   return (
     <Pressable
-      accessibilityLabel={`${selected ? 'Selected' : 'Select'} killer ${label}`}
+      accessibilityLabel={`${selected ? 'Selected' : 'Select'} killer ${displayLabel}`}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => ({
@@ -73,12 +78,20 @@ function KillerOption({
       })}
     >
       {selected ? <Check color={colors.primary} size={14} strokeWidth={3} /> : null}
-      <Text
-        selectable
-        style={{ color: selected ? colors.text : colors.textMuted, fontWeight: '700' }}
-      >
-        {label}
-      </Text>
+      {player ? (
+        <PlayerNameWithRole
+          player={player}
+          roleIconSize={18}
+          textStyle={{ color: selected ? colors.text : colors.textMuted, fontWeight: '700' }}
+        />
+      ) : (
+        <Text
+          selectable
+          style={{ color: selected ? colors.text : colors.textMuted, fontWeight: '700' }}
+        >
+          {label}
+        </Text>
+      )}
     </Pressable>
   );
 }

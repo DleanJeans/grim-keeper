@@ -4,6 +4,7 @@ import { Alert, Pressable, View } from 'react-native';
 import { NominateButton } from '@/components/game/action-buttons/nominate-button';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { NomIcon } from '@/components/game/nom-icon';
+import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
@@ -22,7 +23,7 @@ export function NominationList() {
     trackingMode,
     votingNominationId,
   } = useGameRouteContext();
-  const playerNames = new Map(players.map((player) => [player.id, player.name]));
+  const playerById = new Map(players.map((player) => [player.id, player]));
   const nominations = conversations.filter(
     (conversation) => conversation.day === activeDay && conversation.kind === 'nomination',
   );
@@ -35,7 +36,10 @@ export function NominationList() {
       )
     : undefined;
   const focusedPlayerNomineeName = focusedPlayerNomineeId
-    ? (playerNames.get(focusedPlayerNomineeId) ?? 'Unknown')
+    ? (playerById.get(focusedPlayerNomineeId)?.name ?? 'Unknown')
+    : undefined;
+  const focusedPlayerNominee = focusedPlayerNomineeId
+    ? playerById.get(focusedPlayerNomineeId)
     : undefined;
 
   return (
@@ -44,6 +48,7 @@ export function NominationList() {
         <View style={innerActionRow}>
           <NominateButton
             alreadyNominatedName={focusedPlayerNomineeName}
+            alreadyNominatedPlayer={focusedPlayerNominee}
             dead={focusedPlayerIsDead}
             disabled={nominationDisabled}
             onPress={() => handleStartTracking('nomination')}
@@ -68,14 +73,15 @@ export function NominationList() {
         </View>
       ) : (
         nominations.map((nomination, index) => {
-          const nominatorName = playerNames.get(nomination.initiatorId) ?? 'Unknown';
+          const nominator = playerById.get(nomination.initiatorId);
           const nomineeId = nomination.participantIds.find(
             (playerId) => playerId !== nomination.initiatorId,
           );
-          const nomineeName = nomineeId ? (playerNames.get(nomineeId) ?? 'Unknown') : 'Unknown';
-          const voterNames = (nomination.voterIds ?? []).map(
-            (playerId) => playerNames.get(playerId) ?? 'Unknown',
-          );
+          const nominee = nomineeId ? playerById.get(nomineeId) : undefined;
+          const voterPlayers = (nomination.voterIds ?? []).map((playerId) => ({
+            playerId,
+            player: playerById.get(playerId),
+          }));
 
           return (
             <View
@@ -103,19 +109,33 @@ export function NominationList() {
                     Nomination {index + 1}
                   </Text>
                   <View style={{ alignItems: 'center', flexDirection: 'row', gap: 6 }}>
-                    <Text
-                      selectable
-                      style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
-                    >
-                      {nominatorName}
-                    </Text>
+                    {nominator ? (
+                      <PlayerNameWithRole
+                        player={nominator}
+                        textStyle={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
+                      />
+                    ) : (
+                      <Text
+                        selectable
+                        style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
+                      >
+                        Unknown
+                      </Text>
+                    )}
                     <NomIcon color={colors.text} size={16} />
-                    <Text
-                      selectable
-                      style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
-                    >
-                      {nomineeName}
-                    </Text>
+                    {nominee ? (
+                      <PlayerNameWithRole
+                        player={nominee}
+                        textStyle={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
+                      />
+                    ) : (
+                      <Text
+                        selectable
+                        style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
+                      >
+                        Unknown
+                      </Text>
+                    )}
                   </View>
                 </View>
                 <Pressable
@@ -165,14 +185,39 @@ export function NominationList() {
                   <Trash2 color={colors.danger} size={15} strokeWidth={2.6} />
                 </Pressable>
               </View>
-              <View>
-                <Text
-                  selectable
-                  style={{ color: colors.textMuted, fontSize: 14, gap: 8, lineHeight: 20 }}
-                >
-                  <Hand color={colors.textMuted} size={12} />{' '}
-                  {voterNames.length > 0 ? voterNames.join(', ') : 'No votes recorded'} (
-                  {voterNames.length})
+              <View
+                style={{ alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 5 }}
+              >
+                <Hand color={colors.textMuted} size={12} />
+                {voterPlayers.length > 0 ? (
+                  voterPlayers.map(({ playerId, player }) =>
+                    player ? (
+                      <PlayerNameWithRole
+                        key={player.id}
+                        player={player}
+                        roleIconSize={14}
+                        textStyle={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}
+                      />
+                    ) : (
+                      <Text
+                        key={playerId}
+                        selectable
+                        style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}
+                      >
+                        Unknown
+                      </Text>
+                    ),
+                  )
+                ) : (
+                  <Text
+                    selectable
+                    style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}
+                  >
+                    No votes recorded
+                  </Text>
+                )}
+                <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
+                  ({voterPlayers.length})
                 </Text>
               </View>
             </View>

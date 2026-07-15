@@ -2,6 +2,7 @@ import { Check, X } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { confirmRowStyle, onDarkText, solidActionStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
 
@@ -21,7 +22,7 @@ export function TrackingConfirmActions() {
     handleConfirmTracking: onConfirm,
   } = useGameRouteContext();
 
-  const { confirmLabel, cancelFlex, confirmFlex } = (() => {
+  const { confirmLabel, confirmPlayer, cancelFlex, confirmFlex } = (() => {
     if (trackingMode === 'nomination') {
       // handleStartTracking seeds selectedPlayerIds with the nominator (focused
       // player); the actual nominee is the first player the user taps after
@@ -30,6 +31,7 @@ export function TrackingConfirmActions() {
       const nominee = players.find((player) => player.id === nomineeId);
       return {
         confirmLabel: nominee ? `Confirm: ${nominee.name}` : 'Confirm Nomination',
+        confirmPlayer: nominee,
         cancelFlex: 0.82,
         confirmFlex: 1.18,
       };
@@ -37,6 +39,7 @@ export function TrackingConfirmActions() {
     // 'interaction' (or any future mode): fall back to focused player name.
     return {
       confirmLabel: focusedPlayer ? `Confirm: ${focusedPlayer.name}` : 'Confirm',
+      confirmPlayer: focusedPlayer,
       cancelFlex: 1,
       confirmFlex: 1,
     };
@@ -63,17 +66,33 @@ export function TrackingConfirmActions() {
         })}
       >
         <Check color={disabled ? '#94a3b8' : '#f8fafc'} size={17} strokeWidth={2.7} />
-        <Text
-          adjustsFontSizeToFit
-          minimumFontScale={0.72}
-          numberOfLines={1}
-          style={{
-            ...confirmTextBase,
-            color: disabled ? '#94a3b8' : '#f8fafc',
-          }}
-        >
-          {confirmLabel}
-        </Text>
+        {confirmPlayer ? (
+          <View style={{ alignItems: 'center', flexDirection: 'row', flexShrink: 1, gap: 4 }}>
+            <Text
+              adjustsFontSizeToFit
+              minimumFontScale={0.72}
+              numberOfLines={1}
+              style={{ ...confirmTextBase, color: disabled ? '#94a3b8' : '#f8fafc' }}
+            >
+              Confirm:
+            </Text>
+            <PlayerNameWithRole
+              player={confirmPlayer}
+              roleIconSize={14}
+              style={{ flexShrink: 1 }}
+              textStyle={{ ...confirmTextBase, color: disabled ? '#94a3b8' : '#f8fafc' }}
+            />
+          </View>
+        ) : (
+          <Text
+            adjustsFontSizeToFit
+            minimumFontScale={0.72}
+            numberOfLines={1}
+            style={{ ...confirmTextBase, color: disabled ? '#94a3b8' : '#f8fafc' }}
+          >
+            {confirmLabel}
+          </Text>
+        )}
       </Pressable>
     </View>
   );

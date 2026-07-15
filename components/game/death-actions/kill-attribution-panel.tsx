@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { RolePicker } from '@/components/game/role-picker';
 import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
@@ -61,9 +62,15 @@ export function KillAttributionPanel({ onCancel, onConfirm }: KillAttributionPan
       }}
     >
       <View style={{ gap: 4 }}>
-        <Text selectable style={{ color: colors.text, fontSize: 17, fontWeight: '900' }}>
-          Kill {focusedPlayer.name}
-        </Text>
+        <View style={{ alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
+          <Text selectable style={{ color: colors.text, fontSize: 17, fontWeight: '900' }}>
+            Kill
+          </Text>
+          <PlayerNameWithRole
+            player={focusedPlayer}
+            textStyle={{ color: colors.text, fontSize: 17, fontWeight: '900' }}
+          />
+        </View>
         <Text selectable style={{ color: colors.textMuted, fontSize: 13, lineHeight: 18 }}>
           Day {activeDay}. Optionally record who killed them and which roles were responsible.
         </Text>

@@ -85,15 +85,15 @@ function getKillerDescription(
 
   const killerPlayerIds =
     entry.death.killerPlayerIds ?? (entry.death.killerPlayerId ? [entry.death.killerPlayerId] : []);
-  const killerNames = killerPlayerIds.flatMap((playerId) => {
-    const playerName = playerById.get(playerId)?.name;
-    return playerName ? [playerName] : [];
+  const killerPlayers = killerPlayerIds.flatMap((playerId) => {
+    const player = playerById.get(playerId);
+    return player ? [player] : [];
   });
   const killerRoles = getRolesByIds(entry.death.killerRoleIds ?? [], script?.roles ?? []);
 
-  if (killerNames.length === 0 && killerRoles.length === 0) {
+  if (killerPlayers.length === 0 && killerRoles.length === 0) {
     return undefined;
   }
 
-  return { killerNames, killerRoles };
+  return { killerPlayers, killerRoles };
 }

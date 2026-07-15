@@ -1,11 +1,9 @@
 import { View } from 'react-native';
 
+import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { Text } from '@/components/text';
 import type { Conversation, Player } from '@/types/game';
-import {
-  buildClosureFromPlayer,
-  buildConversationRows,
-} from '@/utils/conversation-utils';
+import { buildClosureFromPlayer, buildConversationRows } from '@/utils/conversation-utils';
 
 type ConversationTableProps = {
   activeDay: number;
@@ -20,6 +18,7 @@ export function ConversationTable({
   players,
   selectedPlayerId = null,
 }: ConversationTableProps) {
+  const playerById = new Map(players.map((player) => [player.id, player]));
   const allRows = buildConversationRows(players, conversations, activeDay);
   const closure = selectedPlayerId
     ? buildClosureFromPlayer(selectedPlayerId, conversations, activeDay)
@@ -31,11 +30,10 @@ export function ConversationTable({
             return null;
           }
           const talkedToIds = row.talkedToIds.filter((id) => closure.has(id));
-          const playerNames = new Map(players.map((player) => [player.id, player.name]));
           return {
             ...row,
             talkedToIds,
-            talkedTo: talkedToIds.map((id) => playerNames.get(id) ?? 'Unknown'),
+            talkedTo: talkedToIds.map((id) => playerById.get(id)?.name ?? 'Unknown'),
             repeatedPlayerIds: row.repeatedPlayerIds.filter((id) => closure.has(id)),
           };
         })
@@ -88,68 +86,95 @@ export function ConversationTable({
         </Text>
       </View>
 
-      {rows.map((row) => (
-        <View
-          key={row.playerId}
-          style={{
-            backgroundColor: '#111827',
-            borderBottomColor: '#1f2937',
-            borderBottomWidth: 1,
-            flexDirection: 'row',
-            minHeight: 50,
-          }}
-        >
-          <Text
-            selectable
+      {rows.map((row) => {
+        const player = playerById.get(row.playerId);
+
+        return (
+          <View
+            key={row.playerId}
             style={{
-              color: '#f8fafc',
-              flex: 0.9,
-              fontSize: 15,
-              fontWeight: '700',
-              padding: 12,
+              backgroundColor: '#111827',
+              borderBottomColor: '#1f2937',
+              borderBottomWidth: 1,
+              flexDirection: 'row',
+              minHeight: 50,
             }}
           >
-            {row.playerName}
-          </Text>
-          <View style={{ flex: 1.4, flexDirection: 'row', flexWrap: 'wrap', gap: 6, padding: 10 }}>
-            {row.talkedTo.length === 0 ? (
-              <Text selectable style={{ color: '#64748b', fontSize: 14 }}>
-                None
-              </Text>
+            {player ? (
+              <PlayerNameWithRole
+                player={player}
+                style={{ flex: 0.9, padding: 12 }}
+                textStyle={{ color: '#f8fafc', fontSize: 15, fontWeight: '700' }}
+              />
             ) : (
-              row.talkedTo.map((name, index) => {
-                const talkedToId = row.talkedToIds[index];
-                const repeated = row.repeatedPlayerIds.includes(talkedToId);
+              <Text
+                selectable
+                style={{
+                  color: '#f8fafc',
+                  flex: 0.9,
+                  fontSize: 15,
+                  fontWeight: '700',
+                  padding: 12,
+                }}
+              >
+                {row.playerName}
+              </Text>
+            )}
+            <View
+              style={{ flex: 1.4, flexDirection: 'row', flexWrap: 'wrap', gap: 6, padding: 10 }}
+            >
+              {row.talkedTo.length === 0 ? (
+                <Text selectable style={{ color: '#64748b', fontSize: 14 }}>
+                  None
+                </Text>
+              ) : (
+                row.talkedTo.map((name, index) => {
+                  const talkedToId = row.talkedToIds[index];
+                  const repeated = row.repeatedPlayerIds.includes(talkedToId);
+                  const talkedToPlayer = playerById.get(talkedToId);
 
-                return (
-                  <View
-                    key={talkedToId}
-                    style={{
-                      backgroundColor: repeated ? '#78350f' : '#1e293b',
-                      borderColor: repeated ? '#f59e0b' : '#334155',
-                      borderRadius: 999,
-                      borderWidth: 1,
-                      paddingHorizontal: 8,
-                      paddingVertical: 4,
-                    }}
-                  >
-                    <Text
-                      selectable
+                  return (
+                    <View
+                      key={talkedToId}
                       style={{
-                        color: repeated ? '#fde68a' : '#cbd5e1',
-                        fontSize: 13,
-                        fontWeight: repeated ? '800' : '600',
+                        backgroundColor: repeated ? '#78350f' : '#1e293b',
+                        borderColor: repeated ? '#f59e0b' : '#334155',
+                        borderRadius: 999,
+                        borderWidth: 1,
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
                       }}
                     >
-                      {name}
-                    </Text>
-                  </View>
-                );
-              })
-            )}
+                      {talkedToPlayer ? (
+                        <PlayerNameWithRole
+                          player={talkedToPlayer}
+                          roleIconSize={14}
+                          textStyle={{
+                            color: repeated ? '#fde68a' : '#cbd5e1',
+                            fontSize: 13,
+                            fontWeight: repeated ? '800' : '600',
+                          }}
+                        />
+                      ) : (
+                        <Text
+                          selectable
+                          style={{
+                            color: repeated ? '#fde68a' : '#cbd5e1',
+                            fontSize: 13,
+                            fontWeight: repeated ? '800' : '600',
+                          }}
+                        >
+                          {name}
+                        </Text>
+                      )}
+                    </View>
+                  );
+                })
+              )}
+            </View>
           </View>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 }

@@ -2,6 +2,7 @@ import { Check, ShieldCheck, Tag } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { RolePicker } from '@/components/game/role-picker';
 import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
@@ -59,10 +60,15 @@ export function RoleAssignmentActions() {
           }}
         >
           <View style={{ gap: 3 }}>
-            <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
-              {roleAssignmentKind === 'confirm' ? 'Confirm' : 'Claim'} roles for{' '}
-              {focusedPlayer.name}
-            </Text>
+            <View style={{ alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
+              <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
+                {roleAssignmentKind === 'confirm' ? 'Confirm' : 'Claim'} roles for
+              </Text>
+              <PlayerNameWithRole
+                player={focusedPlayer}
+                textStyle={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
+              />
+            </View>
             <Text selectable style={{ color: colors.textMuted, fontSize: 13 }}>
               Day {game.activeDay}
             </Text>
