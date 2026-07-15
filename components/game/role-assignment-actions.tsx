@@ -7,7 +7,7 @@ import { RolePicker } from '@/components/game/role-picker';
 import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import { isTravelerRole } from '@/utils/role-utils';
+import { getRoleOwnerNamesForDay, isTravelerRole } from '@/utils/role-utils';
 
 export function RoleAssignmentActions() {
   const {
@@ -18,8 +18,10 @@ export function RoleAssignmentActions() {
     handleStartRoleAssignment,
     handleToggleRoleAssignment,
     interactionMode,
+    players,
     roleAssignmentKind,
     roleAssignmentRoleIds,
+    showRoles,
   } = useGameRouteContext();
 
   if (!focusedPlayer || interactionMode || !game.script) {
@@ -31,6 +33,9 @@ export function RoleAssignmentActions() {
     roleAssignmentKind === 'claim'
       ? game.script.roles.filter((role) => !isTravelerRole(role))
       : game.script.roles;
+  const roleOwnerNames = showRoles
+    ? getRoleOwnerNamesForDay(players, game.activeDay, game.script.roles)
+    : undefined;
 
   return (
     <View style={{ gap: 10 }}>
@@ -77,6 +82,7 @@ export function RoleAssignmentActions() {
             description="Tap a role to claim or confirm it. Tap the selected role again to clear it."
             onToggleRole={handleToggleRoleAssignment}
             roles={selectableRoles}
+            roleOwnerNames={roleOwnerNames}
             sectioned
             selectedRoleIds={roleAssignmentRoleIds}
           />

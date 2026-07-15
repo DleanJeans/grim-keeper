@@ -1,4 +1,4 @@
-import type { PlayerRoleAssignment, Role, StoredScript } from '@/types/game';
+import type { Player, PlayerRoleAssignment, Role, StoredScript } from '@/types/game';
 
 export const BOTC_ROLE_CATALOG_URL = 'https://release.botc.app/resources/data/roles.json';
 export const BOTC_ROLE_ICON_BASE_URL = 'https://release.botc.app/resources/characters';
@@ -63,6 +63,22 @@ export function getRoleAssignmentForDay(
 
 export function getRoleNames(roleIds: string[], roles: Role[]) {
   return getRolesByIds(roleIds, roles).map((role) => role.name);
+}
+
+export function getRoleOwnerNamesForDay(players: Player[], day: number, roles: Role[]) {
+  const roleOwnerNames: Record<string, string[]> = Object.fromEntries(
+    roles.map((role) => [role.id, []]),
+  );
+
+  for (const player of [...players].sort((first, second) => first.seat - second.seat)) {
+    const roleDisplay = getRoleDisplayForDayOrPrevious(player.roleAssignments, day, roles);
+
+    for (const roleId of roleDisplay.roleIds) {
+      roleOwnerNames[roleId]?.push(player.name);
+    }
+  }
+
+  return roleOwnerNames;
 }
 
 export function getRolesByIds(roleIds: string[], roles: Role[]) {

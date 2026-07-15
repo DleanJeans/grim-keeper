@@ -3,6 +3,7 @@ import {
   getRoleDisplayForDayOrPrevious,
   getRoleIconUrl,
   getRoleNames,
+  getRoleOwnerNamesForDay,
   getRolesForDay,
   getRolesForDayOrPrevious,
   isTravelerRole,
@@ -136,5 +137,36 @@ describe('role utilities', () => {
       roleIds: ['imp'],
       roles: [{ id: 'imp', name: 'Imp', team: 'demon' }],
     });
+  });
+
+  it('groups effective role owners by day with confirmation priority', () => {
+    expect(
+      getRoleOwnerNamesForDay(
+        [
+          {
+            id: 'player-2',
+            name: 'Bob',
+            seat: 1,
+            roleAssignments: [
+              { day: 1, kind: 'claim', roleIds: ['empath'], updatedAt: '2026-07-14T00:00:00.000Z' },
+            ],
+          },
+          {
+            id: 'player-1',
+            name: 'Alice',
+            seat: 0,
+            roleAssignments: [
+              { day: 1, kind: 'claim', roleIds: ['empath'], updatedAt: '2026-07-14T00:00:00.000Z' },
+              { day: 1, kind: 'confirm', roleIds: ['imp'], updatedAt: '2026-07-14T00:01:00.000Z' },
+            ],
+          },
+        ],
+        1,
+        [
+          { id: 'empath', name: 'Empath', team: 'townsfolk' },
+          { id: 'imp', name: 'Imp', team: 'demon' },
+        ],
+      ),
+    ).toEqual({ empath: ['Bob'], imp: ['Alice'] });
   });
 });

@@ -9,6 +9,7 @@ import type { Role } from '@/types/game';
 type RolePickerProps = {
   description?: string;
   roles: Role[];
+  roleOwnerNames?: Record<string, string[]>;
   sectioned?: boolean;
   selectedRoleIds: string[];
   onToggleRole: (roleId: string) => void;
@@ -18,6 +19,7 @@ export function RolePicker({
   description = 'Select one or more roles. Save with no roles to clear this day’s entry.',
   onToggleRole,
   roles,
+  roleOwnerNames,
   sectioned = false,
   selectedRoleIds,
 }: RolePickerProps) {
@@ -50,6 +52,7 @@ export function RolePicker({
               <RoleChoiceButton
                 key={role.id}
                 role={role}
+                ownerNames={roleOwnerNames?.[role.id]}
                 selected={selectedRoleIdSet.has(role.id)}
                 onPress={() => onToggleRole(role.id)}
               />
@@ -81,16 +84,18 @@ function getRoleSections(roles: Role[]) {
 
 function RoleChoiceButton({
   onPress,
+  ownerNames,
   role,
   selected,
 }: {
   onPress: () => void;
+  ownerNames?: string[];
   role: Role;
   selected: boolean;
 }) {
   return (
     <Pressable
-      accessibilityLabel={`${selected ? 'Remove' : 'Select'} ${role.name}`}
+      accessibilityLabel={`${selected ? 'Remove' : 'Select'} ${role.name}${ownerNames?.length ? `. Claimed or confirmed by ${ownerNames.join(', ')}` : ''}`}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => ({
@@ -111,16 +116,26 @@ function RoleChoiceButton({
     >
       {selected ? <Check color={colors.primary} size={14} strokeWidth={3} /> : null}
       <RoleIcon role={role} size={24} />
-      <Text
-        selectable
-        style={{
-          color: selected ? colors.text : colors.textMuted,
-          fontSize: 13,
-          fontWeight: selected ? '800' : '600',
-        }}
-      >
-        {role.name}
-      </Text>
+      <View style={{ flexShrink: 1, gap: 1, maxWidth: 180 }}>
+        <Text
+          selectable
+          style={{
+            color: selected ? colors.text : colors.textMuted,
+            fontSize: 13,
+            fontWeight: selected ? '800' : '600',
+          }}
+        >
+          {role.name}
+        </Text>
+        {ownerNames?.length ? (
+          <Text
+            selectable
+            style={{ color: colors.textMuted, fontSize: 11, fontWeight: '600', lineHeight: 14 }}
+          >
+            {ownerNames.join(', ')}
+          </Text>
+        ) : null}
+      </View>
     </Pressable>
   );
 }
