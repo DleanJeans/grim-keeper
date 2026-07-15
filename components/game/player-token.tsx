@@ -10,9 +10,11 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { NomIcon } from '@/components/game/nom-icon';
+import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
-import type { Player, PlayerPosition } from '@/types/game';
+import type { Player, PlayerPosition, Role } from '@/types/game';
 import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
+import { getRoleIconUrl } from '@/utils/role-utils';
 
 type PlayerTokenProps = {
   mapHeight: number;
@@ -25,8 +27,7 @@ type PlayerTokenProps = {
   isSelected?: boolean;
   player: Player;
   position: PlayerPosition;
-  roleIconUrl?: string;
-  roleNames?: string[];
+  roles?: Role[];
   rearrangeMode?: boolean;
   showRoleDetails?: boolean;
   tokenSize: number;
@@ -46,9 +47,8 @@ export function PlayerToken({
   onSelect,
   player,
   position,
-  roleIconUrl,
-  roleNames = [],
   rearrangeMode = false,
+  roles = [],
   showRoleDetails = false,
   tokenSize: tokenSizeProp,
 }: PlayerTokenProps) {
@@ -142,9 +142,9 @@ export function PlayerToken({
           animatedStyle,
         ]}
       >
-        {roleIconUrl ? (
+        {roles[0] ? (
           <ImageBackground
-            source={{ uri: roleIconUrl }}
+            source={{ uri: getRoleIconUrl(roles[0]) }}
             style={[StyleSheet.absoluteFill, { borderRadius: tokenSize / 2 }]}
             imageStyle={{ borderRadius: tokenSize / 2, opacity: 0.48 }}
           />
@@ -161,10 +161,10 @@ export function PlayerToken({
             color={isDragReady ? '#082f49' : player.death ? '#cbd5e1' : '#0b1120'}
             name={player.name}
           />
-          {showRoleDetails && roleNames.length > 0 ? (
+          {showRoleDetails && roles.length > 0 ? (
             <PlayerTokenRoles
               color={isDragReady ? '#082f49' : player.death ? '#cbd5e1' : '#0b1120'}
-              roleNames={roleNames}
+              roles={roles}
             />
           ) : null}
         </View>
@@ -255,24 +255,33 @@ function PlayerTokenName({ color, name }: PlayerTokenNameProps) {
   );
 }
 
-function PlayerTokenRoles({ color, roleNames }: { color: string; roleNames: string[] }) {
+function PlayerTokenRoles({ color, roles }: { color: string; roles: Role[] }) {
   return (
-    <Text
-      adjustsFontSizeToFit
-      ellipsizeMode="tail"
-      minimumFontScale={0.6}
-      numberOfLines={1}
-      selectable
+    <View
       style={{
-        color,
-        fontSize: 8.5,
-        fontWeight: '900',
-        lineHeight: 11,
+        alignItems: 'center',
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 2,
+        justifyContent: 'center',
         maxWidth: '100%',
-        textAlign: 'center',
       }}
     >
-      {roleNames.join(' / ')}
-    </Text>
+      {roles.map((role) => (
+        <View key={role.id} style={{ alignItems: 'center', flexDirection: 'row', gap: 1 }}>
+          <RoleIcon role={role} size={9} />
+          <Text
+            adjustsFontSizeToFit
+            ellipsizeMode="tail"
+            minimumFontScale={0.6}
+            numberOfLines={1}
+            selectable
+            style={{ color, fontSize: 8.5, fontWeight: '900', lineHeight: 11 }}
+          >
+            {role.name}
+          </Text>
+        </View>
+      ))}
+    </View>
   );
 }

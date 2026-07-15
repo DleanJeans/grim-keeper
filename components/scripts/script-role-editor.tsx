@@ -2,6 +2,7 @@ import { Plus, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { RoleIcon } from '@/components/role-icon';
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Role, StoredScript } from '@/types/game';
@@ -94,6 +95,7 @@ export function ScriptRoleEditor({ onChange, roleCatalog, script }: ScriptRoleEd
                 })}
               >
                 <Plus color={colors.success} size={16} strokeWidth={2.6} />
+                <RoleIcon role={role} size={24} />
                 <Text selectable style={{ color: colors.text, fontWeight: '700' }}>
                   {role.name}
                 </Text>
@@ -122,6 +124,7 @@ function RoleChip({ onRemove, role }: { onRemove: () => void; role: Role }) {
         paddingVertical: 6,
       }}
     >
+      <RoleIcon role={role} size={24} />
       <Text selectable style={{ color: colors.text, fontSize: 13, fontWeight: '700' }}>
         {role.name}
       </Text>

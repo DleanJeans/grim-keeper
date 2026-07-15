@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
+import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Role } from '@/types/game';
@@ -70,6 +71,7 @@ function RoleChoiceButton({
       })}
     >
       {selected ? <Check color={colors.primary} size={14} strokeWidth={3} /> : null}
+      <RoleIcon role={role} size={24} />
       <Text
         selectable
         style={{

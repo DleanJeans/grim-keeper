@@ -57,8 +57,14 @@ export function getRoleAssignmentForDay(
 }
 
 export function getRoleNames(roleIds: string[], roles: Role[]) {
+  return getRolesByIds(roleIds, roles).map((role) => role.name);
+}
+
+export function getRolesByIds(roleIds: string[], roles: Role[]) {
   const roleById = new Map(roles.map((role) => [role.id, role]));
-  return roleIds.map((roleId) => roleById.get(roleId)?.name ?? formatRoleId(roleId));
+  return roleIds.map(
+    (roleId) => roleById.get(roleId) ?? { id: roleId, name: formatRoleId(roleId) },
+  );
 }
 
 export function getRolesForDay(
