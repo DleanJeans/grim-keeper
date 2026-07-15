@@ -1,5 +1,7 @@
 import { Check, FlameKindling, Skull, Vote } from 'lucide-react-native';
+import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
+import type { ViewStyle } from 'react-native';
 import { ImageBackground, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -14,6 +16,8 @@ import { Text } from '@/components/text';
 import type { Player, PlayerPosition, Role } from '@/types/game';
 import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
 import { getRoleIconUrl, isTravelerRole } from '@/utils/role-utils';
+
+const playerTokenBadgeSize = 22;
 
 type PlayerTokenProps = {
   mapHeight: number;
@@ -173,61 +177,31 @@ export function PlayerToken({
           />
         </View>
         {player.death ? (
-          <View
-            style={{
-              alignItems: 'center',
-              backgroundColor: player.death.kind === 'execution' ? '#7f1d1d' : '#1e3a8a',
-              borderColor: '#0b1120',
-              borderRadius: 11,
-              borderWidth: 2,
-              bottom: -2,
-              height: 22,
-              justifyContent: 'center',
-              position: 'absolute',
-              right: -2,
-              width: 22,
-            }}
+          <PlayerTokenEdgeBadge
+            backgroundColor={player.death.kind === 'execution' ? '#7f1d1d' : '#1e3a8a'}
+            borderColor="#0b1120"
+            position={{ bottom: -2, right: -2 }}
           >
             <DeathIcon color={deathIconColor} size={13} strokeWidth={2} />
-          </View>
+          </PlayerTokenEdgeBadge>
         ) : null}
         {isNominator ? (
-          <View
-            style={{
-              alignItems: 'center',
-              backgroundColor: '#312e81',
-              borderColor: '#c4b5fd',
-              borderRadius: 11,
-              borderWidth: 2,
-              height: 22,
-              justifyContent: 'center',
-              left: -2,
-              position: 'absolute',
-              top: -2,
-              width: 22,
-            }}
+          <PlayerTokenEdgeBadge
+            backgroundColor="#312e81"
+            borderColor="#c4b5fd"
+            position={{ left: -2, top: -2 }}
           >
             <NomIcon color="#ddd6fe" size={12} strokeWidth={2.3} />
-          </View>
+          </PlayerTokenEdgeBadge>
         ) : null}
         {isNominated ? (
-          <View
-            style={{
-              alignItems: 'center',
-              backgroundColor: '#713f12',
-              borderColor: '#fde68a',
-              borderRadius: 11,
-              borderWidth: 2,
-              height: 22,
-              justifyContent: 'center',
-              position: 'absolute',
-              right: -2,
-              top: -2,
-              width: 22,
-            }}
+          <PlayerTokenEdgeBadge
+            backgroundColor="#713f12"
+            borderColor="#fde68a"
+            position={{ right: -2, top: -2 }}
           >
             <Vote color="#fef3c7" size={12} strokeWidth={2.3} />
-          </View>
+          </PlayerTokenEdgeBadge>
         ) : null}
         {rolesConfirmed && visibleRoles.length > 0 && !visibleRoles.some(isTravelerRole) ? (
           <PlayerTokenConfirmBadge tokenSize={tokenSize} />
@@ -307,22 +281,45 @@ function PlayerTokenRoles({ color, roles }: { color: string; roles: Role[] }) {
 
 function PlayerTokenConfirmBadge({ tokenSize }: { tokenSize: number }) {
   return (
-    <View
-      style={{
-        alignItems: 'center',
-        backgroundColor: '#166534',
-        borderColor: '#bbf7d0',
-        borderRadius: 11,
-        borderWidth: 2,
-        height: 22,
-        justifyContent: 'center',
-        position: 'absolute',
-        right: -2,
-        top: tokenSize / 2 - 11,
-        width: 22,
-      }}
+    <PlayerTokenEdgeBadge
+      backgroundColor="#166534"
+      borderColor="#bbf7d0"
+      position={{ right: -2, top: tokenSize / 2 - playerTokenBadgeSize / 2 }}
     >
       <Check color="#dcfce7" size={12} strokeWidth={2.8} />
+    </PlayerTokenEdgeBadge>
+  );
+}
+
+function PlayerTokenEdgeBadge({
+  backgroundColor,
+  borderColor,
+  children,
+  position,
+}: {
+  backgroundColor: string;
+  borderColor: string;
+  children: ReactNode;
+  position: Pick<ViewStyle, 'bottom' | 'left' | 'right' | 'top'>;
+}) {
+  return (
+    <View
+      style={[
+        {
+          alignItems: 'center',
+          backgroundColor,
+          borderColor,
+          borderRadius: playerTokenBadgeSize / 2,
+          borderWidth: 2,
+          height: playerTokenBadgeSize,
+          justifyContent: 'center',
+          position: 'absolute',
+          width: playerTokenBadgeSize,
+        },
+        position,
+      ]}
+    >
+      {children}
     </View>
   );
 }
