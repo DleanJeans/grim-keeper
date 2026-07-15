@@ -2,6 +2,7 @@ import { Pencil, Trash2 } from 'lucide-react-native';
 import { Alert, Pressable, View } from 'react-native';
 
 import { NominateButton } from '@/components/game/action-buttons/nominate-button';
+import { ExecuteButton } from '@/components/game/death-actions/execute-button';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { HighlightVotersButton } from '@/components/game/highlight-voters-button';
 import { NomIcon } from '@/components/game/nom-icon';
@@ -9,10 +10,13 @@ import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { innerActionRow } from '@/components/game/styles';
 import { VoterList } from '@/components/game/voter-list';
 import { Text } from '@/components/text';
+import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
+import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 import { isFlowerGirlRole } from '@/utils/role-utils';
 
 export function NominationList() {
+  const setPlayerDeath = useGameStore((state) => state.setPlayerDeath);
   const {
     activeDay,
     conversations,
@@ -86,6 +90,7 @@ export function NominationList() {
             (playerId) => playerId !== nomination.initiatorId,
           );
           const nominee = nomineeId ? playerById.get(nomineeId) : undefined;
+          const nomineeIsDead = nominee ? isPlayerCurrentlyDead(nominee, activeDay) : false;
           return (
             <View
               key={nomination.id}
@@ -161,6 +166,19 @@ export function NominationList() {
                   <Pencil color={colors.text} size={15} strokeWidth={2.6} />
                   <Text style={{ color: colors.text, fontSize: 13, fontWeight: '800' }}>Votes</Text>
                 </Pressable>
+                {nominee ? (
+                  <ExecuteButton
+                    disabled={nomineeIsDead}
+                    onPress={() =>
+                      setPlayerDeath(game.id, nominee.id, {
+                        day: activeDay,
+                        kind: 'execution',
+                        updatedAt: new Date().toISOString(),
+                      })
+                    }
+                    playerName={nominee.name}
+                  />
+                ) : null}
                 <Pressable
                   accessibilityRole="button"
                   onPress={() =>
