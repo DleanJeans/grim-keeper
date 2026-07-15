@@ -3,6 +3,7 @@ import { Alert, Pressable, View } from 'react-native';
 
 import { NominateButton } from '@/components/game/action-buttons/nominate-button';
 import { ExecuteButton } from '@/components/game/death-actions/execute-button';
+import { UndoDeathButton } from '@/components/game/death-actions/undo-death-button';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { HighlightVotersButton } from '@/components/game/highlight-voters-button';
 import { NomIcon } from '@/components/game/nom-icon';
@@ -92,6 +93,7 @@ export function NominationList() {
           );
           const nominee = nomineeId ? playerById.get(nomineeId) : undefined;
           const nomineeIsDead = nominee ? isPlayerCurrentlyDead(nominee, activeDay) : false;
+          const nomineeWasExecuted = nomineeIsDead && nominee?.death?.kind === 'execution';
           return (
             <View
               key={nomination.id}
@@ -148,17 +150,26 @@ export function NominationList() {
                   </View>
                 </View>
                 {nominee ? (
-                  <ExecuteButton
-                    disabled={nomineeIsDead}
-                    onPress={() =>
-                      setPlayerDeath(game.id, nominee.id, {
-                        day: activeDay,
-                        kind: 'execution',
-                        updatedAt: new Date().toISOString(),
-                      })
-                    }
-                    playerName={nominee.name}
-                  />
+                  nomineeWasExecuted ? (
+                    <UndoDeathButton
+                      compact
+                      onPress={() => setPlayerDeath(game.id, nominee.id, null)}
+                      playerName={nominee.name}
+                    />
+                  ) : (
+                    <ExecuteButton
+                      compact
+                      disabled={nomineeIsDead}
+                      onPress={() =>
+                        setPlayerDeath(game.id, nominee.id, {
+                          day: activeDay,
+                          kind: 'execution',
+                          updatedAt: new Date().toISOString(),
+                        })
+                      }
+                      playerName={nominee.name}
+                    />
+                  )
                 ) : null}
                 <Pressable
                   accessibilityRole="button"
