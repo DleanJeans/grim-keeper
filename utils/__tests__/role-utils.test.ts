@@ -6,6 +6,7 @@ import {
   getRoleOwnerNamesForDay,
   getRolesForDay,
   getRolesForDayOrPrevious,
+  isFlowerGirlRole,
   isTravelerRole,
   mergeScriptRoles,
 } from '@/utils/role-utils';
@@ -91,6 +92,12 @@ describe('role utilities', () => {
       true,
     );
     expect(isTravelerRole({ id: 'imp', name: 'Imp', team: 'demon' })).toBe(false);
+  });
+
+  it('identifies Flower Girl by its id or display name', () => {
+    expect(isFlowerGirlRole({ id: 'flower_girl', name: 'Flower Girl' })).toBe(true);
+    expect(isFlowerGirlRole({ id: 'flowergirl', name: 'Custom Name' })).toBe(true);
+    expect(isFlowerGirlRole({ id: 'empath', name: 'Empath' })).toBe(false);
   });
 
   it('returns the visible role metadata for a player on a day', () => {

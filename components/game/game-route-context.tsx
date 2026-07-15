@@ -46,6 +46,7 @@ export type GameRouteContextValue = {
   isRearrangeMode: boolean;
   selectedPlayerIds: string[];
   highlightedPlayerIds: string[];
+  voterHighlightsActive: boolean;
   roleAssignmentKind: PlayerRoleAssignment['kind'] | null;
   roleAssignmentRoleIds: string[];
   showRoles: boolean;
@@ -63,6 +64,7 @@ export type GameRouteContextValue = {
   handleConfirmVotes: () => void;
   handleCancelVoting: () => void;
   handleEditNominationVotes: (nominationId: string, voterIds: string[]) => void;
+  handleToggleVoterHighlights: () => void;
   handleChangeDay: (day: number) => void;
   handleRotateTokens: (angleRadians: number) => void;
   handleResizeTokens: (sizeDelta: number) => void;

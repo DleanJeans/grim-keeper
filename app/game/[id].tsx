@@ -57,6 +57,7 @@ export default function GameRoute() {
   const [votingNominationId, setVotingNominationId] = useState<string | null>(null);
   const [votingReturnTab, setVotingReturnTab] = useState<GameTab | null>(null);
   const [focusedPlayerId, setFocusedPlayerId] = useState<string | null>(null);
+  const [highlightedVoterIds, setHighlightedVoterIds] = useState<string[] | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
   const [noteEditingDay, setNoteEditingDay] = useState<number | null>(null);
   const [noteEditingPlayerId, setNoteEditingPlayerId] = useState<string | null>(null);
@@ -100,9 +101,7 @@ export default function GameRoute() {
     ? selectedPlayerIds
     : votingNominationId
       ? selectedPlayerIds
-      : focusedPlayerId
-        ? [focusedPlayerId]
-        : [];
+      : (highlightedVoterIds ?? (focusedPlayerId ? [focusedPlayerId] : []));
   const hideConnectionCurves = trackingMode === 'nomination' || !!votingNominationId;
   const activeTokenSize = getTokenSize(activeGame.tokenSize);
   const activeDayNominations = activeGame.conversations.filter(
@@ -175,10 +174,12 @@ export default function GameRoute() {
   }
 
   function handleDeleteNomination(nominationId: string) {
+    setHighlightedVoterIds(null);
     deleteConversation(activeGame.id, nominationId);
   }
 
   function handleSelectPlayer(playerId: string) {
+    setHighlightedVoterIds(null);
     setRoleAssignmentKind(null);
     setRoleAssignmentRoleIds([]);
 
@@ -227,6 +228,7 @@ export default function GameRoute() {
     }
 
     setTrackingMode(mode);
+    setHighlightedVoterIds(null);
     setIsRearrangeMode(false);
     setSelectedPlayerIds([focusedPlayerId]);
   }
@@ -237,6 +239,7 @@ export default function GameRoute() {
     setVotingNominationId(null);
     setVotingReturnTab(null);
     setFocusedPlayerId(null);
+    setHighlightedVoterIds(null);
     setSelectedPlayerIds([]);
     setRoleAssignmentKind(null);
     setRoleAssignmentRoleIds([]);
@@ -302,9 +305,20 @@ export default function GameRoute() {
     setActiveTab('nominations');
   }
 
+  function handleToggleVoterHighlights() {
+    const voterIds = [
+      ...new Set(activeDayNominations.flatMap((nomination) => nomination.voterIds ?? [])),
+    ];
+
+    setHighlightedVoterIds((currentIds) =>
+      currentIds ? null : voterIds.length > 0 ? voterIds : null,
+    );
+  }
+
   function handleChangeDay(day: number) {
     const selectedPlayerId = focusedPlayerId;
     handleCancelTracking();
+    setHighlightedVoterIds(null);
     setFocusedPlayerId(selectedPlayerId);
     setIsRearrangeMode(false);
     setActiveDay(activeGame.id, day);
@@ -472,6 +486,7 @@ export default function GameRoute() {
     isRearrangeMode,
     selectedPlayerIds,
     highlightedPlayerIds,
+    voterHighlightsActive: highlightedVoterIds !== null,
     roleAssignmentKind,
     roleAssignmentRoleIds,
     showRoles,
@@ -487,6 +502,7 @@ export default function GameRoute() {
     handleConfirmVotes,
     handleCancelVoting,
     handleEditNominationVotes,
+    handleToggleVoterHighlights,
     handleChangeDay,
     handleRotateTokens,
     handleResizeTokens,

@@ -3,11 +3,13 @@ import { Alert, Pressable, View } from 'react-native';
 
 import { NominateButton } from '@/components/game/action-buttons/nominate-button';
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { HighlightVotersButton } from '@/components/game/highlight-voters-button';
 import { NomIcon } from '@/components/game/nom-icon';
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
+import { isFlowerGirlRole } from '@/utils/role-utils';
 
 export function NominationList() {
   const {
@@ -17,16 +19,21 @@ export function NominationList() {
     focusedPlayerIsDead,
     handleDeleteNomination,
     handleEditNominationVotes,
+    handleToggleVoterHighlights,
     handleStartTracking,
+    game,
     nominationDisabled,
     players,
     trackingMode,
+    voterHighlightsActive,
     votingNominationId,
   } = useGameRouteContext();
   const playerById = new Map(players.map((player) => [player.id, player]));
   const nominations = conversations.filter(
     (conversation) => conversation.day === activeDay && conversation.kind === 'nomination',
   );
+  const voterIds = [...new Set(nominations.flatMap((nomination) => nomination.voterIds ?? []))];
+  const hasFlowerGirl = game.script?.roles.some(isFlowerGirlRole) ?? false;
   const focusedPlayerNomination = focusedPlayer
     ? nominations.find((nomination) => nomination.initiatorId === focusedPlayer.id)
     : undefined;
@@ -224,6 +231,13 @@ export function NominationList() {
           );
         })
       )}
+      {hasFlowerGirl ? (
+        <HighlightVotersButton
+          active={voterHighlightsActive}
+          disabled={voterIds.length === 0 || !!trackingMode || !!votingNominationId}
+          onPress={handleToggleVoterHighlights}
+        />
+      ) : null}
     </View>
   );
 }

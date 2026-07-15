@@ -46,6 +46,13 @@ export function isTravelerRole(role: Role) {
   return role.team?.toLocaleLowerCase() === 'traveller';
 }
 
+export function isFlowerGirlRole(role: Role) {
+  const normalizedId = role.id.toLocaleLowerCase().replace(/[^a-z]/g, '');
+  const normalizedName = role.name.toLocaleLowerCase().replace(/[^a-z]/g, '');
+
+  return normalizedId === 'flowergirl' || normalizedName === 'flowergirl';
+}
+
 export function getRoleAssignmentForDay(
   assignments: PlayerRoleAssignment[] | undefined,
   day: number,
