@@ -1,7 +1,9 @@
 import { ChevronLeft, ChevronRight, Footprints, HeartPulse, Skull } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
+import { SelectedPlayerHeaderToken } from '@/components/game/selected-player-header-token';
 import { Text } from '@/components/text';
+import type { Player, Role } from '@/types/game';
 
 type HeaderTitleProps = {
   activeDay: number;
@@ -9,6 +11,10 @@ type HeaderTitleProps = {
   deadPlayerCount: number;
   lastDayWithData: number;
   onChangeDay: (day: number) => void;
+  selectedPlayer?: Player;
+  selectedPlayerIsDead: boolean;
+  selectedPlayerRoles: Role[];
+  showRoles: boolean;
   travelerPlayerCount: number;
 };
 
@@ -18,6 +24,10 @@ export function HeaderTitle({
   deadPlayerCount,
   lastDayWithData,
   onChangeDay,
+  selectedPlayer,
+  selectedPlayerIsDead,
+  selectedPlayerRoles,
+  showRoles,
   travelerPlayerCount,
 }: HeaderTitleProps) {
   return (
@@ -72,11 +82,21 @@ export function HeaderTitle({
           <ChevronRight color="#f8fafc" size={15} strokeWidth={2.7} />
         </Pressable>
       </View>
-      <PlayerStatus
-        alivePlayerCount={alivePlayerCount}
-        deadPlayerCount={deadPlayerCount}
-        travelerPlayerCount={travelerPlayerCount}
-      />
+      <View style={{ alignItems: 'center', flexDirection: 'row', gap: 8 }}>
+        {selectedPlayer ? (
+          <SelectedPlayerHeaderToken
+            isDead={selectedPlayerIsDead}
+            player={selectedPlayer}
+            roles={selectedPlayerRoles}
+            showRoles={showRoles}
+          />
+        ) : null}
+        <PlayerStatus
+          alivePlayerCount={alivePlayerCount}
+          deadPlayerCount={deadPlayerCount}
+          travelerPlayerCount={travelerPlayerCount}
+        />
+      </View>
     </View>
   );
 }

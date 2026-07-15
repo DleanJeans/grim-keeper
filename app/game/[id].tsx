@@ -30,6 +30,7 @@ import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 import {
   addRoleToScript,
   getRoleAssignmentForDay,
+  getRoleDisplayForDayOrPrevious,
   getRolesForDayOrPrevious,
   isTravelerRole,
 } from '@/utils/role-utils';
@@ -135,6 +136,9 @@ export default function GameRoute() {
       ? [...nominatedPlayerIds].filter((playerId) => playerId !== selectedPlayerIds[0])
       : [];
   const gameRoles = activeGame.script?.roles ?? [];
+  const focusedPlayerRoleDisplay = focusedPlayer
+    ? getRoleDisplayForDayOrPrevious(focusedPlayer.roleAssignments, activeGame.activeDay, gameRoles)
+    : undefined;
   const travelerPlayerIds = new Set(
     activeGame.players
       .filter((player) =>
@@ -527,6 +531,10 @@ export default function GameRoute() {
               deadPlayerCount={deadPlayerCount}
               lastDayWithData={lastDayWithData}
               onChangeDay={handleChangeDay}
+              selectedPlayer={focusedPlayer}
+              selectedPlayerIsDead={focusedPlayerIsDead}
+              selectedPlayerRoles={focusedPlayerRoleDisplay?.roles ?? []}
+              showRoles={showRoles}
               travelerPlayerCount={travelerPlayerCount}
             />
           ),
