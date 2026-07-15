@@ -1,10 +1,10 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { Check, GripVertical, Play, Plus, Trash2 } from 'lucide-react-native';
+import { GripVertical, Play, Plus, Trash2 } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TextInput as RNTextInput } from 'react-native';
 import { Keyboard, Pressable, View } from 'react-native';
 import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
-
+import { CreateHeaderDoneButton } from '@/components/create/create-header-done-button';
 import { FriendSuggestions } from '@/components/friends/friend-suggestions';
 import { TravelerRolePicker } from '@/components/game/traveler-role-picker';
 import { GameScriptPicker } from '@/components/scripts/game-script-picker';
@@ -218,7 +218,12 @@ export default function CreateRoute() {
   return (
     <>
       <Stack.Screen
-        options={{ headerRight: () => null, title: isEditing ? 'Edit Players' : 'New Game' }}
+        options={{
+          headerRight: isEditing
+            ? () => <CreateHeaderDoneButton canStart={canStart} onPress={handleStart} />
+            : undefined,
+          title: isEditing ? 'Edit Players' : 'New Game',
+        }}
       />
       <View style={{ backgroundColor: colors.background, flex: 1 }}>
         <View style={{ gap: 14, padding: 20, paddingBottom: 12 }}>
@@ -257,114 +262,112 @@ export default function CreateRoute() {
             <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '700' }}>
               Player name
             </Text>
-            <TextInput
-              autoCapitalize="words"
-              autoCorrect={false}
-              enterKeyHint="done"
-              ref={inputRef}
-              onBlur={() => setNameFocused(false)}
-              onChangeText={setName}
-              onFocus={() => setNameFocused(true)}
-              onSubmitEditing={handleAddPlayer}
-              returnKeyType="done"
-              submitBehavior="submit"
-              value={name}
-              style={{
-                backgroundColor: colors.surface,
-                borderColor: duplicateName ? colors.danger : colors.border,
-                borderRadius: 8,
-                borderWidth: 1,
-                color: colors.text,
-                fontSize: 18,
-                minHeight: 52,
-                paddingHorizontal: 16,
-                paddingVertical: 14,
-              }}
-            />
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={!canAddPlayer}
+                onPress={handleAddPlayer}
+                style={({ pressed }) => ({
+                  alignItems: 'center',
+                  backgroundColor: !canAddPlayer
+                    ? colors.disabled
+                    : pressed
+                      ? colors.surfacePressed
+                      : colors.surfaceRaised,
+                  borderColor: colors.border,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  flexDirection: 'row',
+                  gap: 7,
+                  justifyContent: 'center',
+                  minHeight: 52,
+                  paddingHorizontal: 12,
+                })}
+              >
+                <Plus
+                  color={canAddPlayer ? colors.text : colors.onDisabled}
+                  size={17}
+                  strokeWidth={2.7}
+                />
+                <Text
+                  style={{
+                    color: canAddPlayer ? colors.text : colors.onDisabled,
+                    fontWeight: '800',
+                  }}
+                >
+                  Add
+                </Text>
+              </Pressable>
+              <TextInput
+                autoCapitalize="words"
+                autoCorrect={false}
+                enterKeyHint="done"
+                ref={inputRef}
+                onBlur={() => setNameFocused(false)}
+                onChangeText={setName}
+                onFocus={() => setNameFocused(true)}
+                onSubmitEditing={handleAddPlayer}
+                returnKeyType="done"
+                submitBehavior="submit"
+                value={name}
+                style={{
+                  backgroundColor: colors.surface,
+                  borderColor: duplicateName ? colors.danger : colors.border,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  color: colors.text,
+                  flex: 1,
+                  fontSize: 18,
+                  minHeight: 52,
+                  paddingHorizontal: 16,
+                  paddingVertical: 14,
+                }}
+              />
+            </View>
           </View>
 
           {nameFocused ? (
             <FriendSuggestions friends={suggestedFriends} onSelectFriend={handleSelectFriend} />
           ) : null}
 
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            <Pressable
-              accessibilityRole="button"
-              disabled={!canAddPlayer}
-              onPress={handleAddPlayer}
-              style={({ pressed }) => ({
-                alignItems: 'center',
-                backgroundColor: !canAddPlayer
-                  ? colors.disabled
-                  : pressed
-                    ? colors.surfacePressed
-                    : colors.surfaceRaised,
-                borderColor: colors.border,
-                borderRadius: 8,
-                borderWidth: 1,
-                flex: 1,
-                flexDirection: 'row',
-                gap: 7,
-                justifyContent: 'center',
-                minHeight: 48,
-                paddingVertical: 13,
-              })}
-            >
-              <Plus
-                color={canAddPlayer ? colors.text : colors.onDisabled}
-                size={17}
-                strokeWidth={2.7}
-              />
-              <Text
-                style={{ color: canAddPlayer ? colors.text : colors.onDisabled, fontWeight: '800' }}
+          {!isEditing ? (
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={!canStart}
+                onPress={handleStart}
+                style={({ pressed }) => ({
+                  alignItems: 'center',
+                  backgroundColor: !canStart
+                    ? colors.disabled
+                    : pressed
+                      ? colors.surfacePressed
+                      : colors.primary,
+                  borderRadius: 8,
+                  flex: 1,
+                  flexDirection: 'row',
+                  gap: 7,
+                  justifyContent: 'center',
+                  minHeight: 48,
+                  paddingVertical: 13,
+                })}
               >
-                Add
-              </Text>
-            </Pressable>
-
-            <Pressable
-              accessibilityRole="button"
-              disabled={!canStart}
-              onPress={handleStart}
-              style={({ pressed }) => ({
-                alignItems: 'center',
-                backgroundColor: !canStart
-                  ? colors.disabled
-                  : pressed
-                    ? colors.surfacePressed
-                    : colors.primary,
-                borderRadius: 8,
-                flex: 1,
-                flexDirection: 'row',
-                gap: 7,
-                justifyContent: 'center',
-                minHeight: 48,
-                paddingVertical: 13,
-              })}
-            >
-              {isEditing ? (
-                <Check
-                  color={canStart ? colors.onPrimary : colors.onDisabled}
-                  size={16}
-                  strokeWidth={2.7}
-                />
-              ) : (
                 <Play
                   color={canStart ? colors.onPrimary : colors.onDisabled}
                   size={16}
                   strokeWidth={2.7}
                 />
-              )}
-              <Text
-                style={{
-                  color: canStart ? colors.onPrimary : colors.onDisabled,
-                  fontWeight: '800',
-                }}
-              >
-                {isEditing ? 'Done' : 'Start'}
-              </Text>
-            </Pressable>
-          </View>
+                <Text
+                  style={{
+                    color: canStart ? colors.onPrimary : colors.onDisabled,
+                    fontWeight: '800',
+                  }}
+                >
+                  Start
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
 
           <Text
             selectable
