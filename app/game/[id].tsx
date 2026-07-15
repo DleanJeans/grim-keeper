@@ -27,7 +27,11 @@ import type { KillAttribution, PlayerPosition, PlayerRoleAssignment } from '@/ty
 import { getLastDayWithData } from '@/utils/game-utils';
 import { getTokenSize, rotatePlayerMapPositions } from '@/utils/layout-utils';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
-import { getRoleAssignmentForDay } from '@/utils/role-utils';
+import {
+  getRoleAssignmentForDay,
+  getRolesForDayOrPrevious,
+  isTravelerRole,
+} from '@/utils/role-utils';
 
 export default function GameRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -127,10 +131,24 @@ export default function GameRoute() {
     trackingMode === 'nomination'
       ? [...nominatedPlayerIds].filter((playerId) => playerId !== selectedPlayerIds[0])
       : [];
-  const deadPlayerCount = activeGame.players.filter((player) =>
+  const gameRoles = activeGame.script?.roles ?? [];
+  const travelerPlayerIds = new Set(
+    activeGame.players
+      .filter((player) =>
+        getRolesForDayOrPrevious(player.roleAssignments, activeGame.activeDay, gameRoles).some(
+          isTravelerRole,
+        ),
+      )
+      .map((player) => player.id),
+  );
+  const nonTravelerPlayers = activeGame.players.filter(
+    (player) => !travelerPlayerIds.has(player.id),
+  );
+  const deadPlayerCount = nonTravelerPlayers.filter((player) =>
     isPlayerCurrentlyDead(player, activeGame.activeDay),
   ).length;
-  const alivePlayerCount = activeGame.players.length - deadPlayerCount;
+  const alivePlayerCount = nonTravelerPlayers.length - deadPlayerCount;
+  const travelerPlayerCount = travelerPlayerIds.size;
   const lastDayWithData = getLastDayWithData(activeGame);
 
   function exitMapModes() {
@@ -425,6 +443,7 @@ export default function GameRoute() {
     activeTokenSize,
     alivePlayerCount,
     deadPlayerCount,
+    travelerPlayerCount,
     disabledPlayerIds,
     nominatedPlayerIds,
     hideConnectionCurves,
@@ -501,6 +520,7 @@ export default function GameRoute() {
               deadPlayerCount={deadPlayerCount}
               lastDayWithData={lastDayWithData}
               onChangeDay={handleChangeDay}
+              travelerPlayerCount={travelerPlayerCount}
             />
           ),
         }}

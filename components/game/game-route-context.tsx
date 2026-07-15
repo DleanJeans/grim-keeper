@@ -22,6 +22,7 @@ export type GameRouteContextValue = {
   activeTokenSize: number;
   alivePlayerCount: number;
   deadPlayerCount: number;
+  travelerPlayerCount: number;
   disabledPlayerIds: string[];
   nominatedPlayerIds: Set<string>;
 

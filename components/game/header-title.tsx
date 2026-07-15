@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, HeartPulse, Skull } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Footprints, HeartPulse, Skull } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
 import { Text } from '@/components/text';
@@ -9,6 +9,7 @@ type HeaderTitleProps = {
   deadPlayerCount: number;
   lastDayWithData: number;
   onChangeDay: (day: number) => void;
+  travelerPlayerCount: number;
 };
 
 export function HeaderTitle({
@@ -17,6 +18,7 @@ export function HeaderTitle({
   deadPlayerCount,
   lastDayWithData,
   onChangeDay,
+  travelerPlayerCount,
 }: HeaderTitleProps) {
   return (
     <View style={{ alignItems: 'center', gap: 2 }}>
@@ -70,7 +72,11 @@ export function HeaderTitle({
           <ChevronRight color="#f8fafc" size={15} strokeWidth={2.7} />
         </Pressable>
       </View>
-      <PlayerStatus alivePlayerCount={alivePlayerCount} deadPlayerCount={deadPlayerCount} />
+      <PlayerStatus
+        alivePlayerCount={alivePlayerCount}
+        deadPlayerCount={deadPlayerCount}
+        travelerPlayerCount={travelerPlayerCount}
+      />
     </View>
   );
 }
@@ -78,9 +84,11 @@ export function HeaderTitle({
 function PlayerStatus({
   alivePlayerCount,
   deadPlayerCount,
+  travelerPlayerCount,
 }: {
   alivePlayerCount: number;
   deadPlayerCount: number;
+  travelerPlayerCount: number;
 }) {
   return (
     <View style={{ alignItems: 'center', flexDirection: 'row', gap: 8 }}>
@@ -93,6 +101,12 @@ function PlayerStatus({
       <View style={{ alignItems: 'center', flexDirection: 'row', gap: 3 }}>
         <Skull color="#fca5a5" size={14} strokeWidth={2.7} />
         <Text style={{ color: '#f8fafc', fontSize: 12, fontWeight: '900' }}>{deadPlayerCount}</Text>
+      </View>
+      <View style={{ alignItems: 'center', flexDirection: 'row', gap: 3 }}>
+        <Footprints color="#fcd34d" size={14} strokeWidth={2.7} />
+        <Text style={{ color: '#f8fafc', fontSize: 12, fontWeight: '900' }}>
+          {travelerPlayerCount}
+        </Text>
       </View>
     </View>
   );
