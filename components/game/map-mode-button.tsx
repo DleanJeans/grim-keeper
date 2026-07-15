@@ -12,6 +12,7 @@ type MapModeButtonProps = {
   label?: string;
   onPress: () => void;
   variant?: 'default' | 'confirm';
+  width?: number;
 };
 
 export function MapModeButton({
@@ -22,6 +23,7 @@ export function MapModeButton({
   label,
   onPress,
   variant = 'default',
+  width,
 }: MapModeButtonProps) {
   if (variant === 'confirm') {
     return (
@@ -38,7 +40,7 @@ export function MapModeButton({
           justifyContent: 'center',
           minWidth: 48,
           paddingVertical: 14,
-          width: 48,
+          width: width ?? 48,
         })}
       >
         <Check color="#0b1120" size={17} strokeWidth={2.8} />

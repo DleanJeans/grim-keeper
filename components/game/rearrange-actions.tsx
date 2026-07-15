@@ -59,6 +59,12 @@ export function RearrangeActions() {
           <RotateCcw color="#f8fafc" size={17} strokeWidth={2.7} />
           <Text style={onDarkTextStrong}>Left</Text>
         </Pressable>
+        <MapModeButton
+          accessibilityLabel="Done rearranging tokens"
+          onPress={exitRearrangeMode}
+          variant="confirm"
+          width={tokenSizeDisplayStyle.width}
+        />
         <Pressable
           accessibilityLabel="Rotate tokens right"
           accessibilityRole="button"
@@ -68,11 +74,6 @@ export function RearrangeActions() {
           <RotateCw color="#f8fafc" size={17} strokeWidth={2.7} />
           <Text style={onDarkTextStrong}>Right</Text>
         </Pressable>
-        <MapModeButton
-          accessibilityLabel="Done rearranging tokens"
-          onPress={exitRearrangeMode}
-          variant="confirm"
-        />
       </View>
     </View>
   );
