@@ -1,4 +1,5 @@
 import {
+  canRoleKill,
   getRoleAssignmentForDay,
   getRoleDisplayForDayOrPrevious,
   getRoleIconUrl,
@@ -107,6 +108,33 @@ describe('role utilities', () => {
     expect(isFlowerGirlRole({ id: 'flower_girl', name: 'Flower Girl' })).toBe(true);
     expect(isFlowerGirlRole({ id: 'flowergirl', name: 'Custom Name' })).toBe(true);
     expect(isFlowerGirlRole({ id: 'empath', name: 'Empath' })).toBe(false);
+  });
+
+  it('identifies roles that can kill another player', () => {
+    expect(
+      canRoleKill({
+        ability: 'Each night*, choose a player: they die.',
+        id: 'imp',
+        name: 'Imp',
+      }),
+    ).toBe(true);
+    expect(
+      canRoleKill({
+        ability: 'Each night, choose a statement. If true, a player dies.',
+        id: 'gossip',
+        name: 'Gossip',
+      }),
+    ).toBe(true);
+    expect(
+      canRoleKill({ ability: 'If you guess wrong, you die.', id: 'gambler', name: 'Gambler' }),
+    ).toBe(false);
+    expect(
+      canRoleKill({
+        ability: 'You learn if the Demon dies.',
+        id: 'undertaker',
+        name: 'Undertaker',
+      }),
+    ).toBe(false);
   });
 
   it('returns the visible role metadata for a player on a day', () => {

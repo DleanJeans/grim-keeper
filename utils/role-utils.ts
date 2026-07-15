@@ -53,6 +53,16 @@ export function isFlowerGirlRole(role: Role) {
   return normalizedId === 'flowergirl' || normalizedName === 'flowergirl';
 }
 
+export function canRoleKill(role: Role) {
+  const ability = role.ability?.toLocaleLowerCase() ?? '';
+
+  return (
+    /\b(?:choose|select|nominate|pick)\b[\s\S]{0,100}\b(?:a|another|one|target)?\s*player\b[\s\S]{0,100}\b(?:die|dies|killed|kill)\b/.test(
+      ability,
+    ) || /\b(?:a|another|one) player (?:die|dies|is killed|is dead)\b/.test(ability)
+  );
+}
+
 export function getRoleAssignmentForDay(
   assignments: PlayerRoleAssignment[] | undefined,
   day: number,
