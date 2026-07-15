@@ -29,6 +29,7 @@ export default function CreateRoute() {
   const deletePlayer = useGameStore((state) => state.deletePlayer);
   const games = useGameStore((state) => state.games);
   const scripts = useGameStore((state) => state.scripts);
+  const setGameScript = useGameStore((state) => state.setGameScript);
   const storedFriends = useGameStore((state) => state.friends);
   const inputRef = useRef<RNTextInput>(null);
   const [name, setName] = useState('');
@@ -46,10 +47,15 @@ export default function CreateRoute() {
     : draftPlayers;
   const fixedPlayerName =
     editingGame?.players.find((player) => player.isAppUser)?.name ?? appUserName;
-  const selectedScriptId = isEditing ? (editingGame?.script?.id ?? null) : draftSelectedScriptId;
-  const selectedScript = isEditing
-    ? editingGame?.script
-    : scripts.find((script) => script.id === selectedScriptId);
+  const availableScripts = useMemo(() => {
+    if (!editingGame?.script || scripts.some((script) => script.id === editingGame.script.id)) {
+      return scripts;
+    }
+
+    return [editingGame.script, ...scripts];
+  }, [editingGame?.script, scripts]);
+  const selectedScriptId = draftSelectedScriptId;
+  const selectedScript = availableScripts.find((script) => script.id === selectedScriptId);
   const friends = useMemo(
     () => getFriendSummaries(games, storedFriends, appUserName),
     [appUserName, games, storedFriends],
@@ -82,8 +88,10 @@ export default function CreateRoute() {
   useEffect(() => {
     if (scriptIdParam) {
       setDraftSelectedScriptId(scriptIdParam);
+    } else if (isEditing) {
+      setDraftSelectedScriptId(editingGame?.script?.id ?? null);
     }
-  }, [scriptIdParam]);
+  }, [editingGame?.script?.id, isEditing, scriptIdParam]);
 
   const helperText = useMemo(() => {
     if (duplicateName) {
@@ -95,7 +103,7 @@ export default function CreateRoute() {
     }
 
     return isEditing
-      ? 'Add or remove players, then tap Done.'
+      ? 'Add or remove players, choose a script, then tap Done.'
       : 'Long press a player to drag them into seat order.';
   }, [duplicateName, isEditing, players.length]);
 
@@ -160,6 +168,7 @@ export default function CreateRoute() {
     Keyboard.dismiss();
 
     if (isEditing && editingGame) {
+      setGameScript(editingGame.id, selectedScript);
       router.back();
       return;
     }
@@ -173,7 +182,9 @@ export default function CreateRoute() {
 
   return (
     <>
-      <Stack.Screen options={{ title: isEditing ? 'Edit Players' : 'New Game' }} />
+      <Stack.Screen
+        options={{ headerRight: () => null, title: isEditing ? 'Edit Players' : 'New Game' }}
+      />
       <View style={{ backgroundColor: colors.background, flex: 1 }}>
         <View style={{ gap: 14, padding: 20, paddingBottom: 12 }}>
           <View style={{ gap: 6 }}>
@@ -185,37 +196,20 @@ export default function CreateRoute() {
             </Text>
           </View>
 
-          {isEditing ? (
-            <View
-              style={{
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                borderRadius: 8,
-                borderWidth: 1,
-                gap: 4,
-                padding: 14,
-              }}
-            >
-              <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '700' }}>
-                Game script
-              </Text>
-              <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '800' }}>
-                {selectedScript?.name ?? 'No script'}
-              </Text>
-              <Text selectable style={{ color: colors.textMuted, fontSize: 13 }}>
-                Script roles stay unchanged while editing players.
-              </Text>
-            </View>
-          ) : (
-            <GameScriptPicker
-              onBrowse={() =>
-                router.push({ pathname: '/scripts', params: { selectForGame: 'true' } })
-              }
-              onSelect={setDraftSelectedScriptId}
-              scripts={scripts}
-              selectedScriptId={selectedScriptId}
-            />
-          )}
+          <GameScriptPicker
+            onBrowse={() =>
+              router.push({
+                pathname: '/scripts',
+                params:
+                  isEditing && editingGame
+                    ? { gameId: editingGame.id, selectForGame: 'true' }
+                    : { selectForGame: 'true' },
+              })
+            }
+            onSelect={setDraftSelectedScriptId}
+            scripts={availableScripts}
+            selectedScriptId={selectedScriptId}
+          />
 
           <View style={{ gap: 8 }}>
             <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '700' }}>

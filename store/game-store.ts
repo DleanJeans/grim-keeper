@@ -35,6 +35,7 @@ type GameState = {
   saveScript: (script: StoredScript) => void;
   updateScript: (script: StoredScript) => void;
   deleteScript: (scriptId: string) => void;
+  setGameScript: (gameId: string, script?: StoredScript) => void;
   setRoleCatalog: (roles: Role[]) => void;
   addPlayer: (gameId: string, name: string) => void;
   deleteGame: (gameId: string) => void;
@@ -166,6 +167,19 @@ export const useGameStore = create<GameState>()(
       deleteScript: (scriptId) => {
         set((state) => ({
           scripts: state.scripts.filter((script) => script.id !== scriptId),
+        }));
+      },
+      setGameScript: (gameId, script) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? {
+                  ...game,
+                  script: script ? { ...script, roles: [...script.roles] } : undefined,
+                  updatedAt: new Date().toISOString(),
+                }
+              : game,
+          ),
         }));
       },
       setRoleCatalog: (roles) => {

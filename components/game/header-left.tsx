@@ -11,7 +11,14 @@ type HeaderLeftProps = {
 
 export function HeaderLeft({ alivePlayerCount, deadPlayerCount, onEdit }: HeaderLeftProps) {
   return (
-    <View style={{ alignItems: 'center', flexDirection: 'row', gap: 8 }}>
+    <View
+      style={{
+        alignItems: 'center',
+        flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+      }}
+    >
       <View style={{ alignItems: 'center', flexDirection: 'row', gap: 3 }}>
         <HeartPulse color="#86efac" size={16} strokeWidth={2.7} />
         <Text style={{ color: '#f8fafc', fontSize: 14, fontWeight: '900' }}>

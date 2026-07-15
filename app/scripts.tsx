@@ -18,7 +18,10 @@ import {
 } from '@/utils/script-service';
 
 export default function ScriptsRoute() {
-  const { selectForGame } = useLocalSearchParams<{ selectForGame?: string }>();
+  const { gameId, selectForGame } = useLocalSearchParams<{
+    gameId?: string;
+    selectForGame?: string;
+  }>();
   const isSelectingForGame = selectForGame === 'true';
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const scripts = useGameStore((state) => state.scripts);
@@ -129,7 +132,10 @@ export default function ScriptsRoute() {
       return;
     }
 
-    router.navigate({ pathname: '/create', params: { scriptId: script.id } });
+    router.navigate({
+      pathname: '/create',
+      params: { ...(gameId ? { gameId } : {}), scriptId: script.id },
+    });
   }
 
   function confirmDeleteScript(script: StoredScript) {

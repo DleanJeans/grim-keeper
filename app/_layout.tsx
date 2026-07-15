@@ -52,7 +52,7 @@ function CompactHeader({ back, navigation, options, route }: NativeStackHeaderPr
 
   return (
     <View style={[styles.header, { paddingTop: insets.top }]}>
-      <View style={styles.headerContent}>
+      <View style={[styles.headerContent, route.name === 'game/[id]' && styles.gameHeaderContent]}>
         {back || HeaderLeft ? (
           <View style={[styles.headerSide, styles.headerLeft]}>
             {back && options.headerBackVisible !== false ? (
@@ -72,6 +72,7 @@ function CompactHeader({ back, navigation, options, route }: NativeStackHeaderPr
         <View
           style={[
             styles.headerTitleSlot,
+            route.name === 'game/[id]' ? styles.gameHeaderTitleSlot : null,
             route.name === 'index' ? styles.headerTitleSlotFull : null,
           ]}
         >
@@ -158,6 +159,9 @@ const styles = StyleSheet.create({
     height: 44,
     paddingHorizontal: 16,
   },
+  gameHeaderContent: {
+    paddingHorizontal: 8,
+  },
   headerLeft: {
     justifyContent: 'flex-start',
   },
@@ -182,6 +186,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 0.75,
     justifyContent: 'center',
+  },
+  gameHeaderTitleSlot: {
+    flex: 0,
   },
   headerTitleSlotFull: {
     flex: 1,
