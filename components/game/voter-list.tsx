@@ -44,9 +44,6 @@ export function VoterList({ players, voterIds }: VoterListProps) {
           No votes recorded
         </Text>
       )}
-      <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
-        ({voterIds.length})
-      </Text>
     </View>
   );
 }

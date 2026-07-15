@@ -86,6 +86,7 @@ export function NominationList() {
       ) : (
         nominations.map((nomination, index) => {
           const nominator = playerById.get(nomination.initiatorId);
+          const voterIds = nomination.voterIds ?? [];
           const nomineeId = nomination.participantIds.find(
             (playerId) => playerId !== nomination.initiatorId,
           );
@@ -146,26 +147,6 @@ export function NominationList() {
                     )}
                   </View>
                 </View>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() =>
-                    handleEditNominationVotes(nomination.id, nomination.voterIds ?? [])
-                  }
-                  style={({ pressed }) => ({
-                    alignItems: 'center',
-                    backgroundColor: pressed ? colors.surfacePressed : colors.surfaceRaised,
-                    borderColor: colors.border,
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    flexDirection: 'row',
-                    gap: 6,
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                  })}
-                >
-                  <Pencil color={colors.text} size={15} strokeWidth={2.6} />
-                  <Text style={{ color: colors.text, fontSize: 13, fontWeight: '800' }}>Votes</Text>
-                </Pressable>
                 {nominee ? (
                   <ExecuteButton
                     disabled={nomineeIsDead}
@@ -206,7 +187,29 @@ export function NominationList() {
                   <Trash2 color={colors.danger} size={15} strokeWidth={2.6} />
                 </Pressable>
               </View>
-              <VoterList players={players} voterIds={nomination.voterIds ?? []} />
+              <VoterList players={players} voterIds={voterIds} />
+              <Pressable
+                accessibilityLabel={`Edit ${voterIds.length} votes`}
+                accessibilityRole="button"
+                onPress={() => handleEditNominationVotes(nomination.id, voterIds)}
+                style={({ pressed }) => ({
+                  alignItems: 'center',
+                  alignSelf: 'flex-start',
+                  backgroundColor: pressed ? colors.surfacePressed : colors.surfaceRaised,
+                  borderColor: colors.border,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  flexDirection: 'row',
+                  gap: 6,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                })}
+              >
+                <Pencil color={colors.text} size={15} strokeWidth={2.6} />
+                <Text style={{ color: colors.text, fontSize: 13, fontWeight: '800' }}>
+                  {voterIds.length} votes
+                </Text>
+              </Pressable>
             </View>
           );
         })
