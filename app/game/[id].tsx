@@ -489,14 +489,14 @@ export default function GameRoute() {
           headerLeft: () => null,
           headerRight: () => (
             <HeaderLeft
-              alivePlayerCount={alivePlayerCount}
-              deadPlayerCount={deadPlayerCount}
               onEdit={() => router.push({ pathname: '/create', params: { gameId: activeGame.id } })}
             />
           ),
           headerTitle: () => (
             <HeaderTitle
               activeDay={activeGame.activeDay}
+              alivePlayerCount={alivePlayerCount}
+              deadPlayerCount={deadPlayerCount}
               lastDayWithData={lastDayWithData}
               onChangeDay={handleChangeDay}
             />

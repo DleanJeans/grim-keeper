@@ -166,6 +166,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   gameHeaderContent: {
+    height: 64,
     paddingHorizontal: 8,
   },
   headerLeft: {
