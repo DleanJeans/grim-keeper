@@ -5,8 +5,11 @@ import { useGameRouteContext } from '@/components/game/game-route-context';
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { RolePicker } from '@/components/game/role-picker';
 import { innerActionRow } from '@/components/game/styles';
+import { TravelerRolePicker } from '@/components/game/traveler-role-picker';
 import { Text } from '@/components/text';
+import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
+import type { Role } from '@/types/game';
 import { getRoleOwnerNamesForDay, isTravelerRole } from '@/utils/role-utils';
 
 export function RoleAssignmentActions() {
@@ -22,17 +25,21 @@ export function RoleAssignmentActions() {
     roleAssignmentRoleIds,
     showRoles,
   } = useGameRouteContext();
+  const roleCatalog = useGameStore((state) => state.roleCatalog);
 
   if (!focusedPlayer || interactionMode || !game.script) {
     return null;
   }
 
-  const selectableRoles =
+  const selectableRoles = mergeRoleLists(game.script.roles, roleCatalog.filter(isTravelerRole));
+  const assignmentRoles =
     roleAssignmentKind === 'claim'
-      ? game.script.roles.filter((role) => !isTravelerRole(role))
-      : game.script.roles;
+      ? selectableRoles.filter((role) => !isTravelerRole(role))
+      : selectableRoles;
+  const regularRoles = assignmentRoles.filter((role) => !isTravelerRole(role));
+  const travelerRoles = assignmentRoles.filter(isTravelerRole);
   const roleOwnerNames = showRoles
-    ? getRoleOwnerNamesForDay(players, game.activeDay, game.script.roles)
+    ? getRoleOwnerNamesForDay(players, game.activeDay, selectableRoles)
     : undefined;
 
   return (
@@ -85,15 +92,29 @@ export function RoleAssignmentActions() {
           <RolePicker
             description="Tap a role to claim or confirm it. Tap the selected role again to clear it."
             onToggleRole={handleToggleRoleAssignment}
-            roles={selectableRoles}
+            roles={regularRoles}
             roleOwnerNames={roleOwnerNames}
             sectioned
             selectedRoleIds={roleAssignmentRoleIds}
           />
+          {roleAssignmentKind === 'confirm' ? (
+            <TravelerRolePicker
+              description="Choose one traveler role to confirm for this player."
+              onToggleRole={handleToggleRoleAssignment}
+              roles={travelerRoles}
+              selectedRoleIds={roleAssignmentRoleIds}
+            />
+          ) : null}
         </View>
       ) : null}
     </View>
   );
+}
+
+function mergeRoleLists(scriptRoles: Role[], travelerRoles: Role[]) {
+  const scriptRoleIds = new Set(scriptRoles.map((role) => role.id));
+
+  return [...scriptRoles, ...travelerRoles.filter((role) => !scriptRoleIds.has(role.id))];
 }
 
 function RoleAssignmentButton({

@@ -5,11 +5,10 @@ import { Pressable, View } from 'react-native';
 
 import { FixedPlayerRow } from '@/components/create/fixed-player-row';
 import { FriendSuggestions } from '@/components/friends/friend-suggestions';
-import { TravelerRolePicker } from '@/components/game/traveler-role-picker';
 import { GameScriptPicker } from '@/components/scripts/game-script-picker';
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { FriendSummary, Role, StoredScript } from '@/types/game';
+import type { FriendSummary, StoredScript } from '@/types/game';
 
 type CreateFormHeaderProps = {
   canAddPlayer: boolean;
@@ -31,12 +30,8 @@ type CreateFormHeaderProps = {
   onSelectScript: (scriptId: string | null) => void;
   onStart: () => void;
   onSubmitName: () => void;
-  onToggleTravelerRole: (roleId: string) => void;
-  roles: Role[];
   scripts: StoredScript[];
-  selectedRoleIds: string[];
   selectedScriptId: string | null;
-  selectedScriptName?: string;
 };
 
 export function CreateFormHeader({
@@ -59,12 +54,8 @@ export function CreateFormHeader({
   onSelectScript,
   onStart,
   onSubmitName,
-  onToggleTravelerRole,
-  roles,
   scripts,
-  selectedRoleIds,
   selectedScriptId,
-  selectedScriptName,
 }: CreateFormHeaderProps) {
   return (
     <View style={{ gap: 14, paddingBottom: 12 }}>
@@ -73,13 +64,6 @@ export function CreateFormHeader({
         onSelect={onSelectScript}
         scripts={scripts}
         selectedScriptId={selectedScriptId}
-      />
-
-      <TravelerRolePicker
-        onToggleRole={onToggleTravelerRole}
-        roles={roles}
-        selectedRoleIds={selectedRoleIds}
-        selectedScriptName={selectedScriptName}
       />
 
       <View style={{ gap: 8 }}>

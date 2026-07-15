@@ -8,21 +8,24 @@ import { colors } from '@/theme/colors';
 import type { Role } from '@/types/game';
 
 type TravelerRolePickerProps = {
+  description?: string;
   roles: Role[];
   selectedRoleIds: string[];
-  selectedScriptName?: string;
   onToggleRole: (roleId: string) => void;
 };
 
 export function TravelerRolePicker({
+  description = 'Choose one traveler role to confirm for this player.',
   onToggleRole,
   roles,
   selectedRoleIds,
-  selectedScriptName,
 }: TravelerRolePickerProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const disabled = !selectedScriptName || roles.length === 0;
+  const selectedTravelerRoleIds = selectedRoleIds.filter((roleId) =>
+    roles.some((role) => role.id === roleId),
+  );
+  const disabled = roles.length === 0;
   const filteredRoles = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
 
@@ -36,12 +39,11 @@ export function TravelerRolePicker({
         role.id.toLocaleLowerCase().includes(normalizedQuery),
     );
   }, [roles, searchQuery]);
-  const summary = !selectedScriptName
-    ? 'Select a game script first'
-    : roles.length === 0
+  const summary =
+    roles.length === 0
       ? 'Traveler characters are unavailable offline'
-      : selectedRoleIds.length > 0
-        ? `${selectedRoleIds.length} selected`
+      : selectedTravelerRoleIds.length > 0
+        ? `${selectedTravelerRoleIds.length} selected`
         : 'None selected';
 
   return (
@@ -82,9 +84,7 @@ export function TravelerRolePicker({
             selectable
             style={{ color: disabled ? colors.onDisabled : colors.textMuted, fontSize: 12 }}
           >
-            {selectedScriptName
-              ? `Add travelers to ${selectedScriptName}`
-              : 'Choose a script first'}
+            Choose a traveler role for this player
           </Text>
         </View>
         <ChevronDown
@@ -125,7 +125,7 @@ export function TravelerRolePicker({
                 selectable
                 style={{ color: colors.text, flex: 1, fontSize: 18, fontWeight: '900' }}
               >
-                Traveler characters
+                Traveler roles
               </Text>
               <Pressable
                 accessibilityLabel="Close traveler character picker"
@@ -185,7 +185,7 @@ export function TravelerRolePicker({
             >
               {filteredRoles.length > 0 ? (
                 <RolePicker
-                  description="Choose traveler characters to include in this game's script."
+                  description={description}
                   onToggleRole={onToggleRole}
                   roles={filteredRoles}
                   selectedRoleIds={selectedRoleIds}

@@ -11,7 +11,6 @@ import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { hasDuplicatePlayerName, normalizePlayerName } from '@/utils/conversation-utils';
 import { getFriendSummaries } from '@/utils/friend-utils';
-import { isTravelerRole } from '@/utils/role-utils';
 
 export default function CreateRoute() {
   const { gameId: gameIdParam, scriptId: scriptIdParam } = useLocalSearchParams<{
@@ -23,7 +22,6 @@ export default function CreateRoute() {
   const createGame = useGameStore((state) => state.createGame);
   const deletePlayer = useGameStore((state) => state.deletePlayer);
   const games = useGameStore((state) => state.games);
-  const roleCatalog = useGameStore((state) => state.roleCatalog);
   const scripts = useGameStore((state) => state.scripts);
   const setGameScript = useGameStore((state) => state.setGameScript);
   const storedFriends = useGameStore((state) => state.friends);
@@ -31,7 +29,6 @@ export default function CreateRoute() {
   const [name, setName] = useState('');
   const [nameFocused, setNameFocused] = useState(false);
   const [draftPlayers, setDraftPlayers] = useState<DraftPlayer[]>([]);
-  const [selectedTravelerRoleIds, setSelectedTravelerRoleIds] = useState<string[]>([]);
   const [draftSelectedScriptId, setDraftSelectedScriptId] = useState<string | null>(
     scriptIdParam ?? null,
   );
@@ -54,7 +51,6 @@ export default function CreateRoute() {
   }, [legacyScript, scripts]);
   const selectedScriptId = draftSelectedScriptId;
   const selectedScript = availableScripts.find((script) => script.id === selectedScriptId);
-  const travelerRoles = useMemo(() => roleCatalog.filter(isTravelerRole), [roleCatalog]);
   const selectedNames = useMemo(
     () => [fixedPlayerName, ...players.map((player) => player.name)],
     [fixedPlayerName, players],
@@ -84,27 +80,6 @@ export default function CreateRoute() {
       .slice(0, 5);
   }, [friends, normalizedName, selectedNames]);
 
-  const selectedScriptForGame = useMemo(() => {
-    if (!selectedScript) {
-      return undefined;
-    }
-
-    const selectedTravelerRoleIdSet = new Set(selectedTravelerRoleIds);
-    const existingRoleIds = new Set(selectedScript.roles.map((role) => role.id));
-    const roles = selectedScript.roles.filter(
-      (role) => !isTravelerRole(role) || selectedTravelerRoleIdSet.has(role.id),
-    );
-    const addedTravelerRoles = travelerRoles.filter(
-      (role) => selectedTravelerRoleIdSet.has(role.id) && !existingRoleIds.has(role.id),
-    );
-
-    return {
-      ...selectedScript,
-      roles: [...roles, ...addedTravelerRoles],
-      updatedAt: new Date().toISOString(),
-    };
-  }, [selectedScript, selectedTravelerRoleIds, travelerRoles]);
-
   useEffect(() => {
     if (scriptIdParam) {
       setDraftSelectedScriptId(scriptIdParam);
@@ -112,12 +87,6 @@ export default function CreateRoute() {
       setDraftSelectedScriptId(editingGame?.script?.id ?? null);
     }
   }, [editingGame?.script?.id, isEditing, scriptIdParam]);
-
-  useEffect(() => {
-    setSelectedTravelerRoleIds(
-      selectedScript?.roles.filter(isTravelerRole).map((role) => role.id) ?? [],
-    );
-  }, [selectedScript]);
 
   const helperText = useMemo(() => {
     if (duplicateName) {
@@ -180,14 +149,6 @@ export default function CreateRoute() {
     setDraftPlayers((currentPlayers) => currentPlayers.filter((player) => player.id !== playerId));
   }
 
-  function handleToggleTravelerRole(roleId: string) {
-    setSelectedTravelerRoleIds((currentRoleIds) =>
-      currentRoleIds.includes(roleId)
-        ? currentRoleIds.filter((currentRoleId) => currentRoleId !== roleId)
-        : [...currentRoleIds, roleId],
-    );
-  }
-
   function handleStart() {
     if (!canStart) {
       return;
@@ -196,14 +157,14 @@ export default function CreateRoute() {
     Keyboard.dismiss();
 
     if (isEditing && editingGame) {
-      setGameScript(editingGame.id, selectedScriptForGame);
+      setGameScript(editingGame.id, selectedScript);
       router.back();
       return;
     }
 
     const game = createGame({
       playerNames: players.map((player) => player.name),
-      script: selectedScriptForGame,
+      script: selectedScript,
     });
     router.replace({ pathname: '/game/[id]', params: { id: game.id } });
   }
@@ -285,12 +246,8 @@ export default function CreateRoute() {
               onSelectScript={setDraftSelectedScriptId}
               onStart={handleStart}
               onSubmitName={handleAddPlayer}
-              onToggleTravelerRole={handleToggleTravelerRole}
-              roles={travelerRoles}
               scripts={availableScripts}
-              selectedRoleIds={selectedTravelerRoleIds}
               selectedScriptId={selectedScriptId}
-              selectedScriptName={selectedScript?.name}
             />
           }
           onDragEnd={({ data }) => {

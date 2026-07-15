@@ -28,6 +28,7 @@ import { getLastDayWithData } from '@/utils/game-utils';
 import { getTokenSize, rotatePlayerMapPositions } from '@/utils/layout-utils';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 import {
+  addRoleToScript,
   getRoleAssignmentForDay,
   getRolesForDayOrPrevious,
   isTravelerRole,
@@ -40,6 +41,8 @@ export default function GameRoute() {
   const setPlayerDeath = useGameStore((state) => state.setPlayerDeath);
   const setPlayerRevive = useGameStore((state) => state.setPlayerRevive);
   const setPlayerRoleAssignment = useGameStore((state) => state.setPlayerRoleAssignment);
+  const roleCatalog = useGameStore((state) => state.roleCatalog);
+  const setGameScript = useGameStore((state) => state.setGameScript);
   const setPlayerDayNote = useGameStore((state) => state.setPlayerDayNote);
   const updatePlayerPosition = useGameStore((state) => state.updatePlayerPosition);
   const updatePlayerPositions = useGameStore((state) => state.updatePlayerPositions);
@@ -349,6 +352,15 @@ export default function GameRoute() {
 
   function handleToggleRoleAssignment(roleId: string) {
     const nextRoleIds = roleAssignmentRoleIds[0] === roleId ? [] : [roleId];
+
+    const travelerRole = roleCatalog.find((role) => role.id === roleId);
+    if (travelerRole && isTravelerRole(travelerRole) && activeGame.script) {
+      const nextScript = addRoleToScript(activeGame.script, travelerRole);
+      if (nextScript !== activeGame.script) {
+        setGameScript(activeGame.id, nextScript);
+      }
+    }
+
     handleSaveRoleAssignment(nextRoleIds);
   }
 
