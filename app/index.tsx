@@ -106,7 +106,7 @@ export default function HomeRoute() {
               >
                 <View style={{ flex: 1, gap: 8 }}>
                   <Text selectable style={{ color: colors.text, fontSize: 17, fontWeight: '700' }}>
-                    {formatGameTitle(game.createdAt)}
+                    {game.script?.name ?? formatGameTitle(game.createdAt)}
                   </Text>
                   <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
                     {game.players.length} players - Day {game.activeDay}/{getLastDayWithData(game)}
