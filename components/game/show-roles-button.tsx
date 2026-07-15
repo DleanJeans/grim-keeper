@@ -17,10 +17,11 @@ export function RevealRolesButton({
       accessibilityHint="Hold to reveal every player role"
       accessibilityLabel="Hold to reveal all roles"
       accessibilityRole="button"
-      onPress={() => onRevealRolesChange(false)}
       onPressIn={() => onRevealRolesChange(true)}
       onPressOut={() => onRevealRolesChange(false)}
       onTouchCancel={() => onRevealRolesChange(false)}
+      hitSlop={10}
+      pressRetentionOffset={10}
       style={({ pressed }) => ({
         alignItems: 'center',
         backgroundColor: pressed || showRoles ? colors.surfacePressed : colors.surface,
