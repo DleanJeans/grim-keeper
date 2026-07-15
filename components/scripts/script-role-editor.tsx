@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { RoleIcon } from '@/components/role-icon';
+import { RoleNotes } from '@/components/role-notes';
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Role, StoredScript } from '@/types/game';
@@ -96,9 +97,12 @@ export function ScriptRoleEditor({ onChange, roleCatalog, script }: ScriptRoleEd
               >
                 <Plus color={colors.success} size={16} strokeWidth={2.6} />
                 <RoleIcon role={role} size={24} />
-                <Text selectable style={{ color: colors.text, fontWeight: '700' }}>
-                  {role.name}
-                </Text>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text selectable style={{ color: colors.text, fontWeight: '700' }}>
+                    {role.name}
+                  </Text>
+                  <RoleNotes compact role={role} />
+                </View>
               </Pressable>
             ))
           )}
@@ -125,9 +129,12 @@ function RoleChip({ onRemove, role }: { onRemove: () => void; role: Role }) {
       }}
     >
       <RoleIcon role={role} size={24} />
-      <Text selectable style={{ color: colors.text, fontSize: 13, fontWeight: '700' }}>
-        {role.name}
-      </Text>
+      <View style={{ gap: 2 }}>
+        <Text selectable style={{ color: colors.text, fontSize: 13, fontWeight: '700' }}>
+          {role.name}
+        </Text>
+        <RoleNotes compact role={role} />
+      </View>
       <Pressable
         accessibilityLabel={`Remove ${role.name} from script`}
         accessibilityRole="button"

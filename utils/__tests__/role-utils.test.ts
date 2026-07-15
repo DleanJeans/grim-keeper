@@ -83,6 +83,15 @@ describe('role utilities', () => {
     ]);
   });
 
+  it('keeps role notes when merging script metadata', () => {
+    const roles = mergeScriptRoles(
+      [{ id: 'empath' }],
+      [{ id: 'empath', name: 'Empath', notes: ['Watch their timing.'] }],
+    );
+
+    expect(roles[0].notes).toEqual(['Watch their timing.']);
+  });
+
   it('formats unknown role ids for display', () => {
     expect(getRoleNames(['custom_role'], [])).toEqual(['Custom Role']);
   });

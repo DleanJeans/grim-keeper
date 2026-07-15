@@ -2,6 +2,7 @@ import { Check } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
 import { RoleIcon } from '@/components/role-icon';
+import { RoleNotes } from '@/components/role-notes';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Role } from '@/types/game';
@@ -127,6 +128,7 @@ function RoleChoiceButton({
         >
           {role.name}
         </Text>
+        <RoleNotes compact role={role} />
         {ownerNames?.length ? (
           <Text
             selectable

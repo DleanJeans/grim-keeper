@@ -235,6 +235,7 @@ function normalizeRole(item: unknown, catalogById: Map<string, Role>): Role | un
       (typeof candidate.name === 'string' && candidate.name) ||
       catalogRole?.name ||
       formatRoleId(id),
+    notes: normalizeRoleNotes(candidate.notes) ?? catalogRole?.notes,
     team: (typeof candidate.team === 'string' && candidate.team) || catalogRole?.team,
     edition: (typeof candidate.edition === 'string' && candidate.edition) || catalogRole?.edition,
     imageUrl:
@@ -244,6 +245,18 @@ function normalizeRole(item: unknown, catalogById: Map<string, Role>): Role | un
   };
 
   return role;
+}
+
+function normalizeRoleNotes(value: unknown) {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const notes = [...new Set(value.filter((note): note is string => typeof note === 'string'))]
+    .map((note) => note.trim())
+    .filter(Boolean);
+
+  return notes.length > 0 ? notes : undefined;
 }
 
 function formatRoleId(roleId: string) {

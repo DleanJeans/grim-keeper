@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { RoleIcon } from '@/components/role-icon';
+import { RoleNotes } from '@/components/role-notes';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Player, PlayerDeath, PlayerRevive, Role } from '@/types/game';
@@ -186,9 +187,12 @@ function KillerRoleView({ role }: { role: Role }) {
   return (
     <View style={styles.roleName}>
       <RoleIcon role={role} size={14} />
-      <Text selectable style={styles.subtitle}>
-        {role.name}
-      </Text>
+      <View style={styles.roleDescription}>
+        <Text selectable style={styles.subtitle}>
+          {role.name}
+        </Text>
+        <RoleNotes compact role={role} />
+      </View>
     </View>
   );
 }
@@ -261,5 +265,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 3,
+  },
+  roleDescription: {
+    gap: 1,
   },
 });

@@ -50,6 +50,7 @@ type GameState = {
     roleIds: string[],
   ) => void;
   setPlayerDayNote: (gameId: string, playerId: string, day: number, text: string) => void;
+  saveNoteForFutureGames: (playerName: string, roleIds: string[], text: string) => void;
   setTokenSize: (gameId: string, tokenSize: number) => void;
   setActiveDay: (gameId: string, day: number) => void;
   updatePlayerPosition: (gameId: string, playerId: string, position: PlayerPosition) => void;
@@ -149,11 +150,26 @@ export const useGameStore = create<GameState>()(
           );
 
           if (existingIndex < 0) {
-            return { scripts: [...state.scripts, script] };
+            return {
+              scripts: [
+                ...state.scripts,
+                {
+                  ...script,
+                  roles: mergeRoleNotes(script.roles, state.roleCatalog),
+                },
+              ],
+            };
           }
 
           const scripts = [...state.scripts];
-          scripts[existingIndex] = { ...script, id: state.scripts[existingIndex].id };
+          scripts[existingIndex] = {
+            ...script,
+            id: state.scripts[existingIndex].id,
+            roles: mergeRoleNotes(script.roles, [
+              ...state.roleCatalog,
+              ...state.scripts[existingIndex].roles,
+            ]),
+          };
           return { scripts };
         });
       },
@@ -175,7 +191,15 @@ export const useGameStore = create<GameState>()(
             game.id === gameId
               ? {
                   ...game,
-                  script: script ? { ...script, roles: [...script.roles] } : undefined,
+                  script: script
+                    ? {
+                        ...script,
+                        roles: mergeRoleNotes(script.roles, [
+                          ...state.roleCatalog,
+                          ...(game.script?.roles ?? []),
+                        ]),
+                      }
+                    : undefined,
                   updatedAt: new Date().toISOString(),
                 }
               : game,
@@ -183,7 +207,9 @@ export const useGameStore = create<GameState>()(
         }));
       },
       setRoleCatalog: (roles) => {
-        set({ roleCatalog: dedupeRoles(roles) });
+        set((state) => ({
+          roleCatalog: mergeRoleNotes(dedupeRoles(roles), state.roleCatalog),
+        }));
       },
       addPlayer: (gameId, name) => {
         const normalizedName = normalizePlayerName(name);
@@ -366,6 +392,76 @@ export const useGameStore = create<GameState>()(
           }),
         }));
       },
+      saveNoteForFutureGames: (playerName, roleIds, text) => {
+        const nextText = text.trim();
+
+        if (!nextText) {
+          return;
+        }
+
+        const normalizedPlayerName = normalizePlayerName(playerName);
+        const playerKey = normalizedPlayerName.toLocaleLowerCase();
+        const uniqueRoleIds = new Set(roleIds);
+        const updatedAt = new Date().toISOString();
+
+        set((state) => {
+          const appUserKey = normalizePlayerName(state.appUserName).toLocaleLowerCase();
+          const shouldSaveFriend = !!normalizedPlayerName && playerKey !== appUserKey;
+          let friends = state.friends;
+
+          if (shouldSaveFriend) {
+            const existingFriendIndex = state.friends.findIndex(
+              (friend) => normalizePlayerName(friend.name).toLocaleLowerCase() === playerKey,
+            );
+
+            if (existingFriendIndex >= 0) {
+              friends = state.friends.map((friend, index) =>
+                index === existingFriendIndex
+                  ? { ...friend, notes: appendUniqueNote(friend.notes, nextText) }
+                  : friend,
+              );
+            } else {
+              friends = [
+                ...state.friends,
+                {
+                  id: createId('friend'),
+                  name: normalizedPlayerName,
+                  createdAt: updatedAt,
+                  notes: [nextText],
+                },
+              ];
+            }
+          }
+
+          const roleCatalog = state.roleCatalog.map((role) =>
+            uniqueRoleIds.has(role.id) ? addRoleNote(role, nextText) : role,
+          );
+          const scripts = state.scripts.map((script) => ({
+            ...script,
+            roles: script.roles.map((role) =>
+              uniqueRoleIds.has(role.id) ? addRoleNote(role, nextText) : role,
+            ),
+          }));
+          const games = state.games.map((game) => {
+            if (!game.script) {
+              return game;
+            }
+
+            return {
+              ...game,
+              script: {
+                ...game.script,
+                roles: game.script.roles.map((role) =>
+                  uniqueRoleIds.has(role.id) ? addRoleNote(role, nextText) : role,
+                ),
+              },
+              updatedAt: uniqueRoleIds.size > 0 ? updatedAt : game.updatedAt,
+            };
+          });
+
+          return { friends, games, roleCatalog, scripts };
+        });
+      },
       setTokenSize: (gameId, tokenSize) => {
         set((state) => ({
           games: state.games.map((game) =>
@@ -517,4 +613,34 @@ function createId(prefix: string) {
 
 function dedupeRoles(roles: Role[]) {
   return [...new Map(roles.map((role) => [role.id, role])).values()];
+}
+
+function mergeRoleNotes(roles: Role[], sources: Role[]) {
+  const notesByRoleId = new Map<string, string[]>();
+
+  for (const source of sources) {
+    if (!source.notes?.length) {
+      continue;
+    }
+
+    notesByRoleId.set(source.id, [...(notesByRoleId.get(source.id) ?? []), ...source.notes]);
+  }
+
+  return roles.map((role) => {
+    const sourceNotes = notesByRoleId.get(role.id);
+    if (!sourceNotes?.length) {
+      return role;
+    }
+
+    return { ...role, notes: [...new Set([...(role.notes ?? []), ...sourceNotes])] };
+  });
+}
+
+function appendUniqueNote(notes: string[] | undefined, note: string) {
+  return notes?.includes(note) ? notes : [...(notes ?? []), note];
+}
+
+function addRoleNote(role: Role, note: string) {
+  const notes = appendUniqueNote(role.notes, note);
+  return notes === role.notes ? role : { ...role, notes };
 }

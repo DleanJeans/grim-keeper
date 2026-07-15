@@ -1,6 +1,7 @@
 import { View } from 'react-native';
 
 import { RoleIcon } from '@/components/role-icon';
+import { RoleNotes } from '@/components/role-notes';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Role } from '@/types/game';
@@ -8,15 +9,18 @@ import type { Role } from '@/types/game';
 export function ScriptRoleList({ roleCatalog, roles }: { roleCatalog: Role[]; roles: Role[] }) {
   return (
     <View style={{ gap: 10 }}>
-      {roles.map((role) => (
-        <ScriptRoleDetail
-          key={role.id}
-          role={role}
-          description={
-            role.ability ?? roleCatalog.find((catalogRole) => catalogRole.id === role.id)?.ability
-          }
-        />
-      ))}
+      {roles.map((role) => {
+        const catalogRole = roleCatalog.find((candidate) => candidate.id === role.id);
+        const displayRole = role.notes?.length ? role : { ...role, notes: catalogRole?.notes };
+
+        return (
+          <ScriptRoleDetail
+            key={role.id}
+            role={displayRole}
+            description={role.ability ?? catalogRole?.ability}
+          />
+        );
+      })}
     </View>
   );
 }
@@ -58,6 +62,7 @@ function ScriptRoleDetail({ description, role }: { description?: string; role: R
       <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
         {description ?? 'No description available.'}
       </Text>
+      <RoleNotes label role={role} />
     </View>
   );
 }

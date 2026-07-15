@@ -4,6 +4,7 @@ import { useGameRouteContext } from '@/components/game/game-route-context';
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { PlayerNoteSection } from '@/components/game/player-notes';
 import { RoleAssignmentActions } from '@/components/game/role-assignment-actions';
+import { SaveNoteForFutureButton } from '@/components/game/save-note-for-future-button';
 import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
@@ -66,9 +67,11 @@ function DayNoteRow({ player, day, text }: { player: Player; day: number; text: 
     setNoteDraft: onChangeNoteDraft,
     handleShowPlayerNoteForDay: onShowNote,
     handleSavePlayerNote: onSaveNote,
+    handleSavePlayerNoteForFuture: onSaveNoteForFuture,
   } = useGameRouteContext();
 
   const isEditing = noteEditingDay === day && noteEditingPlayerId === player.id;
+  const reusableNoteText = isEditing ? noteDraft : text;
 
   return (
     <View style={{ gap: 4 }}>
@@ -83,6 +86,12 @@ function DayNoteRow({ player, day, text }: { player: Player; day: number; text: 
         >
           <Pencil color={colors.textMuted} size={14} strokeWidth={2.5} />
         </Pressable>
+        <SaveNoteForFutureButton
+          day={day}
+          disabled={!reusableNoteText.trim()}
+          onPress={() => onSaveNoteForFuture(player.id, day, reusableNoteText)}
+          playerName={player.name}
+        />
       </View>
       {isEditing ? (
         <View style={innerActionRow}>

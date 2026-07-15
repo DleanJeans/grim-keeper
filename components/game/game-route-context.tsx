@@ -78,6 +78,7 @@ export type GameRouteContextValue = {
   handleUndoFocusedPlayerDeath: () => void;
   handleShowPlayerNoteForDay: (playerId: string, day: number) => void;
   handleSavePlayerNote: () => void;
+  handleSavePlayerNoteForFuture: (playerId: string, day: number, text: string) => void;
   noteEditingDay: number | null;
   noteEditingPlayerId: string | null;
   handleDeleteConversation: (conversationId: string) => void;

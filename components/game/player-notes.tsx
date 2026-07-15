@@ -1,8 +1,10 @@
 import { Check, Pencil } from 'lucide-react-native';
 import { Pressable, TextInput, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { SaveNoteForFutureButton } from '@/components/game/save-note-for-future-button';
 import { innerActionRow } from '@/components/game/styles';
 import { RoleIcon } from '@/components/role-icon';
+import { RoleNotes } from '@/components/role-notes';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Player, Role } from '@/types/game';
@@ -77,9 +79,11 @@ export function PlayerNoteRow({
     setNoteDraft: onChangeNoteDraft,
     handleShowPlayerNoteForDay: onShowNote,
     handleSavePlayerNote: onSaveNote,
+    handleSavePlayerNoteForFuture: onSaveNoteForFuture,
   } = useGameRouteContext();
 
   const isEditing = noteEditingDay === day && noteEditingPlayerId === player.id;
+  const reusableNoteText = isEditing ? noteDraft : (text ?? '');
   const roleAssignment = showRoles
     ? getRoleAssignmentForDay(player.roleAssignments, day)
     : undefined;
@@ -99,6 +103,12 @@ export function PlayerNoteRow({
         >
           <Pencil color={colors.textMuted} size={14} strokeWidth={2.5} />
         </Pressable>
+        <SaveNoteForFutureButton
+          day={day}
+          disabled={!reusableNoteText.trim()}
+          onPress={() => onSaveNoteForFuture(player.id, day, reusableNoteText)}
+          playerName={player.name}
+        />
       </View>
       {isEditing ? (
         <View style={innerActionRow}>
@@ -146,11 +156,14 @@ function PlayerNoteRoleAssignment({ kind, roles }: { kind: 'claim' | 'confirm'; 
       </Text>
       {kind === 'confirm' ? <Check color="#86efac" size={14} strokeWidth={3} /> : null}
       {roles.map((role) => (
-        <View key={role.id} style={{ alignItems: 'center', flexDirection: 'row', gap: 3 }}>
+        <View key={role.id} style={{ alignItems: 'flex-start', flexDirection: 'row', gap: 3 }}>
           <RoleIcon role={role} size={18} />
-          <Text selectable style={{ color: colors.textMuted, fontSize: 12, fontWeight: '700' }}>
-            {role.name}
-          </Text>
+          <View style={{ gap: 1 }}>
+            <Text selectable style={{ color: colors.textMuted, fontSize: 12, fontWeight: '700' }}>
+              {role.name}
+            </Text>
+            <RoleNotes compact role={role} />
+          </View>
         </View>
       ))}
     </View>

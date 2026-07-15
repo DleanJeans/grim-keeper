@@ -7,6 +7,7 @@ export type Role = {
   ability?: string;
   id: string;
   name: string;
+  notes?: string[];
   team?: string;
   edition?: string;
   imageUrl?: string;
@@ -95,6 +96,7 @@ export type Friend = {
   id: string;
   name: string;
   createdAt: string;
+  notes?: string[];
 };
 
 export type FriendSummary = Friend & {
