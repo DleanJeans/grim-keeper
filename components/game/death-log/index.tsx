@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Player, StoredScript } from '@/types/game';
-import { getRolesByIds } from '@/utils/role-utils';
+import { GENERIC_KILLER_ROLES, getRolesByIds } from '@/utils/role-utils';
 
 import { collectLogEntries } from './entries';
 import { DeathLogRow, getLogEntryKey } from './row';
@@ -89,7 +89,10 @@ function getKillerDescription(
     const player = playerById.get(playerId);
     return player ? [player] : [];
   });
-  const killerRoles = getRolesByIds(entry.death.killerRoleIds ?? [], script?.roles ?? []);
+  const killerRoles = getRolesByIds(entry.death.killerRoleIds ?? [], [
+    ...(script?.roles ?? []),
+    ...GENERIC_KILLER_ROLES,
+  ]);
 
   if (killerPlayers.length === 0 && killerRoles.length === 0) {
     return undefined;

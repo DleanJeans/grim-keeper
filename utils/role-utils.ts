@@ -18,6 +18,26 @@ const roleEditionDirectories: Record<string, string> = {
 const alignedGoodTeams = new Set(['outsider', 'townsfolk']);
 const alignedEvilTeams = new Set(['demon', 'minion']);
 
+export const GENERIC_KILLER_ROLES: Role[] = [
+  {
+    id: 'generic_demon',
+    imageUrl: `${BOTC_ROLE_ICON_BASE_URL}/generic/demon.webp`,
+    name: 'Demon',
+    team: 'demon',
+  },
+  {
+    id: 'generic_evil',
+    imageUrl: `${BOTC_ROLE_ICON_BASE_URL}/generic/evil.webp`,
+    name: 'Evil',
+    team: 'minion',
+  },
+  {
+    id: 'generic_unknown',
+    imageUrl: `${BOTC_ROLE_ICON_BASE_URL}/generic/unknown.webp`,
+    name: 'Unknown',
+  },
+];
+
 export function getRoleIconUrl(role: Role) {
   if (role.imageUrl) {
     return role.imageUrl;
@@ -86,6 +106,10 @@ export function canRoleKill(role: Role) {
       ability,
     ) || /\b(?:a|another|one) player (?:die|dies|is killed|is dead)\b/.test(ability)
   );
+}
+
+export function getRolesWithKillAbility(roles: Role[], catalog: Role[] = []) {
+  return mergeScriptRoles(roles, catalog).filter(canRoleKill);
 }
 
 export function getRoleAssignmentForDay(

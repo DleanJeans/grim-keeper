@@ -8,6 +8,7 @@ import {
   getRoleOwnerNamesForDay,
   getRolesForDay,
   getRolesForDayOrPrevious,
+  getRolesWithKillAbility,
   getTravelerClaimRoles,
   isFlowerGirlRole,
   isTravelerRole,
@@ -156,6 +157,48 @@ describe('role utilities', () => {
         name: 'Undertaker',
       }),
     ).toBe(false);
+  });
+
+  it('returns only roles with kill abilities and fills missing abilities from the catalog', () => {
+    const scriptRoles = [
+      { id: 'imp', name: 'Imp' },
+      { id: 'slayer', name: 'Slayer' },
+      { id: 'poisoner', name: 'Poisoner' },
+      { id: 'undertaker', name: 'Undertaker' },
+    ];
+    const catalog = [
+      {
+        ability: 'Each night*, choose a player: they die.',
+        id: 'imp',
+        name: 'Imp',
+        team: 'demon',
+        edition: 'tb',
+      },
+      {
+        ability:
+          'Once per game, during the day, publicly choose a player: if they are the Demon, they die.',
+        id: 'slayer',
+        name: 'Slayer',
+        team: 'townsfolk',
+        edition: 'tb',
+      },
+      {
+        ability: 'Each night, choose a player: they are poisoned tonight and tomorrow day.',
+        id: 'poisoner',
+        name: 'Poisoner',
+        team: 'minion',
+        edition: 'tb',
+      },
+      {
+        ability: 'You learn if the Demon dies.',
+        id: 'undertaker',
+        name: 'Undertaker',
+        team: 'townsfolk',
+        edition: 'tb',
+      },
+    ];
+
+    expect(getRolesWithKillAbility(scriptRoles, catalog)).toEqual([catalog[0], catalog[1]]);
   });
 
   it('returns the visible role metadata for a player on a day', () => {

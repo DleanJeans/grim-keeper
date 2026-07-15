@@ -7,11 +7,14 @@ import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { RolePicker } from '@/components/game/role-picker';
 import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
+import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { KillAttribution } from '@/types/game';
-import { canRoleKill, getRoleOwnerNamesForDay } from '@/utils/role-utils';
-
-import { KillerPlayerPicker } from './killer-player-picker';
+import {
+  GENERIC_KILLER_ROLES,
+  getRoleOwnerNamesForDay,
+  getRolesWithKillAbility,
+} from '@/utils/role-utils';
 
 type KillAttributionPanelProps = {
   onCancel: () => void;
@@ -20,9 +23,12 @@ type KillAttributionPanelProps = {
 
 export function KillAttributionPanel({ onCancel, onConfirm }: KillAttributionPanelProps) {
   const { activeDay, focusedPlayer, game, players, showRoles } = useGameRouteContext();
-  const [killerPlayerIds, setKillerPlayerIds] = useState<string[]>([]);
+  const roleCatalog = useGameStore((state) => state.roleCatalog);
   const [killerRoleIds, setKillerRoleIds] = useState<string[]>([]);
-  const killerRoles = game.script?.roles.filter(canRoleKill) ?? [];
+  const killerRoles = [
+    ...GENERIC_KILLER_ROLES,
+    ...getRolesWithKillAbility(game.script?.roles ?? [], roleCatalog),
+  ];
 
   if (!focusedPlayer) {
     return null;
@@ -36,17 +42,8 @@ export function KillAttributionPanel({ onCancel, onConfirm }: KillAttributionPan
     );
   }
 
-  function handleToggleKiller(playerId: string) {
-    setKillerPlayerIds((currentPlayerIds) =>
-      currentPlayerIds.includes(playerId)
-        ? currentPlayerIds.filter((currentPlayerId) => currentPlayerId !== playerId)
-        : [...currentPlayerIds, playerId],
-    );
-  }
-
   function handleConfirm() {
     onConfirm({
-      killerPlayerIds: killerPlayerIds.length > 0 ? killerPlayerIds : undefined,
       killerRoleIds: killerRoleIds.length > 0 ? killerRoleIds : undefined,
     });
   }
@@ -77,27 +74,15 @@ export function KillAttributionPanel({ onCancel, onConfirm }: KillAttributionPan
           Day {activeDay}. Optionally record who killed them and which roles were responsible.
         </Text>
       </View>
-      <KillerPlayerPicker
-        onClear={() => setKillerPlayerIds([])}
-        onToggle={handleToggleKiller}
-        players={players}
-        selectedPlayerIds={killerPlayerIds}
-        targetPlayerId={focusedPlayer.id}
+      <RolePicker
+        description="Choose the suspected killer role or alignment."
+        onToggleRole={handleToggleRole}
+        roles={killerRoles}
+        roleOwnerNames={
+          showRoles ? getRoleOwnerNamesForDay(players, activeDay, killerRoles) : undefined
+        }
+        selectedRoleIds={killerRoleIds}
       />
-      {game.script ? (
-        <RolePicker
-          onToggleRole={handleToggleRole}
-          roles={killerRoles}
-          roleOwnerNames={
-            showRoles ? getRoleOwnerNamesForDay(players, activeDay, killerRoles) : undefined
-          }
-          selectedRoleIds={killerRoleIds}
-        />
-      ) : (
-        <Text selectable style={{ color: colors.textMuted, fontSize: 13, lineHeight: 18 }}>
-          Add a script to this game to record killer roles.
-        </Text>
-      )}
       <View style={innerActionRow}>
         <KillFormButton icon={X} label="Cancel" onPress={onCancel} />
         <KillFormButton icon={Check} label="Confirm Kill" onPress={handleConfirm} primary />
