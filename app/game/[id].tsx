@@ -18,7 +18,6 @@ import { MapModeActions } from '@/components/game/map-mode-actions';
 import { NominationList } from '@/components/game/nomination-list';
 import { NotesTab } from '@/components/game/notes-tab';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
-import { RoleAssignmentActions } from '@/components/game/role-assignment-actions';
 import { RotateActions } from '@/components/game/rotate-actions';
 import { TrackingConfirmActions } from '@/components/game/tracking-confirm-actions';
 import { VoteConfirmActions } from '@/components/game/vote-confirm-actions';
@@ -526,8 +525,6 @@ export default function GameRoute() {
               <MapModeActions />
             </View>
           )}
-
-          <RoleAssignmentActions />
 
           <View key="tab-bar">
             <GameTabs />

@@ -2,6 +2,7 @@ import { Check, Pencil } from 'lucide-react-native';
 import { Pressable, TextInput, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { PlayerNoteSection } from '@/components/game/player-notes';
+import { RoleAssignmentActions } from '@/components/game/role-assignment-actions';
 import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
@@ -122,7 +123,12 @@ export function NotesTab() {
   const { activeDay, focusedPlayer, game, players } = useGameRouteContext();
 
   if (focusedPlayer) {
-    return <PlayerNoteSection player={focusedPlayer} />;
+    return (
+      <View style={{ gap: 14 }}>
+        <RoleAssignmentActions />
+        <PlayerNoteSection player={focusedPlayer} />
+      </View>
+    );
   }
 
   const dayNotes = (game.playerDayNotes ?? [])
@@ -131,13 +137,14 @@ export function NotesTab() {
     .sort((a, b) => a.playerId.localeCompare(b.playerId));
 
   if (dayNotes.length === 0) {
-    return null;
+    return <RoleAssignmentActions />;
   }
 
   const playerById = new Map(players.map((p) => [p.id, p]));
 
   return (
     <View style={{ gap: 10 }}>
+      <RoleAssignmentActions />
       {dayNotes.map((entry) => {
         const player = playerById.get(entry.playerId);
         if (!player) {

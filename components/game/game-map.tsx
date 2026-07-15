@@ -215,6 +215,7 @@ function PlayerTokenForMap({
   showRoles: boolean;
 }) {
   const roles = getRolesForDay(player.roleAssignments, activeDay, gameRoles);
+  const visibleRoles = showRoles ? roles : [];
 
   return (
     <PlayerToken
@@ -231,9 +232,9 @@ function PlayerTokenForMap({
       player={player}
       position={position}
       rearrangeMode={isRearrangeMode}
-      roleIconUrl={roles[0] ? getRoleIconUrl(roles[0]) : undefined}
-      roleNames={roles.map((role) => role.name)}
-      showRoleDetails={showRoles || highlightedPlayerIds.includes(player.id)}
+      roleIconUrl={visibleRoles[0] ? getRoleIconUrl(visibleRoles[0]) : undefined}
+      roleNames={visibleRoles.map((role) => role.name)}
+      showRoleDetails={showRoles}
       tokenSize={activeTokenSize}
     />
   );
