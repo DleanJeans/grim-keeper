@@ -65,6 +65,7 @@ export function RoleAssignmentActions() {
           <RolePicker
             onToggleRole={handleToggleRoleAssignment}
             roles={game.script.roles}
+            sectioned
             selectedRoleIds={roleAssignmentRoleIds}
           />
           <View style={innerActionRow}>
