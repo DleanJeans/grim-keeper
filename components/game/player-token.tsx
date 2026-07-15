@@ -17,7 +17,7 @@ import type { Player, PlayerPosition, Role } from '@/types/game';
 import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
 import { getRoleIconUrl, isTravelerRole } from '@/utils/role-utils';
 
-const playerTokenBadgeSize = 22;
+const playerTokenBadgeSize = 18;
 
 type PlayerTokenProps = {
   mapHeight: number;
