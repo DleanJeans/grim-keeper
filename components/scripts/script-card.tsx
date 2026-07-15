@@ -1,4 +1,4 @@
-import { Check, ChevronDown, ChevronUp, Eye, Trash2 } from 'lucide-react-native';
+import { Check, ChevronDown, ChevronUp, Trash2 } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
 import { Text } from '@/components/text';
@@ -42,9 +42,24 @@ export function ScriptCard({
       }}
     >
       <View style={{ gap: 4 }}>
-        <Text selectable style={{ color: colors.text, fontSize: 17, fontWeight: '900' }}>
-          {script.name}
-        </Text>
+        <Pressable
+          accessibilityHint="Opens the script details"
+          accessibilityRole="button"
+          onPress={onView}
+          style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
+        >
+          <Text
+            selectable
+            style={{
+              color: colors.primary,
+              fontSize: 17,
+              fontWeight: '900',
+              textDecorationLine: 'underline',
+            }}
+          >
+            {script.name}
+          </Text>
+        </Pressable>
         <Text selectable style={{ color: colors.textMuted, fontSize: 13 }}>
           {script.author ? `${script.author} · ` : ''}v{script.version} · {script.roles.length}{' '}
           roles
@@ -59,13 +74,18 @@ export function ScriptCard({
         {canSelect ? (
           <ScriptCardButton icon={Check} label="Select" onPress={onSelect} variant="primary" />
         ) : null}
-        <ScriptCardButton icon={Eye} label="View" onPress={onView} />
         <ScriptCardButton
           icon={editing ? ChevronUp : ChevronDown}
           label={editing ? 'Close' : 'Customize'}
           onPress={onEdit}
         />
-        <ScriptCardButton icon={Trash2} label="Delete" onPress={onDelete} variant="danger" />
+        <ScriptCardButton
+          icon={Trash2}
+          iconOnly
+          label="Delete"
+          onPress={onDelete}
+          variant="danger"
+        />
       </View>
     </View>
   );
@@ -73,11 +93,13 @@ export function ScriptCard({
 
 function ScriptCardButton({
   icon: Icon,
+  iconOnly = false,
   label,
   onPress,
   variant = 'neutral',
 }: {
   icon: typeof Check;
+  iconOnly?: boolean;
   label: string;
   onPress: () => void;
   variant?: 'danger' | 'neutral' | 'primary';
@@ -105,6 +127,7 @@ function ScriptCardButton({
 
   return (
     <Pressable
+      accessibilityLabel={label}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => ({
@@ -113,17 +136,19 @@ function ScriptCardButton({
         borderColor: palette.border,
         borderRadius: 8,
         borderWidth: 1,
-        flex: 1,
+        flex: iconOnly ? 0 : 1,
         flexDirection: 'row',
         gap: 6,
         justifyContent: 'center',
-        minWidth: 0,
-        paddingHorizontal: 8,
+        minWidth: iconOnly ? 44 : 0,
+        paddingHorizontal: iconOnly ? 12 : 8,
         paddingVertical: 10,
       })}
     >
       <Icon color={palette.icon} size={15} strokeWidth={2.6} />
-      <Text style={{ color: palette.text, fontSize: 13, fontWeight: '800' }}>{label}</Text>
+      {iconOnly ? null : (
+        <Text style={{ color: palette.text, fontSize: 13, fontWeight: '800' }}>{label}</Text>
+      )}
     </Pressable>
   );
 }
