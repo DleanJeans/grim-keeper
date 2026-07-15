@@ -13,8 +13,8 @@ import type { Role } from '@/types/game';
 import {
   getRoleDisplayForDayOrPrevious,
   getRoleOwnerNamesForDay,
+  getTravelerClaimRoles,
   isTravelerRole,
-  travelerClaimRoles,
 } from '@/utils/role-utils';
 
 export function RoleAssignmentActions() {
@@ -42,20 +42,16 @@ export function RoleAssignmentActions() {
       ? selectableRoles.filter((role) => !isTravelerRole(role))
       : selectableRoles;
   const regularRoles = assignmentRoles.filter((role) => !isTravelerRole(role));
-  const travelerRoles = assignmentRoles.filter(isTravelerRole);
-  const effectiveRoleDisplay = getRoleDisplayForDayOrPrevious(
-    focusedPlayer.roleAssignments,
+  const confirmedRoleDisplay = getRoleDisplayForDayOrPrevious(
+    focusedPlayer.roleAssignments?.filter((assignment) => assignment.kind === 'confirm'),
     game.activeDay,
     game.script.roles,
   );
-  const hasConfirmedTravelerRole =
-    effectiveRoleDisplay.kind === 'confirm' && effectiveRoleDisplay.roles.some(isTravelerRole);
-  const travelerAssignmentRoles =
-    roleAssignmentKind === 'claim'
-      ? hasConfirmedTravelerRole
-        ? travelerClaimRoles
-        : []
-      : travelerRoles;
+  const confirmedTravelerRole = confirmedRoleDisplay.roles.find(isTravelerRole);
+  const travelerClaimRoles = confirmedTravelerRole
+    ? getTravelerClaimRoles(confirmedTravelerRole)
+    : [];
+  const isTravelerClaim = roleAssignmentKind === 'claim' && !!confirmedTravelerRole;
   const roleOwnerNames = showRoles
     ? getRoleOwnerNamesForDay(players, game.activeDay, selectableRoles)
     : undefined;
@@ -107,23 +103,28 @@ export function RoleAssignmentActions() {
               Day {game.activeDay}
             </Text>
           </View>
-          <RolePicker
-            description="Tap a role to claim or confirm it. Tap the selected role again to clear it."
-            onToggleRole={handleToggleRoleAssignment}
-            roles={regularRoles}
-            roleOwnerNames={roleOwnerNames}
-            sectioned
-            selectedRoleIds={roleAssignmentRoleIds}
-          />
-          {roleAssignmentKind === 'confirm' || hasConfirmedTravelerRole ? (
-            <TravelerRolePicker
-              description={
-                roleAssignmentKind === 'confirm'
-                  ? 'Choose one traveler role to confirm for this player.'
-                  : 'Choose a good or evil traveler claim for this player.'
-              }
+          {isTravelerClaim ? (
+            <RolePicker
+              description="Choose which alignment this traveler is claiming."
               onToggleRole={handleToggleRoleAssignment}
-              roles={travelerAssignmentRoles}
+              roles={travelerClaimRoles}
+              selectedRoleIds={roleAssignmentRoleIds}
+            />
+          ) : (
+            <RolePicker
+              description="Tap a role to claim or confirm it. Tap the selected role again to clear it."
+              onToggleRole={handleToggleRoleAssignment}
+              roles={regularRoles}
+              roleOwnerNames={roleOwnerNames}
+              sectioned
+              selectedRoleIds={roleAssignmentRoleIds}
+            />
+          )}
+          {roleAssignmentKind === 'confirm' ? (
+            <TravelerRolePicker
+              description="Choose one traveler role to confirm for this player."
+              onToggleRole={handleToggleRoleAssignment}
+              roles={assignmentRoles.filter(isTravelerRole)}
               selectedRoleIds={roleAssignmentRoleIds}
             />
           ) : null}

@@ -3,10 +3,12 @@ import {
   getRoleAssignmentForDay,
   getRoleDisplayForDayOrPrevious,
   getRoleIconUrl,
+  getRoleIconUrlForAlignment,
   getRoleNames,
   getRoleOwnerNamesForDay,
   getRolesForDay,
   getRolesForDayOrPrevious,
+  getTravelerClaimRoles,
   isFlowerGirlRole,
   isTravelerRole,
   mergeScriptRoles,
@@ -60,6 +62,25 @@ describe('role utilities', () => {
     expect(
       getRoleIconUrl({ id: 'imp', name: 'Imp', team: 'demon', edition: 'trouble brewing' }),
     ).toBe('https://release.botc.app/resources/characters/tb/imp_e.webp');
+  });
+
+  it('builds aligned traveler claim role variants', () => {
+    const traveler = { edition: 'carousel', id: 'baron', name: 'Baron', team: 'traveller' };
+    const [good, evil] = getTravelerClaimRoles(traveler);
+
+    expect(getRoleIconUrlForAlignment(traveler, 'g')).toBe(
+      'https://release.botc.app/resources/characters/carousel/baron_g.webp',
+    );
+    expect(good).toMatchObject({
+      id: 'baron_good',
+      imageUrl: 'https://release.botc.app/resources/characters/carousel/baron_g.webp',
+      name: 'Good Baron',
+    });
+    expect(evil).toMatchObject({
+      id: 'baron_evil',
+      imageUrl: 'https://release.botc.app/resources/characters/carousel/baron_e.webp',
+      name: 'Evil Baron',
+    });
   });
 
   it('merges script ids with official role metadata and ignores _meta', () => {

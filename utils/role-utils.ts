@@ -18,11 +18,6 @@ const roleEditionDirectories: Record<string, string> = {
 const alignedGoodTeams = new Set(['outsider', 'townsfolk']);
 const alignedEvilTeams = new Set(['demon', 'minion']);
 
-export const travelerClaimRoles: Role[] = [
-  { iconColor: '#60a5fa', id: 'good_traveler', name: 'Good Traveler', team: 'traveller' },
-  { iconColor: '#f87171', id: 'evil_traveler', name: 'Evil Traveler', team: 'traveller' },
-];
-
 export function getRoleIconUrl(role: Role) {
   if (role.imageUrl) {
     return role.imageUrl;
@@ -33,6 +28,12 @@ export function getRoleIconUrl(role: Role) {
   const filename = `${role.id}${alignment ? `_${alignment}` : ''}.webp`;
 
   return `${BOTC_ROLE_ICON_BASE_URL}/${directory}/${filename}`;
+}
+
+export function getRoleIconUrlForAlignment(role: Role, alignment: 'g' | 'e') {
+  const directory = getRoleEditionDirectory(role);
+
+  return `${BOTC_ROLE_ICON_BASE_URL}/${directory}/${role.id}_${alignment}.webp`;
 }
 
 export function getRoleAlignment(role: Role): 'g' | 'e' | undefined {
@@ -56,6 +57,25 @@ export function isFlowerGirlRole(role: Role) {
   const normalizedName = role.name.toLocaleLowerCase().replace(/[^a-z]/g, '');
 
   return normalizedId === 'flowergirl' || normalizedName === 'flowergirl';
+}
+
+export function getTravelerClaimRoles(role: Role): Role[] {
+  return [
+    {
+      ...role,
+      id: `${role.id}_good`,
+      imageUrl: getRoleIconUrlForAlignment(role, 'g'),
+      name: `Good ${role.name}`,
+      team: 'traveller',
+    },
+    {
+      ...role,
+      id: `${role.id}_evil`,
+      imageUrl: getRoleIconUrlForAlignment(role, 'e'),
+      name: `Evil ${role.name}`,
+      team: 'traveller',
+    },
+  ];
 }
 
 export function canRoleKill(role: Role) {
@@ -106,7 +126,9 @@ export function getRoleOwnerNamesForDay(players: Player[], day: number, roles: R
 export function getRolesByIds(roleIds: string[], roles: Role[]) {
   const roleById = new Map(roles.map((role) => [role.id, role]));
   return roleIds.map(
-    (roleId) => roleById.get(roleId) ?? { id: roleId, name: formatRoleId(roleId) },
+    (roleId) =>
+      roleById.get(roleId) ??
+      getTravelerClaimRoleById(roleId, roles) ?? { id: roleId, name: formatRoleId(roleId) },
   );
 }
 
@@ -151,9 +173,21 @@ function getRolesForAssignment(assignment: PlayerRoleAssignment | undefined, rol
 
   const rolesById = new Map(roles.map((role) => [role.id, role]));
   return assignment.roleIds.flatMap((roleId) => {
-    const role = rolesById.get(roleId);
+    const role = rolesById.get(roleId) ?? getTravelerClaimRoleById(roleId, roles);
     return role ? [role] : [];
   });
+}
+
+function getTravelerClaimRoleById(roleId: string, roles: Role[]) {
+  const match = /^(.*)_(good|evil)$/.exec(roleId);
+  if (!match) {
+    return undefined;
+  }
+
+  const travelerRole = roles.find((role) => role.id === match[1] && isTravelerRole(role));
+  return travelerRole
+    ? getTravelerClaimRoles(travelerRole).find((role) => role.id === roleId)
+    : undefined;
 }
 
 export function mergeScriptRoles(content: unknown, catalog: Role[]): Role[] {
