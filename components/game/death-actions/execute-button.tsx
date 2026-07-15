@@ -33,6 +33,7 @@ export function ExecuteButton({
           flex: compact ? undefined : flex,
           paddingVertical: compact ? 8 : 14,
         }),
+        flexBasis: compact ? 'auto' : 0,
         paddingHorizontal: compact ? 8 : undefined,
       })}
     >
