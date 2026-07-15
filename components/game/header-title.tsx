@@ -102,12 +102,14 @@ function PlayerStatus({
         <Skull color="#fca5a5" size={14} strokeWidth={2.7} />
         <Text style={{ color: '#f8fafc', fontSize: 12, fontWeight: '900' }}>{deadPlayerCount}</Text>
       </View>
-      <View style={{ alignItems: 'center', flexDirection: 'row', gap: 3 }}>
-        <Footprints color="#fcd34d" size={14} strokeWidth={2.7} />
-        <Text style={{ color: '#f8fafc', fontSize: 12, fontWeight: '900' }}>
-          {travelerPlayerCount}
-        </Text>
-      </View>
+      {travelerPlayerCount > 0 ? (
+        <View style={{ alignItems: 'center', flexDirection: 'row', gap: 3 }}>
+          <Footprints color="#fcd34d" size={14} strokeWidth={2.7} />
+          <Text style={{ color: '#f8fafc', fontSize: 12, fontWeight: '900' }}>
+            {travelerPlayerCount}
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 }
