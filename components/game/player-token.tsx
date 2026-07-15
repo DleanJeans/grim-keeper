@@ -294,7 +294,7 @@ function PlayerTokenRoles({
   rolesConfirmed: boolean;
 }) {
   return (
-    <View style={{ alignItems: 'center', flexDirection: 'row', gap: 2, maxWidth: '100%' }}>
+    <View style={{ alignItems: 'center', flexDirection: 'row', gap: 1, maxWidth: '100%' }}>
       <Text
         adjustsFontSizeToFit
         ellipsizeMode="tail"

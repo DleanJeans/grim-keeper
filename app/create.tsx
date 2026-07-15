@@ -378,7 +378,7 @@ export default function CreateRoute() {
           </Text>
         </View>
 
-        <View style={{ gap: 6, paddingHorizontal: 20 }}>
+        <View style={{ gap: 6, marginBottom: 8, paddingHorizontal: 20 }}>
           <FixedPlayerRow name={fixedPlayerName} />
         </View>
 
