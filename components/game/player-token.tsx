@@ -170,7 +170,6 @@ export function PlayerToken({
             color={isDragReady ? '#082f49' : player.death ? '#cbd5e1' : '#0b1120'}
             name={player.name}
             roles={visibleRoles}
-            rolesConfirmed={rolesConfirmed}
           />
         </View>
         {player.death ? (
@@ -230,6 +229,9 @@ export function PlayerToken({
             <Vote color="#fef3c7" size={12} strokeWidth={2.3} />
           </View>
         ) : null}
+        {rolesConfirmed && visibleRoles.length > 0 && !visibleRoles.some(isTravelerRole) ? (
+          <PlayerTokenConfirmBadge tokenSize={tokenSize} />
+        ) : null}
       </Animated.View>
     </GestureDetector>
   );
@@ -239,17 +241,12 @@ function PlayerTokenContent({
   color,
   name,
   roles,
-  rolesConfirmed,
 }: {
   color: string;
   name: string;
   roles: Role[];
-  rolesConfirmed: boolean;
 }) {
-  const roleDetails =
-    roles.length > 0 ? (
-      <PlayerTokenRoles color={color} roles={roles} rolesConfirmed={rolesConfirmed} />
-    ) : null;
+  const roleDetails = roles.length > 0 ? <PlayerTokenRoles color={color} roles={roles} /> : null;
 
   return (
     <>
@@ -284,15 +281,7 @@ function PlayerTokenName({ color, name }: PlayerTokenNameProps) {
   );
 }
 
-function PlayerTokenRoles({
-  color,
-  roles,
-  rolesConfirmed,
-}: {
-  color: string;
-  roles: Role[];
-  rolesConfirmed: boolean;
-}) {
+function PlayerTokenRoles({ color, roles }: { color: string; roles: Role[] }) {
   return (
     <View style={{ alignItems: 'center', flexDirection: 'row', gap: 1, maxWidth: '100%' }}>
       <Text
@@ -312,9 +301,28 @@ function PlayerTokenRoles({
       >
         {roles.map((role) => role.name).join(' / ')}
       </Text>
-      {rolesConfirmed && !roles.some(isTravelerRole) ? (
-        <Check color={color} size={9} strokeWidth={3} />
-      ) : null}
+    </View>
+  );
+}
+
+function PlayerTokenConfirmBadge({ tokenSize }: { tokenSize: number }) {
+  return (
+    <View
+      style={{
+        alignItems: 'center',
+        backgroundColor: '#166534',
+        borderColor: '#bbf7d0',
+        borderRadius: 11,
+        borderWidth: 2,
+        height: 22,
+        justifyContent: 'center',
+        position: 'absolute',
+        right: -2,
+        top: tokenSize / 2 - 11,
+        width: 22,
+      }}
+    >
+      <Check color="#dcfce7" size={12} strokeWidth={2.8} />
     </View>
   );
 }
