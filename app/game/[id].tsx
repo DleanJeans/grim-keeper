@@ -18,7 +18,6 @@ import { MapModeActions } from '@/components/game/map-mode-actions';
 import { NominationList } from '@/components/game/nomination-list';
 import { NotesTab } from '@/components/game/notes-tab';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
-import { RotateActions } from '@/components/game/rotate-actions';
 import { RevealRolesButton } from '@/components/game/show-roles-button';
 import { TrackingConfirmActions } from '@/components/game/tracking-confirm-actions';
 import { VoteConfirmActions } from '@/components/game/vote-confirm-actions';
@@ -57,7 +56,6 @@ export default function GameRoute() {
   const [noteDraft, setNoteDraft] = useState('');
   const [noteEditingDay, setNoteEditingDay] = useState<number | null>(null);
   const [noteEditingPlayerId, setNoteEditingPlayerId] = useState<string | null>(null);
-  const [isRotatingMode, setIsRotatingMode] = useState(false);
   const [isRearrangeMode, setIsRearrangeMode] = useState(false);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [roleAssignmentKind, setRoleAssignmentKind] = useState<PlayerRoleAssignment['kind'] | null>(
@@ -153,25 +151,14 @@ export default function GameRoute() {
   const lastDayWithData = getLastDayWithData(activeGame);
 
   function exitMapModes() {
-    setIsRotatingMode(false);
     setIsRearrangeMode(false);
-  }
-
-  function exitRotateMode() {
-    setIsRotatingMode(false);
   }
 
   function exitRearrangeMode() {
     setIsRearrangeMode(false);
   }
 
-  function enterRotateMode() {
-    setIsRearrangeMode(false);
-    setIsRotatingMode(true);
-  }
-
   function enterRearrangeMode() {
-    setIsRotatingMode(false);
     setIsRearrangeMode(true);
   }
 
@@ -197,7 +184,6 @@ export default function GameRoute() {
     }
 
     if (!trackingMode) {
-      setIsRotatingMode(false);
       setIsRearrangeMode(false);
       setFocusedPlayerId((currentPlayerId) => (currentPlayerId === playerId ? null : playerId));
       return;
@@ -233,13 +219,11 @@ export default function GameRoute() {
     }
 
     setTrackingMode(mode);
-    setIsRotatingMode(false);
     setIsRearrangeMode(false);
     setSelectedPlayerIds([focusedPlayerId]);
   }
 
   function handleCancelTracking() {
-    setIsRotatingMode(false);
     setIsRearrangeMode(false);
     setTrackingMode(null);
     setVotingNominationId(null);
@@ -314,7 +298,6 @@ export default function GameRoute() {
     const selectedPlayerId = focusedPlayerId;
     handleCancelTracking();
     setFocusedPlayerId(selectedPlayerId);
-    setIsRotatingMode(false);
     setIsRearrangeMode(false);
     setActiveDay(activeGame.id, day);
   }
@@ -471,7 +454,6 @@ export default function GameRoute() {
     noteDraft,
     noteEditingDay,
     noteEditingPlayerId,
-    isRotatingMode,
     isRearrangeMode,
     selectedPlayerIds,
     highlightedPlayerIds,
@@ -481,7 +463,6 @@ export default function GameRoute() {
     setActiveTab,
     setNoteDraft,
     exitMapModes,
-    exitRotateMode,
     exitRearrangeMode,
     handleSelectPlayer,
     handleMovePlayer,
@@ -507,7 +488,6 @@ export default function GameRoute() {
     handleDeleteConversation,
     handleDeleteNomination,
     enterRearrangeMode,
-    enterRotateMode,
   };
 
   return (
@@ -545,11 +525,7 @@ export default function GameRoute() {
         >
           <GameMap />
 
-          {isRotatingMode ? (
-            <View key="rotate-actions">
-              <RotateActions />
-            </View>
-          ) : isRearrangeMode ? (
+          {isRearrangeMode ? (
             <View key="rearrange-actions">
               <RearrangeActions />
             </View>

@@ -43,7 +43,6 @@ export type GameRouteContextValue = {
   focusedPlayerIsDead: boolean;
   nominationDisabled: boolean;
   noteDraft: string;
-  isRotatingMode: boolean;
   isRearrangeMode: boolean;
   selectedPlayerIds: string[];
   highlightedPlayerIds: string[];
@@ -55,7 +54,6 @@ export type GameRouteContextValue = {
   setActiveTab: (tab: GameTab) => void;
   setNoteDraft: (text: string) => void;
   exitMapModes: () => void;
-  exitRotateMode: () => void;
   exitRearrangeMode: () => void;
   handleSelectPlayer: (playerId: string) => void;
   handleMovePlayer: (playerId: string, position: PlayerPosition) => void;
@@ -83,7 +81,6 @@ export type GameRouteContextValue = {
   handleDeleteConversation: (conversationId: string) => void;
   handleDeleteNomination: (nominationId: string) => void;
   enterRearrangeMode: () => void;
-  enterRotateMode: () => void;
 };
 
 const GameRouteContext = createContext<GameRouteContextValue | null>(null);
