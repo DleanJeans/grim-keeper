@@ -18,7 +18,7 @@ type KillAttributionPanelProps = {
 
 export function KillAttributionPanel({ onCancel, onConfirm }: KillAttributionPanelProps) {
   const { activeDay, focusedPlayer, game, players } = useGameRouteContext();
-  const [killerPlayerId, setKillerPlayerId] = useState<string | null>(null);
+  const [killerPlayerIds, setKillerPlayerIds] = useState<string[]>([]);
   const [killerRoleIds, setKillerRoleIds] = useState<string[]>([]);
 
   if (!focusedPlayer) {
@@ -33,9 +33,17 @@ export function KillAttributionPanel({ onCancel, onConfirm }: KillAttributionPan
     );
   }
 
+  function handleToggleKiller(playerId: string) {
+    setKillerPlayerIds((currentPlayerIds) =>
+      currentPlayerIds.includes(playerId)
+        ? currentPlayerIds.filter((currentPlayerId) => currentPlayerId !== playerId)
+        : [...currentPlayerIds, playerId],
+    );
+  }
+
   function handleConfirm() {
     onConfirm({
-      killerPlayerId: killerPlayerId ?? undefined,
+      killerPlayerIds: killerPlayerIds.length > 0 ? killerPlayerIds : undefined,
       killerRoleIds: killerRoleIds.length > 0 ? killerRoleIds : undefined,
     });
   }
@@ -57,13 +65,14 @@ export function KillAttributionPanel({ onCancel, onConfirm }: KillAttributionPan
           Kill {focusedPlayer.name}
         </Text>
         <Text selectable style={{ color: colors.textMuted, fontSize: 13, lineHeight: 18 }}>
-          Day {activeDay}. Optionally record who killed them and which role was responsible.
+          Day {activeDay}. Optionally record who killed them and which roles were responsible.
         </Text>
       </View>
       <KillerPlayerPicker
-        onSelect={setKillerPlayerId}
+        onClear={() => setKillerPlayerIds([])}
+        onToggle={handleToggleKiller}
         players={players}
-        selectedPlayerId={killerPlayerId}
+        selectedPlayerIds={killerPlayerIds}
         targetPlayerId={focusedPlayer.id}
       />
       {game.script ? (

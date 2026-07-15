@@ -83,14 +83,17 @@ function getKillerDescription(
     return undefined;
   }
 
-  const killerName = entry.death.killerPlayerId
-    ? playerById.get(entry.death.killerPlayerId)?.name
-    : undefined;
+  const killerPlayerIds =
+    entry.death.killerPlayerIds ?? (entry.death.killerPlayerId ? [entry.death.killerPlayerId] : []);
+  const killerNames = killerPlayerIds.flatMap((playerId) => {
+    const playerName = playerById.get(playerId)?.name;
+    return playerName ? [playerName] : [];
+  });
   const killerRoles = getRolesByIds(entry.death.killerRoleIds ?? [], script?.roles ?? []);
 
-  if (!killerName && killerRoles.length === 0) {
+  if (killerNames.length === 0 && killerRoles.length === 0) {
     return undefined;
   }
 
-  return { killerName, killerRoles };
+  return { killerNames, killerRoles };
 }

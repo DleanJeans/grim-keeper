@@ -18,7 +18,7 @@ export type ReviveLogEntry = {
 };
 
 type KillerDescription = {
-  killerName?: string;
+  killerNames: string[];
   killerRoles: Role[];
 };
 
@@ -142,11 +142,11 @@ function DeathLogEntryRow({
   );
 }
 
-function KillerDescriptionView({ killerName, killerRoles }: KillerDescription) {
+function KillerDescriptionView({ killerNames, killerRoles }: KillerDescription) {
   return (
     <View style={styles.killerDescription}>
       <Text selectable style={styles.subtitle}>
-        Killed by {killerName ?? 'unknown'}
+        Killed by: {killerNames.length > 0 ? killerNames.join(', ') : 'unknown'}
         {killerRoles.length > 0 ? ' as' : ''}
       </Text>
       {killerRoles.map((role) => (

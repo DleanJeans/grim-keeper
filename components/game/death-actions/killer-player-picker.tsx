@@ -6,16 +6,18 @@ import { colors } from '@/theme/colors';
 import type { Player } from '@/types/game';
 
 type KillerPlayerPickerProps = {
+  onClear: () => void;
+  onToggle: (playerId: string) => void;
   players: Player[];
-  selectedPlayerId: string | null;
+  selectedPlayerIds: string[];
   targetPlayerId: string;
-  onSelect: (playerId: string | null) => void;
 };
 
 export function KillerPlayerPicker({
-  onSelect,
+  onClear,
+  onToggle,
   players,
-  selectedPlayerId,
+  selectedPlayerIds,
   targetPlayerId,
 }: KillerPlayerPickerProps) {
   const selectablePlayers = players.filter((player) => player.id !== targetPlayerId);
@@ -23,20 +25,16 @@ export function KillerPlayerPicker({
   return (
     <View style={{ gap: 8 }}>
       <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '800' }}>
-        Killer player
+        Killer players
       </Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        <KillerOption
-          label="Unknown"
-          selected={selectedPlayerId === null}
-          onPress={() => onSelect(null)}
-        />
+        <KillerOption label="Unknown" selected={selectedPlayerIds.length === 0} onPress={onClear} />
         {selectablePlayers.map((player) => (
           <KillerOption
             key={player.id}
             label={player.name}
-            selected={selectedPlayerId === player.id}
-            onPress={() => onSelect(player.id)}
+            selected={selectedPlayerIds.includes(player.id)}
+            onPress={() => onToggle(player.id)}
           />
         ))}
       </View>

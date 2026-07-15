@@ -30,6 +30,8 @@ export type PlayerRoleAssignment = {
 };
 
 export type KillAttribution = {
+  killerPlayerIds?: string[];
+  /** Legacy single-killer field retained for previously saved games. */
   killerPlayerId?: string;
   killerRoleIds?: string[];
 };
@@ -38,6 +40,7 @@ export type PlayerDeath = {
   day: number;
   kind: 'execution' | 'night';
   updatedAt: string;
+  killerPlayerIds?: KillAttribution['killerPlayerIds'];
   killerPlayerId?: KillAttribution['killerPlayerId'];
   killerRoleIds?: KillAttribution['killerRoleIds'];
 };
