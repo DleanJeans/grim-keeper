@@ -1,0 +1,2 @@
+patchedDependencies:
+  expo-router@57.0.3: patches/expo-router@57.0.3.patch
