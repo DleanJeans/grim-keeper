@@ -42,6 +42,10 @@ export function getRoleAlignment(role: Role): 'g' | 'e' | undefined {
   return undefined;
 }
 
+export function isTravelerRole(role: Role) {
+  return role.team?.toLocaleLowerCase() === 'traveller';
+}
+
 export function getRoleAssignmentForDay(
   assignments: PlayerRoleAssignment[] | undefined,
   day: number,

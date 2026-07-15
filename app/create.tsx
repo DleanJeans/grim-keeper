@@ -6,19 +6,19 @@ import { Keyboard, Pressable, View } from 'react-native';
 import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
 
 import { FriendSuggestions } from '@/components/friends/friend-suggestions';
+import { RolePicker } from '@/components/game/role-picker';
 import { GameScriptPicker } from '@/components/scripts/game-script-picker';
 import { Text, TextInput } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { hasDuplicatePlayerName, normalizePlayerName } from '@/utils/conversation-utils';
 import { getFriendSummaries } from '@/utils/friend-utils';
+import { isTravelerRole } from '@/utils/role-utils';
 
 type DraftPlayer = {
   id: string;
   name: string;
 };
-
-type ParticipantKind = 'player' | 'traveler';
 
 export default function CreateRoute() {
   const { gameId: gameIdParam, scriptId: scriptIdParam } = useLocalSearchParams<{
@@ -30,6 +30,7 @@ export default function CreateRoute() {
   const createGame = useGameStore((state) => state.createGame);
   const deletePlayer = useGameStore((state) => state.deletePlayer);
   const games = useGameStore((state) => state.games);
+  const roleCatalog = useGameStore((state) => state.roleCatalog);
   const scripts = useGameStore((state) => state.scripts);
   const setGameScript = useGameStore((state) => state.setGameScript);
   const storedFriends = useGameStore((state) => state.friends);
@@ -37,8 +38,7 @@ export default function CreateRoute() {
   const [name, setName] = useState('');
   const [nameFocused, setNameFocused] = useState(false);
   const [draftPlayers, setDraftPlayers] = useState<DraftPlayer[]>([]);
-  const [draftTravelers, setDraftTravelers] = useState<DraftPlayer[]>([]);
-  const [participantKind, setParticipantKind] = useState<ParticipantKind>('player');
+  const [selectedTravelerRoleIds, setSelectedTravelerRoleIds] = useState<string[]>([]);
   const [draftSelectedScriptId, setDraftSelectedScriptId] = useState<string | null>(
     scriptIdParam ?? null,
   );
@@ -46,14 +46,9 @@ export default function CreateRoute() {
   const isEditing = Boolean(gameIdParam);
   const players = editingGame
     ? editingGame.players
-        .filter((player) => !player.isAppUser && !player.isTraveler)
+        .filter((player) => !player.isAppUser)
         .map(({ id, name }) => ({ id, name }))
     : draftPlayers;
-  const travelers = editingGame
-    ? editingGame.players
-        .filter((player) => !player.isAppUser && player.isTraveler)
-        .map(({ id, name }) => ({ id, name }))
-    : draftTravelers;
   const fixedPlayerName =
     editingGame?.players.find((player) => player.isAppUser)?.name ?? appUserName;
   const legacyScript = editingGame?.script;
@@ -66,13 +61,10 @@ export default function CreateRoute() {
   }, [legacyScript, scripts]);
   const selectedScriptId = draftSelectedScriptId;
   const selectedScript = availableScripts.find((script) => script.id === selectedScriptId);
+  const travelerRoles = useMemo(() => roleCatalog.filter(isTravelerRole), [roleCatalog]);
   const selectedNames = useMemo(
-    () => [
-      fixedPlayerName,
-      ...players.map((player) => player.name),
-      ...travelers.map((traveler) => traveler.name),
-    ],
-    [fixedPlayerName, players, travelers],
+    () => [fixedPlayerName, ...players.map((player) => player.name)],
+    [fixedPlayerName, players],
   );
   const friends = useMemo(
     () => getFriendSummaries(games, storedFriends, appUserName),
@@ -99,6 +91,27 @@ export default function CreateRoute() {
       .slice(0, 5);
   }, [friends, normalizedName, selectedNames]);
 
+  const selectedScriptForGame = useMemo(() => {
+    if (!selectedScript) {
+      return undefined;
+    }
+
+    const selectedTravelerRoleIdSet = new Set(selectedTravelerRoleIds);
+    const existingRoleIds = new Set(selectedScript.roles.map((role) => role.id));
+    const roles = selectedScript.roles.filter(
+      (role) => !isTravelerRole(role) || selectedTravelerRoleIdSet.has(role.id),
+    );
+    const addedTravelerRoles = travelerRoles.filter(
+      (role) => selectedTravelerRoleIdSet.has(role.id) && !existingRoleIds.has(role.id),
+    );
+
+    return {
+      ...selectedScript,
+      roles: [...roles, ...addedTravelerRoles],
+      updatedAt: new Date().toISOString(),
+    };
+  }, [selectedScript, selectedTravelerRoleIds, travelerRoles]);
+
   useEffect(() => {
     if (scriptIdParam) {
       setDraftSelectedScriptId(scriptIdParam);
@@ -106,6 +119,12 @@ export default function CreateRoute() {
       setDraftSelectedScriptId(editingGame?.script?.id ?? null);
     }
   }, [editingGame?.script?.id, isEditing, scriptIdParam]);
+
+  useEffect(() => {
+    setSelectedTravelerRoleIds(
+      selectedScript?.roles.filter(isTravelerRole).map((role) => role.id) ?? [],
+    );
+  }, [selectedScript]);
 
   const helperText = useMemo(() => {
     if (duplicateName) {
@@ -116,28 +135,18 @@ export default function CreateRoute() {
       return 'Add at least 1 other player.';
     }
 
-    if (participantKind === 'traveler') {
-      return 'Travelers are added after the main player seats.';
-    }
-
     return isEditing
       ? 'Add or remove players, choose a script, then tap Done.'
       : 'Long press a player to drag them into seat order.';
-  }, [duplicateName, isEditing, participantKind, players.length]);
+  }, [duplicateName, isEditing, players.length]);
 
-  function handleAddParticipant() {
+  function handleAddPlayer() {
     if (!canAddPlayer) {
       return;
     }
 
-    const isTraveler = participantKind === 'traveler';
     if (isEditing && editingGame) {
-      addPlayer(editingGame.id, normalizedName, isTraveler);
-    } else if (isTraveler) {
-      setDraftTravelers((currentTravelers) => [
-        ...currentTravelers,
-        { id: createDraftId(), name: normalizedName },
-      ]);
+      addPlayer(editingGame.id, normalizedName);
     } else {
       setDraftPlayers((currentPlayers) => [
         ...currentPlayers,
@@ -156,14 +165,8 @@ export default function CreateRoute() {
       return;
     }
 
-    const isTraveler = participantKind === 'traveler';
     if (isEditing && editingGame) {
-      addPlayer(editingGame.id, normalizedFriendName, isTraveler);
-    } else if (isTraveler) {
-      setDraftTravelers((currentTravelers) => [
-        ...currentTravelers,
-        { id: createDraftId(), name: normalizedFriendName },
-      ]);
+      addPlayer(editingGame.id, normalizedFriendName);
     } else {
       setDraftPlayers((currentPlayers) => [
         ...currentPlayers,
@@ -182,8 +185,13 @@ export default function CreateRoute() {
     }
 
     setDraftPlayers((currentPlayers) => currentPlayers.filter((player) => player.id !== playerId));
-    setDraftTravelers((currentTravelers) =>
-      currentTravelers.filter((traveler) => traveler.id !== playerId),
+  }
+
+  function handleToggleTravelerRole(roleId: string) {
+    setSelectedTravelerRoleIds((currentRoleIds) =>
+      currentRoleIds.includes(roleId)
+        ? currentRoleIds.filter((currentRoleId) => currentRoleId !== roleId)
+        : [...currentRoleIds, roleId],
     );
   }
 
@@ -195,15 +203,14 @@ export default function CreateRoute() {
     Keyboard.dismiss();
 
     if (isEditing && editingGame) {
-      setGameScript(editingGame.id, selectedScript);
+      setGameScript(editingGame.id, selectedScriptForGame);
       router.back();
       return;
     }
 
     const game = createGame({
       playerNames: players.map((player) => player.name),
-      script: selectedScript,
-      travelerNames: travelers.map((traveler) => traveler.name),
+      script: selectedScriptForGame,
     });
     router.replace({ pathname: '/game/[id]', params: { id: game.id } });
   }
@@ -241,22 +248,31 @@ export default function CreateRoute() {
 
           <View style={{ gap: 8 }}>
             <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '700' }}>
-              Add participant as
+              Traveler characters
             </Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <ParticipantKindButton
-                kind="player"
-                onPress={() => setParticipantKind('player')}
-                selected={participantKind === 'player'}
-              />
-              <ParticipantKindButton
-                kind="traveler"
-                onPress={() => setParticipantKind('traveler')}
-                selected={participantKind === 'traveler'}
-              />
-            </View>
+            {selectedScript ? (
+              travelerRoles.length > 0 ? (
+                <RolePicker
+                  description="Add traveler characters to this game's script."
+                  onToggleRole={handleToggleTravelerRole}
+                  roles={travelerRoles}
+                  selectedRoleIds={selectedTravelerRoleIds}
+                />
+              ) : (
+                <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
+                  Traveler characters are unavailable offline.
+                </Text>
+              )
+            ) : (
+              <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
+                Select a game script to add traveler characters.
+              </Text>
+            )}
+          </View>
+
+          <View style={{ gap: 8 }}>
             <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '700' }}>
-              {participantKind === 'traveler' ? 'Traveler name' : 'Player name'}
+              Player name
             </Text>
             <TextInput
               autoCapitalize="words"
@@ -266,7 +282,7 @@ export default function CreateRoute() {
               onBlur={() => setNameFocused(false)}
               onChangeText={setName}
               onFocus={() => setNameFocused(true)}
-              onSubmitEditing={handleAddParticipant}
+              onSubmitEditing={handleAddPlayer}
               returnKeyType="done"
               submitBehavior="submit"
               value={name}
@@ -292,7 +308,7 @@ export default function CreateRoute() {
             <Pressable
               accessibilityRole="button"
               disabled={!canAddPlayer}
-              onPress={handleAddParticipant}
+              onPress={handleAddPlayer}
               style={({ pressed }) => ({
                 alignItems: 'center',
                 backgroundColor: !canAddPlayer
@@ -319,7 +335,7 @@ export default function CreateRoute() {
               <Text
                 style={{ color: canAddPlayer ? colors.text : colors.onDisabled, fontWeight: '800' }}
               >
-                {participantKind === 'traveler' ? 'Add traveler' : 'Add'}
+                Add
               </Text>
             </Pressable>
 
@@ -413,11 +429,6 @@ export default function CreateRoute() {
             contentContainerStyle={{ gap: 10, padding: 20, paddingTop: 4, paddingBottom: 40 }}
             data={players}
             keyExtractor={(item) => item.id}
-            ListFooterComponent={
-              travelers.length > 0 ? (
-                <TravelersSection onRemove={handleRemovePlayer} travelers={travelers} />
-              ) : null
-            }
             onDragEnd={({ data }) => {
               if (!isEditing) {
                 setDraftPlayers(data);
@@ -433,9 +444,6 @@ export default function CreateRoute() {
             )}
           />
         )}
-        {players.length === 0 ? (
-          <TravelersSection onRemove={handleRemovePlayer} travelers={travelers} />
-        ) : null}
       </View>
     </>
   );
@@ -467,115 +475,6 @@ function FixedPlayerRow({ name }: { name: string }) {
       <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '800' }}>
         You
       </Text>
-    </View>
-  );
-}
-
-function ParticipantKindButton({
-  kind,
-  onPress,
-  selected,
-}: {
-  kind: ParticipantKind;
-  onPress: () => void;
-  selected: boolean;
-}) {
-  const label = kind === 'traveler' ? 'Traveler' : 'Player';
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={({ pressed }) => ({
-        alignItems: 'center',
-        backgroundColor: pressed || selected ? colors.surfacePressed : colors.surface,
-        borderColor: selected ? colors.primary : colors.border,
-        borderRadius: 8,
-        borderWidth: 1,
-        flex: 1,
-        justifyContent: 'center',
-        paddingVertical: 11,
-      })}
-    >
-      <Text style={{ color: selected ? colors.primary : colors.text, fontWeight: '800' }}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
-function TravelersSection({
-  onRemove,
-  travelers,
-}: {
-  onRemove: (playerId: string) => void;
-  travelers: DraftPlayer[];
-}) {
-  if (travelers.length === 0) {
-    return null;
-  }
-
-  return (
-    <View style={{ gap: 8, paddingTop: 16 }}>
-      <View style={{ gap: 2 }}>
-        <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
-          Travelers
-        </Text>
-        <Text selectable style={{ color: colors.textMuted, fontSize: 13 }}>
-          Travelers are added after the main player seats.
-        </Text>
-      </View>
-      {travelers.map((traveler) => (
-        <TravelerRow key={traveler.id} onRemove={onRemove} traveler={traveler} />
-      ))}
-    </View>
-  );
-}
-
-function TravelerRow({
-  onRemove,
-  traveler,
-}: {
-  onRemove: (playerId: string) => void;
-  traveler: DraftPlayer;
-}) {
-  return (
-    <View
-      style={{
-        alignItems: 'center',
-        backgroundColor: colors.surface,
-        borderColor: colors.border,
-        borderRadius: 8,
-        borderWidth: 1,
-        flexDirection: 'row',
-        gap: 12,
-        minHeight: 54,
-        padding: 16,
-      }}
-    >
-      <Text selectable style={{ color: colors.text, flex: 1, fontSize: 17, fontWeight: '700' }}>
-        {traveler.name}
-      </Text>
-      <Text selectable style={{ color: colors.primary, fontSize: 13, fontWeight: '800' }}>
-        Traveler
-      </Text>
-      <Pressable
-        accessibilityLabel={`Remove ${traveler.name}`}
-        accessibilityRole="button"
-        hitSlop={6}
-        onPress={() => onRemove(traveler.id)}
-        style={({ pressed }) => ({
-          alignItems: 'center',
-          backgroundColor: pressed ? colors.surfacePressed : 'transparent',
-          borderRadius: 8,
-          height: 30,
-          justifyContent: 'center',
-          width: 30,
-        })}
-      >
-        <Trash2 color={colors.danger} size={17} strokeWidth={2.5} />
-      </Pressable>
     </View>
   );
 }

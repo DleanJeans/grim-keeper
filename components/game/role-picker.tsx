@@ -6,18 +6,24 @@ import { colors } from '@/theme/colors';
 import type { Role } from '@/types/game';
 
 type RolePickerProps = {
+  description?: string;
   roles: Role[];
   selectedRoleIds: string[];
   onToggleRole: (roleId: string) => void;
 };
 
-export function RolePicker({ onToggleRole, roles, selectedRoleIds }: RolePickerProps) {
+export function RolePicker({
+  description = 'Select one or more roles. Save with no roles to clear this day’s entry.',
+  onToggleRole,
+  roles,
+  selectedRoleIds,
+}: RolePickerProps) {
   const selectedRoleIdSet = new Set(selectedRoleIds);
 
   return (
     <View style={{ gap: 10 }}>
       <Text selectable style={{ color: colors.textMuted, fontSize: 13, lineHeight: 18 }}>
-        Select one or more roles. Save with no roles to clear this day’s entry.
+        {description}
       </Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {roles.map((role) => (

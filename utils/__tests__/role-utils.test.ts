@@ -3,6 +3,7 @@ import {
   getRoleIconUrl,
   getRoleNames,
   getRolesForDay,
+  isTravelerRole,
   mergeScriptRoles,
 } from '@/utils/role-utils';
 
@@ -65,6 +66,13 @@ describe('role utilities', () => {
 
   it('formats unknown role ids for display', () => {
     expect(getRoleNames(['custom_role'], [])).toEqual(['Custom Role']);
+  });
+
+  it('identifies traveler characters from the role catalog', () => {
+    expect(isTravelerRole({ id: 'village_idiot', name: 'Village Idiot', team: 'traveller' })).toBe(
+      true,
+    );
+    expect(isTravelerRole({ id: 'imp', name: 'Imp', team: 'demon' })).toBe(false);
   });
 
   it('returns the visible role metadata for a player on a day', () => {
