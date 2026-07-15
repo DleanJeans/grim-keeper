@@ -46,6 +46,8 @@ function CompactHeader({ back, navigation, options, route }: NativeStackHeaderPr
   const insets = useSafeAreaInsets();
   const HeaderLeft = options.headerLeft;
   const HeaderRight = options.headerRight;
+  const hasHeaderLeft = Boolean(back || HeaderLeft);
+  const hasHeaderRight = Boolean(HeaderRight);
   const HeaderTitle = typeof options.headerTitle === 'function' ? options.headerTitle : null;
   const title =
     typeof options.headerTitle === 'string' ? options.headerTitle : options.title || route.name;
@@ -53,7 +55,7 @@ function CompactHeader({ back, navigation, options, route }: NativeStackHeaderPr
   return (
     <View style={[styles.header, { paddingTop: insets.top }]}>
       <View style={[styles.headerContent, route.name === 'game/[id]' && styles.gameHeaderContent]}>
-        {back || HeaderLeft ? (
+        {hasHeaderLeft ? (
           <View style={[styles.headerSide, styles.headerLeft]}>
             {back && options.headerBackVisible !== false ? (
               <Pressable
@@ -68,6 +70,8 @@ function CompactHeader({ back, navigation, options, route }: NativeStackHeaderPr
             ) : null}
             {HeaderLeft ? <HeaderLeft canGoBack={Boolean(back)} tintColor={colors.text} /> : null}
           </View>
+        ) : hasHeaderRight ? (
+          <View style={styles.headerSide} />
         ) : null}
         <View
           style={[
@@ -84,10 +88,12 @@ function CompactHeader({ back, navigation, options, route }: NativeStackHeaderPr
             </Text>
           )}
         </View>
-        {HeaderRight ? (
+        {hasHeaderRight ? (
           <View style={[styles.headerSide, styles.headerRight]}>
             {HeaderRight ? <HeaderRight canGoBack={Boolean(back)} tintColor={colors.text} /> : null}
           </View>
+        ) : hasHeaderLeft ? (
+          <View style={styles.headerSide} />
         ) : null}
       </View>
     </View>
