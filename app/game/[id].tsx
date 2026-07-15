@@ -333,12 +333,12 @@ export default function GameRoute() {
     const travelerRoleIds = new Set(
       activeGame.script.roles.filter(isTravelerRole).map((role) => role.id),
     );
-    setRoleAssignmentKind(kind);
-    setRoleAssignmentRoleIds(
+    const selectableRoleIds =
       kind === 'claim'
         ? currentRoleIds.filter((roleId) => !travelerRoleIds.has(roleId))
-        : currentRoleIds,
-    );
+        : currentRoleIds;
+    setRoleAssignmentKind(kind);
+    setRoleAssignmentRoleIds(selectableRoleIds.slice(0, 1));
   }
 
   function handleCancelRoleAssignment() {
@@ -347,11 +347,7 @@ export default function GameRoute() {
   }
 
   function handleToggleRoleAssignment(roleId: string) {
-    setRoleAssignmentRoleIds((currentRoleIds) =>
-      currentRoleIds.includes(roleId)
-        ? currentRoleIds.filter((currentRoleId) => currentRoleId !== roleId)
-        : [...currentRoleIds, roleId],
-    );
+    setRoleAssignmentRoleIds((currentRoleIds) => (currentRoleIds[0] === roleId ? [] : [roleId]));
   }
 
   function handleSaveRoleAssignment() {
@@ -364,7 +360,7 @@ export default function GameRoute() {
       focusedPlayer.id,
       activeGame.activeDay,
       roleAssignmentKind,
-      roleAssignmentRoleIds,
+      roleAssignmentRoleIds.slice(0, 1),
     );
     handleCancelRoleAssignment();
   }

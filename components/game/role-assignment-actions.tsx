@@ -68,6 +68,7 @@ export function RoleAssignmentActions() {
             </Text>
           </View>
           <RolePicker
+            description="Select one role. Tap the selected role again to clear it."
             onToggleRole={handleToggleRoleAssignment}
             roles={selectableRoles}
             sectioned
