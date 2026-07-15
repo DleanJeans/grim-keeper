@@ -275,7 +275,7 @@ function PlayerTokenName({ color, name }: PlayerTokenNameProps) {
         color,
         fontSize: 12,
         fontWeight: '800',
-        lineHeight: 15,
+        lineHeight: 13,
         textAlign: 'center',
       }}
     >
@@ -306,7 +306,7 @@ function PlayerTokenRoles({
           flexShrink: 1,
           fontSize: 8.5,
           fontWeight: '900',
-          lineHeight: 11,
+          lineHeight: 10,
           textAlign: 'center',
         }}
       >
