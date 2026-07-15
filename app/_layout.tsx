@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   },
   headerTitleSlot: {
     alignItems: 'center',
-    flex: 0.75,
+    flex: 1,
     justifyContent: 'center',
   },
   gameHeaderTitleSlot: {
