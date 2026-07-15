@@ -13,7 +13,7 @@ import { NomIcon } from '@/components/game/nom-icon';
 import { Text } from '@/components/text';
 import type { Player, PlayerPosition, Role } from '@/types/game';
 import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
-import { getRoleIconUrl } from '@/utils/role-utils';
+import { getRoleIconUrl, isTravelerRole } from '@/utils/role-utils';
 
 type PlayerTokenProps = {
   mapHeight: number;
@@ -53,6 +53,8 @@ export function PlayerToken({
 }: PlayerTokenProps) {
   const [isDragReady, setIsDragReady] = useState(false);
   const tokenSize = getTokenSize(tokenSizeProp);
+  const visibleRoles = showRoleDetails ? roles : roles.filter(isTravelerRole);
+  const backgroundRole = visibleRoles.find(isTravelerRole) ?? visibleRoles[0];
   const DeathIcon = player.death?.kind === 'execution' ? FlameKindling : Skull;
   const deathIconColor = player.death?.kind === 'execution' ? '#fecaca' : '#bfdbfe';
   const x = useSharedValue(position.x);
@@ -141,9 +143,9 @@ export function PlayerToken({
           animatedStyle,
         ]}
       >
-        {roles[0] ? (
+        {backgroundRole ? (
           <ImageBackground
-            source={{ uri: getRoleIconUrl(roles[0]) }}
+            source={{ uri: getRoleIconUrl(backgroundRole) }}
             style={[StyleSheet.absoluteFill, { borderRadius: tokenSize / 2 }]}
             imageStyle={{ borderRadius: tokenSize / 2, opacity: 0.48 }}
           />
@@ -160,10 +162,10 @@ export function PlayerToken({
             color={isDragReady ? '#082f49' : player.death ? '#cbd5e1' : '#0b1120'}
             name={player.name}
           />
-          {showRoleDetails && roles.length > 0 ? (
+          {visibleRoles.length > 0 ? (
             <PlayerTokenRoles
               color={isDragReady ? '#082f49' : player.death ? '#cbd5e1' : '#0b1120'}
-              roles={roles}
+              roles={visibleRoles}
             />
           ) : null}
         </View>

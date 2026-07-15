@@ -215,7 +215,6 @@ function PlayerTokenForMap({
   showRoles: boolean;
 }) {
   const roles = getRolesForDayOrPrevious(player.roleAssignments, activeDay, gameRoles);
-  const visibleRoles = showRoles ? roles : [];
 
   return (
     <PlayerToken
@@ -232,7 +231,7 @@ function PlayerTokenForMap({
       player={player}
       position={position}
       rearrangeMode={isRearrangeMode}
-      roles={visibleRoles}
+      roles={roles}
       showRoleDetails={showRoles}
       tokenSize={activeTokenSize}
     />
