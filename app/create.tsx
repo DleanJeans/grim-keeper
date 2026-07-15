@@ -1,16 +1,12 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { Play, Plus } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TextInput as RNTextInput } from 'react-native';
-import { Keyboard, Pressable, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, View } from 'react-native';
 import DraggableFlatList from 'react-native-draggable-flatlist';
+import { CreateFormHeader } from '@/components/create/create-form-header';
 import { CreateHeaderDoneButton } from '@/components/create/create-header-done-button';
-import { FixedPlayerRow } from '@/components/create/fixed-player-row';
 import { type DraftPlayer, PlayerRow } from '@/components/create/player-row';
-import { FriendSuggestions } from '@/components/friends/friend-suggestions';
-import { TravelerRolePicker } from '@/components/game/traveler-role-picker';
-import { GameScriptPicker } from '@/components/scripts/game-script-picker';
-import { Text, TextInput } from '@/components/text';
+import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { hasDuplicatePlayerName, normalizePlayerName } from '@/utils/conversation-utils';
@@ -222,214 +218,99 @@ export default function CreateRoute() {
           title: isEditing ? 'Edit Players' : 'New Game',
         }}
       />
-      <View style={{ backgroundColor: colors.background, flex: 1 }}>
-        <View style={{ gap: 14, padding: 20, paddingBottom: 12 }}>
-          <View style={{ gap: 6 }}>
-            <Text selectable style={{ color: colors.text, fontSize: 24, fontWeight: '800' }}>
-              Seat the circle
-            </Text>
-            <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
-              Add players from the player on the left then clockwise.
-            </Text>
-          </View>
-
-          <GameScriptPicker
-            onBrowse={() =>
-              router.push({
-                pathname: '/scripts',
-                params:
-                  isEditing && editingGame
-                    ? { gameId: editingGame.id, selectForGame: 'true' }
-                    : { selectForGame: 'true' },
-              })
-            }
-            onSelect={setDraftSelectedScriptId}
-            scripts={availableScripts}
-            selectedScriptId={selectedScriptId}
-          />
-
-          <TravelerRolePicker
-            onToggleRole={handleToggleTravelerRole}
-            roles={travelerRoles}
-            selectedRoleIds={selectedTravelerRoleIds}
-            selectedScriptName={selectedScript?.name}
-          />
-
-          <View style={{ gap: 8 }}>
-            <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '700' }}>
-              Player name
-            </Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <TextInput
-                autoCapitalize="words"
-                autoCorrect={false}
-                enterKeyHint="done"
-                ref={inputRef}
-                onBlur={() => setNameFocused(false)}
-                onChangeText={setName}
-                onFocus={() => setNameFocused(true)}
-                onSubmitEditing={handleAddPlayer}
-                returnKeyType="done"
-                submitBehavior="submit"
-                value={name}
-                style={{
-                  backgroundColor: colors.surface,
-                  borderColor: duplicateName ? colors.danger : colors.border,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  color: colors.text,
-                  flex: 1,
-                  fontSize: 18,
-                  minHeight: 52,
-                  paddingHorizontal: 16,
-                  paddingVertical: 14,
-                }}
-              />
-              <Pressable
-                accessibilityRole="button"
-                disabled={!canAddPlayer}
-                onPress={handleAddPlayer}
-                style={({ pressed }) => ({
-                  alignItems: 'center',
-                  backgroundColor: !canAddPlayer
-                    ? colors.disabled
-                    : pressed
-                      ? colors.surfacePressed
-                      : colors.surfaceRaised,
-                  borderColor: colors.border,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  flexDirection: 'row',
-                  gap: 7,
-                  justifyContent: 'center',
-                  minHeight: 52,
-                  paddingHorizontal: 12,
-                })}
-              >
-                <Plus
-                  color={canAddPlayer ? colors.text : colors.onDisabled}
-                  size={17}
-                  strokeWidth={2.7}
-                />
-                <Text
-                  style={{
-                    color: canAddPlayer ? colors.text : colors.onDisabled,
-                    fontWeight: '800',
-                  }}
-                >
-                  Add
-                </Text>
-              </Pressable>
+      <KeyboardAvoidingView
+        behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
+        style={{ backgroundColor: colors.background, flex: 1 }}
+      >
+        <DraggableFlatList
+          activationDistance={8}
+          automaticallyAdjustKeyboardInsets
+          containerStyle={{ backgroundColor: colors.background, flex: 1 }}
+          contentInsetAdjustmentBehavior="automatic"
+          contentContainerStyle={{
+            gap: 6,
+            paddingBottom: 40,
+            paddingHorizontal: 20,
+            paddingTop: 20,
+          }}
+          data={players}
+          extraData={playerOrderKey}
+          keyboardShouldPersistTaps="handled"
+          keyExtractor={(item) => item.id}
+          ListEmptyComponent={
+            <View
+              style={{
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                borderRadius: 8,
+                borderWidth: 1,
+                gap: 8,
+                padding: 18,
+              }}
+            >
+              <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '800' }}>
+                No other players yet.
+              </Text>
+              <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
+                Type a name and press Enter or Add.
+              </Text>
             </View>
-          </View>
-
-          {nameFocused ? (
-            <FriendSuggestions friends={suggestedFriends} onSelectFriend={handleSelectFriend} />
-          ) : null}
-
-          {!isEditing ? (
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <Pressable
-                accessibilityRole="button"
-                disabled={!canStart}
-                onPress={handleStart}
-                style={({ pressed }) => ({
-                  alignItems: 'center',
-                  backgroundColor: !canStart
-                    ? colors.disabled
-                    : pressed
-                      ? colors.surfacePressed
-                      : colors.primary,
-                  borderRadius: 8,
-                  flex: 1,
-                  flexDirection: 'row',
-                  gap: 7,
-                  justifyContent: 'center',
-                  minHeight: 48,
-                  paddingVertical: 13,
-                })}
-              >
-                <Play
-                  color={canStart ? colors.onPrimary : colors.onDisabled}
-                  size={16}
-                  strokeWidth={2.7}
-                />
-                <Text
-                  style={{
-                    color: canStart ? colors.onPrimary : colors.onDisabled,
-                    fontWeight: '800',
-                  }}
-                >
-                  Start
-                </Text>
-              </Pressable>
-            </View>
-          ) : null}
-
-          <Text
-            selectable
-            style={{
-              color: duplicateName ? colors.danger : colors.textMuted,
-              fontSize: 14,
-              lineHeight: 20,
-            }}
-          >
-            {helperText}
-          </Text>
-        </View>
-
-        <View style={{ gap: 6, marginBottom: 8, paddingHorizontal: 20 }}>
-          <FixedPlayerRow name={fixedPlayerName} />
-        </View>
-
-        {players.length === 0 ? (
-          <View
-            style={{
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-              borderRadius: 8,
-              borderWidth: 1,
-              gap: 8,
-              marginHorizontal: 20,
-              padding: 18,
-            }}
-          >
-            <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '800' }}>
-              No other players yet.
-            </Text>
-            <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
-              Type a name and press Enter or Add.
-            </Text>
-          </View>
-        ) : (
-          <DraggableFlatList
-            activationDistance={8}
-            containerStyle={{ backgroundColor: colors.background, flex: 1 }}
-            contentInsetAdjustmentBehavior="automatic"
-            keyboardShouldPersistTaps="handled"
-            extraData={playerOrderKey}
-            style={{ backgroundColor: colors.background }}
-            contentContainerStyle={{ gap: 6, padding: 20, paddingTop: 0, paddingBottom: 40 }}
-            data={players}
-            keyExtractor={(item) => item.id}
-            onDragEnd={({ data }) => {
-              if (!isEditing) {
-                setDraftPlayers(data);
+          }
+          ListHeaderComponent={
+            <CreateFormHeader
+              canAddPlayer={canAddPlayer}
+              canStart={canStart}
+              duplicateName={duplicateName}
+              fixedPlayerName={fixedPlayerName}
+              friends={suggestedFriends}
+              helperText={helperText}
+              inputRef={inputRef}
+              isEditing={isEditing}
+              name={name}
+              nameFocused={nameFocused}
+              onAddPlayer={handleAddPlayer}
+              onBlurName={() => setNameFocused(false)}
+              onBrowseScripts={() =>
+                router.push({
+                  pathname: '/scripts',
+                  params:
+                    isEditing && editingGame
+                      ? { gameId: editingGame.id, selectForGame: 'true' }
+                      : { selectForGame: 'true' },
+                })
               }
-            }}
-            renderItem={(params) => (
-              <PlayerRow
-                drag={params.drag}
-                index={(playerIndexes.get(params.item.id) ?? params.getIndex() ?? 0) + 1}
-                isActive={params.isActive}
-                isEditing={isEditing}
-                item={params.item}
-                onRemove={handleRemovePlayer}
-              />
-            )}
-          />
-        )}
-      </View>
+              onChangeName={setName}
+              onFocusName={() => setNameFocused(true)}
+              onSelectFriend={handleSelectFriend}
+              onSelectScript={setDraftSelectedScriptId}
+              onStart={handleStart}
+              onSubmitName={handleAddPlayer}
+              onToggleTravelerRole={handleToggleTravelerRole}
+              roles={travelerRoles}
+              scripts={availableScripts}
+              selectedRoleIds={selectedTravelerRoleIds}
+              selectedScriptId={selectedScriptId}
+              selectedScriptName={selectedScript?.name}
+            />
+          }
+          onDragEnd={({ data }) => {
+            if (!isEditing) {
+              setDraftPlayers(data);
+            }
+          }}
+          renderItem={(params) => (
+            <PlayerRow
+              drag={params.drag}
+              index={(playerIndexes.get(params.item.id) ?? params.getIndex() ?? 0) + 1}
+              isActive={params.isActive}
+              isEditing={isEditing}
+              item={params.item}
+              onRemove={handleRemovePlayer}
+            />
+          )}
+          style={{ backgroundColor: colors.background }}
+        />
+      </KeyboardAvoidingView>
     </>
   );
 }
