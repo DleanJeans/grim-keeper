@@ -18,6 +18,7 @@ import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
 import { getRoleIconUrl, isTravelerRole } from '@/utils/role-utils';
 
 const PLAYER_TOKEN_BADGE_SIZE = 18;
+const PLAYER_TOKEN_ROLE_IMAGE_SCALE = 1.2;
 const playerTokenColors = {
   backgroundDefault: '#f8fafc',
   backgroundDeath: '#1f2937',
@@ -186,8 +187,12 @@ export function PlayerToken({
         {backgroundRole ? (
           <ImageBackground
             source={{ uri: getRoleIconUrl(backgroundRole) }}
-            style={[StyleSheet.absoluteFill, { borderRadius: tokenSize / 2 }]}
-            imageStyle={{ borderRadius: tokenSize / 2, opacity: 0.48 }}
+            style={[StyleSheet.absoluteFill, { borderRadius: tokenSize / 2, overflow: 'hidden' }]}
+            imageStyle={{
+              borderRadius: tokenSize / 2,
+              opacity: 0.48,
+              transform: [{ scale: PLAYER_TOKEN_ROLE_IMAGE_SCALE }],
+            }}
           />
         ) : null}
         <View
