@@ -292,7 +292,9 @@ export default function GameRoute() {
   }
 
   function handleChangeDay(day: number) {
+    const selectedPlayerId = focusedPlayerId;
     handleCancelTracking();
+    setFocusedPlayerId(selectedPlayerId);
     setIsRotatingMode(false);
     setIsRearrangeMode(false);
     setActiveDay(activeGame.id, day);
