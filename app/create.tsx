@@ -263,6 +263,31 @@ export default function CreateRoute() {
               Player name
             </Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TextInput
+                autoCapitalize="words"
+                autoCorrect={false}
+                enterKeyHint="done"
+                ref={inputRef}
+                onBlur={() => setNameFocused(false)}
+                onChangeText={setName}
+                onFocus={() => setNameFocused(true)}
+                onSubmitEditing={handleAddPlayer}
+                returnKeyType="done"
+                submitBehavior="submit"
+                value={name}
+                style={{
+                  backgroundColor: colors.surface,
+                  borderColor: duplicateName ? colors.danger : colors.border,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  color: colors.text,
+                  flex: 1,
+                  fontSize: 18,
+                  minHeight: 52,
+                  paddingHorizontal: 16,
+                  paddingVertical: 14,
+                }}
+              />
               <Pressable
                 accessibilityRole="button"
                 disabled={!canAddPlayer}
@@ -298,31 +323,6 @@ export default function CreateRoute() {
                   Add
                 </Text>
               </Pressable>
-              <TextInput
-                autoCapitalize="words"
-                autoCorrect={false}
-                enterKeyHint="done"
-                ref={inputRef}
-                onBlur={() => setNameFocused(false)}
-                onChangeText={setName}
-                onFocus={() => setNameFocused(true)}
-                onSubmitEditing={handleAddPlayer}
-                returnKeyType="done"
-                submitBehavior="submit"
-                value={name}
-                style={{
-                  backgroundColor: colors.surface,
-                  borderColor: duplicateName ? colors.danger : colors.border,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  color: colors.text,
-                  flex: 1,
-                  fontSize: 18,
-                  minHeight: 52,
-                  paddingHorizontal: 16,
-                  paddingVertical: 14,
-                }}
-              />
             </View>
           </View>
 
@@ -381,7 +381,7 @@ export default function CreateRoute() {
           </Text>
         </View>
 
-        <View style={{ gap: 10, paddingHorizontal: 20, paddingTop: 4 }}>
+        <View style={{ gap: 6, paddingHorizontal: 20 }}>
           <FixedPlayerRow name={fixedPlayerName} />
         </View>
 
@@ -412,7 +412,7 @@ export default function CreateRoute() {
             keyboardShouldPersistTaps="handled"
             extraData={playerOrderKey}
             style={{ backgroundColor: colors.background }}
-            contentContainerStyle={{ gap: 10, padding: 20, paddingTop: 4, paddingBottom: 40 }}
+            contentContainerStyle={{ gap: 6, padding: 20, paddingTop: 0, paddingBottom: 40 }}
             data={players}
             keyExtractor={(item) => item.id}
             onDragEnd={({ data }) => {
@@ -445,8 +445,9 @@ function FixedPlayerRow({ name }: { name: string }) {
         borderWidth: 1,
         flexDirection: 'row',
         gap: 12,
-        minHeight: 54,
-        padding: 16,
+        minHeight: 46,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
       }}
     >
       <Text
@@ -487,8 +488,9 @@ function PlayerRow({
         borderWidth: 1,
         flexDirection: 'row',
         gap: 12,
-        minHeight: 54,
-        padding: 16,
+        minHeight: 46,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
       }}
     >
       <Pressable
