@@ -152,7 +152,7 @@ function PlayerNoteRoleAssignment({ kind, roles }: { kind: 'claim' | 'confirm'; 
           fontWeight: '900',
         }}
       >
-        {kind === 'confirm' ? 'Confirm' : 'Claim'}
+        {kind === 'confirm' ? 'Confirmed' : 'Claimed'}
       </Text>
       {kind === 'confirm' ? <Check color="#86efac" size={14} strokeWidth={3} /> : null}
       {roles.map((role) => (
