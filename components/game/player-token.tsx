@@ -1,4 +1,4 @@
-import { FlameKindling, Skull, Vote } from 'lucide-react-native';
+import { Check, FlameKindling, Skull, Vote } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { ImageBackground, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -27,6 +27,7 @@ type PlayerTokenProps = {
   player: Player;
   position: PlayerPosition;
   roles?: Role[];
+  rolesConfirmed?: boolean;
   rearrangeMode?: boolean;
   showRoleDetails?: boolean;
   tokenSize: number;
@@ -48,6 +49,7 @@ export function PlayerToken({
   position,
   rearrangeMode = false,
   roles = [],
+  rolesConfirmed = false,
   showRoleDetails = false,
   tokenSize: tokenSizeProp,
 }: PlayerTokenProps) {
@@ -166,6 +168,7 @@ export function PlayerToken({
             <PlayerTokenRoles
               color={isDragReady ? '#082f49' : player.death ? '#cbd5e1' : '#0b1120'}
               roles={visibleRoles}
+              rolesConfirmed={rolesConfirmed}
             />
           ) : null}
         </View>
@@ -256,23 +259,35 @@ function PlayerTokenName({ color, name }: PlayerTokenNameProps) {
   );
 }
 
-function PlayerTokenRoles({ color, roles }: { color: string; roles: Role[] }) {
+function PlayerTokenRoles({
+  color,
+  roles,
+  rolesConfirmed,
+}: {
+  color: string;
+  roles: Role[];
+  rolesConfirmed: boolean;
+}) {
   return (
-    <Text
-      adjustsFontSizeToFit
-      ellipsizeMode="tail"
-      minimumFontScale={0.6}
-      numberOfLines={1}
-      selectable
-      style={{
-        color,
-        fontSize: 8.5,
-        fontWeight: '900',
-        lineHeight: 11,
-        maxWidth: '100%',
-      }}
-    >
-      {roles.map((role) => role.name).join(' / ')}
-    </Text>
+    <View style={{ alignItems: 'center', flexDirection: 'row', gap: 2, maxWidth: '100%' }}>
+      <Text
+        adjustsFontSizeToFit
+        ellipsizeMode="tail"
+        minimumFontScale={0.6}
+        numberOfLines={1}
+        selectable
+        style={{
+          color,
+          flexShrink: 1,
+          fontSize: 8.5,
+          fontWeight: '900',
+          lineHeight: 11,
+          textAlign: 'center',
+        }}
+      >
+        {roles.map((role) => role.name).join(' / ')}
+      </Text>
+      {rolesConfirmed ? <Check color={color} size={9} strokeWidth={3} /> : null}
+    </View>
   );
 }

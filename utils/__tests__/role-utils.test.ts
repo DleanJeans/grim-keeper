@@ -1,5 +1,6 @@
 import {
   getRoleAssignmentForDay,
+  getRoleDisplayForDayOrPrevious,
   getRoleIconUrl,
   getRoleNames,
   getRolesForDay,
@@ -100,5 +101,24 @@ describe('role utilities', () => {
         ],
       ),
     ).toEqual([{ id: 'imp', name: 'Imp', team: 'demon' }]);
+  });
+
+  it('returns only the confirmed roles and their confirmation state', () => {
+    expect(
+      getRoleDisplayForDayOrPrevious(
+        [
+          { day: 1, kind: 'claim', roleIds: ['empath'], updatedAt: '2026-07-14T00:00:00.000Z' },
+          { day: 1, kind: 'confirm', roleIds: ['imp'], updatedAt: '2026-07-14T00:01:00.000Z' },
+        ],
+        1,
+        [
+          { id: 'empath', name: 'Empath', team: 'townsfolk' },
+          { id: 'imp', name: 'Imp', team: 'demon' },
+        ],
+      ),
+    ).toEqual({
+      kind: 'confirm',
+      roles: [{ id: 'imp', name: 'Imp', team: 'demon' }],
+    });
   });
 });
