@@ -143,20 +143,39 @@ function DeathLogEntryRow({
 }
 
 function KillerDescriptionView({ killerNames, killerRoles }: KillerDescription) {
+  if (killerNames.length === 0) {
+    return (
+      <View style={styles.killerDescription}>
+        <Text selectable style={styles.subtitle}>
+          Killed by:
+        </Text>
+        {killerRoles.map((role) => (
+          <KillerRoleView key={role.id} role={role} />
+        ))}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.killerDescription}>
       <Text selectable style={styles.subtitle}>
-        Killed by: {killerNames.length > 0 ? killerNames.join(', ') : 'unknown'}
+        Killed by: {killerNames.join(', ')}
         {killerRoles.length > 0 ? ' as' : ''}
       </Text>
       {killerRoles.map((role) => (
-        <View key={role.id} style={styles.roleName}>
-          <RoleIcon role={role} size={14} />
-          <Text selectable style={styles.subtitle}>
-            {role.name}
-          </Text>
-        </View>
+        <KillerRoleView key={role.id} role={role} />
       ))}
+    </View>
+  );
+}
+
+function KillerRoleView({ role }: { role: Role }) {
+  return (
+    <View style={styles.roleName}>
+      <RoleIcon role={role} size={14} />
+      <Text selectable style={styles.subtitle}>
+        {role.name}
+      </Text>
     </View>
   );
 }
