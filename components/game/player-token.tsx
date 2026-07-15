@@ -203,7 +203,7 @@ export function PlayerToken({
         {rolesConfirmed && visibleRoles.length > 0 && !visibleRoles.some(isTravelerRole) ? (
           <PlayerTokenEdgeBadge
             backgroundColor="#166534"
-            position={{ right: -12, top: tokenSize / 2 - playerTokenBadgeSize / 2 }}
+            position={{ right: -10, top: tokenSize / 2 - playerTokenBadgeSize / 2 }}
           >
             <CircleCheck color="#dcfce7" size={12} strokeWidth={2.8} />
           </PlayerTokenEdgeBadge>
