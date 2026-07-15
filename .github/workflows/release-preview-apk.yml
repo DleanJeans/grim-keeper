@@ -1,0 +1,52 @@
+name: Release preview APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup environment
+        uses: dleanjeans/expo-workflows/.github/actions/pnpm-expo@main
+        with:
+          expo-token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build preview APK
+        id: build
+        shell: bash
+        run: |
+          set -euo pipefail
+          eas build --platform android --profile preview --wait --json > "$RUNNER_TEMP/eas-build.json"
+          build_id=$(jq -r 'if type == "array" then .[0].id else .id end' "$RUNNER_TEMP/eas-build.json")
+          test -n "$build_id" && test "$build_id" != "null"
+          echo "build-id=$build_id" >> "$GITHUB_OUTPUT"
+
+      - name: Download and rename APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cd dist
+          eas build:download --build-id "${{ steps.build.outputs.build-id }}" --non-interactive
+          apk=$(find . -maxdepth 1 -type f -name '*.apk' -print -quit)
+          test -n "$apk"
+          mv "$apk" GrimKeeper-preview.apk
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./package.json').version")
+          tag="preview-v${version}-${GITHUB_RUN_ID}"
+          gh release create "$tag" dist/GrimKeeper-preview.apk \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "GrimKeeper v${version} Preview" \
+            --notes 'Preview APK built with EAS profile preview.'
