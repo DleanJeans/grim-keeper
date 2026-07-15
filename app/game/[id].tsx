@@ -1,6 +1,6 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, useWindowDimensions, View } from 'react-native';
+import { Alert, ScrollView, useWindowDimensions, View } from 'react-native';
 import { FocusedDeathActionPanel } from '@/components/game/death-actions';
 import { DeathLog } from '@/components/game/death-log';
 import { GameMap } from '@/components/game/game-map';
@@ -485,7 +485,13 @@ export default function GameRoute() {
     }
 
     const assignment = getRoleAssignmentForDay(player.roleAssignments, day);
-    saveNoteForFutureGames(player.name, assignment?.roleIds ?? [], text);
+    const saved = saveNoteForFutureGames(player.name, assignment?.roleIds ?? [], text);
+    Alert.alert(
+      saved ? 'Note saved' : 'Note not saved',
+      saved
+        ? 'This note will be available in future games.'
+        : 'Assign a role before saving a note for yourself in future games.',
+    );
   }
 
   const contextValue: GameRouteContextValue = {

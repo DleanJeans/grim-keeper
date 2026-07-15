@@ -51,7 +51,7 @@ type GameState = {
     roleIds: string[],
   ) => void;
   setPlayerDayNote: (gameId: string, playerId: string, day: number, text: string) => void;
-  saveNoteForFutureGames: (playerName: string, roleIds: string[], text: string) => void;
+  saveNoteForFutureGames: (playerName: string, roleIds: string[], text: string) => boolean;
   setTokenSize: (gameId: string, tokenSize: number) => void;
   setActiveDay: (gameId: string, day: number) => void;
   updatePlayerPosition: (gameId: string, playerId: string, position: PlayerPosition) => void;
@@ -397,17 +397,24 @@ export const useGameStore = create<GameState>()(
         const nextText = text.trim();
 
         if (!nextText) {
-          return;
+          return false;
         }
 
         const normalizedPlayerName = normalizePlayerName(playerName);
         const playerKey = normalizedPlayerName.toLocaleLowerCase();
         const uniqueRoleIds = new Set(roleIds);
         const updatedAt = new Date().toISOString();
+        let saved = false;
 
         set((state) => {
           const appUserKey = normalizePlayerName(state.appUserName).toLocaleLowerCase();
           const shouldSaveFriend = !!normalizedPlayerName && playerKey !== appUserKey;
+
+          if (!shouldSaveFriend && uniqueRoleIds.size === 0) {
+            return state;
+          }
+
+          saved = true;
           let friends = state.friends;
 
           if (shouldSaveFriend) {
@@ -462,6 +469,8 @@ export const useGameStore = create<GameState>()(
 
           return { friends, games, roleCatalog, scripts };
         });
+
+        return saved;
       },
       setTokenSize: (gameId, tokenSize) => {
         set((state) => ({
