@@ -314,7 +314,9 @@ function PlayerTokenRoles({
       >
         {roles.map((role) => role.name).join(' / ')}
       </Text>
-      {rolesConfirmed ? <Check color={color} size={9} strokeWidth={3} /> : null}
+      {rolesConfirmed && !roles.some(isTravelerRole) ? (
+        <Check color={color} size={9} strokeWidth={3} />
+      ) : null}
     </View>
   );
 }
