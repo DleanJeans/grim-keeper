@@ -112,6 +112,32 @@ export function getRolesWithKillAbility(roles: Role[], catalog: Role[] = []) {
   return mergeScriptRoles(roles, catalog).filter(canRoleKill);
 }
 
+export function getKillerRoleOptions(roles: Role[], catalog: Role[] = []) {
+  const scriptRoles = mergeScriptRoles(roles, catalog);
+  const killerRoles = getRolesWithKillAbility(roles, catalog);
+  const demonRoleCount = scriptRoles.filter(
+    (role) => role.team?.toLocaleLowerCase() === 'demon',
+  ).length;
+  const evilKillerRoleCount = killerRoles.filter((role) =>
+    alignedEvilTeams.has(role.team?.toLocaleLowerCase() ?? ''),
+  ).length;
+
+  return [
+    ...GENERIC_KILLER_ROLES.filter((role) => {
+      if (role.id === 'generic_demon') {
+        return demonRoleCount > 1;
+      }
+
+      if (role.id === 'generic_evil') {
+        return evilKillerRoleCount > 1;
+      }
+
+      return true;
+    }),
+    ...killerRoles,
+  ];
+}
+
 export function getRoleAssignmentForDay(
   assignments: PlayerRoleAssignment[] | undefined,
   day: number,

@@ -1,5 +1,6 @@
 import {
   canRoleKill,
+  getKillerRoleOptions,
   getRoleAssignmentForDay,
   getRoleDisplayForDayOrPrevious,
   getRoleIconUrl,
@@ -199,6 +200,58 @@ describe('role utilities', () => {
     ];
 
     expect(getRolesWithKillAbility(scriptRoles, catalog)).toEqual([catalog[0], catalog[1]]);
+  });
+
+  it('hides generic demon and evil options when the script has one matching killer type', () => {
+    const roles = getKillerRoleOptions([
+      {
+        ability: 'Each night*, choose a player: they die.',
+        id: 'imp',
+        name: 'Imp',
+        team: 'demon',
+      },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+    ]);
+
+    expect(roles.map((role) => role.id)).toEqual(['generic_unknown', 'imp']);
+  });
+
+  it('keeps generic demon when multiple demon types are in the script', () => {
+    const roles = getKillerRoleOptions([
+      {
+        ability: 'Each night*, choose a player: they die.',
+        id: 'imp',
+        name: 'Imp',
+        team: 'demon',
+      },
+      { id: 'vortox', name: 'Vortox', team: 'demon' },
+    ]);
+
+    expect(roles.map((role) => role.id)).toEqual(['generic_demon', 'generic_unknown', 'imp']);
+  });
+
+  it('keeps generic evil when multiple evil roles can kill', () => {
+    const roles = getKillerRoleOptions([
+      {
+        ability: 'Each night*, choose a player: they die.',
+        id: 'imp',
+        name: 'Imp',
+        team: 'demon',
+      },
+      {
+        ability: 'Once per game, choose a player: they die.',
+        id: 'assassin',
+        name: 'Assassin',
+        team: 'minion',
+      },
+    ]);
+
+    expect(roles.map((role) => role.id)).toEqual([
+      'generic_evil',
+      'generic_unknown',
+      'imp',
+      'assassin',
+    ]);
   });
 
   it('returns the visible role metadata for a player on a day', () => {

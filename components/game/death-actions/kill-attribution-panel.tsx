@@ -10,11 +10,7 @@ import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { KillAttribution } from '@/types/game';
-import {
-  GENERIC_KILLER_ROLES,
-  getRoleOwnerNamesForDay,
-  getRolesWithKillAbility,
-} from '@/utils/role-utils';
+import { getKillerRoleOptions, getRoleOwnerNamesForDay } from '@/utils/role-utils';
 
 type KillAttributionPanelProps = {
   onCancel: () => void;
@@ -25,10 +21,7 @@ export function KillAttributionPanel({ onCancel, onConfirm }: KillAttributionPan
   const { activeDay, focusedPlayer, game, players, showRoles } = useGameRouteContext();
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const [killerRoleIds, setKillerRoleIds] = useState<string[]>([]);
-  const killerRoles = [
-    ...GENERIC_KILLER_ROLES,
-    ...getRolesWithKillAbility(game.script?.roles ?? [], roleCatalog),
-  ];
+  const killerRoles = getKillerRoleOptions(game.script?.roles ?? [], roleCatalog);
 
   if (!focusedPlayer) {
     return null;
