@@ -2,8 +2,7 @@ import { Plus, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { RoleIcon } from '@/components/role-icon';
-import { RoleNotes } from '@/components/role-notes';
+import { RoleReference } from '@/components/role-reference';
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Role, StoredScript } from '@/types/game';
@@ -45,6 +44,7 @@ export function ScriptRoleEditor({ onChange, roleCatalog, script }: ScriptRoleEd
           <RoleChip
             key={role.id}
             role={role}
+            scriptId={script.id}
             onRemove={() => onChange(removeRoleFromScript(script, role.id))}
           />
         ))}
@@ -75,15 +75,17 @@ export function ScriptRoleEditor({ onChange, roleCatalog, script }: ScriptRoleEd
             </Text>
           ) : (
             suggestions.map((role) => (
-              <Pressable
+              <RoleReference
                 accessibilityLabel={`Add ${role.name} to ${script.name}`}
-                accessibilityRole="button"
                 key={role.id}
+                leading={<Plus color={colors.success} size={16} strokeWidth={2.6} />}
                 onPress={() => {
                   onChange(addRoleToScript(script, role));
                   setQuery('');
                 }}
-                style={({ pressed }) => ({
+                role={role}
+                scriptId={script.id}
+                containerStyle={({ pressed }) => ({
                   alignItems: 'center',
                   backgroundColor: pressed ? colors.surfacePressed : colors.surface,
                   borderColor: colors.border,
@@ -94,16 +96,9 @@ export function ScriptRoleEditor({ onChange, roleCatalog, script }: ScriptRoleEd
                   paddingHorizontal: 12,
                   paddingVertical: 10,
                 })}
-              >
-                <Plus color={colors.success} size={16} strokeWidth={2.6} />
-                <RoleIcon role={role} size={24} />
-                <View style={{ flex: 1, gap: 2 }}>
-                  <Text selectable style={{ color: colors.text, fontWeight: '700' }}>
-                    {role.name}
-                  </Text>
-                  <RoleNotes compact role={role} />
-                </View>
-              </Pressable>
+                contentStyle={{ flex: 1 }}
+                textStyle={{ color: colors.text, fontWeight: '700' }}
+              />
             ))
           )}
         </View>
@@ -112,7 +107,15 @@ export function ScriptRoleEditor({ onChange, roleCatalog, script }: ScriptRoleEd
   );
 }
 
-function RoleChip({ onRemove, role }: { onRemove: () => void; role: Role }) {
+function RoleChip({
+  onRemove,
+  role,
+  scriptId,
+}: {
+  onRemove: () => void;
+  role: Role;
+  scriptId: string;
+}) {
   return (
     <View
       style={{
@@ -128,13 +131,7 @@ function RoleChip({ onRemove, role }: { onRemove: () => void; role: Role }) {
         paddingVertical: 6,
       }}
     >
-      <RoleIcon role={role} size={24} />
-      <View style={{ gap: 2 }}>
-        <Text selectable style={{ color: colors.text, fontSize: 13, fontWeight: '700' }}>
-          {role.name}
-        </Text>
-        <RoleNotes compact role={role} />
-      </View>
+      <RoleReference role={role} scriptId={scriptId} textStyle={{ color: colors.text }} />
       <Pressable
         accessibilityLabel={`Remove ${role.name} from script`}
         accessibilityRole="button"

@@ -1,9 +1,8 @@
 import { Check } from 'lucide-react-native';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 
-import { RoleIcon } from '@/components/role-icon';
-import { RoleNotes } from '@/components/role-notes';
+import { RoleReference } from '@/components/role-reference';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Role } from '@/types/game';
@@ -111,11 +110,13 @@ function RoleChoiceButton({
 }) {
   return (
     <Animated.View layout={animated ? LinearTransition.duration(220) : undefined}>
-      <Pressable
+      <RoleReference
         accessibilityLabel={`${selected ? 'Remove' : 'Select'} ${role.name}${ownerNames?.length ? `. Claimed or confirmed by ${ownerNames.join(', ')}` : ''}`}
-        accessibilityRole="button"
+        contentStyle={{ maxWidth: 180 }}
+        leading={selected ? <Check color={colors.primary} size={14} strokeWidth={3} /> : null}
         onPress={onPress}
-        style={({ pressed }) => ({
+        role={role}
+        containerStyle={({ pressed }) => ({
           alignItems: 'center',
           backgroundColor: pressed
             ? colors.surfacePressed
@@ -130,31 +131,21 @@ function RoleChoiceButton({
           paddingHorizontal: 10,
           paddingVertical: 9,
         })}
+        textStyle={{
+          color: selected ? colors.text : colors.textMuted,
+          fontSize: 13,
+          fontWeight: selected ? '800' : '600',
+        }}
       >
-        {selected ? <Check color={colors.primary} size={14} strokeWidth={3} /> : null}
-        <RoleIcon role={role} size={24} />
-        <View style={{ flexShrink: 1, gap: 1, maxWidth: 180 }}>
+        {ownerNames?.length ? (
           <Text
             selectable
-            style={{
-              color: selected ? colors.text : colors.textMuted,
-              fontSize: 13,
-              fontWeight: selected ? '800' : '600',
-            }}
+            style={{ color: colors.textMuted, fontSize: 11, fontWeight: '600', lineHeight: 14 }}
           >
-            {role.name}
+            {ownerNames.join(', ')}
           </Text>
-          <RoleNotes compact role={role} />
-          {ownerNames?.length ? (
-            <Text
-              selectable
-              style={{ color: colors.textMuted, fontSize: 11, fontWeight: '600', lineHeight: 14 }}
-            >
-              {ownerNames.join(', ')}
-            </Text>
-          ) : null}
-        </View>
-      </Pressable>
+        ) : null}
+      </RoleReference>
     </Animated.View>
   );
 }

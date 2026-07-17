@@ -6,6 +6,7 @@ import { RoleNotes } from '@/components/role-notes';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
+import { GENERIC_KILLER_ROLES } from '@/utils/role-utils';
 import { getSavedNoteTextsForRole } from '@/utils/saved-note-utils';
 
 export default function RoleNotesScreen() {
@@ -15,12 +16,13 @@ export default function RoleNotesScreen() {
   const script = useGameStore((state) => state.scripts.find((item) => item.id === scriptId));
   const scriptRole = script?.roles.find((role) => role.id === roleId);
   const catalogRole = roleCatalog.find((role) => role.id === roleId);
+  const genericRole = GENERIC_KILLER_ROLES.find((role) => role.id === roleId);
   const role = scriptRole
     ? {
         ...scriptRole,
         notes: [...new Set([...(scriptRole.notes ?? []), ...(catalogRole?.notes ?? [])])],
       }
-    : undefined;
+    : (catalogRole ?? genericRole);
 
   if (!role) {
     return (
@@ -33,7 +35,7 @@ export default function RoleNotesScreen() {
     );
   }
 
-  const hasNotes = !!role.notes.length || getSavedNoteTextsForRole(savedNotes, role.id).length > 0;
+  const hasNotes = !!role.notes?.length || getSavedNoteTextsForRole(savedNotes, role.id).length > 0;
 
   return (
     <>

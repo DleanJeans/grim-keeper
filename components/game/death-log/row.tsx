@@ -3,8 +3,7 @@ import type { ComponentType } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
-import { RoleIcon } from '@/components/role-icon';
-import { RoleNotes } from '@/components/role-notes';
+import { RoleReference } from '@/components/role-reference';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Player, PlayerDeath, PlayerRevive, Role } from '@/types/game';
@@ -185,15 +184,13 @@ function KillerDescriptionView({ killerPlayers, killerRoles }: KillerDescription
 
 function KillerRoleView({ role }: { role: Role }) {
   return (
-    <View style={styles.roleName}>
-      <RoleIcon role={role} size={14} />
-      <View style={styles.roleDescription}>
-        <Text selectable style={styles.subtitle}>
-          {role.name}
-        </Text>
-        <RoleNotes compact role={role} />
-      </View>
-    </View>
+    <RoleReference
+      containerStyle={styles.roleName}
+      contentStyle={styles.roleDescription}
+      iconSize={14}
+      role={role}
+      textStyle={styles.subtitle}
+    />
   );
 }
 

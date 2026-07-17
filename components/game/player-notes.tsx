@@ -3,8 +3,7 @@ import { Pressable, TextInput, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { SaveNoteForFutureButton } from '@/components/game/save-note-for-future-button';
 import { innerActionRow } from '@/components/game/styles';
-import { RoleIcon } from '@/components/role-icon';
-import { RoleNotes } from '@/components/role-notes';
+import { RoleReference } from '@/components/role-reference';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Player, Role } from '@/types/game';
@@ -138,13 +137,25 @@ export function PlayerNoteRow({
         </Text>
       ) : null}
       {roleAssignment && roles.length > 0 ? (
-        <PlayerNoteRoleAssignment kind={roleAssignment.kind} roles={roles} />
+        <PlayerNoteRoleAssignment
+          kind={roleAssignment.kind}
+          roles={roles}
+          scriptId={game.script?.id}
+        />
       ) : null}
     </View>
   );
 }
 
-function PlayerNoteRoleAssignment({ kind, roles }: { kind: 'claim' | 'confirm'; roles: Role[] }) {
+function PlayerNoteRoleAssignment({
+  kind,
+  roles,
+  scriptId,
+}: {
+  kind: 'claim' | 'confirm';
+  roles: Role[];
+  scriptId?: string;
+}) {
   return (
     <View style={{ alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
       <Text
@@ -158,15 +169,13 @@ function PlayerNoteRoleAssignment({ kind, roles }: { kind: 'claim' | 'confirm'; 
       </Text>
       {kind === 'confirm' ? <Check color="#86efac" size={14} strokeWidth={3} /> : null}
       {roles.map((role) => (
-        <View key={role.id} style={{ alignItems: 'flex-start', flexDirection: 'row', gap: 3 }}>
-          <RoleIcon role={role} size={18} />
-          <View style={{ gap: 1 }}>
-            <Text selectable style={{ color: colors.textMuted, fontSize: 12, fontWeight: '700' }}>
-              {role.name}
-            </Text>
-            <RoleNotes compact role={role} />
-          </View>
-        </View>
+        <RoleReference
+          iconSize={18}
+          key={role.id}
+          role={role}
+          scriptId={scriptId}
+          textStyle={{ fontSize: 12 }}
+        />
       ))}
     </View>
   );
