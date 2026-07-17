@@ -163,6 +163,29 @@ export function getAssignedRoleIdsForDay(
   ].filter((roleId, index, roleIds) => roleIds.indexOf(roleId) === index);
 }
 
+export function getRoleAssignmentForDayOrPrevious(
+  assignments: PlayerRoleAssignment[] | undefined,
+  day: number,
+  kind: PlayerRoleAssignment['kind'],
+) {
+  const eligibleAssignments = (assignments ?? []).filter(
+    (assignment) => assignment.kind === kind && assignment.day <= day,
+  );
+  const latestDay = Math.max(...eligibleAssignments.map((assignment) => assignment.day));
+
+  return latestDay > 0 ? getRoleAssignmentForDay(eligibleAssignments, latestDay, kind) : undefined;
+}
+
+export function getAssignedRoleIdsForDayOrPrevious(
+  assignments: PlayerRoleAssignment[] | undefined,
+  day: number,
+) {
+  return [
+    ...(getRoleAssignmentForDayOrPrevious(assignments, day, 'claim')?.roleIds ?? []),
+    ...(getRoleAssignmentForDayOrPrevious(assignments, day, 'confirm')?.roleIds ?? []),
+  ].filter((roleId, index, roleIds) => roleIds.indexOf(roleId) === index);
+}
+
 export function getRoleNames(roleIds: string[], roles: Role[]) {
   return getRolesByIds(roleIds, roles).map((role) => role.name);
 }

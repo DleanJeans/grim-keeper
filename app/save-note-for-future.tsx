@@ -9,6 +9,7 @@ import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Role, SavedNote } from '@/types/game';
 import { getFriendByName } from '@/utils/friend-utils';
+import { getAssignedRoleIdsForDayOrPrevious, getRolesByIds } from '@/utils/role-utils';
 import { detectRoleIdsInNote, getSavedNote } from '@/utils/saved-note-utils';
 
 const EMPTY_ROLES: Role[] = [];
@@ -33,10 +34,23 @@ export default function SaveNoteForFutureScreen() {
   const game = games.find((candidate) => candidate.id === gameId);
   const player = game?.players.find((candidate) => candidate.id === playerId);
   const roles = game?.script?.roles ?? EMPTY_ROLES;
+  const noteDay = Number(day);
+  const assignedRoleIds = useMemo(
+    () => getAssignedRoleIdsForDayOrPrevious(player?.roleAssignments, noteDay),
+    [noteDay, player?.roleAssignments],
+  );
+  const pickerRoles = useMemo(
+    () => [
+      ...new Map(
+        [...roles, ...getRolesByIds(assignedRoleIds, roles)].map((role) => [role.id, role]),
+      ).values(),
+    ],
+    [assignedRoleIds, roles],
+  );
   const savedNote = player ? getSavedNote(savedNotes, player.name, text) : undefined;
   const initialRoleIds = useMemo(
-    () => getInitialRoleIds(savedNote, text, roles),
-    [roles, savedNote, text],
+    () => getInitialRoleIds(savedNote, text, roles, assignedRoleIds),
+    [assignedRoleIds, roles, savedNote, text],
   );
   const [selectedRoleIds, setSelectedRoleIds] = useState(initialRoleIds);
   const [error, setError] = useState('');
@@ -95,13 +109,13 @@ export default function SaveNoteForFutureScreen() {
         contentContainerStyle={{ gap: 18, padding: 20, paddingBottom: 40 }}
         style={{ backgroundColor: colors.background, flex: 1 }}
       >
-        <NotePreview day={Number(day)} playerName={playerName} text={text} />
+        <NotePreview day={noteDay} playerName={playerName} text={text} />
 
-        {roles.length > 0 ? (
+        {pickerRoles.length > 0 ? (
           <RolePicker
-            description="Select every role where this note should appear. Roles mentioned in the note are selected automatically."
+            description="Select every role where this note should appear. Mentioned roles and this player’s claimed or confirmed roles are selected automatically."
             onToggleRole={handleToggleRole}
-            roles={roles}
+            roles={pickerRoles}
             sectioned
             selectedRoleIds={selectedRoleIds}
           />
@@ -123,15 +137,23 @@ export default function SaveNoteForFutureScreen() {
   );
 }
 
-function getInitialRoleIds(savedNote: SavedNote | undefined, text: string, roles: Role[]) {
-  if (savedNote) {
-    return savedNote.roleIds;
-  }
-
+function getInitialRoleIds(
+  savedNote: SavedNote | undefined,
+  text: string,
+  roles: Role[],
+  assignedRoleIds: string[],
+) {
   const legacyRoleIds = roles
     .filter((role) => role.notes?.includes(text.trim()))
     .map((role) => role.id);
-  return legacyRoleIds.length > 0 ? legacyRoleIds : detectRoleIdsInNote(text, roles);
+  return [
+    ...new Set([
+      ...(savedNote?.roleIds ?? []),
+      ...legacyRoleIds,
+      ...detectRoleIdsInNote(text, roles),
+      ...assignedRoleIds,
+    ]),
+  ];
 }
 
 function NotePreview({ day, playerName, text }: { day: number; playerName: string; text: string }) {
