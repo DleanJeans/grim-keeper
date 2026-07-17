@@ -1,6 +1,7 @@
 import { Check, Pencil } from 'lucide-react-native';
-import { Pressable, TextInput, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { NoteAutocompleteInput } from '@/components/game/note-autocomplete-input';
 import { SaveNoteForFutureButton } from '@/components/game/save-note-for-future-button';
 import { innerActionRow } from '@/components/game/styles';
 import { RoleReference } from '@/components/role-reference';
@@ -114,9 +115,10 @@ export function PlayerNoteRow({
       </View>
       {isEditing ? (
         <View style={innerActionRow}>
-          <TextInput
+          <NoteAutocompleteInput
             accessibilityLabel={`Day ${day} note for ${player.name}`}
-            multiline
+            day={day}
+            game={game}
             onChangeText={onChangeNoteDraft}
             placeholder={`What did ${player.name} say?`}
             placeholderTextColor="#64748b"
