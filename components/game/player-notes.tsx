@@ -113,17 +113,19 @@ export function PlayerNoteRow({
         >
           <Pencil color={colors.textMuted} size={14} strokeWidth={2.5} />
         </Pressable>
-        <SaveNoteForFutureButton
-          claimedRoleIds={claimedRoleIds}
-          confirmedRoleIds={confirmedRoleIds}
-          day={day}
-          disabled={!reusableNoteText.trim()}
-          onRemove={() => onRemoveNoteFromFuture(player.id, day, reusableNoteText)}
-          onPress={() => onSaveNoteForFuture(player.id, day, reusableNoteText)}
-          playerName={player.name}
-          roleIds={reusableNoteRoleIds}
-          text={reusableNoteText}
-        />
+        {reusableNoteText.trim() ? (
+          <SaveNoteForFutureButton
+            claimedRoleIds={claimedRoleIds}
+            confirmedRoleIds={confirmedRoleIds}
+            day={day}
+            disabled={false}
+            onRemove={() => onRemoveNoteFromFuture(player.id, day, reusableNoteText)}
+            onPress={() => onSaveNoteForFuture(player.id, day, reusableNoteText)}
+            playerName={player.name}
+            roleIds={reusableNoteRoleIds}
+            text={reusableNoteText}
+          />
+        ) : null}
       </View>
       {isEditing ? (
         <View style={innerActionRow}>
