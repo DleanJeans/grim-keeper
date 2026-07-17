@@ -1,5 +1,6 @@
 import { Check } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
+import Animated, { LinearTransition } from 'react-native-reanimated';
 
 import { RoleIcon } from '@/components/role-icon';
 import { RoleNotes } from '@/components/role-notes';
@@ -12,6 +13,7 @@ type RolePickerProps = {
   roles: Role[];
   roleOwnerNames?: Record<string, string[]>;
   sectioned?: boolean;
+  selectedFirst?: boolean;
   selectedRoleIds: string[];
   onToggleRole: (roleId: string) => void;
 };
@@ -22,10 +24,20 @@ export function RolePicker({
   roles,
   roleOwnerNames,
   sectioned = false,
+  selectedFirst = false,
   selectedRoleIds,
 }: RolePickerProps) {
   const selectedRoleIdSet = new Set(selectedRoleIds);
-  const roleSections = sectioned ? getRoleSections(roles) : [{ label: undefined, roles }];
+  const orderedRoles = selectedFirst
+    ? [
+        ...roles.filter((role) => selectedRoleIdSet.has(role.id)),
+        ...roles.filter((role) => !selectedRoleIdSet.has(role.id)),
+      ]
+    : roles;
+  const roleSections =
+    sectioned && !selectedFirst
+      ? getRoleSections(orderedRoles)
+      : [{ label: undefined, roles: orderedRoles }];
 
   return (
     <View style={{ gap: 10 }}>
@@ -55,6 +67,7 @@ export function RolePicker({
                 role={role}
                 ownerNames={roleOwnerNames?.[role.id]}
                 selected={selectedRoleIdSet.has(role.id)}
+                animated={selectedFirst}
                 onPress={() => onToggleRole(role.id)}
               />
             ))}
@@ -84,60 +97,64 @@ function getRoleSections(roles: Role[]) {
 }
 
 function RoleChoiceButton({
+  animated,
   onPress,
   ownerNames,
   role,
   selected,
 }: {
+  animated: boolean;
   onPress: () => void;
   ownerNames?: string[];
   role: Role;
   selected: boolean;
 }) {
   return (
-    <Pressable
-      accessibilityLabel={`${selected ? 'Remove' : 'Select'} ${role.name}${ownerNames?.length ? `. Claimed or confirmed by ${ownerNames.join(', ')}` : ''}`}
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => ({
-        alignItems: 'center',
-        backgroundColor: pressed
-          ? colors.surfacePressed
-          : selected
-            ? colors.surfaceRaised
-            : colors.surface,
-        borderColor: selected ? colors.primary : colors.border,
-        borderRadius: 8,
-        borderWidth: 1,
-        flexDirection: 'row',
-        gap: 6,
-        paddingHorizontal: 10,
-        paddingVertical: 9,
-      })}
-    >
-      {selected ? <Check color={colors.primary} size={14} strokeWidth={3} /> : null}
-      <RoleIcon role={role} size={24} />
-      <View style={{ flexShrink: 1, gap: 1, maxWidth: 180 }}>
-        <Text
-          selectable
-          style={{
-            color: selected ? colors.text : colors.textMuted,
-            fontSize: 13,
-            fontWeight: selected ? '800' : '600',
-          }}
-        >
-          {role.name}
-        </Text>
-        <RoleNotes compact role={role} />
-        {ownerNames?.length ? (
+    <Animated.View layout={animated ? LinearTransition.duration(220) : undefined}>
+      <Pressable
+        accessibilityLabel={`${selected ? 'Remove' : 'Select'} ${role.name}${ownerNames?.length ? `. Claimed or confirmed by ${ownerNames.join(', ')}` : ''}`}
+        accessibilityRole="button"
+        onPress={onPress}
+        style={({ pressed }) => ({
+          alignItems: 'center',
+          backgroundColor: pressed
+            ? colors.surfacePressed
+            : selected
+              ? colors.surfaceRaised
+              : colors.surface,
+          borderColor: selected ? colors.primary : colors.border,
+          borderRadius: 8,
+          borderWidth: 1,
+          flexDirection: 'row',
+          gap: 6,
+          paddingHorizontal: 10,
+          paddingVertical: 9,
+        })}
+      >
+        {selected ? <Check color={colors.primary} size={14} strokeWidth={3} /> : null}
+        <RoleIcon role={role} size={24} />
+        <View style={{ flexShrink: 1, gap: 1, maxWidth: 180 }}>
           <Text
             selectable
-            style={{ color: colors.textMuted, fontSize: 11, fontWeight: '600', lineHeight: 14 }}
+            style={{
+              color: selected ? colors.text : colors.textMuted,
+              fontSize: 13,
+              fontWeight: selected ? '800' : '600',
+            }}
           >
-            {ownerNames.join(', ')}
+            {role.name}
           </Text>
-        ) : null}
-      </View>
-    </Pressable>
+          <RoleNotes compact role={role} />
+          {ownerNames?.length ? (
+            <Text
+              selectable
+              style={{ color: colors.textMuted, fontSize: 11, fontWeight: '600', lineHeight: 14 }}
+            >
+              {ownerNames.join(', ')}
+            </Text>
+          ) : null}
+        </View>
+      </Pressable>
+    </Animated.View>
   );
 }

@@ -116,7 +116,7 @@ export default function SaveNoteForFutureScreen() {
             description="Select every role where this note should appear. Mentioned roles and this player’s claimed or confirmed roles are selected automatically."
             onToggleRole={handleToggleRole}
             roles={pickerRoles}
-            sectioned
+            selectedFirst
             selectedRoleIds={selectedRoleIds}
           />
         ) : (
