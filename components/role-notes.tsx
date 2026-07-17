@@ -1,6 +1,7 @@
 import { Trash2 } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
+import { RoleReferencedNoteText } from '@/components/role-referenced-note-text';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
@@ -12,11 +13,15 @@ export function RoleNotes({
   compact = false,
   label = false,
   onDeleteNote,
+  roles,
+  scriptId,
 }: {
   compact?: boolean;
   label?: boolean;
   onDeleteNote?: (note: string) => void;
   role: Role;
+  roles: Role[];
+  scriptId?: string;
 }) {
   const savedNotes = useGameStore((state) => state.savedNotes);
   const notes = [
@@ -48,17 +53,17 @@ export function RoleNotes({
           key={`${role.id}-note-${note}`}
           style={{ alignItems: 'flex-start', flexDirection: 'row', gap: 10 }}
         >
-          <Text
-            selectable
+          <RoleReferencedNoteText
+            roles={roles}
+            scriptId={scriptId}
             style={{
               color: colors.textMuted,
               flex: 1,
               fontSize: compact ? 10 : 13,
               lineHeight: compact ? 13 : 18,
             }}
-          >
-            {note}
-          </Text>
+            text={note}
+          />
           {onDeleteNote ? (
             <Pressable
               accessibilityLabel={`Delete note: ${note}`}

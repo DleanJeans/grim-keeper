@@ -1,9 +1,21 @@
 import { View } from 'react-native';
 
+import { RoleReferencedNoteText } from '@/components/role-referenced-note-text';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
+import type { Role } from '@/types/game';
 
-export function SavedFriendNotes({ notes, playerName }: { notes?: string[]; playerName: string }) {
+export function SavedFriendNotes({
+  notes,
+  playerName,
+  roles,
+  scriptId,
+}: {
+  notes?: string[];
+  playerName: string;
+  roles: Role[];
+  scriptId?: string;
+}) {
   if (!notes?.length) {
     return null;
   }
@@ -31,13 +43,13 @@ export function SavedFriendNotes({ notes, playerName }: { notes?: string[]; play
         Saved notes for {playerName}
       </Text>
       {notes.map((note) => (
-        <Text
+        <RoleReferencedNoteText
           key={`${playerName}-saved-note-${note}`}
-          selectable
+          roles={roles}
+          scriptId={scriptId}
           style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}
-        >
-          {note}
-        </Text>
+          text={note}
+        />
       ))}
     </View>
   );

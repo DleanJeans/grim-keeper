@@ -71,7 +71,13 @@ export default function RoleNotesScreen() {
           }}
         >
           {hasNotes ? (
-            <RoleNotes label onDeleteNote={handleDeleteNote} role={role} />
+            <RoleNotes
+              label
+              onDeleteNote={handleDeleteNote}
+              role={role}
+              roles={script?.roles ?? roleCatalog}
+              scriptId={scriptId}
+            />
           ) : (
             <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
               No notes for this role.

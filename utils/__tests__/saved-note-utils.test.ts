@@ -1,6 +1,7 @@
 import type { SavedNote } from '@/types/game';
 import {
   detectRoleIdsInNote,
+  getRoleNameMatches,
   getSavedNote,
   getSavedNoteTextsForRole,
 } from '@/utils/saved-note-utils';
@@ -58,5 +59,24 @@ describe('saved note utilities', () => {
         roles,
       ),
     ).toEqual(['devils_advocate', 'empath']);
+  });
+
+  it('locates whole role names for inline role references', () => {
+    const roles = [
+      { id: 'imp', name: 'Imp' },
+      { id: 'devils_advocate', name: "Devil's Advocate" },
+    ];
+
+    expect(
+      getRoleNameMatches("The IMP blamed Devil's   Advocate, not simple.", roles).map(
+        ({ role, start, end }) => ({
+          roleId: role.id,
+          text: "The IMP blamed Devil's   Advocate, not simple.".slice(start, end),
+        }),
+      ),
+    ).toEqual([
+      { roleId: 'imp', text: 'IMP' },
+      { roleId: 'devils_advocate', text: "Devil's   Advocate" },
+    ]);
   });
 });

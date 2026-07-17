@@ -138,7 +138,12 @@ export function NotesTab() {
         <NotesTabScriptPicker />
         <RoleAssignmentActions />
         <PlayerNoteSection player={focusedPlayer} />
-        <SavedFriendNotes notes={savedFriendNotes} playerName={focusedPlayer.name} />
+        <SavedFriendNotes
+          notes={savedFriendNotes}
+          playerName={focusedPlayer.name}
+          roles={game.script?.roles ?? []}
+          scriptId={game.script?.id}
+        />
       </View>
     );
   }

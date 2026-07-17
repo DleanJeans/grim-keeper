@@ -4,6 +4,7 @@ import { useGameRouteContext } from '@/components/game/game-route-context';
 import { SaveNoteForFutureButton } from '@/components/game/save-note-for-future-button';
 import { innerActionRow } from '@/components/game/styles';
 import { RoleReference } from '@/components/role-reference';
+import { RoleReferencedNoteText } from '@/components/role-referenced-note-text';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Player, Role } from '@/types/game';
@@ -132,9 +133,12 @@ export function PlayerNoteRow({
           </Pressable>
         </View>
       ) : text ? (
-        <Text selectable style={noteTextStyle}>
-          {text}
-        </Text>
+        <RoleReferencedNoteText
+          roles={game.script?.roles ?? []}
+          scriptId={game.script?.id}
+          style={noteTextStyle}
+          text={text}
+        />
       ) : null}
       {roleAssignment && roles.length > 0 ? (
         <PlayerNoteRoleAssignment

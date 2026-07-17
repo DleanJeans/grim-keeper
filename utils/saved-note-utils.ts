@@ -30,3 +30,45 @@ export function detectRoleIdsInNote(text: string, roles: Role[]) {
     })
     .map((role) => role.id);
 }
+
+export type RoleNameMatch = {
+  end: number;
+  role: Role;
+  start: number;
+};
+
+export function getRoleNameMatches(text: string, roles: Role[]): RoleNameMatch[] {
+  const candidates = roles.flatMap((role) => {
+    const escapedName = role.name
+      .trim()
+      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      .replace(/\s+/g, '\\s+');
+
+    if (!escapedName) {
+      return [];
+    }
+
+    const matches: RoleNameMatch[] = [];
+    const pattern = new RegExp(`(^|[^a-z0-9])(${escapedName})(?=$|[^a-z0-9])`, 'gi');
+    let match = pattern.exec(text);
+
+    while (match) {
+      const start = match.index + match[1].length;
+      matches.push({ end: start + match[2].length, role, start });
+      match = pattern.exec(text);
+    }
+
+    return matches;
+  });
+
+  const matches: RoleNameMatch[] = [];
+  for (const candidate of candidates.sort(
+    (a, b) => a.start - b.start || b.end - b.start - (a.end - a.start),
+  )) {
+    if (!matches.length || candidate.start >= matches[matches.length - 1].end) {
+      matches.push(candidate);
+    }
+  }
+
+  return matches;
+}
