@@ -1,19 +1,25 @@
 import type { Player } from '@/types/game';
 import { getPlayerMapPosition } from '@/utils/layout-utils';
 
-const players: Player[] = [
-  { id: 'first', name: 'First', seat: 0 },
-  { id: 'second', name: 'Second', seat: 1 },
-];
+const players: Player[] = Array.from({ length: 8 }, (_, seat) => ({
+  id: `player-${seat}`,
+  name: `Player ${seat}`,
+  seat,
+}));
 
 describe('layout utils', () => {
-  it('places the first player at the bottom of the default circle', () => {
-    const firstPosition = getPlayerMapPosition(players[0], players, 200, 200);
-    const secondPosition = getPlayerMapPosition(players[1], players, 200, 200);
+  it('places players clockwise along the map borders starting from the left', () => {
+    const positions = players.map((player) => getPlayerMapPosition(player, players, 268, 200));
 
-    expect(firstPosition.x).toBeCloseTo(100);
-    expect(firstPosition.y).toBeGreaterThan(100);
-    expect(secondPosition.x).toBeCloseTo(100);
-    expect(secondPosition.y).toBeLessThan(100);
+    expect(positions).toEqual([
+      { x: 34, y: 100 },
+      { x: 51, y: 34 },
+      { x: 134, y: 34 },
+      { x: 217, y: 34 },
+      { x: 234, y: 100 },
+      { x: 217, y: 166 },
+      { x: 134, y: 166 },
+      { x: 51, y: 166 },
+    ]);
   });
 });

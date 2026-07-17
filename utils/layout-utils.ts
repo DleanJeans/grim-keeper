@@ -24,16 +24,41 @@ export function getPlayerMapPosition(
     return clampTokenPosition(player.position, mapWidth, mapHeight, resolvedTokenSize);
   }
 
-  const centerX = mapWidth / 2;
-  const centerY = mapHeight / 2;
-  const radius = Math.max(0, (Math.min(mapWidth, mapHeight) - resolvedTokenSize - 28) / 2);
   const sortedPlayers = [...players].sort((first, second) => first.seat - second.seat);
   const index = sortedPlayers.findIndex((candidate) => candidate.id === player.id);
-  const angle = (Math.PI * 2 * index) / Math.max(1, sortedPlayers.length) + Math.PI / 2;
+  const inset = resolvedTokenSize / 2;
+  const left = Math.min(inset, mapWidth / 2);
+  const right = Math.max(left, mapWidth - inset);
+  const top = Math.min(inset, mapHeight / 2);
+  const bottom = Math.max(top, mapHeight - inset);
+  const width = right - left;
+  const height = bottom - top;
+  const perimeter = 2 * (width + height);
+
+  if (perimeter === 0) {
+    return { x: left, y: top };
+  }
+
+  const leftCenterOffset = 2 * width + height * 1.5;
+  const offset =
+    (leftCenterOffset + (perimeter * Math.max(0, index)) / Math.max(1, sortedPlayers.length)) %
+    perimeter;
+
+  if (offset <= width) {
+    return { x: left + offset, y: top };
+  }
+
+  if (offset <= width + height) {
+    return { x: right, y: top + offset - width };
+  }
+
+  if (offset <= 2 * width + height) {
+    return { x: right - (offset - width - height), y: bottom };
+  }
 
   return {
-    x: centerX + Math.cos(angle) * radius,
-    y: centerY + Math.sin(angle) * radius,
+    x: left,
+    y: bottom - (offset - 2 * width - height),
   };
 }
 
