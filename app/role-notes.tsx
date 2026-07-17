@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
 
 import { RoleIcon } from '@/components/role-icon';
 import { RoleNotes } from '@/components/role-notes';
@@ -13,6 +13,7 @@ export default function RoleNotesScreen() {
   const { roleId, scriptId } = useLocalSearchParams<{ roleId: string; scriptId: string }>();
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const savedNotes = useGameStore((state) => state.savedNotes);
+  const deleteRoleNote = useGameStore((state) => state.deleteRoleNote);
   const script = useGameStore((state) => state.scripts.find((item) => item.id === scriptId));
   const scriptRole = script?.roles.find((role) => role.id === roleId);
   const catalogRole = roleCatalog.find((role) => role.id === roleId);
@@ -35,7 +36,15 @@ export default function RoleNotesScreen() {
     );
   }
 
+  const currentRoleId = role.id;
   const hasNotes = !!role.notes?.length || getSavedNoteTextsForRole(savedNotes, role.id).length > 0;
+
+  function handleDeleteNote(note: string) {
+    Alert.alert('Delete note?', note, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => deleteRoleNote(currentRoleId, note) },
+    ]);
+  }
 
   return (
     <>
@@ -62,7 +71,7 @@ export default function RoleNotesScreen() {
           }}
         >
           {hasNotes ? (
-            <RoleNotes label role={role} />
+            <RoleNotes label onDeleteNote={handleDeleteNote} role={role} />
           ) : (
             <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
               No notes for this role.

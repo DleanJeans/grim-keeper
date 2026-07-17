@@ -56,6 +56,7 @@ type GameState = {
   setPlayerDayNote: (gameId: string, playerId: string, day: number, text: string) => void;
   saveNoteForFutureGames: (playerName: string, roleIds: string[], text: string) => boolean;
   removeNoteFromFutureGames: (playerName: string, roleIds: string[], text: string) => boolean;
+  deleteRoleNote: (roleId: string, text: string) => void;
   setTokenSize: (gameId: string, tokenSize: number) => void;
   setActiveDay: (gameId: string, day: number) => void;
   updatePlayerPosition: (gameId: string, playerId: string, position: PlayerPosition) => void;
@@ -604,6 +605,47 @@ export const useGameStore = create<GameState>()(
         });
 
         return removed;
+      },
+      deleteRoleNote: (roleId, text) => {
+        const deletedText = text.trim();
+
+        if (!deletedText) {
+          return;
+        }
+
+        set((state) => {
+          const removeDeletedNote = (role: Role) =>
+            role.id === roleId ? removeRoleNote(role, deletedText) : role;
+          const appUserKey = normalizePlayerName(state.appUserName).toLocaleLowerCase();
+          const savedNotes = state.savedNotes.flatMap((note) => {
+            if (note.text !== deletedText || !note.roleIds.includes(roleId)) {
+              return [note];
+            }
+
+            const roleIds = note.roleIds.filter((savedRoleId) => savedRoleId !== roleId);
+            const belongsToAppUser =
+              normalizePlayerName(note.playerName).toLocaleLowerCase() === appUserKey;
+
+            return roleIds.length === 0 && belongsToAppUser ? [] : [{ ...note, roleIds }];
+          });
+
+          return {
+            games: state.games.map((game) =>
+              game.script
+                ? {
+                    ...game,
+                    script: { ...game.script, roles: game.script.roles.map(removeDeletedNote) },
+                  }
+                : game,
+            ),
+            roleCatalog: state.roleCatalog.map(removeDeletedNote),
+            savedNotes,
+            scripts: state.scripts.map((script) => ({
+              ...script,
+              roles: script.roles.map(removeDeletedNote),
+            })),
+          };
+        });
       },
       setTokenSize: (gameId, tokenSize) => {
         set((state) => ({
