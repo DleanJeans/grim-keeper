@@ -196,7 +196,7 @@ function formatGameDate(createdAt: string) {
     hour: 'numeric',
     minute: '2-digit',
     month: 'short',
-    weekday: 'short',
+    weekday: 'long',
     year: 'numeric',
   }).format(new Date(createdAt));
 }
