@@ -1,5 +1,9 @@
 import type { SavedNote } from '@/types/game';
-import { getSavedNote, getSavedNoteTextsForRole } from '@/utils/saved-note-utils';
+import {
+  detectRoleIdsInNote,
+  getSavedNote,
+  getSavedNoteTextsForRole,
+} from '@/utils/saved-note-utils';
 
 const savedNotes: SavedNote[] = [
   {
@@ -39,5 +43,20 @@ describe('saved note utilities', () => {
       'The bluff only makes sense if Alice saw a zero.',
       'Watch the nomination timing.',
     ]);
+  });
+
+  it('detects script role names in note text without matching inside other words', () => {
+    const roles = [
+      { id: 'imp', name: 'Imp' },
+      { id: 'devils_advocate', name: "Devil's Advocate" },
+      { id: 'empath', name: 'Empath' },
+    ];
+
+    expect(
+      detectRoleIdsInNote(
+        "A simple bluff as the EMPATH, then Devil's   Advocate was confirmed.",
+        roles,
+      ),
+    ).toEqual(['devils_advocate', 'empath']);
   });
 });

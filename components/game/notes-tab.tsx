@@ -13,7 +13,6 @@ import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Player } from '@/types/game';
 import { getFriendByName } from '@/utils/friend-utils';
-import { getAssignedRoleIdsForDay, getRoleAssignmentForDay } from '@/utils/role-utils';
 
 const noteTextInputStyle = {
   backgroundColor: '#111827',
@@ -72,17 +71,10 @@ function DayNoteRow({ player, day, text }: { player: Player; day: number; text: 
     setNoteDraft: onChangeNoteDraft,
     handleShowPlayerNoteForDay: onShowNote,
     handleSavePlayerNote: onSaveNote,
-    handleSavePlayerNoteForFuture: onSaveNoteForFuture,
-    handleRemovePlayerNoteFromFuture: onRemoveNoteFromFuture,
   } = useGameRouteContext();
 
   const isEditing = noteEditingDay === day && noteEditingPlayerId === player.id;
   const reusableNoteText = isEditing ? noteDraft : text;
-  const claimedRoleIds =
-    getRoleAssignmentForDay(player.roleAssignments, day, 'claim')?.roleIds ?? [];
-  const confirmedRoleIds =
-    getRoleAssignmentForDay(player.roleAssignments, day, 'confirm')?.roleIds ?? [];
-  const reusableNoteRoleIds = getAssignedRoleIdsForDay(player.roleAssignments, day);
 
   return (
     <View style={{ gap: 4 }}>
@@ -98,14 +90,10 @@ function DayNoteRow({ player, day, text }: { player: Player; day: number; text: 
           <Pencil color={colors.textMuted} size={14} strokeWidth={2.5} />
         </Pressable>
         <SaveNoteForFutureButton
-          claimedRoleIds={claimedRoleIds}
-          confirmedRoleIds={confirmedRoleIds}
           day={day}
           disabled={!reusableNoteText.trim()}
-          onRemove={() => onRemoveNoteFromFuture(player.id, day, reusableNoteText)}
-          onPress={() => onSaveNoteForFuture(player.id, day, reusableNoteText)}
+          playerId={player.id}
           playerName={player.name}
-          roleIds={reusableNoteRoleIds}
           text={reusableNoteText}
         />
       </View>

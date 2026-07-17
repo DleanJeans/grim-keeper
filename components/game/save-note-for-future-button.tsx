@@ -1,32 +1,24 @@
+import { router } from 'expo-router';
 import { BookmarkPlus } from 'lucide-react-native';
-import { Alert, Pressable } from 'react-native';
+import { Pressable } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { getFriendByName } from '@/utils/friend-utils';
-import { getRolesByIds } from '@/utils/role-utils';
 import { getSavedNote } from '@/utils/saved-note-utils';
 
 export function SaveNoteForFutureButton({
-  claimedRoleIds,
-  confirmedRoleIds,
   disabled,
-  onRemove,
-  onPress,
+  playerId,
   playerName,
-  roleIds,
   text,
   day,
 }: {
-  claimedRoleIds: string[];
-  confirmedRoleIds: string[];
   day: number;
   disabled: boolean;
-  onRemove: () => boolean;
-  onPress: () => boolean;
+  playerId: string;
   playerName: string;
-  roleIds: string[];
   text: string;
 }) {
   const { game } = useGameRouteContext();
@@ -37,45 +29,15 @@ export function SaveNoteForFutureButton({
   const friendNotes = getFriendByName(friends, playerName)?.notes;
   const savedForFriend = !!savedText && !!friendNotes?.includes(savedText);
   const savedForRole =
-    !!savedText &&
-    roleIds.some((roleId) =>
-      game.script?.roles.find((role) => role.id === roleId)?.notes?.includes(savedText),
-    );
-  const savedForCurrentRoles =
-    !!savedNote &&
-    savedNote.roleIds.length === roleIds.length &&
-    roleIds.every((roleId) => savedNote.roleIds.includes(roleId));
-  const saved = savedForCurrentRoles || (!savedNote && (savedForFriend || savedForRole));
+    !!savedText && !!game.script?.roles.some((role) => role.notes?.includes(savedText));
+  const saved = !!savedNote || savedForFriend || savedForRole;
   const iconColor = saved ? '#fbbf24' : colors.textMuted;
 
   function handlePress() {
-    if (saved) {
-      Alert.alert('Remove saved note?', `Remove this note for ${playerName} from future games?`, [
-        { text: 'No', style: 'cancel' },
-        { text: 'Yes', onPress: onRemove, style: 'destructive' },
-      ]);
-      return;
-    }
-
-    const scriptRoles = game.script?.roles ?? [];
-    const claimedRoleNames = getRolesByIds(claimedRoleIds, scriptRoles).map((role) => role.name);
-    const confirmedRoleNames = getRolesByIds(confirmedRoleIds, scriptRoles).map(
-      (role) => role.name,
-    );
-
-    Alert.alert(
-      'Save note for future games?',
-      [
-        `Bluffed: ${claimedRoleNames.join(', ') || 'None'}`,
-        `Confirmed: ${confirmedRoleNames.join(', ') || 'None'}`,
-        '',
-        'This note will appear for the roles listed above.',
-      ].join('\n'),
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Save', onPress },
-      ],
-    );
+    router.push({
+      pathname: '/save-note-for-future',
+      params: { day: String(day), gameId: game.id, playerId, text },
+    });
   }
 
   return (

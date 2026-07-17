@@ -82,6 +82,7 @@ export default function RootLayout() {
           <Stack.Screen name="scripts" options={{ title: 'Scripts' }} />
           <Stack.Screen name="scripts/[id]" options={{ title: 'Script' }} />
           <Stack.Screen name="role-notes" options={{ title: 'Role Notes' }} />
+          <Stack.Screen name="save-note-for-future" options={{ title: 'Save Note for Future' }} />
           <Stack.Screen name="game/[id]" options={{ title: 'Game' }} />
         </Stack>
       </ThemeProvider>

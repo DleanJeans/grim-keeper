@@ -8,11 +8,7 @@ import { RoleNotes } from '@/components/role-notes';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Player, Role } from '@/types/game';
-import {
-  getAssignedRoleIdsForDay,
-  getRoleAssignmentForDay,
-  getRolesByIds,
-} from '@/utils/role-utils';
+import { getRoleAssignmentForDay, getRolesByIds } from '@/utils/role-utils';
 
 const noteTextInputStyle = {
   backgroundColor: '#111827',
@@ -83,17 +79,10 @@ export function PlayerNoteRow({
     setNoteDraft: onChangeNoteDraft,
     handleShowPlayerNoteForDay: onShowNote,
     handleSavePlayerNote: onSaveNote,
-    handleSavePlayerNoteForFuture: onSaveNoteForFuture,
-    handleRemovePlayerNoteFromFuture: onRemoveNoteFromFuture,
   } = useGameRouteContext();
 
   const isEditing = noteEditingDay === day && noteEditingPlayerId === player.id;
   const reusableNoteText = isEditing ? noteDraft : (text ?? '');
-  const claimedRoleIds =
-    getRoleAssignmentForDay(player.roleAssignments, day, 'claim')?.roleIds ?? [];
-  const confirmedRoleIds =
-    getRoleAssignmentForDay(player.roleAssignments, day, 'confirm')?.roleIds ?? [];
-  const reusableNoteRoleIds = getAssignedRoleIdsForDay(player.roleAssignments, day);
   const roleAssignment = showRoles
     ? getRoleAssignmentForDay(player.roleAssignments, day)
     : undefined;
@@ -115,14 +104,10 @@ export function PlayerNoteRow({
         </Pressable>
         {reusableNoteText.trim() ? (
           <SaveNoteForFutureButton
-            claimedRoleIds={claimedRoleIds}
-            confirmedRoleIds={confirmedRoleIds}
             day={day}
             disabled={false}
-            onRemove={() => onRemoveNoteFromFuture(player.id, day, reusableNoteText)}
-            onPress={() => onSaveNoteForFuture(player.id, day, reusableNoteText)}
+            playerId={player.id}
             playerName={player.name}
-            roleIds={reusableNoteRoleIds}
             text={reusableNoteText}
           />
         ) : null}

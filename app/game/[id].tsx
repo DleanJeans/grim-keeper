@@ -1,6 +1,6 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, useWindowDimensions, View } from 'react-native';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { FocusedDeathActionPanel } from '@/components/game/death-actions';
 import { DeathLog } from '@/components/game/death-log';
 import { GameMap } from '@/components/game/game-map';
@@ -29,7 +29,6 @@ import { getTokenSize, rotatePlayerMapPositions } from '@/utils/layout-utils';
 import { hasDeadVoteAvailable, isPlayerCurrentlyDead } from '@/utils/player-utils';
 import {
   addRoleToScript,
-  getAssignedRoleIdsForDay,
   getRoleAssignmentForDay,
   getRoleDisplayForDayOrPrevious,
   getRolesForDayOrPrevious,
@@ -46,8 +45,6 @@ export default function GameRoute() {
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const setGameScript = useGameStore((state) => state.setGameScript);
   const setPlayerDayNote = useGameStore((state) => state.setPlayerDayNote);
-  const saveNoteForFutureGames = useGameStore((state) => state.saveNoteForFutureGames);
-  const removeNoteFromFutureGames = useGameStore((state) => state.removeNoteFromFutureGames);
   const updatePlayerPosition = useGameStore((state) => state.updatePlayerPosition);
   const updatePlayerPositions = useGameStore((state) => state.updatePlayerPositions);
   const addConversation = useGameStore((state) => state.addConversation);
@@ -480,33 +477,6 @@ export default function GameRoute() {
     setNoteEditingDay(null);
   }
 
-  function handleSavePlayerNoteForFuture(playerId: string, day: number, text: string) {
-    const player = activeGame.players.find((currentPlayer) => currentPlayer.id === playerId);
-    if (!player) {
-      return false;
-    }
-
-    const roleIds = getAssignedRoleIdsForDay(player.roleAssignments, day);
-    const saved = saveNoteForFutureGames(player.name, roleIds, text);
-    Alert.alert(
-      saved ? 'Note saved' : 'Note not saved',
-      saved
-        ? 'This note will be available in future games.'
-        : 'Assign a role before saving a note for yourself in future games.',
-    );
-    return saved;
-  }
-
-  function handleRemovePlayerNoteFromFuture(playerId: string, day: number, text: string) {
-    const player = activeGame.players.find((currentPlayer) => currentPlayer.id === playerId);
-    if (!player) {
-      return false;
-    }
-
-    const roleIds = getAssignedRoleIdsForDay(player.roleAssignments, day);
-    return removeNoteFromFutureGames(player.name, roleIds, text);
-  }
-
   const contextValue: GameRouteContextValue = {
     game: activeGame,
     players: activeGame.players,
@@ -568,8 +538,6 @@ export default function GameRoute() {
     handleUndoFocusedPlayerDeath,
     handleShowPlayerNoteForDay,
     handleSavePlayerNote,
-    handleSavePlayerNoteForFuture,
-    handleRemovePlayerNoteFromFuture,
     handleDeleteConversation,
     handleDeleteNomination,
     enterRearrangeMode,
