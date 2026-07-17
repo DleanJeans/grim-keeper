@@ -12,6 +12,7 @@ export function SaveNoteForFutureButton({
   claimedRoleIds,
   confirmedRoleIds,
   disabled,
+  onRemove,
   onPress,
   playerName,
   roleIds,
@@ -22,6 +23,7 @@ export function SaveNoteForFutureButton({
   confirmedRoleIds: string[];
   day: number;
   disabled: boolean;
+  onRemove: () => boolean;
   onPress: () => boolean;
   playerName: string;
   roleIds: string[];
@@ -47,6 +49,14 @@ export function SaveNoteForFutureButton({
   const iconColor = saved ? '#fbbf24' : colors.textMuted;
 
   function handlePress() {
+    if (saved) {
+      Alert.alert('Remove saved note?', `Remove this note for ${playerName} from future games?`, [
+        { text: 'No', style: 'cancel' },
+        { text: 'Yes', onPress: onRemove, style: 'destructive' },
+      ]);
+      return;
+    }
+
     const scriptRoles = game.script?.roles ?? [];
     const claimedRoleNames = getRolesByIds(claimedRoleIds, scriptRoles).map((role) => role.name);
     const confirmedRoleNames = getRolesByIds(confirmedRoleIds, scriptRoles).map(

@@ -79,6 +79,7 @@ export type GameRouteContextValue = {
   handleShowPlayerNoteForDay: (playerId: string, day: number) => void;
   handleSavePlayerNote: () => void;
   handleSavePlayerNoteForFuture: (playerId: string, day: number, text: string) => boolean;
+  handleRemovePlayerNoteFromFuture: (playerId: string, day: number, text: string) => boolean;
   noteEditingDay: number | null;
   noteEditingPlayerId: string | null;
   handleDeleteConversation: (conversationId: string) => void;

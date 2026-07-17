@@ -72,6 +72,7 @@ function DayNoteRow({ player, day, text }: { player: Player; day: number; text: 
     handleShowPlayerNoteForDay: onShowNote,
     handleSavePlayerNote: onSaveNote,
     handleSavePlayerNoteForFuture: onSaveNoteForFuture,
+    handleRemovePlayerNoteFromFuture: onRemoveNoteFromFuture,
   } = useGameRouteContext();
 
   const isEditing = noteEditingDay === day && noteEditingPlayerId === player.id;
@@ -100,6 +101,7 @@ function DayNoteRow({ player, day, text }: { player: Player; day: number; text: 
           confirmedRoleIds={confirmedRoleIds}
           day={day}
           disabled={!reusableNoteText.trim()}
+          onRemove={() => onRemoveNoteFromFuture(player.id, day, reusableNoteText)}
           onPress={() => onSaveNoteForFuture(player.id, day, reusableNoteText)}
           playerName={player.name}
           roleIds={reusableNoteRoleIds}

@@ -54,6 +54,7 @@ type GameState = {
   ) => void;
   setPlayerDayNote: (gameId: string, playerId: string, day: number, text: string) => void;
   saveNoteForFutureGames: (playerName: string, roleIds: string[], text: string) => boolean;
+  removeNoteFromFutureGames: (playerName: string, roleIds: string[], text: string) => boolean;
   setTokenSize: (gameId: string, tokenSize: number) => void;
   setActiveDay: (gameId: string, day: number) => void;
   updatePlayerPosition: (gameId: string, playerId: string, position: PlayerPosition) => void;
@@ -466,6 +467,74 @@ export const useGameStore = create<GameState>()(
 
         return saved;
       },
+      removeNoteFromFutureGames: (playerName, roleIds, text) => {
+        const removedText = text.trim();
+
+        if (!removedText) {
+          return false;
+        }
+
+        const playerKey = normalizePlayerName(playerName).toLocaleLowerCase();
+        const roleIdSet = new Set(roleIds);
+        let removed = false;
+
+        set((state) => {
+          const hadSavedNote = state.savedNotes.some(
+            (note) =>
+              normalizePlayerName(note.playerName).toLocaleLowerCase() === playerKey &&
+              note.text === removedText,
+          );
+          const removeTargetedRoleNote = (role: Role) => {
+            if (hadSavedNote || !roleIdSet.has(role.id)) {
+              return role;
+            }
+
+            const nextRole = removeRoleNote(role, removedText);
+            removed ||= nextRole !== role;
+            return nextRole;
+          };
+          const savedNotes = state.savedNotes.filter((note) => {
+            const matches =
+              normalizePlayerName(note.playerName).toLocaleLowerCase() === playerKey &&
+              note.text === removedText;
+            removed ||= matches;
+            return !matches;
+          });
+          const friends = state.friends.map((friend) => {
+            if (normalizePlayerName(friend.name).toLocaleLowerCase() !== playerKey) {
+              return friend;
+            }
+
+            const notes = friend.notes?.filter((note) => note !== removedText);
+            if (notes?.length === friend.notes?.length) {
+              return friend;
+            }
+
+            removed = true;
+            return { ...friend, notes: notes?.length ? notes : undefined };
+          });
+          const roleCatalog = state.roleCatalog.map(removeTargetedRoleNote);
+          const scripts = state.scripts.map((script) => ({
+            ...script,
+            roles: script.roles.map(removeTargetedRoleNote),
+          }));
+          const games = state.games.map((game) =>
+            game.script
+              ? {
+                  ...game,
+                  script: {
+                    ...game.script,
+                    roles: game.script.roles.map(removeTargetedRoleNote),
+                  },
+                }
+              : game,
+          );
+
+          return { friends, games, roleCatalog, savedNotes, scripts };
+        });
+
+        return removed;
+      },
       setTokenSize: (gameId, tokenSize) => {
         set((state) => ({
           games: state.games.map((game) =>
@@ -649,4 +718,13 @@ function mergeRoleNotes(roles: Role[], sources: Role[]) {
 
 function appendUniqueNote(notes: string[] | undefined, note: string) {
   return notes?.includes(note) ? notes : [...(notes ?? []), note];
+}
+
+function removeRoleNote(role: Role, note: string) {
+  if (!role.notes?.includes(note)) {
+    return role;
+  }
+
+  const notes = role.notes.filter((currentNote) => currentNote !== note);
+  return { ...role, notes: notes.length ? notes : undefined };
 }

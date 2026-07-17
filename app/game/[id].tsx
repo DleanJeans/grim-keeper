@@ -47,6 +47,7 @@ export default function GameRoute() {
   const setGameScript = useGameStore((state) => state.setGameScript);
   const setPlayerDayNote = useGameStore((state) => state.setPlayerDayNote);
   const saveNoteForFutureGames = useGameStore((state) => state.saveNoteForFutureGames);
+  const removeNoteFromFutureGames = useGameStore((state) => state.removeNoteFromFutureGames);
   const updatePlayerPosition = useGameStore((state) => state.updatePlayerPosition);
   const updatePlayerPositions = useGameStore((state) => state.updatePlayerPositions);
   const addConversation = useGameStore((state) => state.addConversation);
@@ -496,6 +497,16 @@ export default function GameRoute() {
     return saved;
   }
 
+  function handleRemovePlayerNoteFromFuture(playerId: string, day: number, text: string) {
+    const player = activeGame.players.find((currentPlayer) => currentPlayer.id === playerId);
+    if (!player) {
+      return false;
+    }
+
+    const roleIds = getAssignedRoleIdsForDay(player.roleAssignments, day);
+    return removeNoteFromFutureGames(player.name, roleIds, text);
+  }
+
   const contextValue: GameRouteContextValue = {
     game: activeGame,
     players: activeGame.players,
@@ -558,6 +569,7 @@ export default function GameRoute() {
     handleShowPlayerNoteForDay,
     handleSavePlayerNote,
     handleSavePlayerNoteForFuture,
+    handleRemovePlayerNoteFromFuture,
     handleDeleteConversation,
     handleDeleteNomination,
     enterRearrangeMode,

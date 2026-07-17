@@ -84,6 +84,7 @@ export function PlayerNoteRow({
     handleShowPlayerNoteForDay: onShowNote,
     handleSavePlayerNote: onSaveNote,
     handleSavePlayerNoteForFuture: onSaveNoteForFuture,
+    handleRemovePlayerNoteFromFuture: onRemoveNoteFromFuture,
   } = useGameRouteContext();
 
   const isEditing = noteEditingDay === day && noteEditingPlayerId === player.id;
@@ -117,6 +118,7 @@ export function PlayerNoteRow({
           confirmedRoleIds={confirmedRoleIds}
           day={day}
           disabled={!reusableNoteText.trim()}
+          onRemove={() => onRemoveNoteFromFuture(player.id, day, reusableNoteText)}
           onPress={() => onSaveNoteForFuture(player.id, day, reusableNoteText)}
           playerName={player.name}
           roleIds={reusableNoteRoleIds}
