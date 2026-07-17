@@ -32,14 +32,27 @@ describe('role utilities', () => {
       'Demon',
       'Demons',
       'Evil',
+      'Evils',
       'Good',
+      'Goods',
       'Minion',
       'Minions',
       'Outsider',
       'Outsiders',
       'Townsfolk',
+      'Townsfolks',
       'Traveller',
       'Travellers',
+      'Traveler',
+      'Travelers',
+    ]);
+    expect(
+      GENERIC_CHARACTER_TYPE_ROLE_REFERENCES.filter(({ name }) => name.startsWith('Traveler')).map(
+        ({ imageUrl }) => imageUrl,
+      ),
+    ).toEqual([
+      'https://release.botc.app/resources/characters/generic/traveler.webp',
+      'https://release.botc.app/resources/characters/generic/traveler.webp',
     ]);
   });
 

@@ -37,19 +37,35 @@ export const GENERIC_CHARACTER_TYPE_ROLES: Role[] = GENERIC_CHARACTER_TYPES.map(
   }),
 );
 
-const GENERIC_CHARACTER_TYPE_PLURALS: Record<string, string> = {
-  Demon: 'Demons',
-  Minion: 'Minions',
-  Outsider: 'Outsiders',
-  Traveller: 'Travellers',
+const GENERIC_CHARACTER_TYPE_ALIASES: Record<string, string[]> = {
+  Demon: ['Demons'],
+  Evil: ['Evils'],
+  Good: ['Goods'],
+  Minion: ['Minions'],
+  Outsider: ['Outsiders'],
+  Townsfolk: ['Townsfolks'],
+  Traveller: ['Travellers'],
 };
 
 export const GENERIC_CHARACTER_TYPE_ROLE_REFERENCES: Role[] = GENERIC_CHARACTER_TYPE_ROLES.flatMap(
   (role) => {
-    const pluralName = GENERIC_CHARACTER_TYPE_PLURALS[role.name];
-    return pluralName ? [role, { ...role, name: pluralName }] : [role];
+    const aliases = GENERIC_CHARACTER_TYPE_ALIASES[role.name] ?? [];
+    return [role, ...aliases.map((name) => ({ ...role, name }))];
   },
-);
+).concat([
+  {
+    id: 'generic_traveler',
+    imageUrl: `${BOTC_ROLE_ICON_BASE_URL}/generic/traveler.webp`,
+    name: 'Traveler',
+    team: 'traveler',
+  },
+  {
+    id: 'generic_traveler',
+    imageUrl: `${BOTC_ROLE_ICON_BASE_URL}/generic/traveler.webp`,
+    name: 'Travelers',
+    team: 'traveler',
+  },
+]);
 
 export const GENERIC_KILLER_ROLES: Role[] = [
   ...GENERIC_CHARACTER_TYPE_ROLES.filter(({ name }) => name === 'Demon' || name === 'Evil'),

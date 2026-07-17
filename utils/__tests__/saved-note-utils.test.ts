@@ -98,9 +98,9 @@ describe('saved note utilities', () => {
   it('matches singular and plural character types case-insensitively', () => {
     expect(
       getRoleNameMatches(
-        'Two DEMONS, three minions, Outsiders, good Townsfolk and travellers.',
+        'GOODS, evils, townsfolks, one traveler and many travelers.',
         GENERIC_CHARACTER_TYPE_ROLE_REFERENCES,
       ).map(({ role }) => role.name),
-    ).toEqual(['Demons', 'Minions', 'Outsiders', 'Good', 'Townsfolk', 'Travellers']);
+    ).toEqual(['Goods', 'Evils', 'Townsfolks', 'Traveler', 'Travelers']);
   });
 });
