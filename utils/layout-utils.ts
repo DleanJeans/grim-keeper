@@ -39,9 +39,9 @@ export function getPlayerMapPosition(
     return { x: left, y: top };
   }
 
-  const leftCenterOffset = 2 * width + height * 1.5;
+  const bottomCenterOffset = width * 1.5 + height;
   const offset =
-    (leftCenterOffset + (perimeter * Math.max(0, index)) / Math.max(1, sortedPlayers.length)) %
+    (bottomCenterOffset + (perimeter * Math.max(0, index)) / Math.max(1, sortedPlayers.length)) %
     perimeter;
 
   if (offset <= width) {
