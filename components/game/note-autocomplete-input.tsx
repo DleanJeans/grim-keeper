@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   InteractionManager,
   Pressable,
@@ -44,20 +44,18 @@ export function NoteAutocompleteInput({
   value: string;
 }) {
   const inputRef = useRef<RNTextInput>(null);
-  const [displayedSuggestions, setDisplayedSuggestions] = useState<NoteSuggestion[]>([]);
   const [selection, setSelection] = useState({ end: value.length, start: value.length });
   const query = getNoteAutocompleteQuery(value, selection.start);
+  const scriptRoles = game.script?.roles ?? [];
+  const allSuggestions = useMemo(
+    () => getNoteSuggestions(game.players, scriptRoles, ''),
+    [game.players, scriptRoles],
+  );
   const suggestions = useMemo(
-    () => getNoteSuggestions(game.players, game.script?.roles ?? [], query?.query),
-    [game.players, game.script?.roles, query?.query],
+    () => getNoteSuggestions(game.players, scriptRoles, query?.query),
+    [game.players, query?.query, scriptRoles],
   );
   const popoverVisible = !!query && suggestions.length > 0;
-
-  useEffect(() => {
-    if (suggestions.length > 0) {
-      setDisplayedSuggestions(suggestions);
-    }
-  }, [suggestions]);
 
   function handleChangeText(nextText: string) {
     const cursor = selection.start === value.length ? nextText.length : selection.start;
@@ -77,7 +75,7 @@ export function NoteAutocompleteInput({
   }
 
   return (
-    <View style={{ flex: 1, zIndex: popoverVisible ? 20 : 0 }}>
+    <View style={{ flex: 1, zIndex: 20 }}>
       <TextInput
         accessibilityLabel={accessibilityLabel}
         multiline
@@ -94,7 +92,7 @@ export function NoteAutocompleteInput({
         day={day}
         game={game}
         onSelect={handleSelectSuggestion}
-        suggestions={popoverVisible ? suggestions : displayedSuggestions}
+        suggestions={popoverVisible ? suggestions : allSuggestions}
         visible={popoverVisible}
       />
     </View>
@@ -171,7 +169,7 @@ function NoteSuggestionDropdown({
         opacity: visible ? 1 : 0,
         position: 'absolute',
         right: 0,
-        zIndex: visible ? 20 : -1,
+        zIndex: 20,
       }}
     >
       {suggestions.map((suggestion) => (
