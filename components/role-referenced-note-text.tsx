@@ -7,6 +7,7 @@ import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Game, Player, Role } from '@/types/game';
+import { GENERIC_CHARACTER_TYPE_ROLE_REFERENCES } from '@/utils/role-utils';
 import { getPlayerNameMatches, getRoleNameMatches } from '@/utils/saved-note-utils';
 
 export function RoleReferencedNoteText({
@@ -37,6 +38,14 @@ export function RoleReferencedNoteText({
       ].map((player) => [player.name.trim().toLocaleLowerCase(), player]),
     ).values(),
   ];
+  const referencedRoles = [
+    ...new Map(
+      [...GENERIC_CHARACTER_TYPE_ROLE_REFERENCES, ...roles].map((role) => [
+        role.name.trim().toLocaleLowerCase(),
+        role,
+      ]),
+    ).values(),
+  ];
   const lineOccurrences = new Map<string, number>();
   const lines = text.split('\n').map((line) => {
     const occurrence = (lineOccurrences.get(line) ?? 0) + 1;
@@ -52,7 +61,7 @@ export function RoleReferencedNoteText({
           day={day}
           game={game}
           players={referencedPlayers}
-          roles={roles}
+          roles={referencedRoles}
           scriptId={scriptId}
           showPlayerRoles={showPlayerRoles}
           style={style}

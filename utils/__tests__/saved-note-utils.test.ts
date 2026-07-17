@@ -1,4 +1,5 @@
 import type { SavedNote } from '@/types/game';
+import { GENERIC_CHARACTER_TYPE_ROLE_REFERENCES } from '@/utils/role-utils';
 import {
   detectRoleIdsInNote,
   getPlayerNameMatches,
@@ -92,5 +93,14 @@ describe('saved note utilities', () => {
         ({ player }) => player.id,
       ),
     ).toEqual(['alice-smith', 'alice']);
+  });
+
+  it('matches singular and plural character types case-insensitively', () => {
+    expect(
+      getRoleNameMatches(
+        'Two DEMONS, three minions, Outsiders, good Townsfolk and travellers.',
+        GENERIC_CHARACTER_TYPE_ROLE_REFERENCES,
+      ).map(({ role }) => role.name),
+    ).toEqual(['Demons', 'Minions', 'Outsiders', 'Good', 'Townsfolk', 'Travellers']);
   });
 });

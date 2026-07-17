@@ -18,19 +18,41 @@ const roleEditionDirectories: Record<string, string> = {
 const alignedGoodTeams = new Set(['outsider', 'townsfolk']);
 const alignedEvilTeams = new Set(['demon', 'minion']);
 
+const GENERIC_CHARACTER_TYPES = [
+  'Demon',
+  'Evil',
+  'Good',
+  'Minion',
+  'Outsider',
+  'Townsfolk',
+  'Traveller',
+] as const;
+
+export const GENERIC_CHARACTER_TYPE_ROLES: Role[] = GENERIC_CHARACTER_TYPES.map(
+  (characterType) => ({
+    id: `generic_${characterType.toLowerCase()}`,
+    imageUrl: `${BOTC_ROLE_ICON_BASE_URL}/generic/${characterType.toLowerCase()}.webp`,
+    name: characterType,
+    team: characterType.toLowerCase(),
+  }),
+);
+
+const GENERIC_CHARACTER_TYPE_PLURALS: Record<string, string> = {
+  Demon: 'Demons',
+  Minion: 'Minions',
+  Outsider: 'Outsiders',
+  Traveller: 'Travellers',
+};
+
+export const GENERIC_CHARACTER_TYPE_ROLE_REFERENCES: Role[] = GENERIC_CHARACTER_TYPE_ROLES.flatMap(
+  (role) => {
+    const pluralName = GENERIC_CHARACTER_TYPE_PLURALS[role.name];
+    return pluralName ? [role, { ...role, name: pluralName }] : [role];
+  },
+);
+
 export const GENERIC_KILLER_ROLES: Role[] = [
-  {
-    id: 'generic_demon',
-    imageUrl: `${BOTC_ROLE_ICON_BASE_URL}/generic/demon.webp`,
-    name: 'Demon',
-    team: 'demon',
-  },
-  {
-    id: 'generic_evil',
-    imageUrl: `${BOTC_ROLE_ICON_BASE_URL}/generic/evil.webp`,
-    name: 'Evil',
-    team: 'minion',
-  },
+  ...GENERIC_CHARACTER_TYPE_ROLES.filter(({ name }) => name === 'Demon' || name === 'Evil'),
   {
     id: 'generic_unknown',
     imageUrl: `${BOTC_ROLE_ICON_BASE_URL}/generic/unknown.webp`,

@@ -6,7 +6,7 @@ import { RoleNotes } from '@/components/role-notes';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import { GENERIC_KILLER_ROLES } from '@/utils/role-utils';
+import { GENERIC_CHARACTER_TYPE_ROLES, GENERIC_KILLER_ROLES } from '@/utils/role-utils';
 import { getSavedNoteTextsForRole } from '@/utils/saved-note-utils';
 
 export default function RoleNotesScreen() {
@@ -18,7 +18,9 @@ export default function RoleNotesScreen() {
   const game = useGameStore((state) => state.games.find((item) => item.script?.id === scriptId));
   const scriptRole = script?.roles.find((role) => role.id === roleId);
   const catalogRole = roleCatalog.find((role) => role.id === roleId);
-  const genericRole = GENERIC_KILLER_ROLES.find((role) => role.id === roleId);
+  const genericRole = [...GENERIC_CHARACTER_TYPE_ROLES, ...GENERIC_KILLER_ROLES].find(
+    (role) => role.id === roleId,
+  );
   const role = scriptRole
     ? {
         ...scriptRole,

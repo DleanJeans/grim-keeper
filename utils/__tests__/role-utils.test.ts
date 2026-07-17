@@ -1,5 +1,7 @@
 import {
   canRoleKill,
+  GENERIC_CHARACTER_TYPE_ROLE_REFERENCES,
+  GENERIC_CHARACTER_TYPE_ROLES,
   getAssignedRoleIdsForDay,
   getAssignedRoleIdsForDayOrPrevious,
   getKillerRoleOptions,
@@ -19,6 +21,28 @@ import {
 } from '@/utils/role-utils';
 
 describe('role utilities', () => {
+  it('provides generic character type role references with lowercase icon URLs', () => {
+    expect(GENERIC_CHARACTER_TYPE_ROLES.map(({ imageUrl, name }) => ({ imageUrl, name }))).toEqual(
+      ['Demon', 'Evil', 'Good', 'Minion', 'Outsider', 'Townsfolk', 'Traveller'].map((name) => ({
+        imageUrl: `https://release.botc.app/resources/characters/generic/${name.toLowerCase()}.webp`,
+        name,
+      })),
+    );
+    expect(GENERIC_CHARACTER_TYPE_ROLE_REFERENCES.map(({ name }) => name)).toEqual([
+      'Demon',
+      'Demons',
+      'Evil',
+      'Good',
+      'Minion',
+      'Minions',
+      'Outsider',
+      'Outsiders',
+      'Townsfolk',
+      'Traveller',
+      'Travellers',
+    ]);
+  });
+
   it('prefers a confirmed role assignment over a claim on the same day', () => {
     const assignment = getRoleAssignmentForDay(
       [
