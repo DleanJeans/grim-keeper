@@ -68,7 +68,7 @@ export function NoteAutocompleteInput({
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, zIndex: query && suggestions.length > 0 ? 20 : 0 }}>
       <TextInput
         accessibilityLabel={accessibilityLabel}
         multiline
@@ -150,7 +150,14 @@ function NoteSuggestionDropdown({
         borderColor: colors.borderStrong,
         borderRadius: 8,
         borderWidth: 1,
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.32)',
+        left: 0,
+        marginTop: 4,
         maxHeight: 220,
+        position: 'absolute',
+        right: 0,
+        top: '100%',
+        zIndex: 20,
       }}
     >
       {suggestions.map((suggestion) => (
