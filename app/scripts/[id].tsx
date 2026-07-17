@@ -39,7 +39,7 @@ export default function ScriptDetailRoute() {
             roles
           </Text>
         </View>
-        <ScriptRoleList roleCatalog={roleCatalog} roles={script.roles} />
+        <ScriptRoleList roleCatalog={roleCatalog} roles={script.roles} scriptId={script.id} />
       </ScrollView>
     </>
   );

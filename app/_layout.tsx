@@ -81,6 +81,7 @@ export default function RootLayout() {
           <Stack.Screen name="friends/[id]" options={{ title: 'Friend' }} />
           <Stack.Screen name="scripts" options={{ title: 'Scripts' }} />
           <Stack.Screen name="scripts/[id]" options={{ title: 'Script' }} />
+          <Stack.Screen name="role-notes" options={{ title: 'Role Notes' }} />
           <Stack.Screen name="game/[id]" options={{ title: 'Game' }} />
         </Stack>
       </ThemeProvider>

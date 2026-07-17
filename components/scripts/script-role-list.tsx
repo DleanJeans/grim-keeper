@@ -1,12 +1,21 @@
-import { View } from 'react-native';
+import { router } from 'expo-router';
+import { ChevronRight } from 'lucide-react-native';
+import { Pressable, View } from 'react-native';
 
 import { RoleIcon } from '@/components/role-icon';
-import { RoleNotes } from '@/components/role-notes';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Role } from '@/types/game';
 
-export function ScriptRoleList({ roleCatalog, roles }: { roleCatalog: Role[]; roles: Role[] }) {
+export function ScriptRoleList({
+  roleCatalog,
+  roles,
+  scriptId,
+}: {
+  roleCatalog: Role[];
+  roles: Role[];
+  scriptId: string;
+}) {
   return (
     <View style={{ gap: 10 }}>
       {roles.map((role) => {
@@ -21,6 +30,9 @@ export function ScriptRoleList({ roleCatalog, roles }: { roleCatalog: Role[]; ro
             key={role.id}
             role={displayRole}
             description={role.ability ?? catalogRole?.ability}
+            onPress={() =>
+              router.push({ pathname: '/role-notes', params: { roleId: role.id, scriptId } })
+            }
           />
         );
       })}
@@ -28,17 +40,30 @@ export function ScriptRoleList({ roleCatalog, roles }: { roleCatalog: Role[]; ro
   );
 }
 
-function ScriptRoleDetail({ description, role }: { description?: string; role: Role }) {
+function ScriptRoleDetail({
+  description,
+  onPress,
+  role,
+}: {
+  description?: string;
+  onPress: () => void;
+  role: Role;
+}) {
   return (
-    <View
-      style={{
+    <Pressable
+      accessibilityHint="Opens notes for this role"
+      accessibilityLabel={`${role.name} notes`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => ({
         backgroundColor: colors.surface,
         borderColor: colors.border,
         borderRadius: 8,
         borderWidth: 1,
         gap: 10,
+        opacity: pressed ? 0.65 : 1,
         padding: 12,
-      }}
+      })}
     >
       <View style={{ alignItems: 'center', flexDirection: 'row', gap: 10 }}>
         <RoleIcon role={role} size={42} />
@@ -61,11 +86,11 @@ function ScriptRoleDetail({ description, role }: { description?: string; role: R
             </Text>
           ) : null}
         </View>
+        <ChevronRight color={colors.textMuted} size={18} strokeWidth={2.5} />
       </View>
       <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
         {description ?? 'No description available.'}
       </Text>
-      <RoleNotes label role={role} />
-    </View>
+    </Pressable>
   );
 }
