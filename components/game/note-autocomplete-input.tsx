@@ -44,39 +44,20 @@ export function NoteAutocompleteInput({
   value: string;
 }) {
   const inputRef = useRef<RNTextInput>(null);
-  const mountedRef = useRef(true);
   const [displayedSuggestions, setDisplayedSuggestions] = useState<NoteSuggestion[]>([]);
-  const [focused, setFocused] = useState(false);
   const [selection, setSelection] = useState({ end: value.length, start: value.length });
   const query = getNoteAutocompleteQuery(value, selection.start);
   const suggestions = useMemo(
     () => getNoteSuggestions(game.players, game.script?.roles ?? [], query?.query),
     [game.players, game.script?.roles, query?.query],
   );
-  const popoverVisible = focused && !!query && suggestions.length > 0;
+  const popoverVisible = !!query && suggestions.length > 0;
 
   useEffect(() => {
     if (suggestions.length > 0) {
       setDisplayedSuggestions(suggestions);
     }
   }, [suggestions]);
-
-  useEffect(
-    () => () => {
-      mountedRef.current = false;
-    },
-    [],
-  );
-
-  function handleBlur() {
-    setFocused(false);
-    requestAnimationFrame(() => {
-      if (mountedRef.current) {
-        inputRef.current?.focus();
-        setFocused(true);
-      }
-    });
-  }
 
   function handleChangeText(nextText: string) {
     const cursor = selection.start === value.length ? nextText.length : selection.start;
@@ -100,9 +81,7 @@ export function NoteAutocompleteInput({
       <TextInput
         accessibilityLabel={accessibilityLabel}
         multiline
-        onBlur={handleBlur}
         onChangeText={handleChangeText}
-        onFocus={() => setFocused(true)}
         onSelectionChange={({ nativeEvent }) => setSelection(nativeEvent.selection)}
         placeholder={placeholder}
         placeholderTextColor={placeholderTextColor}
