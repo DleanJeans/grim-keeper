@@ -5,6 +5,7 @@ import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { PlayerNoteSection } from '@/components/game/player-notes';
 import { RoleAssignmentActions } from '@/components/game/role-assignment-actions';
 import { SaveNoteForFutureButton } from '@/components/game/save-note-for-future-button';
+import { SavedFriendNotes } from '@/components/game/saved-friend-notes';
 import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
@@ -138,8 +139,8 @@ export function NotesTab() {
     return (
       <View style={{ gap: 14 }}>
         <RoleAssignmentActions />
-        <SavedFriendNotes notes={savedFriendNotes} playerName={focusedPlayer.name} />
         <PlayerNoteSection player={focusedPlayer} />
+        <SavedFriendNotes notes={savedFriendNotes} playerName={focusedPlayer.name} />
       </View>
     );
   }
@@ -167,46 +168,6 @@ export function NotesTab() {
           <DayNoteRow day={activeDay} key={entry.playerId} player={player} text={entry.text} />
         );
       })}
-    </View>
-  );
-}
-
-function SavedFriendNotes({ notes, playerName }: { notes?: string[]; playerName: string }) {
-  if (!notes?.length) {
-    return null;
-  }
-
-  return (
-    <View
-      style={{
-        backgroundColor: colors.surface,
-        borderColor: colors.border,
-        borderRadius: 8,
-        borderWidth: 1,
-        gap: 8,
-        padding: 12,
-      }}
-    >
-      <Text
-        selectable
-        style={{
-          color: colors.text,
-          fontSize: 13,
-          fontWeight: '900',
-          letterSpacing: 0.3,
-        }}
-      >
-        Saved notes for {playerName}
-      </Text>
-      {notes.map((note) => (
-        <Text
-          key={`${playerName}-saved-note-${note}`}
-          selectable
-          style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}
-        >
-          {note}
-        </Text>
-      ))}
     </View>
   );
 }
