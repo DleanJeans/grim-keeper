@@ -7,8 +7,10 @@ import { RoleAssignmentActions } from '@/components/game/role-assignment-actions
 import { SaveNoteForFutureButton } from '@/components/game/save-note-for-future-button';
 import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
+import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Player } from '@/types/game';
+import { getFriendByName } from '@/utils/friend-utils';
 
 const noteTextInputStyle = {
   backgroundColor: '#111827',
@@ -124,11 +126,15 @@ function DayNoteRow({ player, day, text }: { player: Player; day: number; text: 
 
 export function NotesTab() {
   const { activeDay, focusedPlayer, game, players } = useGameRouteContext();
+  const friends = useGameStore((state) => state.friends);
 
   if (focusedPlayer) {
+    const savedFriendNotes = getFriendByName(friends, focusedPlayer.name)?.notes;
+
     return (
       <View style={{ gap: 14 }}>
         <RoleAssignmentActions />
+        <SavedFriendNotes notes={savedFriendNotes} playerName={focusedPlayer.name} />
         <PlayerNoteSection player={focusedPlayer} />
       </View>
     );
@@ -157,6 +163,46 @@ export function NotesTab() {
           <DayNoteRow day={activeDay} key={entry.playerId} player={player} text={entry.text} />
         );
       })}
+    </View>
+  );
+}
+
+function SavedFriendNotes({ notes, playerName }: { notes?: string[]; playerName: string }) {
+  if (!notes?.length) {
+    return null;
+  }
+
+  return (
+    <View
+      style={{
+        backgroundColor: colors.surface,
+        borderColor: colors.border,
+        borderRadius: 8,
+        borderWidth: 1,
+        gap: 8,
+        padding: 12,
+      }}
+    >
+      <Text
+        selectable
+        style={{
+          color: colors.text,
+          fontSize: 13,
+          fontWeight: '900',
+          letterSpacing: 0.3,
+        }}
+      >
+        Saved notes for {playerName}
+      </Text>
+      {notes.map((note) => (
+        <Text
+          key={`${playerName}-saved-note-${note}`}
+          selectable
+          style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}
+        >
+          {note}
+        </Text>
+      ))}
     </View>
   );
 }

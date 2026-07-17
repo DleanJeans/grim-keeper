@@ -1,5 +1,10 @@
 import type { Friend, Game } from '@/types/game';
-import { addMissingFriends, getFriendSummaries, hasFriendName } from '@/utils/friend-utils';
+import {
+  addMissingFriends,
+  getFriendByName,
+  getFriendSummaries,
+  hasFriendName,
+} from '@/utils/friend-utils';
 
 const games: Game[] = [
   {
@@ -42,6 +47,21 @@ describe('friend utils', () => {
 
     expect(hasFriendName(getFriendSummaries([], friends), ' alice   smith ')).toBe(true);
     expect(addMissingFriends(friends, ['Alice Smith', 'Drew'], games[0].createdAt)).toHaveLength(2);
+  });
+
+  it('finds a saved friend and their notes by normalized player name', () => {
+    const friends: Friend[] = [
+      {
+        id: 'friend-1',
+        name: 'Alice Smith',
+        createdAt: games[0].createdAt,
+        notes: ['Claims Empath when bluffing.'],
+      },
+    ];
+
+    expect(getFriendByName(friends, ' alice   smith ')?.notes).toEqual([
+      'Claims Empath when bluffing.',
+    ]);
   });
 
   it('excludes the app user from friend summaries', () => {

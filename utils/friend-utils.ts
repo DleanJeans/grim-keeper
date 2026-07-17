@@ -61,10 +61,15 @@ export function getFriendSummaries(
 }
 
 export function hasFriendName(friends: FriendSummary[], name: string) {
+  return !!getFriendByName(friends, name);
+}
+
+export function getFriendByName<T extends Friend>(friends: T[], name: string) {
   const normalizedName = normalizePlayerName(name).toLocaleLowerCase();
 
-  return (
-    !!normalizedName && friends.some((friend) => friend.name.toLocaleLowerCase() === normalizedName)
+  return friends.find(
+    (friend) =>
+      !!normalizedName && normalizePlayerName(friend.name).toLocaleLowerCase() === normalizedName,
   );
 }
 
