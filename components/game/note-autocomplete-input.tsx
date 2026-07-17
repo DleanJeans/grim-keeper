@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import {
+  InteractionManager,
   Pressable,
   type TextInput as RNTextInput,
   ScrollView,
@@ -64,7 +65,7 @@ export function NoteAutocompleteInput({
     const result = applyNoteAutocompleteSuggestion(value, query, suggestion.label);
     onChangeText(result.text);
     setSelection({ end: result.cursor, start: result.cursor });
-    requestAnimationFrame(() => inputRef.current?.focus());
+    InteractionManager.runAfterInteractions(() => inputRef.current?.focus());
   }
 
   return (
