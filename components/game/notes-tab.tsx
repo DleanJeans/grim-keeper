@@ -8,7 +8,7 @@ import { RoleAssignmentActions } from '@/components/game/role-assignment-actions
 import { SaveNoteForFutureButton } from '@/components/game/save-note-for-future-button';
 import { SavedFriendNotes } from '@/components/game/saved-friend-notes';
 import { innerActionRow } from '@/components/game/styles';
-import { Text } from '@/components/text';
+import { RoleReferencedNoteText } from '@/components/role-referenced-note-text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Player } from '@/types/game';
@@ -68,6 +68,7 @@ function DayNoteRow({ player, day, text }: { player: Player; day: number; text: 
     noteDraft,
     noteEditingDay,
     noteEditingPlayerId,
+    game,
     setNoteDraft: onChangeNoteDraft,
     handleShowPlayerNoteForDay: onShowNote,
     handleSavePlayerNote: onSaveNote,
@@ -118,9 +119,12 @@ function DayNoteRow({ player, day, text }: { player: Player; day: number; text: 
           </Pressable>
         </View>
       ) : (
-        <Text selectable style={noteTextStyle}>
-          {text}
-        </Text>
+        <RoleReferencedNoteText
+          roles={game.script?.roles ?? []}
+          scriptId={game.script?.id}
+          style={noteTextStyle}
+          text={text}
+        />
       )}
     </View>
   );
