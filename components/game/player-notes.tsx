@@ -88,6 +88,10 @@ export function PlayerNoteRow({
 
   const isEditing = noteEditingDay === day && noteEditingPlayerId === player.id;
   const reusableNoteText = isEditing ? noteDraft : (text ?? '');
+  const claimedRoleIds =
+    getRoleAssignmentForDay(player.roleAssignments, day, 'claim')?.roleIds ?? [];
+  const confirmedRoleIds =
+    getRoleAssignmentForDay(player.roleAssignments, day, 'confirm')?.roleIds ?? [];
   const reusableNoteRoleIds = getAssignedRoleIdsForDay(player.roleAssignments, day);
   const roleAssignment = showRoles
     ? getRoleAssignmentForDay(player.roleAssignments, day)
@@ -109,6 +113,8 @@ export function PlayerNoteRow({
           <Pencil color={colors.textMuted} size={14} strokeWidth={2.5} />
         </Pressable>
         <SaveNoteForFutureButton
+          claimedRoleIds={claimedRoleIds}
+          confirmedRoleIds={confirmedRoleIds}
           day={day}
           disabled={!reusableNoteText.trim()}
           onPress={() => onSaveNoteForFuture(player.id, day, reusableNoteText)}

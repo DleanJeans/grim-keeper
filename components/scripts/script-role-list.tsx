@@ -11,7 +11,10 @@ export function ScriptRoleList({ roleCatalog, roles }: { roleCatalog: Role[]; ro
     <View style={{ gap: 10 }}>
       {roles.map((role) => {
         const catalogRole = roleCatalog.find((candidate) => candidate.id === role.id);
-        const displayRole = role.notes?.length ? role : { ...role, notes: catalogRole?.notes };
+        const displayRole = {
+          ...role,
+          notes: [...new Set([...(role.notes ?? []), ...(catalogRole?.notes ?? [])])],
+        };
 
         return (
           <ScriptRoleDetail

@@ -1,8 +1,10 @@
 import { View } from 'react-native';
 
 import { Text } from '@/components/text';
+import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Role } from '@/types/game';
+import { getSavedNoteTextsForRole } from '@/utils/saved-note-utils';
 
 export function RoleNotes({
   role,
@@ -13,7 +15,12 @@ export function RoleNotes({
   label?: boolean;
   role: Role;
 }) {
-  if (!role.notes?.length) {
+  const savedNotes = useGameStore((state) => state.savedNotes);
+  const notes = [
+    ...new Set([...(role.notes ?? []), ...getSavedNoteTextsForRole(savedNotes, role.id)]),
+  ];
+
+  if (!notes.length) {
     return null;
   }
 
@@ -33,7 +40,7 @@ export function RoleNotes({
           Notes
         </Text>
       ) : null}
-      {role.notes.map((note) => (
+      {notes.map((note) => (
         <Text
           key={`${role.id}-note-${note}`}
           selectable

@@ -1,12 +1,16 @@
 import { BookmarkPlus } from 'lucide-react-native';
-import { Pressable } from 'react-native';
+import { Alert, Pressable } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { getFriendByName } from '@/utils/friend-utils';
+import { getRolesByIds } from '@/utils/role-utils';
+import { getSavedNote } from '@/utils/saved-note-utils';
 
 export function SaveNoteForFutureButton({
+  claimedRoleIds,
+  confirmedRoleIds,
   disabled,
   onPress,
   playerName,
@@ -14,6 +18,8 @@ export function SaveNoteForFutureButton({
   text,
   day,
 }: {
+  claimedRoleIds: string[];
+  confirmedRoleIds: string[];
   day: number;
   disabled: boolean;
   onPress: () => boolean;
@@ -23,7 +29,9 @@ export function SaveNoteForFutureButton({
 }) {
   const { game } = useGameRouteContext();
   const friends = useGameStore((state) => state.friends);
+  const savedNotes = useGameStore((state) => state.savedNotes);
   const savedText = text.trim();
+  const savedNote = getSavedNote(savedNotes, playerName, savedText);
   const friendNotes = getFriendByName(friends, playerName)?.notes;
   const savedForFriend = !!savedText && !!friendNotes?.includes(savedText);
   const savedForRole =
@@ -31,8 +39,34 @@ export function SaveNoteForFutureButton({
     roleIds.some((roleId) =>
       game.script?.roles.find((role) => role.id === roleId)?.notes?.includes(savedText),
     );
-  const saved = savedForFriend || savedForRole;
+  const savedForCurrentRoles =
+    !!savedNote &&
+    savedNote.roleIds.length === roleIds.length &&
+    roleIds.every((roleId) => savedNote.roleIds.includes(roleId));
+  const saved = savedForCurrentRoles || (!savedNote && (savedForFriend || savedForRole));
   const iconColor = saved ? '#fbbf24' : colors.textMuted;
+
+  function handlePress() {
+    const scriptRoles = game.script?.roles ?? [];
+    const claimedRoleNames = getRolesByIds(claimedRoleIds, scriptRoles).map((role) => role.name);
+    const confirmedRoleNames = getRolesByIds(confirmedRoleIds, scriptRoles).map(
+      (role) => role.name,
+    );
+
+    Alert.alert(
+      'Save note for future games?',
+      [
+        `Bluffed: ${claimedRoleNames.join(', ') || 'None'}`,
+        `Confirmed: ${confirmedRoleNames.join(', ') || 'None'}`,
+        '',
+        'This note will appear for the roles listed above.',
+      ].join('\n'),
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Save', onPress },
+      ],
+    );
+  }
 
   return (
     <Pressable
@@ -45,7 +79,7 @@ export function SaveNoteForFutureButton({
       accessibilityState={{ disabled, selected: saved }}
       disabled={disabled}
       hitSlop={8}
-      onPress={onPress}
+      onPress={handlePress}
       style={({ pressed }) => ({
         alignItems: 'center',
         borderRadius: 6,

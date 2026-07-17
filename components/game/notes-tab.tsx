@@ -12,7 +12,7 @@ import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Player } from '@/types/game';
 import { getFriendByName } from '@/utils/friend-utils';
-import { getAssignedRoleIdsForDay } from '@/utils/role-utils';
+import { getAssignedRoleIdsForDay, getRoleAssignmentForDay } from '@/utils/role-utils';
 
 const noteTextInputStyle = {
   backgroundColor: '#111827',
@@ -76,6 +76,10 @@ function DayNoteRow({ player, day, text }: { player: Player; day: number; text: 
 
   const isEditing = noteEditingDay === day && noteEditingPlayerId === player.id;
   const reusableNoteText = isEditing ? noteDraft : text;
+  const claimedRoleIds =
+    getRoleAssignmentForDay(player.roleAssignments, day, 'claim')?.roleIds ?? [];
+  const confirmedRoleIds =
+    getRoleAssignmentForDay(player.roleAssignments, day, 'confirm')?.roleIds ?? [];
   const reusableNoteRoleIds = getAssignedRoleIdsForDay(player.roleAssignments, day);
 
   return (
@@ -92,6 +96,8 @@ function DayNoteRow({ player, day, text }: { player: Player; day: number; text: 
           <Pencil color={colors.textMuted} size={14} strokeWidth={2.5} />
         </Pressable>
         <SaveNoteForFutureButton
+          claimedRoleIds={claimedRoleIds}
+          confirmedRoleIds={confirmedRoleIds}
           day={day}
           disabled={!reusableNoteText.trim()}
           onPress={() => onSaveNoteForFuture(player.id, day, reusableNoteText)}

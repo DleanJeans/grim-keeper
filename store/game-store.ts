@@ -13,6 +13,7 @@ import type {
   PlayerRevive,
   PlayerRoleAssignment,
   Role,
+  SavedNote,
   StoredScript,
 } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
@@ -30,6 +31,7 @@ type GameState = {
   games: Game[];
   friends: Friend[];
   roleCatalog: Role[];
+  savedNotes: SavedNote[];
   scripts: StoredScript[];
   addFriend: (name: string) => void;
   createGame: (input: CreateGameInput) => Game;
@@ -74,6 +76,7 @@ export const useGameStore = create<GameState>()(
       games: [],
       friends: [],
       roleCatalog: [],
+      savedNotes: [],
       scripts: [],
       addFriend: (name) => {
         const normalizedName = normalizePlayerName(name);
@@ -416,6 +419,23 @@ export const useGameStore = create<GameState>()(
 
           saved = true;
           let friends = state.friends;
+          const savedNoteIndex = state.savedNotes.findIndex(
+            (note) =>
+              normalizePlayerName(note.playerName).toLocaleLowerCase() === playerKey &&
+              note.text === nextText,
+          );
+          const savedNote: SavedNote = {
+            id: savedNoteIndex >= 0 ? state.savedNotes[savedNoteIndex].id : createId('saved-note'),
+            playerName: normalizedPlayerName,
+            roleIds: [...uniqueRoleIds],
+            text: nextText,
+            createdAt: savedNoteIndex >= 0 ? state.savedNotes[savedNoteIndex].createdAt : updatedAt,
+            updatedAt,
+          };
+          const savedNotes =
+            savedNoteIndex >= 0
+              ? state.savedNotes.map((note, index) => (index === savedNoteIndex ? savedNote : note))
+              : [...state.savedNotes, savedNote];
 
           if (shouldSaveFriend) {
             const existingFriendIndex = state.friends.findIndex(
@@ -441,33 +461,7 @@ export const useGameStore = create<GameState>()(
             }
           }
 
-          const roleCatalog = state.roleCatalog.map((role) =>
-            uniqueRoleIds.has(role.id) ? addRoleNote(role, nextText) : role,
-          );
-          const scripts = state.scripts.map((script) => ({
-            ...script,
-            roles: script.roles.map((role) =>
-              uniqueRoleIds.has(role.id) ? addRoleNote(role, nextText) : role,
-            ),
-          }));
-          const games = state.games.map((game) => {
-            if (!game.script) {
-              return game;
-            }
-
-            return {
-              ...game,
-              script: {
-                ...game.script,
-                roles: game.script.roles.map((role) =>
-                  uniqueRoleIds.has(role.id) ? addRoleNote(role, nextText) : role,
-                ),
-              },
-              updatedAt: uniqueRoleIds.size > 0 ? updatedAt : game.updatedAt,
-            };
-          });
-
-          return { friends, games, roleCatalog, scripts };
+          return { friends, savedNotes };
         });
 
         return saved;
@@ -613,6 +607,7 @@ export const useGameStore = create<GameState>()(
         friends: state.friends,
         games: state.games,
         roleCatalog: state.roleCatalog,
+        savedNotes: state.savedNotes,
         scripts: state.scripts,
       }),
     },
@@ -654,9 +649,4 @@ function mergeRoleNotes(roles: Role[], sources: Role[]) {
 
 function appendUniqueNote(notes: string[] | undefined, note: string) {
   return notes?.includes(note) ? notes : [...(notes ?? []), note];
-}
-
-function addRoleNote(role: Role, note: string) {
-  const notes = appendUniqueNote(role.notes, note);
-  return notes === role.notes ? role : { ...role, notes };
 }

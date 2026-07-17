@@ -81,6 +81,15 @@ export type PlayerDayNote = {
   updatedAt: string;
 };
 
+export type SavedNote = {
+  id: string;
+  playerName: string;
+  roleIds: string[];
+  text: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type Game = {
   id: string;
   createdAt: string;
