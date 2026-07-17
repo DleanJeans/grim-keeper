@@ -134,6 +134,9 @@ export function PlayerNoteRow({
         </View>
       ) : text ? (
         <RoleReferencedNoteText
+          day={day}
+          game={game}
+          players={game.players}
           roles={game.script?.roles ?? []}
           scriptId={game.script?.id}
           style={noteTextStyle}

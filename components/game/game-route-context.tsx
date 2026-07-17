@@ -96,3 +96,7 @@ export function useGameRouteContext() {
   }
   return value;
 }
+
+export function useOptionalGameRouteContext() {
+  return useContext(GameRouteContext);
+}

@@ -1,33 +1,42 @@
 import type { StyleProp, TextStyle, ViewStyle } from 'react-native';
 import { View } from 'react-native';
 
-import { useGameRouteContext } from '@/components/game/game-route-context';
+import { useOptionalGameRouteContext } from '@/components/game/game-route-context';
 import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { Player } from '@/types/game';
+import type { Game, Player } from '@/types/game';
 import { getRoleDisplayForDayOrPrevious } from '@/utils/role-utils';
 
 type PlayerNameWithRoleProps = {
   bordered?: boolean;
+  game?: Game;
+  day?: number;
   player: Player;
   roleIconSize?: number;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
+  showRoles?: boolean;
 };
 
 export function PlayerNameWithRole({
   bordered = false,
+  day,
+  game: providedGame,
   player,
   roleIconSize = 24,
   style,
   textStyle,
+  showRoles: providedShowRoles,
 }: PlayerNameWithRoleProps) {
-  const { activeDay, game, showRoles } = useGameRouteContext();
+  const gameRoute = useOptionalGameRouteContext();
+  const activeDay = day ?? gameRoute?.activeDay ?? providedGame?.activeDay ?? 0;
+  const game = providedGame ?? gameRoute?.game;
+  const showRoles = providedShowRoles ?? gameRoute?.showRoles ?? false;
+  const script = game?.script;
   const role =
-    showRoles && game.script
-      ? getRoleDisplayForDayOrPrevious(player.roleAssignments, activeDay, game.script.roles)
-          .roles[0]
+    showRoles && script
+      ? getRoleDisplayForDayOrPrevious(player.roleAssignments, activeDay, script.roles).roles[0]
       : undefined;
 
   return (

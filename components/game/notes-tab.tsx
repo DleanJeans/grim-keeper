@@ -120,6 +120,9 @@ function DayNoteRow({ player, day, text }: { player: Player; day: number; text: 
         </View>
       ) : (
         <RoleReferencedNoteText
+          day={day}
+          game={game}
+          players={game.players}
           roles={game.script?.roles ?? []}
           scriptId={game.script?.id}
           style={noteTextStyle}
@@ -143,8 +146,11 @@ export function NotesTab() {
         <RoleAssignmentActions />
         <PlayerNoteSection player={focusedPlayer} />
         <SavedFriendNotes
+          day={activeDay}
+          game={game}
           notes={savedFriendNotes}
           playerName={focusedPlayer.name}
+          players={game.players}
           roles={game.script?.roles ?? []}
           scriptId={game.script?.id}
         />

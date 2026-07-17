@@ -15,6 +15,7 @@ export default function RoleNotesScreen() {
   const savedNotes = useGameStore((state) => state.savedNotes);
   const deleteRoleNote = useGameStore((state) => state.deleteRoleNote);
   const script = useGameStore((state) => state.scripts.find((item) => item.id === scriptId));
+  const game = useGameStore((state) => state.games.find((item) => item.script?.id === scriptId));
   const scriptRole = script?.roles.find((role) => role.id === roleId);
   const catalogRole = roleCatalog.find((role) => role.id === roleId);
   const genericRole = GENERIC_KILLER_ROLES.find((role) => role.id === roleId);
@@ -72,8 +73,11 @@ export default function RoleNotesScreen() {
         >
           {hasNotes ? (
             <RoleNotes
+              day={game?.activeDay}
+              game={game}
               label
               onDeleteNote={handleDeleteNote}
+              players={game?.players}
               role={role}
               roles={script?.roles ?? roleCatalog}
               scriptId={scriptId}

@@ -1,6 +1,7 @@
 import type { SavedNote } from '@/types/game';
 import {
   detectRoleIdsInNote,
+  getPlayerNameMatches,
   getRoleNameMatches,
   getSavedNote,
   getSavedNoteTextsForRole,
@@ -78,5 +79,18 @@ describe('saved note utilities', () => {
       { roleId: 'imp', text: 'IMP' },
       { roleId: 'devils_advocate', text: "Devil's   Advocate" },
     ]);
+  });
+
+  it('locates whole player names without matching inside other words', () => {
+    const players = [
+      { id: 'alice', name: 'Alice', seat: 1 },
+      { id: 'alice-smith', name: 'Alice Smith', seat: 2 },
+    ];
+
+    expect(
+      getPlayerNameMatches('Alice Smith spoke to malice, then Alice.', players).map(
+        ({ player }) => player.id,
+      ),
+    ).toEqual(['alice-smith', 'alice']);
   });
 });

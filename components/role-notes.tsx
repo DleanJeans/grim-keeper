@@ -5,20 +5,26 @@ import { RoleReferencedNoteText } from '@/components/role-referenced-note-text';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import type { Role } from '@/types/game';
+import type { Game, Player, Role } from '@/types/game';
 import { getSavedNoteTextsForRole } from '@/utils/saved-note-utils';
 
 export function RoleNotes({
+  day,
+  game,
   role,
   compact = false,
   label = false,
   onDeleteNote,
+  players,
   roles,
   scriptId,
 }: {
   compact?: boolean;
+  day?: number;
+  game?: Game;
   label?: boolean;
   onDeleteNote?: (note: string) => void;
+  players?: Player[];
   role: Role;
   roles: Role[];
   scriptId?: string;
@@ -54,8 +60,12 @@ export function RoleNotes({
           style={{ alignItems: 'flex-start', flexDirection: 'row', gap: 10 }}
         >
           <RoleReferencedNoteText
+            day={day}
+            game={game}
+            players={players}
             roles={roles}
             scriptId={scriptId}
+            showPlayerRoles
             style={{
               color: colors.textMuted,
               flex: 1,

@@ -1,4 +1,4 @@
-import type { Role, SavedNote } from '@/types/game';
+import type { Player, Role, SavedNote } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
 
 export function getSavedNote(savedNotes: SavedNote[], playerName: string, text: string) {
@@ -37,9 +37,31 @@ export type RoleNameMatch = {
   start: number;
 };
 
+export type PlayerNameMatch = {
+  end: number;
+  player: Player;
+  start: number;
+};
+
 export function getRoleNameMatches(text: string, roles: Role[]): RoleNameMatch[] {
-  const candidates = roles.flatMap((role) => {
-    const escapedName = role.name
+  return getNameMatches(text, roles, (role) => role.name).map(({ end, item, start }) => ({
+    end,
+    role: item,
+    start,
+  }));
+}
+
+export function getPlayerNameMatches(text: string, players: Player[]): PlayerNameMatch[] {
+  return getNameMatches(text, players, (player) => player.name).map(({ end, item, start }) => ({
+    end,
+    player: item,
+    start,
+  }));
+}
+
+function getNameMatches<T>(text: string, items: T[], getName: (item: T) => string) {
+  const candidates = items.flatMap((item) => {
+    const escapedName = getName(item)
       .trim()
       .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
       .replace(/\s+/g, '\\s+');
@@ -48,20 +70,20 @@ export function getRoleNameMatches(text: string, roles: Role[]): RoleNameMatch[]
       return [];
     }
 
-    const matches: RoleNameMatch[] = [];
+    const matches: { end: number; item: T; start: number }[] = [];
     const pattern = new RegExp(`(^|[^a-z0-9])(${escapedName})(?=$|[^a-z0-9])`, 'gi');
     let match = pattern.exec(text);
 
     while (match) {
       const start = match.index + match[1].length;
-      matches.push({ end: start + match[2].length, role, start });
+      matches.push({ end: start + match[2].length, item, start });
       match = pattern.exec(text);
     }
 
     return matches;
   });
 
-  const matches: RoleNameMatch[] = [];
+  const matches: { end: number; item: T; start: number }[] = [];
   for (const candidate of candidates.sort(
     (a, b) => a.start - b.start || b.end - b.start - (a.end - a.start),
   )) {

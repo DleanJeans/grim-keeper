@@ -1,23 +1,42 @@
 import type { ReactNode } from 'react';
 import { type StyleProp, type TextStyle, View } from 'react-native';
 
+import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { RoleReference } from '@/components/role-reference';
 import { Text } from '@/components/text';
+import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import type { Role } from '@/types/game';
-import { getRoleNameMatches } from '@/utils/saved-note-utils';
+import type { Game, Player, Role } from '@/types/game';
+import { getPlayerNameMatches, getRoleNameMatches } from '@/utils/saved-note-utils';
 
 export function RoleReferencedNoteText({
+  day,
+  game,
+  players,
   roles,
   scriptId,
+  showPlayerRoles,
   style,
   text,
 }: {
+  day?: number;
+  game?: Game;
+  players?: Player[];
   roles: Role[];
   scriptId?: string;
+  showPlayerRoles?: boolean;
   style?: StyleProp<TextStyle>;
   text: string;
 }) {
+  const friends = useGameStore((state) => state.friends);
+  const referencedPlayers = [
+    ...new Map(
+      [
+        ...friends.map((friend) => ({ id: friend.id, name: friend.name, seat: -1 })),
+        ...(players ?? []),
+      ].map((player) => [player.name.trim().toLocaleLowerCase(), player]),
+    ).values(),
+  ];
   const lineOccurrences = new Map<string, number>();
   const lines = text.split('\n').map((line) => {
     const occurrence = (lineOccurrences.get(line) ?? 0) + 1;
@@ -30,8 +49,12 @@ export function RoleReferencedNoteText({
       {lines.map((line) => (
         <RoleReferencedNoteLine
           key={line.key}
+          day={day}
+          game={game}
+          players={referencedPlayers}
           roles={roles}
           scriptId={scriptId}
+          showPlayerRoles={showPlayerRoles}
           style={style}
           text={line.text}
         />
@@ -41,17 +64,34 @@ export function RoleReferencedNoteText({
 }
 
 function RoleReferencedNoteLine({
+  day,
+  game,
+  players = [],
   roles,
   scriptId,
+  showPlayerRoles,
   style,
   text,
 }: {
+  day?: number;
+  game?: Game;
+  players?: Player[];
   roles: Role[];
   scriptId?: string;
+  showPlayerRoles?: boolean;
   style?: StyleProp<TextStyle>;
   text: string;
 }) {
-  const matches = getRoleNameMatches(text, roles);
+  const candidates = [
+    ...getRoleNameMatches(text, roles).map((match) => ({ ...match, kind: 'role' as const })),
+    ...getPlayerNameMatches(text, players).map((match) => ({ ...match, kind: 'player' as const })),
+  ].sort((a, b) => a.start - b.start || b.end - b.start - (a.end - a.start));
+  const matches: typeof candidates = [];
+  for (const candidate of candidates) {
+    if (!matches.length || candidate.start >= matches[matches.length - 1].end) {
+      matches.push(candidate);
+    }
+  }
   const parts: ReactNode[] = [];
   let cursor = 0;
 
@@ -64,13 +104,25 @@ function RoleReferencedNoteLine({
       );
     }
     parts.push(
-      <RoleReference
-        iconSize={16}
-        key={`role-${match.role.id}-${match.start}`}
-        role={match.role}
-        scriptId={scriptId}
-        textStyle={[{ fontSize: 13 }, style]}
-      />,
+      match.kind === 'role' ? (
+        <RoleReference
+          iconSize={16}
+          key={`role-${match.role.id}-${match.start}`}
+          role={match.role}
+          scriptId={scriptId}
+          textStyle={[{ fontSize: 13 }, style]}
+        />
+      ) : (
+        <PlayerNameWithRole
+          day={day}
+          game={game}
+          key={`player-${match.player.id}-${match.start}`}
+          player={match.player}
+          roleIconSize={16}
+          showRoles={showPlayerRoles}
+          textStyle={[{ color: colors.textMuted, fontSize: 13, fontWeight: '700' }, style]}
+        />
+      ),
     );
     cursor = match.end;
   }
