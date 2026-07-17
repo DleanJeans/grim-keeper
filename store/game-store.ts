@@ -34,6 +34,7 @@ type GameState = {
   savedNotes: SavedNote[];
   scripts: StoredScript[];
   addFriend: (name: string) => void;
+  renameFriend: (friendId: string, currentName: string, nextName: string) => boolean;
   createGame: (input: CreateGameInput) => Game;
   saveScript: (script: StoredScript) => void;
   updateScript: (script: StoredScript) => void;
@@ -109,6 +110,75 @@ export const useGameStore = create<GameState>()(
             ],
           };
         });
+      },
+      renameFriend: (friendId, currentName, nextName) => {
+        const normalizedCurrentName = normalizePlayerName(currentName);
+        const normalizedNextName = normalizePlayerName(nextName);
+        const currentKey = normalizedCurrentName.toLocaleLowerCase();
+        const nextKey = normalizedNextName.toLocaleLowerCase();
+        let renamed = false;
+
+        if (!normalizedNextName || normalizedCurrentName === normalizedNextName) {
+          return false;
+        }
+
+        set((state) => {
+          const appUserKey = normalizePlayerName(state.appUserName).toLocaleLowerCase();
+          const duplicateFriend = getFriendSummaries(
+            state.games,
+            state.friends,
+            state.appUserName,
+          ).some(
+            (friend) =>
+              friend.id !== friendId &&
+              normalizePlayerName(friend.name).toLocaleLowerCase() === nextKey,
+          );
+
+          if (nextKey === appUserKey || duplicateFriend) {
+            return state;
+          }
+
+          renamed = true;
+          const updatedAt = new Date().toISOString();
+          const existingFriendIndex = state.friends.findIndex(
+            (friend) =>
+              friend.id === friendId ||
+              normalizePlayerName(friend.name).toLocaleLowerCase() === currentKey,
+          );
+          const friends =
+            existingFriendIndex >= 0
+              ? state.friends.map((friend, index) =>
+                  index === existingFriendIndex ? { ...friend, name: normalizedNextName } : friend,
+                )
+              : [
+                  ...state.friends,
+                  {
+                    id: friendId,
+                    name: normalizedNextName,
+                    createdAt: updatedAt,
+                  },
+                ];
+          const games = state.games.map((game) => {
+            const players = game.players.map((player) =>
+              !player.isAppUser &&
+              normalizePlayerName(player.name).toLocaleLowerCase() === currentKey
+                ? { ...player, name: normalizedNextName }
+                : player,
+            );
+            const changed = players.some((player, index) => player !== game.players[index]);
+
+            return changed ? { ...game, players, updatedAt } : game;
+          });
+          const savedNotes = state.savedNotes.map((note) =>
+            normalizePlayerName(note.playerName).toLocaleLowerCase() === currentKey
+              ? { ...note, playerName: normalizedNextName, updatedAt }
+              : note,
+          );
+
+          return { friends, games, savedNotes };
+        });
+
+        return renamed;
       },
       createGame: ({ playerNames, script }) => {
         const now = new Date().toISOString();

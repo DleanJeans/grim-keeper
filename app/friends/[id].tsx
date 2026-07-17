@@ -1,7 +1,7 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
-
+import { FriendNameEditor } from '@/components/friends/friend-name-editor';
 import { FriendNotes } from '@/components/friends/friend-row';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
@@ -13,13 +13,12 @@ export default function FriendDetailRoute() {
   const appUserName = useGameStore((state) => state.appUserName);
   const games = useGameStore((state) => state.games);
   const storedFriends = useGameStore((state) => state.friends);
-  const friend = useMemo(
-    () =>
-      getFriendSummaries(games, storedFriends, appUserName).find(
-        (candidate) => candidate.id === id,
-      ),
-    [appUserName, games, id, storedFriends],
+  const renameFriend = useGameStore((state) => state.renameFriend);
+  const friends = useMemo(
+    () => getFriendSummaries(games, storedFriends, appUserName),
+    [appUserName, games, storedFriends],
   );
+  const friend = friends.find((candidate) => candidate.id === id);
 
   if (!friend) {
     return (
@@ -40,10 +39,13 @@ export default function FriendDetailRoute() {
         contentContainerStyle={{ gap: 18, padding: 20, paddingBottom: 40 }}
         style={{ backgroundColor: colors.background, flex: 1 }}
       >
-        <View style={{ gap: 4 }}>
-          <Text selectable style={{ color: colors.text, fontSize: 24, fontWeight: '900' }}>
-            {friend.name}
-          </Text>
+        <View style={{ gap: 8 }}>
+          <FriendNameEditor
+            friend={friend}
+            friends={friends}
+            onSave={(name) => renameFriend(friend.id, friend.name, name)}
+            reservedName={appUserName}
+          />
           <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
             {friend.gamesPlayed} {friend.gamesPlayed === 1 ? 'game played' : 'games played'}
           </Text>
