@@ -115,7 +115,6 @@ function RoleReferencedNoteLine({
     parts.push(
       match.kind === 'role' ? (
         <RoleReference
-          iconSize={16}
           key={`role-${match.role.id}-${match.start}`}
           role={match.role}
           scriptId={scriptId}
