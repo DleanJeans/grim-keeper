@@ -582,6 +582,7 @@ export default function GameRoute() {
       <GameRouteProvider value={contextValue}>
         <ScrollView
           contentInsetAdjustmentBehavior="automatic"
+          keyboardShouldPersistTaps="always"
           style={{ backgroundColor: '#0b1120', flex: 1 }}
           contentContainerStyle={{ gap: 20, padding: 20, paddingBottom: 40 }}
         >

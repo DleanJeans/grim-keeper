@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   InteractionManager,
   Pressable,
@@ -44,12 +44,22 @@ export function NoteAutocompleteInput({
   value: string;
 }) {
   const inputRef = useRef<RNTextInput>(null);
+  const previousSuggestionCountRef = useRef(0);
+  const [focused, setFocused] = useState(false);
   const [selection, setSelection] = useState({ end: value.length, start: value.length });
   const query = getNoteAutocompleteQuery(value, selection.start);
   const suggestions = useMemo(
     () => getNoteSuggestions(game.players, game.script?.roles ?? [], query?.query),
     [game.players, game.script?.roles, query?.query],
   );
+  const popoverVisible = focused && !!query && suggestions.length > 0;
+
+  useEffect(() => {
+    if (query && previousSuggestionCountRef.current > 0 && suggestions.length === 0) {
+      InteractionManager.runAfterInteractions(() => inputRef.current?.focus());
+    }
+    previousSuggestionCountRef.current = suggestions.length;
+  }, [query, suggestions.length]);
 
   function handleChangeText(nextText: string) {
     const cursor = selection.start === value.length ? nextText.length : selection.start;
@@ -69,11 +79,13 @@ export function NoteAutocompleteInput({
   }
 
   return (
-    <View style={{ flex: 1, zIndex: query && suggestions.length > 0 ? 20 : 0 }}>
+    <View style={{ flex: 1, zIndex: popoverVisible ? 20 : 0 }}>
       <TextInput
         accessibilityLabel={accessibilityLabel}
         multiline
+        onBlur={() => setFocused(false)}
         onChangeText={handleChangeText}
+        onFocus={() => setFocused(true)}
         onSelectionChange={({ nativeEvent }) => setSelection(nativeEvent.selection)}
         placeholder={placeholder}
         placeholderTextColor={placeholderTextColor}
@@ -82,7 +94,7 @@ export function NoteAutocompleteInput({
         style={style}
         value={value}
       />
-      {query && suggestions.length > 0 ? (
+      {popoverVisible ? (
         <NoteSuggestionDropdown
           day={day}
           game={game}
@@ -145,7 +157,7 @@ function NoteSuggestionDropdown({
 }) {
   return (
     <ScrollView
-      keyboardShouldPersistTaps="handled"
+      keyboardShouldPersistTaps="always"
       style={{
         backgroundColor: colors.surfaceRaised,
         borderColor: colors.borderStrong,
