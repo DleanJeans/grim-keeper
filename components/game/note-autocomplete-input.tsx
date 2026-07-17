@@ -44,7 +44,8 @@ export function NoteAutocompleteInput({
   value: string;
 }) {
   const inputRef = useRef<RNTextInput>(null);
-  const previousSuggestionCountRef = useRef(0);
+  const mountedRef = useRef(true);
+  const [displayedSuggestions, setDisplayedSuggestions] = useState<NoteSuggestion[]>([]);
   const [focused, setFocused] = useState(false);
   const [selection, setSelection] = useState({ end: value.length, start: value.length });
   const query = getNoteAutocompleteQuery(value, selection.start);
@@ -55,11 +56,27 @@ export function NoteAutocompleteInput({
   const popoverVisible = focused && !!query && suggestions.length > 0;
 
   useEffect(() => {
-    if (query && previousSuggestionCountRef.current > 0 && suggestions.length === 0) {
-      InteractionManager.runAfterInteractions(() => inputRef.current?.focus());
+    if (suggestions.length > 0) {
+      setDisplayedSuggestions(suggestions);
     }
-    previousSuggestionCountRef.current = suggestions.length;
-  }, [query, suggestions.length]);
+  }, [suggestions]);
+
+  useEffect(
+    () => () => {
+      mountedRef.current = false;
+    },
+    [],
+  );
+
+  function handleBlur() {
+    setFocused(false);
+    requestAnimationFrame(() => {
+      if (mountedRef.current) {
+        inputRef.current?.focus();
+        setFocused(true);
+      }
+    });
+  }
 
   function handleChangeText(nextText: string) {
     const cursor = selection.start === value.length ? nextText.length : selection.start;
@@ -83,7 +100,7 @@ export function NoteAutocompleteInput({
       <TextInput
         accessibilityLabel={accessibilityLabel}
         multiline
-        onBlur={() => setFocused(false)}
+        onBlur={handleBlur}
         onChangeText={handleChangeText}
         onFocus={() => setFocused(true)}
         onSelectionChange={({ nativeEvent }) => setSelection(nativeEvent.selection)}
@@ -94,14 +111,13 @@ export function NoteAutocompleteInput({
         style={style}
         value={value}
       />
-      {popoverVisible ? (
-        <NoteSuggestionDropdown
-          day={day}
-          game={game}
-          onSelect={handleSelectSuggestion}
-          suggestions={suggestions}
-        />
-      ) : null}
+      <NoteSuggestionDropdown
+        day={day}
+        game={game}
+        onSelect={handleSelectSuggestion}
+        suggestions={popoverVisible ? suggestions : displayedSuggestions}
+        visible={popoverVisible}
+      />
     </View>
   );
 }
@@ -149,15 +165,20 @@ function NoteSuggestionDropdown({
   game,
   onSelect,
   suggestions,
+  visible,
 }: {
   day: number;
   game: Game;
   onSelect: (suggestion: NoteSuggestion) => void;
   suggestions: NoteSuggestion[];
+  visible: boolean;
 }) {
   return (
     <ScrollView
+      accessibilityElementsHidden={!visible}
+      importantForAccessibility={visible ? 'auto' : 'no-hide-descendants'}
       keyboardShouldPersistTaps="always"
+      pointerEvents={visible ? 'auto' : 'none'}
       style={{
         backgroundColor: colors.surfaceRaised,
         borderColor: colors.borderStrong,
@@ -168,9 +189,10 @@ function NoteSuggestionDropdown({
         left: 0,
         marginBottom: 4,
         maxHeight: 220,
+        opacity: visible ? 1 : 0,
         position: 'absolute',
         right: 0,
-        zIndex: 20,
+        zIndex: visible ? 20 : -1,
       }}
     >
       {suggestions.map((suggestion) => (
