@@ -153,6 +153,16 @@ export function getRoleAssignmentForDay(
   );
 }
 
+export function getAssignedRoleIdsForDay(
+  assignments: PlayerRoleAssignment[] | undefined,
+  day: number,
+) {
+  return [
+    ...(getRoleAssignmentForDay(assignments, day, 'claim')?.roleIds ?? []),
+    ...(getRoleAssignmentForDay(assignments, day, 'confirm')?.roleIds ?? []),
+  ].filter((roleId, index, roleIds) => roleIds.indexOf(roleId) === index);
+}
+
 export function getRoleNames(roleIds: string[], roles: Role[]) {
   return getRolesByIds(roleIds, roles).map((role) => role.name);
 }

@@ -29,6 +29,7 @@ import { getTokenSize, rotatePlayerMapPositions } from '@/utils/layout-utils';
 import { hasDeadVoteAvailable, isPlayerCurrentlyDead } from '@/utils/player-utils';
 import {
   addRoleToScript,
+  getAssignedRoleIdsForDay,
   getRoleAssignmentForDay,
   getRoleDisplayForDayOrPrevious,
   getRolesForDayOrPrevious,
@@ -484,8 +485,8 @@ export default function GameRoute() {
       return;
     }
 
-    const assignment = getRoleAssignmentForDay(player.roleAssignments, day);
-    const saved = saveNoteForFutureGames(player.name, assignment?.roleIds ?? [], text);
+    const roleIds = getAssignedRoleIdsForDay(player.roleAssignments, day);
+    const saved = saveNoteForFutureGames(player.name, roleIds, text);
     Alert.alert(
       saved ? 'Note saved' : 'Note not saved',
       saved

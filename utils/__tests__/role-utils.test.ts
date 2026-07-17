@@ -1,5 +1,6 @@
 import {
   canRoleKill,
+  getAssignedRoleIdsForDay,
   getKillerRoleOptions,
   getRoleAssignmentForDay,
   getRoleDisplayForDayOrPrevious,
@@ -43,6 +44,28 @@ describe('role utilities', () => {
 
     expect(getRoleAssignmentForDay(assignments, 1, 'claim')?.roleIds).toEqual(['empath']);
     expect(getRoleAssignmentForDay(assignments, 1, 'confirm')?.roleIds).toEqual(['imp']);
+  });
+
+  it('returns unique role ids from both claims and confirmations', () => {
+    expect(
+      getAssignedRoleIdsForDay(
+        [
+          {
+            day: 2,
+            kind: 'claim',
+            roleIds: ['empath', 'drunk'],
+            updatedAt: '2026-07-14T00:00:00.000Z',
+          },
+          {
+            day: 2,
+            kind: 'confirm',
+            roleIds: ['imp', 'drunk'],
+            updatedAt: '2026-07-14T00:01:00.000Z',
+          },
+        ],
+        2,
+      ),
+    ).toEqual(['empath', 'drunk', 'imp']);
   });
 
   it('keeps an empty confirmation as an override', () => {
