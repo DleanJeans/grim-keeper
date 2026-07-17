@@ -151,12 +151,12 @@ function NoteSuggestionDropdown({
         borderRadius: 8,
         borderWidth: 1,
         boxShadow: '0 8px 24px rgba(0, 0, 0, 0.32)',
+        bottom: '100%',
         left: 0,
-        marginTop: 4,
+        marginBottom: 4,
         maxHeight: 220,
         position: 'absolute',
         right: 0,
-        top: '100%',
         zIndex: 20,
       }}
     >
