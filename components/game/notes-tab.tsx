@@ -11,6 +11,7 @@ import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Player } from '@/types/game';
 import { getFriendByName } from '@/utils/friend-utils';
+import { getAssignedRoleIdsForDay } from '@/utils/role-utils';
 
 const noteTextInputStyle = {
   backgroundColor: '#111827',
@@ -74,6 +75,7 @@ function DayNoteRow({ player, day, text }: { player: Player; day: number; text: 
 
   const isEditing = noteEditingDay === day && noteEditingPlayerId === player.id;
   const reusableNoteText = isEditing ? noteDraft : text;
+  const reusableNoteRoleIds = getAssignedRoleIdsForDay(player.roleAssignments, day);
 
   return (
     <View style={{ gap: 4 }}>
@@ -93,6 +95,8 @@ function DayNoteRow({ player, day, text }: { player: Player; day: number; text: 
           disabled={!reusableNoteText.trim()}
           onPress={() => onSaveNoteForFuture(player.id, day, reusableNoteText)}
           playerName={player.name}
+          roleIds={reusableNoteRoleIds}
+          text={reusableNoteText}
         />
       </View>
       {isEditing ? (

@@ -8,7 +8,11 @@ import { RoleNotes } from '@/components/role-notes';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Player, Role } from '@/types/game';
-import { getRoleAssignmentForDay, getRolesByIds } from '@/utils/role-utils';
+import {
+  getAssignedRoleIdsForDay,
+  getRoleAssignmentForDay,
+  getRolesByIds,
+} from '@/utils/role-utils';
 
 const noteTextInputStyle = {
   backgroundColor: '#111827',
@@ -84,6 +88,7 @@ export function PlayerNoteRow({
 
   const isEditing = noteEditingDay === day && noteEditingPlayerId === player.id;
   const reusableNoteText = isEditing ? noteDraft : (text ?? '');
+  const reusableNoteRoleIds = getAssignedRoleIdsForDay(player.roleAssignments, day);
   const roleAssignment = showRoles
     ? getRoleAssignmentForDay(player.roleAssignments, day)
     : undefined;
@@ -108,6 +113,8 @@ export function PlayerNoteRow({
           disabled={!reusableNoteText.trim()}
           onPress={() => onSaveNoteForFuture(player.id, day, reusableNoteText)}
           playerName={player.name}
+          roleIds={reusableNoteRoleIds}
+          text={reusableNoteText}
         />
       </View>
       {isEditing ? (

@@ -482,7 +482,7 @@ export default function GameRoute() {
   function handleSavePlayerNoteForFuture(playerId: string, day: number, text: string) {
     const player = activeGame.players.find((currentPlayer) => currentPlayer.id === playerId);
     if (!player) {
-      return;
+      return false;
     }
 
     const roleIds = getAssignedRoleIdsForDay(player.roleAssignments, day);
@@ -493,6 +493,7 @@ export default function GameRoute() {
         ? 'This note will be available in future games.'
         : 'Assign a role before saving a note for yourself in future games.',
     );
+    return saved;
   }
 
   const contextValue: GameRouteContextValue = {
