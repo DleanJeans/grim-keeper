@@ -1,10 +1,11 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
 import { ScriptRoleList } from '@/components/scripts/script-role-list';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
+import type { StoredScript } from '@/types/game';
 
 export default function ScriptDetailRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -25,22 +26,25 @@ export default function ScriptDetailRoute() {
   return (
     <>
       <Stack.Screen options={{ title: script.name }} />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={{ backgroundColor: colors.background, flex: 1 }}
-        contentContainerStyle={{ gap: 18, padding: 20, paddingBottom: 40 }}
-      >
-        <View style={{ gap: 4 }}>
-          <Text selectable style={{ color: colors.text, fontSize: 24, fontWeight: '900' }}>
-            {script.name}
-          </Text>
-          <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
-            {script.author ? `${script.author} · ` : ''}v{script.version} · {script.roles.length}{' '}
-            roles
-          </Text>
-        </View>
-        <ScriptRoleList roleCatalog={roleCatalog} roles={script.roles} scriptId={script.id} />
-      </ScrollView>
+      <ScriptRoleList
+        header={<ScriptDetailHeader script={script} />}
+        roleCatalog={roleCatalog}
+        roles={script.roles}
+        scriptId={script.id}
+      />
     </>
+  );
+}
+
+function ScriptDetailHeader({ script }: { script: StoredScript }) {
+  return (
+    <View style={{ gap: 4 }}>
+      <Text selectable style={{ color: colors.text, fontSize: 24, fontWeight: '900' }}>
+        {script.name}
+      </Text>
+      <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
+        {script.author ? `${script.author} · ` : ''}v{script.version} · {script.roles.length} roles
+      </Text>
+    </View>
   );
 }

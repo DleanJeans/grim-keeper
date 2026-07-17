@@ -1,12 +1,13 @@
 import { router } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
-import { Pressable, View } from 'react-native';
+import type { ReactElement } from 'react';
+import { Pressable, SectionList, View } from 'react-native';
 
 import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import type { Role, SavedNote } from '@/types/game';
+import type { Role } from '@/types/game';
 import { getSavedNoteTextsForRole } from '@/utils/saved-note-utils';
 
 const ROLE_SECTIONS = [
@@ -17,51 +18,71 @@ const ROLE_SECTIONS = [
 ] as const;
 
 export function ScriptRoleList({
+  header,
   roleCatalog,
   roles,
   scriptId,
 }: {
+  header: ReactElement;
   roleCatalog: Role[];
   roles: Role[];
   scriptId: string;
 }) {
   const savedNotes = useGameStore((state) => state.savedNotes);
+  const sections = ROLE_SECTIONS.map(({ label, team }) => ({
+    title: label,
+    data: roles
+      .filter((role) => role.team?.toLocaleLowerCase() === team)
+      .map((role) => {
+        const catalogRole = roleCatalog.find((candidate) => candidate.id === role.id);
+        const displayRole = {
+          ...role,
+          notes: [...new Set([...(role.notes ?? []), ...(catalogRole?.notes ?? [])])],
+        };
+
+        return {
+          description: role.ability ?? catalogRole?.ability,
+          noteCount: new Set([
+            ...displayRole.notes,
+            ...getSavedNoteTextsForRole(savedNotes, role.id),
+          ]).size,
+          role: displayRole,
+        };
+      }),
+  })).filter(({ data }) => data.length > 0);
 
   return (
-    <View style={{ gap: 18 }}>
-      {ROLE_SECTIONS.map(({ label, team }) => {
-        const sectionRoles = roles.filter((role) => role.team?.toLocaleLowerCase() === team);
-
-        return sectionRoles.length > 0 ? (
-          <ScriptRoleSection
-            key={team}
-            label={label}
-            roleCatalog={roleCatalog}
-            roles={sectionRoles}
-            savedNotes={savedNotes}
-            scriptId={scriptId}
+    <SectionList
+      contentInsetAdjustmentBehavior="automatic"
+      contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+      ListHeaderComponent={header}
+      ListHeaderComponentStyle={{ paddingBottom: 8 }}
+      renderItem={({ item }) => (
+        <View style={{ paddingBottom: 10 }}>
+          <ScriptRoleDetail
+            description={item.description}
+            noteCount={item.noteCount}
+            onPress={() =>
+              router.push({
+                pathname: '/role-notes',
+                params: { roleId: item.role.id, scriptId },
+              })
+            }
+            role={item.role}
           />
-        ) : null;
-      })}
-    </View>
+        </View>
+      )}
+      renderSectionHeader={({ section }) => <ScriptRoleSectionHeader label={section.title} />}
+      sections={sections}
+      stickySectionHeadersEnabled
+      style={{ backgroundColor: colors.background, flex: 1 }}
+    />
   );
 }
 
-function ScriptRoleSection({
-  label,
-  roleCatalog,
-  roles,
-  savedNotes,
-  scriptId,
-}: {
-  label: string;
-  roleCatalog: Role[];
-  roles: Role[];
-  savedNotes: SavedNote[];
-  scriptId: string;
-}) {
+function ScriptRoleSectionHeader({ label }: { label: string }) {
   return (
-    <View style={{ gap: 10 }}>
+    <View style={{ backgroundColor: colors.background, paddingBottom: 10, paddingTop: 10 }}>
       <Text
         selectable
         style={{
@@ -74,29 +95,6 @@ function ScriptRoleSection({
       >
         {label}
       </Text>
-      {roles.map((role) => {
-        const catalogRole = roleCatalog.find((candidate) => candidate.id === role.id);
-        const displayRole = {
-          ...role,
-          notes: [...new Set([...(role.notes ?? []), ...(catalogRole?.notes ?? [])])],
-        };
-        const noteCount = new Set([
-          ...displayRole.notes,
-          ...getSavedNoteTextsForRole(savedNotes, role.id),
-        ]).size;
-
-        return (
-          <ScriptRoleDetail
-            key={role.id}
-            role={displayRole}
-            description={role.ability ?? catalogRole?.ability}
-            noteCount={noteCount}
-            onPress={() =>
-              router.push({ pathname: '/role-notes', params: { roleId: role.id, scriptId } })
-            }
-          />
-        );
-      })}
     </View>
   );
 }
