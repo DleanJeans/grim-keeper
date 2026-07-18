@@ -1,19 +1,27 @@
+import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
-import { ClaimedRoleNotes, collectClaimedRoleNotes } from '@/components/game/notes-tab/claimed-role-notes';
+import { ClaimedRoleCountRow } from '@/components/game/notes-tab/claimed-role-count-row';
 import { DayNoteRow } from '@/components/game/notes-tab/day-note-row';
 import { NotesTabScriptPicker } from '@/components/game/notes-tab/notes-tab-script-picker';
 import { PlayerNoteSection } from '@/components/game/notes-tab/player-note-section';
 import { RoleAssignmentActions } from '@/components/game/notes-tab/role-assignment-actions';
-import { SavedFriendNotes } from '@/components/game/notes-tab/saved-friend-notes';
+import { SavedFriendCountRow } from '@/components/game/notes-tab/saved-friend-count-row';
 import { getNotesForPlayer, useGameStore } from '@/store/game-store';
+import { getFriendByName, getFriendSummaries } from '@/utils/friend-utils';
 import { getRoleAssignmentForDayOrPrevious, getRolesByIds } from '@/utils/role-utils';
 
 export function NotesTab() {
   const { activeDay, focusedPlayer, game, players, showRoles } = useGameRouteContext();
   const savedNotes = useGameStore((state) => state.savedNotes);
-  const scripts = useGameStore((state) => state.scripts);
+  const appUserName = useGameStore((state) => state.appUserName);
+  const games = useGameStore((state) => state.games);
+  const storedFriends = useGameStore((state) => state.friends);
+  const friends = useMemo(
+    () => getFriendSummaries(games, storedFriends, appUserName),
+    [appUserName, games, storedFriends],
+  );
 
   if (focusedPlayer) {
     const savedFriendNotes = getNotesForPlayer(savedNotes, focusedPlayer.name);
@@ -24,32 +32,38 @@ export function NotesTab() {
     const claimedRoles = game.script
       ? getRolesByIds([...claimedRoleIds], game.script.roles)
       : [];
-    const claimedRoleNotes = showRoles ? collectClaimedRoleNotes(savedNotes, claimedRoles) : [];
+    const claimedRoleCounts = showRoles
+      ? claimedRoles
+          .map((role) => ({
+            count: savedNotes.filter(
+              (note) => note.roleIds.includes(role.id) && note.playerName === focusedPlayer.name,
+            ).length,
+            role,
+          }))
+          .filter((entry) => entry.count > 0)
+      : [];
+    const focusedFriend = getFriendByName(friends, focusedPlayer.name);
 
     return (
       <View style={styles.focusedContainer}>
         <NotesTabScriptPicker />
         <RoleAssignmentActions />
         <PlayerNoteSection player={focusedPlayer} />
-        {showRoles ? (
-          <ClaimedRoleNotes
-            day={activeDay}
-            game={game}
-            notes={claimedRoleNotes}
-            players={game.players}
-            roles={game.script?.roles ?? []}
+        {claimedRoleCounts.map(({ count, role }) => (
+          <ClaimedRoleCountRow
+            count={count}
+            key={role.id}
+            role={role}
             scriptId={game.script?.id}
           />
+        ))}
+        {savedFriendNotes.length > 0 && focusedFriend ? (
+          <SavedFriendCountRow
+            count={savedFriendNotes.length}
+            friendId={focusedFriend.id}
+            playerName={focusedPlayer.name}
+          />
         ) : null}
-        <SavedFriendNotes
-          game={game}
-          notes={savedFriendNotes}
-          playerName={focusedPlayer.name}
-          players={game.players}
-          roles={game.script?.roles ?? []}
-          scripts={scripts}
-          scriptId={game.script?.id}
-        />
       </View>
     );
   }
