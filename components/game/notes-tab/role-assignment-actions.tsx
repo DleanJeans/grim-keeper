@@ -2,10 +2,10 @@ import { ShieldCheck, Tag } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
-import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
-import { innerActionRow } from '@/components/game/styles';
 import { RolePicker } from '@/components/game/notes-tab/role-picker';
 import { TravelerRolePicker } from '@/components/game/notes-tab/traveler-role-picker';
+import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
+import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';

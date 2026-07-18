@@ -1,15 +1,14 @@
 import { Pencil, Trash2 } from 'lucide-react-native';
 import { Alert, Pressable, View } from 'react-native';
-
-import { useGameRouteContext } from '@/components/game/game-route-context';
-import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
-import { innerActionRow } from '@/components/game/styles';
 import { ExecuteButton } from '@/components/game/deaths-tab/death-actions/execute-button';
 import { UndoDeathButton } from '@/components/game/deaths-tab/death-actions/undo-death-button';
+import { useGameRouteContext } from '@/components/game/game-route-context';
 import { NominateButton } from '@/components/game/noms-tab/action-buttons/nominate-button';
 import { HighlightVotersButton } from '@/components/game/noms-tab/highlight-voters-button';
 import { NomIcon } from '@/components/game/noms-tab/nom-icon';
 import { VoterList } from '@/components/game/noms-tab/voter-list';
+import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
+import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';

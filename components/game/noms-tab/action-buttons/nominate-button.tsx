@@ -1,8 +1,7 @@
 import { Pressable, View } from 'react-native';
-
+import { NomIcon } from '@/components/game/noms-tab/nom-icon';
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { onDarkTextStrong, outlinedActionStyle } from '@/components/game/styles';
-import { NomIcon } from '@/components/game/noms-tab/nom-icon';
 import { Text } from '@/components/text';
 import type { Player } from '@/types/game';
 
