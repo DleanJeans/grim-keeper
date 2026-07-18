@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
 import { Pressable, StyleSheet } from 'react-native';
 
+import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Role } from '@/types/game';
@@ -26,6 +27,7 @@ export function ClaimedRoleNotesLink({ count, role, scriptId }: ClaimedRoleNotes
       }
       style={({ pressed }) => [styles.link, { opacity: pressed ? 0.65 : 1 }]}
     >
+      <RoleIcon role={role} size={32} />
       <Text selectable style={styles.label}>
         {count} {count === 1 ? 'note' : 'notes'} for {role.name}
       </Text>
