@@ -1,7 +1,31 @@
-- 1 component per file
-- Move styles to StyleSheet.create() under the component
-- Move helper functions under the styles
-- Run "pnpm format:changed" and "pnpm format:imports {changedFiles}" to organize imports
+## File structure
+
+Each component lives in its own file. The default layout is, top to bottom:
+
+1. Imports (organized by `pnpm format:imports`)
+2. Module-level constants (numbers, lookup tables)
+3. Type/prop declarations
+4. The exported main component
+5. `const styles = StyleSheet.create({ ... })` directly below the component
+6. Stateless subcomponents and helper functions below the styles
+
+Rules:
+
+- **1 exported component per file.** Stateless subcomponents used only by the main component
+  may live in the same file, below `styles`. Anything with its own state, effects, or context
+  consumers goes in its own file.
+- **All styles go in `StyleSheet.create({...})`.** No inline `style={{...}}` objects on JSX
+  elements, and no module-level `const someStyle = {...}` plain-object style constants. If a
+  style needs to be passed to a function-based `style` callback, build the object inside
+  `StyleSheet.create()` and spread/merge it there. Variants (e.g. pressed, disabled) belong in
+  the same `StyleSheet.create()` block as their base style.
+- **Run formatters before committing:**
+  - `pnpm format:changed` — formats all changed files
+  - `pnpm format:imports <file>...` — runs biome's `organizeImports` on the listed files
+    (pass each changed file explicitly; it does not infer them)
+- **Type exports stay co-located with their component.** A `*Props` type lives in the same file
+  as the component that uses it. Promote to a shared types file only when a second component
+  imports it.
 
 ## Navigation header convention
 

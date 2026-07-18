@@ -1,6 +1,7 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView, useWindowDimensions, View } from 'react-native';
+import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { DayCount } from '@/components/game/day-count';
 import { FocusedDeathActionPanel } from '@/components/game/deaths-tab/death-actions';
 import { DeathLog } from '@/components/game/deaths-tab/death-log';
 import { GameMap } from '@/components/game/game-map';
@@ -12,13 +13,13 @@ import {
 } from '@/components/game/game-route-context';
 import { GameTabs } from '@/components/game/game-tabs';
 import { HeaderLeft } from '@/components/game/header-left';
-import { HeaderTitle } from '@/components/game/header-title';
 import { InteractionsTab } from '@/components/game/interactions-tab/interactions-tab';
 import { TrackingConfirmActions } from '@/components/game/interactions-tab/tracking-confirm-actions';
 import { MapModeActions } from '@/components/game/map-mode-actions';
 import { NominationList } from '@/components/game/noms-tab/nomination-list';
 import { VoteConfirmActions } from '@/components/game/noms-tab/vote-confirm-actions';
 import { NotesTab } from '@/components/game/notes-tab/notes-tab';
+import { PlayerCountStatus } from '@/components/game/player-count-status';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
 import { RevealRolesButton } from '@/components/game/show-roles-button';
 import { Text } from '@/components/text';
@@ -30,7 +31,6 @@ import { hasDeadVoteAvailable, isPlayerCurrentlyDead } from '@/utils/player-util
 import {
   addRoleToScript,
   getRoleAssignmentForDay,
-  getRoleDisplayForDayOrPrevious,
   getRolesForDayOrPrevious,
   isTravelerRole,
 } from '@/utils/role-utils';
@@ -192,9 +192,6 @@ export default function GameRoute() {
           )
         : [];
   const gameRoles = activeGame.script?.roles ?? [];
-  const focusedPlayerRoleDisplay = focusedPlayer
-    ? getRoleDisplayForDayOrPrevious(focusedPlayer.roleAssignments, activeGame.activeDay, gameRoles)
-    : undefined;
   const travelerPlayerIds = new Set(
     activeGame.players
       .filter((player) =>
@@ -593,7 +590,7 @@ export default function GameRoute() {
       <Stack.Screen
         options={{
           headerBackVisible: false,
-          title: `Day ${activeGame.activeDay}/${lastDayWithData}`,
+          title: ' ',
           headerLeft: () => (
             <HeaderLeft
               onEdit={() => router.push({ pathname: '/create', params: { gameId: activeGame.id } })}
@@ -607,79 +604,114 @@ export default function GameRoute() {
           headerRight: () => (
             <RevealRolesButton onRevealRolesChange={setShowRoles} showRoles={showRoles} />
           ),
-          headerTitle: () => (
-            <HeaderTitle
-              activeDay={activeGame.activeDay}
-              alivePlayerCount={alivePlayerCount}
-              deadPlayerCount={deadPlayerCount}
-              lastDayWithData={lastDayWithData}
-              onChangeDay={handleChangeDay}
-              selectedPlayer={focusedPlayer}
-              selectedPlayerIsDead={focusedPlayerIsDead}
-              selectedPlayerRoles={focusedPlayerRoleDisplay?.roles ?? []}
-              showRoles={showRoles}
-              travelerPlayerCount={travelerPlayerCount}
-            />
-          ),
         }}
       />
 
       <GameRouteProvider value={contextValue}>
-        <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
-          keyboardShouldPersistTaps="always"
-          style={{ backgroundColor: '#0b1120', flex: 1 }}
-          contentContainerStyle={{ gap: 20, padding: 20, paddingBottom: 40 }}
-        >
-          <GameMap />
+        <View style={styles.body}>
+          <ScrollView
+            contentInsetAdjustmentBehavior="automatic"
+            keyboardShouldPersistTaps="always"
+            style={styles.scroll}
+            contentContainerStyle={styles.scrollContent}
+          >
+            <GameMap />
 
-          {isRearrangeMode ? (
-            <View key="rearrange-actions">
-              <RearrangeActions />
-            </View>
-          ) : (
-            <View key="map-mode-actions">
-              <MapModeActions />
-            </View>
-          )}
-
-          <View key="tab-bar">
-            <GameTabs />
-          </View>
-
-          {activeTab === 'nominations' ? (
-            <View key="nominations-tab">
-              {votingNominationId ? (
-                <View key="vote-actions">
-                  <VoteConfirmActions />
-                </View>
-              ) : trackingMode ? (
-                <View key="tracking-actions">
-                  <TrackingConfirmActions />
-                </View>
-              ) : null}
-              <NominationList />
-            </View>
-          ) : activeTab === 'deaths' ? (
-            <View key="deaths-tab">
-              <FocusedDeathActionPanel />
-              <DeathLog
-                activeDay={activeGame.activeDay}
-                players={activeGame.players}
-                script={activeGame.script}
+            <View key="day-and-counts" style={styles.dayAndCountsRow}>
+              <DayCount activeDay={activeGame.activeDay} lastDayWithData={lastDayWithData} />
+              <PlayerCountStatus
+                alivePlayerCount={alivePlayerCount}
+                deadPlayerCount={deadPlayerCount}
+                travelerPlayerCount={travelerPlayerCount}
               />
             </View>
-          ) : activeTab === 'notes' ? (
-            <View key="notes-tab">
-              <NotesTab />
+
+            {isRearrangeMode ? (
+              <View key="rearrange-actions">
+                <RearrangeActions />
+              </View>
+            ) : (
+              <View key="map-mode-actions">
+                <MapModeActions activeDay={activeGame.activeDay} onChangeDay={handleChangeDay} />
+              </View>
+            )}
+
+            <View key="tab-bar">
+              <GameTabs />
             </View>
-          ) : (
-            <View key="interactions-tab">
-              <InteractionsTab />
+
+            {activeTab === 'nominations' ? (
+              <View key="nominations-tab">
+                {votingNominationId ? (
+                  <View key="vote-actions">
+                    <VoteConfirmActions />
+                  </View>
+                ) : trackingMode ? (
+                  <View key="tracking-actions">
+                    <TrackingConfirmActions />
+                  </View>
+                ) : null}
+                <NominationList />
+              </View>
+            ) : activeTab === 'deaths' ? (
+              <View key="deaths-tab">
+                <FocusedDeathActionPanel />
+                <DeathLog
+                  activeDay={activeGame.activeDay}
+                  players={activeGame.players}
+                  script={activeGame.script}
+                />
+              </View>
+            ) : activeTab === 'notes' ? (
+              <View key="notes-tab">
+                <NotesTab />
+              </View>
+            ) : (
+              <View key="interactions-tab">
+                <InteractionsTab />
+              </View>
+            )}
+          </ScrollView>
+          {focusedPlayer ? (
+            <View style={styles.selectingBar}>
+              <Text style={styles.selectingLabel}>Selecting: {focusedPlayer.name}</Text>
             </View>
-          )}
-        </ScrollView>
+          ) : null}
+        </View>
       </GameRouteProvider>
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  body: {
+    backgroundColor: '#0b1120',
+    flex: 1,
+  },
+  dayAndCountsRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'center',
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    gap: 20,
+    padding: 20,
+    paddingBottom: 40,
+  },
+  selectingBar: {
+    backgroundColor: '#111827',
+    borderTopColor: '#334155',
+    borderTopWidth: 1,
+    paddingVertical: 12,
+  },
+  selectingLabel: {
+    color: '#f8fafc',
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+});

@@ -4,19 +4,19 @@ import { Text } from '@/components/text';
 import type { Player, Role } from '@/types/game';
 import { getRoleIconUrl, isTravelerRole } from '@/utils/role-utils';
 
-type SelectedPlayerHeaderTokenProps = {
+type SelectedPlayerTokenProps = {
   isDead: boolean;
   player: Player;
   roles: Role[];
   showRoles: boolean;
 };
 
-export function SelectedPlayerHeaderToken({
+export function SelectedPlayerToken({
   isDead,
   player,
   roles,
   showRoles,
-}: SelectedPlayerHeaderTokenProps) {
+}: SelectedPlayerTokenProps) {
   const visibleRoles = showRoles ? roles : roles.filter(isTravelerRole);
   const backgroundRole = visibleRoles.find(isTravelerRole) ?? visibleRoles[0];
 
@@ -24,34 +24,23 @@ export function SelectedPlayerHeaderToken({
     <View
       accessibilityLabel={`Selected player: ${player.name}`}
       accessible
-      style={{
-        alignItems: 'center',
-        backgroundColor: isDead ? '#1f2937' : '#f8fafc',
-        borderColor: '#22c55e',
-        borderRadius: 18,
-        borderWidth: 2,
-        height: 36,
-        justifyContent: 'center',
-        overflow: 'hidden',
-        paddingHorizontal: 3,
-        width: 36,
-      }}
+      style={[styles.token, isDead ? styles.tokenDead : styles.tokenAlive]}
     >
       {backgroundRole ? (
         <ImageBackground
           source={{ uri: getRoleIconUrl(backgroundRole) }}
           style={StyleSheet.absoluteFill}
-          imageStyle={{ borderRadius: 18, opacity: 0.48 }}
+          imageStyle={styles.backgroundImage}
         />
       ) : null}
-      <View style={{ alignItems: 'center', justifyContent: 'center', maxWidth: '100%' }}>
+      <View style={styles.labelStack}>
         {visibleRoles.length > 0 ? (
           <Text
             adjustsFontSizeToFit
             ellipsizeMode="tail"
             minimumFontScale={0.55}
             numberOfLines={1}
-            style={{ color: isDead ? '#cbd5e1' : '#0b1120', fontSize: 6, fontWeight: '900' }}
+            style={[styles.label, isDead ? styles.labelDead : styles.labelAlive]}
           >
             {visibleRoles.map((role) => role.name).join(' / ')}
           </Text>
@@ -61,7 +50,7 @@ export function SelectedPlayerHeaderToken({
           ellipsizeMode="tail"
           minimumFontScale={0.55}
           numberOfLines={1}
-          style={{ color: isDead ? '#cbd5e1' : '#0b1120', fontSize: 8, fontWeight: '900' }}
+          style={[styles.name, isDead ? styles.labelDead : styles.labelAlive]}
         >
           {player.name}
         </Text>
@@ -69,3 +58,46 @@ export function SelectedPlayerHeaderToken({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  backgroundImage: {
+    borderRadius: 18,
+    opacity: 0.48,
+  },
+  label: {
+    fontSize: 6,
+    fontWeight: '900',
+  },
+  labelAlive: {
+    color: '#0b1120',
+  },
+  labelDead: {
+    color: '#cbd5e1',
+  },
+  labelStack: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    maxWidth: '100%',
+  },
+  name: {
+    fontSize: 8,
+    fontWeight: '900',
+  },
+  token: {
+    alignItems: 'center',
+    borderColor: '#22c55e',
+    borderRadius: 18,
+    borderWidth: 2,
+    height: 36,
+    justifyContent: 'center',
+    overflow: 'hidden',
+    paddingHorizontal: 3,
+    width: 36,
+  },
+  tokenAlive: {
+    backgroundColor: '#f8fafc',
+  },
+  tokenDead: {
+    backgroundColor: '#1f2937',
+  },
+});

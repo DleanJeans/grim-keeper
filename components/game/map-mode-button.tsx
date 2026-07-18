@@ -59,13 +59,14 @@ export function MapModeButton({
         borderColor: '#334155',
         borderRadius: 8,
         borderWidth: 1,
-        flex,
-        flexBasis: 0,
+        flex: width !== undefined ? 0 : flex,
+        flexBasis: width !== undefined ? undefined : 0,
         flexDirection: 'row',
         gap: 6,
         justifyContent: 'center',
         minWidth: 0,
         paddingVertical: 14,
+        width,
       })}
     >
       {Icon ? <Icon color={iconColor} size={17} strokeWidth={2.7} /> : null}
