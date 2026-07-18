@@ -102,13 +102,15 @@ function RoleReferencedNoteLine({
     }
   }
   const parts: ReactNode[] = [];
-  let cursor = 0;
+  const leadingSpace = /^\s+/.exec(text)?.[0] ?? '';
+  const body = text.slice(leadingSpace.length);
+  let bodyCursor = 0;
 
   for (const match of matches) {
-    if (match.start > cursor) {
+    if (match.start > leadingSpace.length + bodyCursor) {
       parts.push(
-        <Text key={`text-${cursor}`} selectable style={[{ color: colors.textMuted }, style]}>
-          {text.slice(cursor, match.start)}
+        <Text key={`text-${bodyCursor}`} selectable style={[{ color: colors.textMuted }, style]}>
+          {body.slice(bodyCursor, match.start - leadingSpace.length)}
         </Text>,
       );
     }
@@ -132,13 +134,13 @@ function RoleReferencedNoteLine({
         />
       ),
     );
-    cursor = match.end;
+    bodyCursor = match.end - leadingSpace.length;
   }
 
-  if (cursor < text.length || parts.length === 0) {
+  if (bodyCursor < body.length || parts.length === 0) {
     parts.push(
-      <Text key={`text-${cursor}`} selectable style={[{ color: colors.textMuted }, style]}>
-        {text.slice(cursor) || ' '}
+      <Text key={`text-${bodyCursor}`} selectable style={[{ color: colors.textMuted }, style]}>
+        {body.slice(bodyCursor) || ' '}
       </Text>,
     );
   }

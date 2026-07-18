@@ -66,34 +66,24 @@ export default function RoleNotesScreen() {
           </Text>
         </View>
 
-        <View
-          style={{
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-            borderRadius: 8,
-            borderWidth: 1,
-            padding: 16,
-          }}
-        >
-          {hasNotes ? (
-            <RoleNotes
-              day={game?.activeDay}
-              game={game}
-              games={games}
-              label
-              onDeleteNote={handleDeleteNote}
-              players={game?.players}
-              role={role}
-              roles={script?.roles ?? roleCatalog}
-              scriptId={scriptId}
-              scripts={scripts}
-            />
-          ) : (
-            <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
-              No notes for this role.
-            </Text>
-          )}
-        </View>
+        {hasNotes ? (
+          <RoleNotes
+            day={game?.activeDay}
+            game={game}
+            games={games}
+            label
+            onDeleteNote={handleDeleteNote}
+            players={game?.players}
+            role={role}
+            roles={script?.roles ?? roleCatalog}
+            scriptId={scriptId}
+            scripts={scripts}
+          />
+        ) : (
+          <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
+            No notes for this role.
+          </Text>
+        )}
       </ScrollView>
     </>
   );
