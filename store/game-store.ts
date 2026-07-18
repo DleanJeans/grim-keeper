@@ -75,7 +75,7 @@ type GameState = {
     text: string,
     noteId?: string,
   ) => boolean;
-  deleteRoleNote: (roleId: string, text: string) => void;
+  deleteSavedNote: (note: SavedNote, roleId?: string) => void;
   setTokenSize: (gameId: string, tokenSize: number) => void;
   setActiveDay: (gameId: string, day: number) => void;
   updatePlayerPosition: (gameId: string, playerId: string, position: PlayerPosition) => void;
@@ -539,98 +539,75 @@ export const useGameStore = create<GameState>()(
         return saved;
       },
       removeNoteFromFutureGames: (playerName, roleIds, text, noteId) => {
-        const removedText = text.trim();
-
-        if (!removedText) {
+        const trimmedText = text.trim();
+        if (!trimmedText) {
           return false;
         }
-
         const playerKey = normalizePlayerName(playerName).toLocaleLowerCase();
-        const roleIdSet = new Set(roleIds);
-        let removed = false;
-
-        set((state) => {
-          const hadSavedNote = state.savedNotes.some(
-            (note) =>
-              normalizePlayerName(note.playerName).toLocaleLowerCase() === playerKey &&
-              note.text === removedText,
-          );
-          const removeTargetedRoleNote = (role: Role) => {
-            if (hadSavedNote || !roleIdSet.has(role.id)) {
-              return role;
-            }
-
-            const nextRole = removeRoleNote(role, removedText);
-            removed ||= nextRole !== role;
-            return nextRole;
-          };
-          const savedNotes = state.savedNotes.filter((note) => {
-            const matches = noteId
-              ? note.id === noteId
-              : normalizePlayerName(note.playerName).toLocaleLowerCase() === playerKey &&
-                note.text === removedText;
-            removed ||= matches;
-            return !matches;
-          });
-          const roleCatalog = state.roleCatalog.map(removeTargetedRoleNote);
-          const scripts = state.scripts.map((script) => ({
-            ...script,
-            roles: script.roles.map(removeTargetedRoleNote),
-          }));
-          const games = state.games.map((game) =>
-            game.script
-              ? {
-                  ...game,
-                  script: {
-                    ...game.script,
-                    roles: game.script.roles.map(removeTargetedRoleNote),
-                  },
-                }
-              : game,
-          );
-
-          return { games, roleCatalog, savedNotes, scripts };
-        });
-
-        return removed;
+        const existing = get().savedNotes.find(
+          (note) =>
+            (noteId ? note.id === noteId : false) ||
+            (normalizePlayerName(note.playerName).toLocaleLowerCase() === playerKey &&
+              note.text === trimmedText),
+        );
+        if (existing) {
+          get().deleteSavedNote(existing);
+          return true;
+        }
+        get().deleteSavedNote(buildLegacyNote(trimmedText, playerName, roleIds));
+        return true;
       },
-      deleteRoleNote: (roleId, text) => {
-        const deletedText = text.trim();
-
-        if (!deletedText) {
+      deleteSavedNote: (note, roleId) => {
+        const trimmedText = note.text.trim();
+        if (!trimmedText) {
           return;
         }
-
         set((state) => {
-          const removeDeletedNote = (role: Role) =>
-            role.id === roleId ? removeRoleNote(role, deletedText) : role;
           const appUserKey = normalizePlayerName(state.appUserName).toLocaleLowerCase();
-          const savedNotes = state.savedNotes.flatMap((note) => {
-            if (note.text !== deletedText || !note.roleIds.includes(roleId)) {
-              return [note];
+          const notePlayerKey = normalizePlayerName(note.playerName).toLocaleLowerCase();
+          const isAppUserNote = notePlayerKey === appUserKey;
+          const remainingRoleIds = roleId
+            ? note.roleIds.filter((savedRoleId) => savedRoleId !== roleId)
+            : [];
+          const dropRow = !roleId || (remainingRoleIds.length === 0 && isAppUserNote);
+          const affectedRoleIds = dropRow ? note.roleIds : remainingRoleIds;
+          const nextSavedNotes = state.savedNotes.flatMap((candidate) => {
+            if (candidate.id !== note.id) {
+              return [candidate];
             }
-
-            const roleIds = note.roleIds.filter((savedRoleId) => savedRoleId !== roleId);
-            const belongsToAppUser =
-              normalizePlayerName(note.playerName).toLocaleLowerCase() === appUserKey;
-
-            return roleIds.length === 0 && belongsToAppUser ? [] : [{ ...note, roleIds }];
+            if (dropRow) {
+              return [];
+            }
+            return [{ ...candidate, roleIds: remainingRoleIds }];
           });
-
+          const stillReferenced = (text: string, candidateRoleId: string) =>
+            nextSavedNotes.some(
+              (savedNote) =>
+                savedNote.text === text && savedNote.roleIds.includes(candidateRoleId),
+            );
+          const pruneRole = (role: Role) => {
+            if (!affectedRoleIds.includes(role.id)) {
+              return role;
+            }
+            if (role.notes?.includes(trimmedText) && !stillReferenced(trimmedText, role.id)) {
+              return removeRoleNote(role, trimmedText);
+            }
+            return role;
+          };
           return {
             games: state.games.map((game) =>
               game.script
                 ? {
                     ...game,
-                    script: { ...game.script, roles: game.script.roles.map(removeDeletedNote) },
+                    script: { ...game.script, roles: game.script.roles.map(pruneRole) },
                   }
                 : game,
             ),
-            roleCatalog: state.roleCatalog.map(removeDeletedNote),
-            savedNotes,
+            roleCatalog: state.roleCatalog.map(pruneRole),
+            savedNotes: nextSavedNotes,
             scripts: state.scripts.map((script) => ({
               ...script,
-              roles: script.roles.map(removeDeletedNote),
+              roles: script.roles.map(pruneRole),
             })),
           };
         });
@@ -840,4 +817,19 @@ function removeRoleNote(role: Role, note: string) {
 
   const notes = role.notes.filter((currentNote) => currentNote !== note);
   return { ...role, notes: notes.length ? notes : undefined };
+}
+
+function buildLegacyNote(text: string, playerName: string, roleIds: string[]): SavedNote {
+  return {
+    createdAt: '',
+    day: 0,
+    gameId: '',
+    id: `legacy-${normalizePlayerName(playerName).toLocaleLowerCase()}-${roleIds.join('|')}-${text}`,
+    playerName,
+    roleIds,
+    scriptId: undefined,
+    scriptName: '',
+    text,
+    updatedAt: '',
+  };
 }

@@ -13,7 +13,7 @@ export default function RoleNotesScreen() {
   const { roleId, scriptId } = useLocalSearchParams<{ roleId: string; scriptId: string }>();
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const savedNotes = useGameStore((state) => state.savedNotes);
-  const deleteRoleNote = useGameStore((state) => state.deleteRoleNote);
+  const deleteSavedNote = useGameStore((state) => state.deleteSavedNote);
   const games = useGameStore((state) => state.games);
   const scripts = useGameStore((state) => state.scripts);
   const script = scripts.find((item) => item.id === scriptId);
@@ -65,7 +65,7 @@ export default function RoleNotesScreen() {
   function handleDeleteNote(note: SavedNote) {
     Alert.alert('Delete note?', note.text, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteRoleNote(currentRoleId, note.text) },
+      { text: 'Delete', style: 'destructive', onPress: () => deleteSavedNote(note, currentRoleId) },
     ]);
   }
 
