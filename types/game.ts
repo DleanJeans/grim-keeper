@@ -102,11 +102,20 @@ export type Game = {
   playerDayNotes?: PlayerDayNote[];
 };
 
+export type FriendNote = {
+  id: string;
+  text: string;
+  gameId?: string;
+  scriptId?: string;
+  day?: number;
+  createdAt: string;
+};
+
 export type Friend = {
   id: string;
   name: string;
   createdAt: string;
-  notes?: string[];
+  notes?: FriendNote[];
 };
 
 export type FriendSummary = Friend & {

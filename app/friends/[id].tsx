@@ -32,14 +32,14 @@ export default function FriendDetailRoute() {
     );
   }
 
-  function handleDeleteNote(note: string) {
+  function handleDeleteNote(note: { id: string; text: string }) {
     if (!friend) return;
-    Alert.alert('Delete note?', note, [
+    Alert.alert('Delete note?', note.text, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => removeNoteFromFutureGames(friend.name, [], note),
+        onPress: () => removeNoteFromFutureGames(friend.name, [], note.text, note.id),
       },
     ]);
   }

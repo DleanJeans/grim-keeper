@@ -55,12 +55,22 @@ describe('friend utils', () => {
         id: 'friend-1',
         name: 'Alice Smith',
         createdAt: games[0].createdAt,
-        notes: ['Claims Empath when bluffing.'],
+        notes: [
+          {
+            id: 'friend-note-1',
+            text: 'Claims Empath when bluffing.',
+            createdAt: games[0].createdAt,
+          },
+        ],
       },
     ];
 
     expect(getFriendByName(friends, ' alice   smith ')?.notes).toEqual([
-      'Claims Empath when bluffing.',
+      {
+        id: 'friend-note-1',
+        text: 'Claims Empath when bluffing.',
+        createdAt: games[0].createdAt,
+      },
     ]);
   });
 

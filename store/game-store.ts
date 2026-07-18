@@ -6,6 +6,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import type {
   Conversation,
   Friend,
+  FriendNote,
   Game,
   Player,
   PlayerDeath,
@@ -54,8 +55,18 @@ type GameState = {
     roleIds: string[],
   ) => void;
   setPlayerDayNote: (gameId: string, playerId: string, day: number, text: string) => void;
-  saveNoteForFutureGames: (playerName: string, roleIds: string[], text: string) => boolean;
-  removeNoteFromFutureGames: (playerName: string, roleIds: string[], text: string) => boolean;
+  saveNoteForFutureGames: (
+    playerName: string,
+    roleIds: string[],
+    text: string,
+    context: { gameId: string; day: number; scriptId?: string },
+  ) => boolean;
+  removeNoteFromFutureGames: (
+    playerName: string,
+    roleIds: string[],
+    text: string,
+    noteId?: string,
+  ) => boolean;
   deleteRoleNote: (roleId: string, text: string) => void;
   setTokenSize: (gameId: string, tokenSize: number) => void;
   setActiveDay: (gameId: string, day: number) => void;
@@ -468,7 +479,7 @@ export const useGameStore = create<GameState>()(
           }),
         }));
       },
-      saveNoteForFutureGames: (playerName, roleIds, text) => {
+      saveNoteForFutureGames: (playerName, roleIds, text, context) => {
         const nextText = text.trim();
 
         if (!nextText) {
@@ -517,7 +528,16 @@ export const useGameStore = create<GameState>()(
             if (existingFriendIndex >= 0) {
               friends = state.friends.map((friend, index) =>
                 index === existingFriendIndex
-                  ? { ...friend, notes: appendUniqueNote(friend.notes, nextText) }
+                  ? {
+                      ...friend,
+                      notes: appendUniqueFriendNote(friend.notes, {
+                        text: nextText,
+                        gameId: context.gameId,
+                        scriptId: context.scriptId,
+                        day: context.day,
+                        createdAt: updatedAt,
+                      }),
+                    }
                   : friend,
               );
             } else {
@@ -527,7 +547,16 @@ export const useGameStore = create<GameState>()(
                   id: createId('friend'),
                   name: normalizedPlayerName,
                   createdAt: updatedAt,
-                  notes: [nextText],
+                  notes: [
+                    {
+                      id: createId('friend-note'),
+                      text: nextText,
+                      gameId: context.gameId,
+                      scriptId: context.scriptId,
+                      day: context.day,
+                      createdAt: updatedAt,
+                    },
+                  ],
                 },
               ];
             }
@@ -538,7 +567,7 @@ export const useGameStore = create<GameState>()(
 
         return saved;
       },
-      removeNoteFromFutureGames: (playerName, roleIds, text) => {
+      removeNoteFromFutureGames: (playerName, roleIds, text, noteId) => {
         const removedText = text.trim();
 
         if (!removedText) {
@@ -576,7 +605,9 @@ export const useGameStore = create<GameState>()(
               return friend;
             }
 
-            const notes = friend.notes?.filter((note) => note !== removedText);
+            const noteMatches = (note: FriendNote) =>
+              noteId ? note.id === noteId : note.text === removedText;
+            const notes = friend.notes?.filter((note) => !noteMatches(note));
             if (notes?.length === friend.notes?.length) {
               return friend;
             }
@@ -782,7 +813,37 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'grim-keeper-game-store-v1',
+      version: 2,
       storage: createJSONStorage(() => localStorage),
+      migrate: (persistedState, version) => {
+        if (!persistedState || version >= 2) {
+          return persistedState as Partial<GameState> | undefined;
+        }
+
+        const state = persistedState as Partial<GameState> & {
+          friends?: Array<Friend & { notes?: Array<string | FriendNote> }>;
+        };
+
+        return {
+          ...state,
+          friends: state.friends?.map((friend) => ({
+            ...friend,
+            notes: friend.notes
+              ?.map((note) => {
+                if (typeof note === 'string') {
+                  return {
+                    id: createId('friend-note'),
+                    text: note,
+                    createdAt: friend.createdAt,
+                  };
+                }
+
+                return note;
+              })
+              .filter((note): note is FriendNote => !!note?.text),
+          })),
+        };
+      },
       partialize: (state) => ({
         appUserName: state.appUserName,
         friends: state.friends,
@@ -830,6 +891,29 @@ function mergeRoleNotes(roles: Role[], sources: Role[]) {
 
 function appendUniqueNote(notes: string[] | undefined, note: string) {
   return notes?.includes(note) ? notes : [...(notes ?? []), note];
+}
+
+function appendUniqueFriendNote(
+  notes: FriendNote[] | undefined,
+  next: { text: string; gameId: string; scriptId?: string; day: number; createdAt: string },
+) {
+  const key = `${next.text} ${next.gameId} ${next.day}`;
+  const existing = notes?.some(
+    (note) => `${note.text} ${note.gameId ?? ''} ${note.day ?? ''}` === key,
+  );
+  if (existing) {
+    return notes ?? [];
+  }
+
+  const friendNote: FriendNote = {
+    id: createId('friend-note'),
+    text: next.text,
+    gameId: next.gameId,
+    scriptId: next.scriptId,
+    day: next.day,
+    createdAt: next.createdAt,
+  };
+  return [...(notes ?? []), friendNote];
 }
 
 function removeRoleNote(role: Role, note: string) {

@@ -27,7 +27,7 @@ export function SaveNoteForFutureButton({
   const savedText = text.trim();
   const savedNote = getSavedNote(savedNotes, playerName, savedText);
   const friendNotes = getFriendByName(friends, playerName)?.notes;
-  const savedForFriend = !!savedText && !!friendNotes?.includes(savedText);
+  const savedForFriend = !!savedText && !!friendNotes?.some((note) => note.text === savedText);
   const savedForRole =
     !!savedText && !!game.script?.roles.some((role) => role.notes?.includes(savedText));
   const saved = !!savedNote || savedForFriend || savedForRole;
