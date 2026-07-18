@@ -59,21 +59,22 @@ export function RoleNotes({
           key={`${role.id}-note-${note}`}
           style={{ alignItems: 'flex-start', flexDirection: 'row', gap: 10 }}
         >
-          <RoleReferencedNoteText
-            day={day}
-            game={game}
-            players={players}
-            roles={roles}
-            scriptId={scriptId}
-            showPlayerRoles
-            style={{
-              color: colors.textMuted,
-              flex: 1,
-              fontSize: compact ? 10 : 13,
-              lineHeight: compact ? 13 : 18,
-            }}
-            text={note}
-          />
+          <View style={{ flex: 1 }}>
+            <RoleReferencedNoteText
+              day={day}
+              game={game}
+              players={players}
+              roles={roles}
+              scriptId={scriptId}
+              showPlayerRoles
+              style={{
+                color: colors.textMuted,
+                fontSize: compact ? 10 : 13,
+                lineHeight: compact ? 13 : 18,
+              }}
+              text={note}
+            />
+          </View>
           {onDeleteNote ? (
             <Pressable
               accessibilityLabel={`Delete note: ${note}`}
