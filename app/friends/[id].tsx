@@ -60,7 +60,6 @@ export default function FriendDetailRoute() {
             games={games}
             mode="note"
             notes={notes}
-            playerName={friend.name}
             roles={roleCatalog}
             scripts={scripts}
           />
