@@ -1,3 +1,8 @@
+- 1 component per file
+- Move styles to StyleSheet.create() under the component
+- Move helper functions under the styles
+- Run "pnpm format:changed" and "pnpm format:imports {changedFiles}" to organize imports
+
 ## Navigation header convention
 
 The root stack uses the custom `CompactHeader` in `app/_layout.tsx`. Keep the left and right header
