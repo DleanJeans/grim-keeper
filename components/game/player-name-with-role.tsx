@@ -24,7 +24,7 @@ export function PlayerNameWithRole({
   day,
   game: providedGame,
   player,
-  roleIconSize = 24,
+  roleIconSize = 20,
   style,
   textStyle,
   showRoles: providedShowRoles,
@@ -50,7 +50,7 @@ export function PlayerNameWithRole({
           borderWidth: bordered ? 1 : undefined,
           flexDirection: 'row',
           flexShrink: 1,
-          gap: 0,
+          gap: 4,
           minWidth: 0,
           paddingHorizontal: bordered ? 8 : undefined,
           paddingVertical: bordered ? 3 : undefined,
@@ -58,7 +58,7 @@ export function PlayerNameWithRole({
         style,
       ]}
     >
-      {role ? <RoleIcon role={role} size={roleIconSize} /> : null}
+      {role ? <RoleIcon role={role} size={roleIconSize} scale={1.75} /> : null}
       <Text selectable style={textStyle}>
         {player.name}
       </Text>

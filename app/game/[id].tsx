@@ -1,6 +1,11 @@
-import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import Animated, {
+  useAnimatedScrollHandler,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { DayCount } from '@/components/game/day-count';
 import { FocusedDeathActionPanel } from '@/components/game/deaths-tab/death-actions';
 import { DeathLog } from '@/components/game/deaths-tab/death-log';
@@ -12,7 +17,7 @@ import {
   type TrackingMode,
 } from '@/components/game/game-route-context';
 import { GameTabs } from '@/components/game/game-tabs';
-import { HeaderLeft } from '@/components/game/header-left';
+import { INLINE_GAME_HEADER_HEIGHT, InlineGameHeader } from '@/components/game/inline-game-header';
 import { InteractionsTab } from '@/components/game/interactions-tab/interactions-tab';
 import { TrackingConfirmActions } from '@/components/game/interactions-tab/tracking-confirm-actions';
 import { MapModeActions } from '@/components/game/map-mode-actions';
@@ -22,6 +27,7 @@ import { NotesTab } from '@/components/game/notes-tab/notes-tab';
 import { PlayerCountStatus } from '@/components/game/player-count-status';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
 import { RevealRolesButton } from '@/components/game/reveal-roles-button';
+import { gameHeaderTranslateY } from '@/components/game-header-visibility';
 import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
 import type { KillAttribution, PlayerPosition, PlayerRoleAssignment } from '@/types/game';
@@ -83,6 +89,28 @@ export default function GameRoute() {
   const mapHeight = Math.max(mapWidth, Math.floor(height * 0.52));
   const openedGameId = useRef<string | null>(null);
 
+  // Slide the entire header up off-screen on scroll-down, slide it back in on
+  // scroll-up. Writes to a module-level shared value that the GameHeader
+  // (rendered by the navigator) reads via useAnimatedStyle.
+  const lastScrollY = useSharedValue(0);
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      const y = event.contentOffset.y;
+      const delta = y - lastScrollY.value;
+      if (Math.abs(delta) < 4) {
+        lastScrollY.value = y;
+        return;
+      }
+      const goingDown = delta > 0;
+      if (!goingDown || y <= 0) {
+        gameHeaderTranslateY.value = withTiming(0, { duration: 180 });
+      } else {
+        gameHeaderTranslateY.value = withTiming(-120, { duration: 180 });
+      }
+      lastScrollY.value = y;
+    },
+  });
+
   // Always open the saved game on its last day with data, unless a deep link
   // requested a specific day.
   useEffect(() => {
@@ -137,7 +165,6 @@ export default function GameRoute() {
   }
 
   const activeGame = game;
-  const gameScriptId = activeGame.script?.id;
   const focusedPlayer = activeGame.players.find((player) => player.id === focusedPlayerId);
   const focusedPlayerIsDead = focusedPlayer
     ? isPlayerCurrentlyDead(focusedPlayer, activeGame.activeDay)
@@ -587,28 +614,16 @@ export default function GameRoute() {
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerBackVisible: false,
-          title: ' ',
-          headerLeft: () => (
-            <HeaderLeft
-              onEdit={() => router.push({ pathname: '/create', params: { gameId: activeGame.id } })}
-              onViewScript={
-                gameScriptId
-                  ? () => router.push({ pathname: '/scripts/[id]', params: { id: gameScriptId } })
-                  : undefined
-              }
-            />
-          ),
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
 
       <GameRouteProvider value={contextValue}>
         <View style={styles.body}>
-          <ScrollView
+          <InlineGameHeader activeGame={activeGame} />
+          <Animated.ScrollView
             contentInsetAdjustmentBehavior="automatic"
             keyboardShouldPersistTaps="always"
+            onScroll={scrollHandler}
+            scrollEventThrottle={16}
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
           >
@@ -666,7 +681,7 @@ export default function GameRoute() {
                 <InteractionsTab />
               )}
             </View>
-          </ScrollView>
+          </Animated.ScrollView>
           
           {focusedPlayer ? (
             <View style={styles.selectingBar}>
@@ -714,8 +729,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     gap: 20,
-    padding: 20,
+    paddingHorizontal: 20,
     paddingBottom: 40,
+    paddingTop: INLINE_GAME_HEADER_HEIGHT,
   },
   // Reserve roughly one screen of height so the outer ScrollView doesn't
   // shrink when switching tabs, which would snap the scroll position.

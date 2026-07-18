@@ -181,10 +181,10 @@ export default function CreateRoute() {
                   <CreateHeaderDoneButton canStart={canStart} onPress={handleStart} />
                 ) : undefined
               }
-              title={isEditing ? 'Edit Players' : 'New Game'}
+              title={isEditing ? 'Edit Game' : 'New Game'}
             />
           ),
-          title: isEditing ? 'Edit Players' : 'New Game',
+          title: isEditing ? 'Edit Game' : 'New Game',
         }}
       />
       <KeyboardAvoidingView

@@ -15,7 +15,7 @@ export function GameHeader({ back, navigation, options, route }: NativeStackHead
   const title =
     typeof options.headerTitle === 'string' ? options.headerTitle : options.title || route.name;
 
-  return (
+  const body = (
     <View style={[styles.header, { paddingTop: insets.top }]}>
       <View style={[styles.headerContent, route.name === 'game/[id]' && styles.gameHeaderContent]}>
         {hasHeaderLeft ? (
@@ -65,6 +65,8 @@ export function GameHeader({ back, navigation, options, route }: NativeStackHead
       </View>
     </View>
   );
+
+  return body;
 }
 
 const styles = StyleSheet.create({
