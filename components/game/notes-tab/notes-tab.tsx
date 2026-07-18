@@ -2,12 +2,12 @@ import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
-import { ClaimedRoleCountRow } from '@/components/game/notes-tab/claimed-role-count-row';
+import { ClaimedRoleNotesLink } from '@/components/game/notes-tab/claimed-role-notes-link';
 import { DayNoteRow } from '@/components/game/notes-tab/day-note-row';
 import { NotesTabScriptPicker } from '@/components/game/notes-tab/notes-tab-script-picker';
 import { PlayerNoteSection } from '@/components/game/notes-tab/player-note-section';
 import { RoleAssignmentActions } from '@/components/game/notes-tab/role-assignment-actions';
-import { SavedFriendCountRow } from '@/components/game/notes-tab/saved-friend-count-row';
+import { SavedFriendNotesLink } from '@/components/game/notes-tab/saved-friend-notes-link';
 import { getNotesForPlayer, useGameStore } from '@/store/game-store';
 import { getFriendByName, getFriendSummaries } from '@/utils/friend-utils';
 import { getRoleAssignmentForDayOrPrevious, getRolesByIds } from '@/utils/role-utils';
@@ -46,10 +46,10 @@ export function NotesTab() {
         <RoleAssignmentActions />
         <PlayerNoteSection player={focusedPlayer} />
         {claimedRoleCounts.map(({ count, role }) => (
-          <ClaimedRoleCountRow count={count} key={role.id} role={role} scriptId={game.script?.id} />
+          <ClaimedRoleNotesLink count={count} key={role.id} role={role} scriptId={game.script?.id} />
         ))}
         {savedFriendNotes.length > 0 && focusedFriend ? (
-          <SavedFriendCountRow
+          <SavedFriendNotesLink
             count={savedFriendNotes.length}
             friendId={focusedFriend.id}
             playerName={focusedPlayer.name}
