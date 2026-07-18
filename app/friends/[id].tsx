@@ -1,12 +1,18 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
-import { FriendNameEditor } from '@/components/friends/friend-name-editor';
+import {
+  FriendNameEditToggle,
+  FriendNameInputRow,
+  FriendNameSaveButton,
+} from '@/components/friends/friend-name-editor';
 import { SavedNotes } from '@/components/saved-notes';
 import { Text } from '@/components/text';
+import { TitleHeader } from '@/components/title-header';
 import { getNotesForPlayer, useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { getFriendSummaries } from '@/utils/friend-utils';
+import { normalizePlayerName } from '@/utils/conversation-utils';;
 
 export default function FriendDetailRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -23,6 +29,8 @@ export default function FriendDetailRoute() {
   );
   const friend = friends.find((candidate) => candidate.id === id);
   const notes = friend ? getNotesForPlayer(savedNotes, friend.name) : [];
+  const [editing, setEditing] = useState(false);
+  const [draftName, setDraftName] = useState('');
 
   if (!friend) {
     return (
@@ -35,25 +43,83 @@ export default function FriendDetailRoute() {
     );
   }
 
+  const handleToggleEditing = () => {
+    if (editing) {
+      setEditing(false);
+      return;
+    }
+    setDraftName(friend.name);
+    setEditing(true);
+  };
+
+  const handleSave = () => {
+    const normalizedName = normalizePlayerName(draftName);
+    if (normalizedName && normalizedName !== friend.name) {
+      renameFriend(friend.id, friend.name, normalizedName);
+    }
+    setEditing(false);
+  };
+
+  const draftNormalized = normalizePlayerName(draftName);
+  const duplicateName =
+    editing &&
+    (normalizePlayerName(appUserName).toLocaleLowerCase() ===
+      draftNormalized.toLocaleLowerCase() ||
+      friends.some(
+        (candidate) =>
+          candidate.id !== friend.id &&
+          normalizePlayerName(candidate.name).toLocaleLowerCase() ===
+            draftNormalized.toLocaleLowerCase(),
+      ));
+  const canSave = editing && draftNormalized.length > 0 && !duplicateName;
+
   return (
     <>
-      <Stack.Screen options={{ title: friend.name }} />
+      <Stack.Screen
+        options={{
+          header: () => (
+            <TitleHeader
+              center={
+                editing ? (
+                  <FriendNameInputRow
+                    duplicateName={!!duplicateName}
+                    name={draftName}
+                    onChangeName={setDraftName}
+                    onSubmit={handleSave}
+                  />
+                ) : undefined
+              }
+              right={
+                editing ? (
+                  <FriendNameSaveButton canSave={!!canSave} onPress={handleSave} />
+                ) : (
+                  <FriendNameEditToggle
+                    editing={false}
+                    friendName={friend.name}
+                    onToggleEditing={handleToggleEditing}
+                  />
+                )
+              }
+              title={friend.name}
+            />
+          ),
+          title: friend.name,
+        }}
+      />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{ gap: 18, padding: 20, paddingBottom: 40 }}
         style={{ backgroundColor: colors.background, flex: 1 }}
       >
-        <View style={{ gap: 8 }}>
-          <FriendNameEditor
-            friend={friend}
-            friends={friends}
-            onSave={(name) => renameFriend(friend.id, friend.name, name)}
-            reservedName={appUserName}
-          />
-          <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
+        {editing && duplicateName ? (
+          <Text selectable style={{ color: colors.danger, fontSize: 14, textAlign: 'center' }}>
+            That name is already in use.
+          </Text>
+        ) : (
+          <Text selectable style={{ color: colors.textMuted, fontSize: 14, textAlign: 'center' }}>
             {friend.gamesPlayed} {friend.gamesPlayed === 1 ? 'game played' : 'games played'}
           </Text>
-        </View>
+        )}
 
         {notes.length ? (
           <SavedNotes

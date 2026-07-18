@@ -8,12 +8,13 @@ import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 
 type TitleHeaderProps = {
+  center?: ReactNode;
   icon?: ReactNode;
   right?: ReactNode;
   title: string;
 };
 
-export function TitleHeader({ icon, right, title }: TitleHeaderProps) {
+export function TitleHeader({ center, icon, right, title }: TitleHeaderProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const handleBack = useCallback(() => router.back(), [router]);
@@ -30,17 +31,24 @@ export function TitleHeader({ icon, right, title }: TitleHeaderProps) {
         >
           <ChevronLeft color={colors.text} size={24} strokeWidth={2.5} />
         </Pressable>
+        <View
+          style={center ? styles.titleRowWithCenter : styles.titleRow}
+          pointerEvents={center ? 'auto' : 'none'}
+        >
+          {center ?? (
+            <View style={styles.titleContent}>
+              {icon}
+              <Text numberOfLines={1} selectable style={styles.title}>
+                {title}
+              </Text>
+            </View>
+          )}
+        </View>
         {right ? (
           <View style={styles.rightSlot}>{right}</View>
         ) : (
           <View style={styles.rightSpacer} />
         )}
-        <View style={styles.titleRow} pointerEvents="none">
-          {icon}
-          <Text numberOfLines={1} selectable style={styles.title}>
-            {title}
-          </Text>
-        </View>
       </View>
     </View>
   );
@@ -61,9 +69,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     height: 44,
-    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    position: 'relative',
   },
   pressed: {
     opacity: 0.65,
@@ -72,6 +78,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'flex-end',
+    marginLeft: 12,
     minWidth: 36,
   },
   rightSpacer: {
@@ -83,13 +90,27 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '900',
   },
-  titleRow: {
+  titleContent: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: 10,
     justifyContent: 'center',
-    left: 0,
-    position: 'absolute',
-    right: 0,
+  },
+  titleRow: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+    minWidth: 0,
+  },
+  titleRowWithCenter: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+    minWidth: 0,
+    paddingLeft: 4,
   },
 });
