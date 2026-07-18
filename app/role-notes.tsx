@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { Alert, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { RoleIcon } from '@/components/role-icon';
 import { SavedNotes } from '@/components/saved-notes';
@@ -13,7 +13,6 @@ export default function RoleNotesScreen() {
   const { roleId, scriptId } = useLocalSearchParams<{ roleId: string; scriptId: string }>();
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const savedNotes = useGameStore((state) => state.savedNotes);
-  const deleteSavedNote = useGameStore((state) => state.deleteSavedNote);
   const games = useGameStore((state) => state.games);
   const scripts = useGameStore((state) => state.scripts);
   const script = scripts.find((item) => item.id === scriptId);
@@ -60,14 +59,6 @@ export default function RoleNotesScreen() {
   }
 
   const hasNotes = mergedNotes.length > 0;
-  const currentRoleId = role.id;
-
-  function handleDeleteNote(note: SavedNote) {
-    Alert.alert('Delete note?', note.text, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteSavedNote(note, currentRoleId) },
-    ]);
-  }
 
   return (
     <>
@@ -89,9 +80,10 @@ export default function RoleNotesScreen() {
             day={game?.activeDay}
             games={games}
             label
+            mode="role"
             notes={mergedNotes}
-            onDeleteNote={handleDeleteNote}
             players={game?.players}
+            roleId={role.id}
             roles={script?.roles ?? roleCatalog}
             scripts={scripts}
           />
