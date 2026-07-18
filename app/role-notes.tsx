@@ -14,8 +14,10 @@ export default function RoleNotesScreen() {
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const savedNotes = useGameStore((state) => state.savedNotes);
   const deleteRoleNote = useGameStore((state) => state.deleteRoleNote);
-  const script = useGameStore((state) => state.scripts.find((item) => item.id === scriptId));
-  const game = useGameStore((state) => state.games.find((item) => item.script?.id === scriptId));
+  const games = useGameStore((state) => state.games);
+  const scripts = useGameStore((state) => state.scripts);
+  const script = scripts.find((item) => item.id === scriptId);
+  const game = games.find((item) => item.script?.id === scriptId);
   const scriptRole = script?.roles.find((role) => role.id === roleId);
   const catalogRole = roleCatalog.find((role) => role.id === roleId);
   const genericRole = [...GENERIC_CHARACTER_TYPE_ROLE_REFERENCES, ...GENERIC_KILLER_ROLES].find(
@@ -77,12 +79,14 @@ export default function RoleNotesScreen() {
             <RoleNotes
               day={game?.activeDay}
               game={game}
+              games={games}
               label
               onDeleteNote={handleDeleteNote}
               players={game?.players}
               role={role}
               roles={script?.roles ?? roleCatalog}
               scriptId={scriptId}
+              scripts={scripts}
             />
           ) : (
             <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
