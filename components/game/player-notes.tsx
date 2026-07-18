@@ -72,6 +72,7 @@ export function PlayerNoteRow({
   text?: string;
 }) {
   const {
+    activeDay,
     noteDraft,
     noteEditingDay,
     noteEditingPlayerId,
@@ -83,17 +84,21 @@ export function PlayerNoteRow({
   } = useGameRouteContext();
 
   const isEditing = noteEditingDay === day && noteEditingPlayerId === player.id;
+  const isActiveDay = day === activeDay;
   const reusableNoteText = isEditing ? noteDraft : (text ?? '');
   const roleAssignment = showRoles
     ? getRoleAssignmentForDay(player.roleAssignments, day)
     : undefined;
   const roles =
     roleAssignment && game.script ? getRolesByIds(roleAssignment.roleIds, game.script.roles) : [];
+  const dayHeaderStyle = isActiveDay
+    ? { ...noteDayHeaderStyle, color: colors.warning, fontWeight: '900' as const }
+    : noteDayHeaderStyle;
 
   return (
     <View style={{ gap: 4 }}>
       <View style={noteRowHeaderStyle}>
-        <Text style={noteDayHeaderStyle}>Day {day}</Text>
+        <Text style={dayHeaderStyle}>Day {day}</Text>
         <Pressable
           accessibilityLabel={`Edit day ${day} note for ${player.name}`}
           accessibilityRole="button"
