@@ -1,5 +1,5 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { FocusedDeathActionPanel } from '@/components/game/deaths-tab/death-actions';
 import { DeathLog } from '@/components/game/deaths-tab/death-log';
@@ -14,13 +14,13 @@ import { GameTabs } from '@/components/game/game-tabs';
 import { HeaderLeft } from '@/components/game/header-left';
 import { HeaderTitle } from '@/components/game/header-title';
 import { InteractionsTab } from '@/components/game/interactions-tab/interactions-tab';
+import { TrackingConfirmActions } from '@/components/game/interactions-tab/tracking-confirm-actions';
 import { MapModeActions } from '@/components/game/map-mode-actions';
 import { NominationList } from '@/components/game/noms-tab/nomination-list';
+import { VoteConfirmActions } from '@/components/game/noms-tab/vote-confirm-actions';
 import { NotesTab } from '@/components/game/notes-tab/notes-tab';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
 import { RevealRolesButton } from '@/components/game/show-roles-button';
-import { TrackingConfirmActions } from '@/components/game/interactions-tab/tracking-confirm-actions';
-import { VoteConfirmActions } from '@/components/game/noms-tab/vote-confirm-actions';
 import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
 import type { KillAttribution, PlayerPosition, PlayerRoleAssignment } from '@/types/game';
@@ -71,6 +71,17 @@ export default function GameRoute() {
   const game = getGameById(games, id);
   const mapWidth = Math.max(1, width - 40);
   const mapHeight = Math.max(mapWidth, Math.floor(height * 0.52));
+  const openedGameId = useRef<string | null>(null);
+
+  // Always open the saved game on its last day with data.
+  useEffect(() => {
+    if (!game || openedGameId.current === game.id) return;
+    openedGameId.current = game.id;
+    const lastDayWithData = getLastDayWithData(game);
+    if (game.activeDay < lastDayWithData) {
+      setActiveDay(game.id, lastDayWithData);
+    }
+  }, [game, setActiveDay]);
 
   if (!game) {
     return (

@@ -50,7 +50,7 @@ export function SavedGameRow({ game, onDelete }: SavedGameRowProps) {
             ) : null}
           </View>
           <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
-            {game.players.length} players - Day {game.activeDay}/{getLastDayWithData(game)}
+            {game.players.length} players - {getLastDayWithData(game)} days
           </Text>
         </View>
         <ChevronRight color={colors.textMuted} size={18} strokeWidth={2.5} />
