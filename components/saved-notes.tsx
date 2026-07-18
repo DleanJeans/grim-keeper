@@ -3,41 +3,30 @@ import { Pressable, View } from 'react-native';
 
 import { RoleReferencedNoteText } from '@/components/role-referenced-note-text';
 import { Text } from '@/components/text';
-import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Game, Player, Role, SavedNote, StoredScript } from '@/types/game';
-import { getSavedNoteTextsForRole } from '@/utils/saved-note-utils';
 
-export function RoleNotes({
+export function SavedNotes({
   compact = false,
   day,
-  game,
   games,
   label = false,
+  notes,
   onDeleteNote,
   players,
-  role,
   roles,
-  scriptId,
   scripts,
 }: {
   compact?: boolean;
   day?: number;
-  game?: Game;
   games?: Game[];
   label?: boolean;
-  onDeleteNote?: (note: string) => void;
+  notes: SavedNote[];
+  onDeleteNote?: (note: SavedNote) => void;
   players?: Player[];
-  role: Role;
   roles: Role[];
-  scriptId?: string;
   scripts?: StoredScript[];
 }) {
-  const savedNotes = useGameStore((state) => state.savedNotes);
-  const notes = [
-    ...new Set([...(role.notes ?? []), ...getSavedNoteTextsForRole(savedNotes, role.id)]),
-  ];
-
   if (!notes.length) {
     return null;
   }
@@ -59,13 +48,10 @@ export function RoleNotes({
         </Text>
       ) : null}
       {notes.map((note) => {
-        const context = resolveNoteContext(note, role, savedNotes, games, scripts);
-        const contextGame = context?.game ?? game;
-        const contextRoles = context?.roles ?? roles;
-        const contextScriptId = context?.scriptId ?? scriptId;
+        const context = resolveNoteContext(note, games, scripts);
         return (
           <View
-            key={`${role.id}-note-${note}`}
+            key={note.id}
             style={{
               backgroundColor: compact ? 'transparent' : colors.surface,
               borderColor: colors.border,
@@ -77,19 +63,19 @@ export function RoleNotes({
           >
             <RoleReferencedNoteText
               day={day}
-              game={contextGame}
-              players={contextGame?.players ?? players}
-              roles={contextRoles}
-              scriptId={contextScriptId}
+              game={context.game}
+              players={context.game?.players ?? players}
+              roles={context.roles ?? roles}
+              scriptId={context.scriptId}
               showPlayerRoles
               style={{
                 color: colors.textMuted,
                 fontSize: compact ? 10 : 13,
                 lineHeight: compact ? 13 : 18,
               }}
-              text={note}
+              text={note.text}
             />
-            {context?.label || onDeleteNote ? (
+            {(context.label || onDeleteNote) ? (
               <View
                 style={{
                   alignItems: 'center',
@@ -98,7 +84,7 @@ export function RoleNotes({
                   justifyContent: 'space-between',
                 }}
               >
-                {context?.label ? (
+                {context.label ? (
                   <Text
                     selectable
                     style={{
@@ -117,7 +103,7 @@ export function RoleNotes({
                 )}
                 {onDeleteNote ? (
                   <Pressable
-                    accessibilityLabel={`Delete note: ${note}`}
+                    accessibilityLabel={`Delete note: ${note.text}`}
                     accessibilityRole="button"
                     hitSlop={8}
                     onPress={() => onDeleteNote(note)}
@@ -143,27 +129,21 @@ type NoteContext = {
 };
 
 function resolveNoteContext(
-  text: string,
-  role: Role,
-  savedNotes: SavedNote[],
+  note: SavedNote,
   games?: Game[],
   scripts?: StoredScript[],
-): NoteContext | undefined {
-  const matchedNote = savedNotes.find(
-    (candidate) => candidate.roleIds.includes(role.id) && candidate.text === text,
-  );
-  if (!matchedNote) {
-    return undefined;
-  }
-  const game = matchedNote.gameId
-    ? games?.find((candidate) => candidate.id === matchedNote.gameId)
+): NoteContext {
+  const game = note.gameId
+    ? games?.find((candidate) => candidate.id === note.gameId)
     : undefined;
   const script =
     game?.script ??
-    (matchedNote.scriptId ? scripts?.find((candidate) => candidate.id === matchedNote.scriptId) : undefined);
+    (note.scriptId
+      ? scripts?.find((candidate) => candidate.id === note.scriptId)
+      : undefined);
   const labelParts: string[] = [];
-  if (matchedNote.scriptName) {
-    labelParts.push(matchedNote.scriptName);
+  if (note.scriptName) {
+    labelParts.push(note.scriptName);
   } else if (script?.name) {
     labelParts.push(script.name);
   }
@@ -173,17 +153,14 @@ function resolveNoteContext(
       labelParts.push(formatted);
     }
   }
-  if (matchedNote.day) {
-    labelParts.push(`Day ${matchedNote.day}`);
-  }
-  if (!labelParts.length) {
-    return undefined;
+  if (note.day) {
+    labelParts.push(`Day ${note.day}`);
   }
   return {
     game,
     roles: script?.roles,
-    scriptId: matchedNote.scriptId,
-    label: labelParts.join(' · '),
+    scriptId: note.scriptId,
+    label: labelParts.length ? labelParts.join(' · ') : undefined,
   };
 }
 

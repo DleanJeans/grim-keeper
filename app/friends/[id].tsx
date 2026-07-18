@@ -2,7 +2,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 import { FriendNameEditor } from '@/components/friends/friend-name-editor';
-import { FriendNotes } from '@/components/friends/friend-notes';
+import { SavedNotes } from '@/components/saved-notes';
 import { Text } from '@/components/text';
 import { getNotesForPlayer, useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
@@ -16,6 +16,7 @@ export default function FriendDetailRoute() {
   const storedFriends = useGameStore((state) => state.friends);
   const savedNotes = useGameStore((state) => state.savedNotes);
   const scripts = useGameStore((state) => state.scripts);
+  const roleCatalog = useGameStore((state) => state.roleCatalog);
   const removeNoteFromFutureGames = useGameStore((state) => state.removeNoteFromFutureGames);
   const renameFriend = useGameStore((state) => state.renameFriend);
   const friends = useMemo(
@@ -36,14 +37,15 @@ export default function FriendDetailRoute() {
     );
   }
 
+  const currentFriendName = friend.name;
   function handleDeleteNote(note: SavedNote) {
-    if (!friend) return;
     Alert.alert('Delete note?', note.text, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => removeNoteFromFutureGames(friend.name, [], note.text, note.id),
+        onPress: () =>
+          removeNoteFromFutureGames(currentFriendName, [], note.text, note.id),
       },
     ]);
   }
@@ -69,23 +71,13 @@ export default function FriendDetailRoute() {
         </View>
 
         {notes.length ? (
-          <View
-            style={{
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-              borderRadius: 8,
-              borderWidth: 1,
-              padding: 16,
-            }}
-          >
-            <FriendNotes
-              friendId={friend.id}
-              games={games}
-              notes={notes}
-              onDeleteNote={handleDeleteNote}
-              scripts={scripts}
-            />
-          </View>
+          <SavedNotes
+            games={games}
+            notes={notes}
+            onDeleteNote={handleDeleteNote}
+            roles={roleCatalog}
+            scripts={scripts}
+          />
         ) : (
           <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
             No saved notes yet.

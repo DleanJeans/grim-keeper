@@ -2,12 +2,12 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { Alert, ScrollView, View } from 'react-native';
 
 import { RoleIcon } from '@/components/role-icon';
-import { RoleNotes } from '@/components/role-notes';
+import { SavedNotes } from '@/components/saved-notes';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
+import type { SavedNote } from '@/types/game';
 import { GENERIC_CHARACTER_TYPE_ROLE_REFERENCES, GENERIC_KILLER_ROLES } from '@/utils/role-utils';
-import { getSavedNoteTextsForRole } from '@/utils/saved-note-utils';
 
 export default function RoleNotesScreen() {
   const { roleId, scriptId } = useLocalSearchParams<{ roleId: string; scriptId: string }>();
@@ -41,13 +41,31 @@ export default function RoleNotesScreen() {
     );
   }
 
-  const currentRoleId = role.id;
-  const hasNotes = !!role.notes?.length || getSavedNoteTextsForRole(savedNotes, role.id).length > 0;
+  const roleSavedNotes = savedNotes.filter((note) => note.roleIds.includes(role.id));
+  const mergedNotes: SavedNote[] = [];
+  const seenTexts = new Set<string>();
+  for (const note of roleSavedNotes) {
+    if (seenTexts.has(note.text)) {
+      continue;
+    }
+    seenTexts.add(note.text);
+    mergedNotes.push(note);
+  }
+  for (const text of role.notes ?? []) {
+    if (seenTexts.has(text)) {
+      continue;
+    }
+    seenTexts.add(text);
+    mergedNotes.push(buildLegacyNote(text, role.id, script));
+  }
 
-  function handleDeleteNote(note: string) {
-    Alert.alert('Delete note?', note, [
+  const hasNotes = mergedNotes.length > 0;
+  const currentRoleId = role.id;
+
+  function handleDeleteNote(note: SavedNote) {
+    Alert.alert('Delete note?', note.text, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteRoleNote(currentRoleId, note) },
+      { text: 'Delete', style: 'destructive', onPress: () => deleteRoleNote(currentRoleId, note.text) },
     ]);
   }
 
@@ -67,16 +85,14 @@ export default function RoleNotesScreen() {
         </View>
 
         {hasNotes ? (
-          <RoleNotes
+          <SavedNotes
             day={game?.activeDay}
-            game={game}
             games={games}
             label
+            notes={mergedNotes}
             onDeleteNote={handleDeleteNote}
             players={game?.players}
-            role={role}
             roles={script?.roles ?? roleCatalog}
-            scriptId={scriptId}
             scripts={scripts}
           />
         ) : (
@@ -87,4 +103,19 @@ export default function RoleNotesScreen() {
       </ScrollView>
     </>
   );
+}
+
+function buildLegacyNote(text: string, roleId: string, script?: { id: string; name: string }) {
+  return {
+    createdAt: '',
+    day: 0,
+    gameId: '',
+    id: `legacy-${roleId}-${text}`,
+    playerName: '',
+    roleIds: [roleId],
+    scriptId: script?.id,
+    scriptName: script?.name ?? '',
+    text,
+    updatedAt: '',
+  } satisfies SavedNote;
 }
