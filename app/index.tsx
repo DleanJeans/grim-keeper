@@ -1,14 +1,14 @@
 import { router } from 'expo-router';
-import { ChevronRight, Plus, ScrollText, Trash2, Users } from 'lucide-react-native';
+import { Plus, ScrollText, Users } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
 
 import { AppUserNameCard } from '@/components/app-user-name-card';
+import { SavedGameRow } from '@/components/saved-game-row';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { getFriendSummaries } from '@/utils/friend-utils';
-import { getLastDayWithData } from '@/utils/game-utils';
 
 export default function HomeRoute() {
   const appUserName = useGameStore((state) => state.appUserName);
@@ -79,69 +79,7 @@ export default function HomeRoute() {
           </View>
         ) : (
           games.map((game) => (
-            <View
-              key={game.id}
-              style={{
-                backgroundColor: colors.surface,
-                borderColor: colors.borderStrong,
-                borderRadius: 8,
-                borderWidth: 1,
-                flexDirection: 'row',
-                gap: 8,
-              }}
-            >
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => router.push({ pathname: '/game/[id]', params: { id: game.id } })}
-                style={({ pressed }) => ({
-                  backgroundColor: pressed ? colors.surfacePressed : colors.surface,
-                  borderBottomLeftRadius: 8,
-                  borderTopLeftRadius: 8,
-                  flex: 1,
-                  flexDirection: 'row',
-                  gap: 8,
-                  justifyContent: 'space-between',
-                  padding: 16,
-                })}
-              >
-                <View style={{ flex: 1, gap: 8 }}>
-                  <View style={{ gap: 2 }}>
-                    <Text
-                      selectable
-                      style={{ color: colors.text, fontSize: 17, fontWeight: '700' }}
-                    >
-                      {game.script?.name ?? formatGameDate(game.createdAt)}
-                    </Text>
-                    {game.script ? (
-                      <Text selectable style={{ color: colors.textMuted, fontSize: 13 }}>
-                        {formatGameDate(game.createdAt)}
-                      </Text>
-                    ) : null}
-                  </View>
-                  <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
-                    {game.players.length} players - Day {game.activeDay}/{getLastDayWithData(game)}
-                  </Text>
-                </View>
-                <ChevronRight color={colors.textMuted} size={18} strokeWidth={2.5} />
-              </Pressable>
-              <Pressable
-                accessibilityLabel="Delete saved game"
-                accessibilityRole="button"
-                onPress={() => confirmDeleteGame(game.id)}
-                style={({ pressed }) => ({
-                  alignItems: 'center',
-                  backgroundColor: pressed ? colors.dangerSurface : colors.surface,
-                  borderBottomRightRadius: 8,
-                  borderLeftColor: colors.borderStrong,
-                  borderLeftWidth: 1,
-                  borderTopRightRadius: 8,
-                  justifyContent: 'center',
-                  paddingHorizontal: 14,
-                })}
-              >
-                <Trash2 color={colors.danger} size={18} strokeWidth={2.6} />
-              </Pressable>
-            </View>
+            <SavedGameRow key={game.id} game={game} onDelete={confirmDeleteGame} />
           ))
         )}
       </View>
@@ -188,15 +126,4 @@ function HomeActionButton({
       )}
     </Pressable>
   );
-}
-
-function formatGameDate(createdAt: string) {
-  return new Intl.DateTimeFormat(undefined, {
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    month: 'short',
-    weekday: 'long',
-    year: 'numeric',
-  }).format(new Date(createdAt));
 }
