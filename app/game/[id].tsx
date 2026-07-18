@@ -21,7 +21,7 @@ import { VoteConfirmActions } from '@/components/game/noms-tab/vote-confirm-acti
 import { NotesTab } from '@/components/game/notes-tab/notes-tab';
 import { PlayerCountStatus } from '@/components/game/player-count-status';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
-import { RevealRolesButton } from '@/components/game/show-roles-button';
+import { RevealRolesButton } from '@/components/game/reveal-roles-button';
 import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
 import type { KillAttribution, PlayerPosition, PlayerRoleAssignment } from '@/types/game';
@@ -601,9 +601,6 @@ export default function GameRoute() {
               }
             />
           ),
-          headerRight: () => (
-            <RevealRolesButton onRevealRolesChange={setShowRoles} showRoles={showRoles} />
-          ),
         }}
       />
 
@@ -670,11 +667,20 @@ export default function GameRoute() {
               )}
             </View>
           </ScrollView>
+          
           {focusedPlayer ? (
             <View style={styles.selectingBar}>
               <Text style={styles.selectingLabel}>Selecting: {focusedPlayer.name}</Text>
             </View>
           ) : null}
+
+          <View style={styles.fab} pointerEvents="box-none">
+            <RevealRolesButton
+              onRevealRolesChange={setShowRoles}
+              showRoles={showRoles}
+              variant="icon"
+            />
+          </View>
         </View>
       </GameRouteProvider>
     </>
@@ -685,6 +691,17 @@ const styles = StyleSheet.create({
   body: {
     backgroundColor: '#0b1120',
     flex: 1,
+    position: 'relative',
+  },
+  fab: {
+    bottom: 32,
+    elevation: 4,
+    position: 'absolute',
+    right: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
   dayAndCountsRow: {
     alignItems: 'center',
