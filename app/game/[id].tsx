@@ -640,37 +640,35 @@ export default function GameRoute() {
               <GameTabs />
             </View>
 
-            {activeTab === 'nominations' ? (
-              <View key="nominations-tab">
-                {votingNominationId ? (
-                  <View key="vote-actions">
-                    <VoteConfirmActions />
-                  </View>
-                ) : trackingMode ? (
-                  <View key="tracking-actions">
-                    <TrackingConfirmActions />
-                  </View>
-                ) : null}
-                <NominationList />
-              </View>
-            ) : activeTab === 'deaths' ? (
-              <View key="deaths-tab">
-                <FocusedDeathActionPanel />
-                <DeathLog
-                  activeDay={activeGame.activeDay}
-                  players={activeGame.players}
-                  script={activeGame.script}
-                />
-              </View>
-            ) : activeTab === 'notes' ? (
-              <View key="notes-tab">
+            <View key={`${activeTab}-tab`} style={styles.tabContent}>
+              {activeTab === 'nominations' ? (
+                <>
+                  {votingNominationId ? (
+                    <View key="vote-actions">
+                      <VoteConfirmActions />
+                    </View>
+                  ) : trackingMode ? (
+                    <View key="tracking-actions">
+                      <TrackingConfirmActions />
+                    </View>
+                  ) : null}
+                  <NominationList />
+                </>
+              ) : activeTab === 'deaths' ? (
+                <>
+                  <FocusedDeathActionPanel />
+                  <DeathLog
+                    activeDay={activeGame.activeDay}
+                    players={activeGame.players}
+                    script={activeGame.script}
+                  />
+                </>
+              ) : activeTab === 'notes' ? (
                 <NotesTab />
-              </View>
-            ) : (
-              <View key="interactions-tab">
+              ) : (
                 <InteractionsTab />
-              </View>
-            )}
+              )}
+            </View>
           </ScrollView>
           {focusedPlayer ? (
             <View style={styles.selectingBar}>
@@ -701,6 +699,11 @@ const styles = StyleSheet.create({
     gap: 20,
     padding: 20,
     paddingBottom: 40,
+  },
+  // Reserve roughly one screen of height so the outer ScrollView doesn't
+  // shrink when switching tabs, which would snap the scroll position.
+  tabContent: {
+    minHeight: 480,
   },
   selectingBar: {
     backgroundColor: '#111827',
