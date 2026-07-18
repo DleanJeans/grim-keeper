@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     width: 36,
   },
   gameHeaderContent: {
-    height: 64,
+    height: 40,
     paddingHorizontal: 8,
   },
   gameHeaderTitleSlot: {
