@@ -3,6 +3,7 @@ import { ChevronRight } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
 import { Text } from '@/components/text';
+import { getNotesForPlayer, useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { FriendSummary } from '@/types/game';
 
@@ -11,8 +12,9 @@ type FriendRowProps = {
 };
 
 export function FriendRow({ friend }: FriendRowProps) {
+  const savedNotes = useGameStore((state) => state.savedNotes);
   const gamesLabel = `${friend.gamesPlayed} ${friend.gamesPlayed === 1 ? 'game' : 'games'}`;
-  const notesCount = friend.notes?.length ?? 0;
+  const notesCount = getNotesForPlayer(savedNotes, friend.name).length;
   const notesLabel = notesCount > 0 ? `${notesCount} ${notesCount === 1 ? 'note' : 'notes'}` : null;
   const stats = notesLabel ? `${gamesLabel} · ${notesLabel}` : gamesLabel;
   const summary = stats.replace('·', ',');

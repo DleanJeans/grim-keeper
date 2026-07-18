@@ -7,17 +7,16 @@ import { NotesTabScriptPicker } from '@/components/game/notes-tab/notes-tab-scri
 import { PlayerNoteSection } from '@/components/game/notes-tab/player-note-section';
 import { RoleAssignmentActions } from '@/components/game/notes-tab/role-assignment-actions';
 import { SavedFriendNotes } from '@/components/game/notes-tab/saved-friend-notes';
-import { useGameStore } from '@/store/game-store';
-import { getFriendByName } from '@/utils/friend-utils';
+import { getNotesForPlayer, useGameStore } from '@/store/game-store';
 import { getRoleAssignmentForDayOrPrevious, getRolesByIds } from '@/utils/role-utils';
 
 export function NotesTab() {
   const { activeDay, focusedPlayer, game, players, showRoles } = useGameRouteContext();
-  const friends = useGameStore((state) => state.friends);
   const savedNotes = useGameStore((state) => state.savedNotes);
+  const scripts = useGameStore((state) => state.scripts);
 
   if (focusedPlayer) {
-    const savedFriendNotes = getFriendByName(friends, focusedPlayer.name)?.notes;
+    const savedFriendNotes = getNotesForPlayer(savedNotes, focusedPlayer.name);
     const claimedRoleIds = new Set(
       getRoleAssignmentForDayOrPrevious(focusedPlayer.roleAssignments, activeDay, 'claim')
         ?.roleIds ?? [],
@@ -43,12 +42,12 @@ export function NotesTab() {
           />
         ) : null}
         <SavedFriendNotes
-          day={activeDay}
           game={game}
           notes={savedFriendNotes}
           playerName={focusedPlayer.name}
           players={game.players}
           roles={game.script?.roles ?? []}
+          scripts={scripts}
           scriptId={game.script?.id}
         />
       </View>

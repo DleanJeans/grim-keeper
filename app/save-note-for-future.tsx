@@ -7,18 +7,11 @@ import { RolePicker } from '@/components/game/notes-tab/role-picker';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import type { Friend, Role, SavedNote } from '@/types/game';
-import { getFriendByName } from '@/utils/friend-utils';
+import type { Role, SavedNote } from '@/types/game';
 import { getAssignedRoleIdsForDayOrPrevious, getRolesByIds } from '@/utils/role-utils';
 import { detectRoleIdsInNote, getSavedNote } from '@/utils/saved-note-utils';
 
 const EMPTY_ROLES: Role[] = [];
-
-function getFriendNoteId(friends: Friend[], playerName: string, trimmedText: string) {
-  return getFriendByName(friends, playerName)?.notes?.find(
-    (note) => note.text === trimmedText,
-  )?.id;
-}
 
 export default function SaveNoteForFutureScreen() {
   const {
@@ -33,7 +26,6 @@ export default function SaveNoteForFutureScreen() {
     text?: string;
   }>();
   const games = useGameStore((state) => state.games);
-  const friends = useGameStore((state) => state.friends);
   const savedNotes = useGameStore((state) => state.savedNotes);
   const saveNoteForFutureGames = useGameStore((state) => state.saveNoteForFutureGames);
   const removeNoteFromFutureGames = useGameStore((state) => state.removeNoteFromFutureGames);
@@ -80,9 +72,7 @@ export default function SaveNoteForFutureScreen() {
     .filter((role) => role.notes?.includes(text.trim()))
     .map((role) => role.id);
   const playerName = player.name;
-  const savedForFriend =
-    !!getFriendByName(friends, playerName)?.notes?.some((note) => note.text === text.trim());
-  const canRemove = !!savedNote || savedForFriend || legacyRoleIds.length > 0;
+  const canRemove = !!savedNote || legacyRoleIds.length > 0;
   const noteGameId = game.id;
   const noteScriptId = game.script?.id;
 
@@ -111,7 +101,7 @@ export default function SaveNoteForFutureScreen() {
 
   function handleRemove() {
     const roleIds = savedNote?.roleIds ?? legacyRoleIds;
-    const noteId = savedForFriend ? getFriendNoteId(friends, playerName, text.trim()) : undefined;
+    const noteId = savedNote?.id;
     if (removeNoteFromFutureGames(playerName, roleIds, text, noteId)) {
       router.back();
     }

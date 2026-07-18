@@ -5,7 +5,6 @@ import { Pressable } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import { getFriendByName } from '@/utils/friend-utils';
 import { getSavedNote } from '@/utils/saved-note-utils';
 
 export function SaveNoteForFutureButton({
@@ -22,15 +21,12 @@ export function SaveNoteForFutureButton({
   text: string;
 }) {
   const { game } = useGameRouteContext();
-  const friends = useGameStore((state) => state.friends);
   const savedNotes = useGameStore((state) => state.savedNotes);
   const savedText = text.trim();
   const savedNote = getSavedNote(savedNotes, playerName, savedText);
-  const friendNotes = getFriendByName(friends, playerName)?.notes;
-  const savedForFriend = !!savedText && !!friendNotes?.some((note) => note.text === savedText);
   const savedForRole =
     !!savedText && !!game.script?.roles.some((role) => role.notes?.includes(savedText));
-  const saved = !!savedNote || savedForFriend || savedForRole;
+  const saved = !!savedNote || savedForRole;
   const iconColor = saved ? '#fbbf24' : colors.textMuted;
 
   function handlePress() {

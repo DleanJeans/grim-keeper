@@ -6,7 +6,6 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import type {
   Conversation,
   Friend,
-  FriendNote,
   Game,
   Player,
   PlayerDeath,
@@ -21,6 +20,15 @@ import { normalizePlayerName } from '@/utils/conversation-utils';
 import { addMissingFriends, getFriendSummaries, hasFriendName } from '@/utils/friend-utils';
 import { getTokenSize } from '@/utils/layout-utils';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
+import {
+  getNotesForPlayer,
+  migrateV1ToV3,
+  migrateV2ToV3,
+  resolveScriptName,
+  type LegacyFriendNote,
+} from '@/utils/saved-note-store';
+
+export { getNotesForPlayer, migrateV2ToV3 };
 
 type CreateGameInput = {
   playerNames: string[];
@@ -487,32 +495,37 @@ export const useGameStore = create<GameState>()(
         }
 
         const normalizedPlayerName = normalizePlayerName(playerName);
-        const playerKey = normalizedPlayerName.toLocaleLowerCase();
         const uniqueRoleIds = new Set(roleIds);
         const updatedAt = new Date().toISOString();
         let saved = false;
 
         set((state) => {
+          const playerKey = normalizedPlayerName.toLocaleLowerCase();
           const appUserKey = normalizePlayerName(state.appUserName).toLocaleLowerCase();
-          const shouldSaveFriend = !!normalizedPlayerName && playerKey !== appUserKey;
+          const hasPlayer = !!normalizedPlayerName && playerKey !== appUserKey;
 
-          if (!shouldSaveFriend && uniqueRoleIds.size === 0) {
+          if (!hasPlayer && uniqueRoleIds.size === 0) {
             return state;
           }
 
           saved = true;
-          let friends = state.friends;
+          const scriptName = resolveScriptName(state, context.scriptId, context.gameId);
           const savedNoteIndex = state.savedNotes.findIndex(
             (note) =>
               normalizePlayerName(note.playerName).toLocaleLowerCase() === playerKey &&
               note.text === nextText,
           );
+          const existing = savedNoteIndex >= 0 ? state.savedNotes[savedNoteIndex] : undefined;
           const savedNote: SavedNote = {
-            id: savedNoteIndex >= 0 ? state.savedNotes[savedNoteIndex].id : createId('saved-note'),
+            id: existing?.id ?? createId('saved-note'),
             playerName: normalizedPlayerName,
             roleIds: [...uniqueRoleIds],
             text: nextText,
-            createdAt: savedNoteIndex >= 0 ? state.savedNotes[savedNoteIndex].createdAt : updatedAt,
+            gameId: context.gameId,
+            scriptId: context.scriptId,
+            scriptName,
+            day: context.day,
+            createdAt: existing?.createdAt ?? updatedAt,
             updatedAt,
           };
           const savedNotes =
@@ -520,49 +533,7 @@ export const useGameStore = create<GameState>()(
               ? state.savedNotes.map((note, index) => (index === savedNoteIndex ? savedNote : note))
               : [...state.savedNotes, savedNote];
 
-          if (shouldSaveFriend) {
-            const existingFriendIndex = state.friends.findIndex(
-              (friend) => normalizePlayerName(friend.name).toLocaleLowerCase() === playerKey,
-            );
-
-            if (existingFriendIndex >= 0) {
-              friends = state.friends.map((friend, index) =>
-                index === existingFriendIndex
-                  ? {
-                      ...friend,
-                      notes: appendUniqueFriendNote(friend.notes, {
-                        text: nextText,
-                        gameId: context.gameId,
-                        scriptId: context.scriptId,
-                        day: context.day,
-                        createdAt: updatedAt,
-                      }),
-                    }
-                  : friend,
-              );
-            } else {
-              friends = [
-                ...state.friends,
-                {
-                  id: createId('friend'),
-                  name: normalizedPlayerName,
-                  createdAt: updatedAt,
-                  notes: [
-                    {
-                      id: createId('friend-note'),
-                      text: nextText,
-                      gameId: context.gameId,
-                      scriptId: context.scriptId,
-                      day: context.day,
-                      createdAt: updatedAt,
-                    },
-                  ],
-                },
-              ];
-            }
-          }
-
-          return { friends, savedNotes };
+          return { savedNotes };
         });
 
         return saved;
@@ -594,26 +565,12 @@ export const useGameStore = create<GameState>()(
             return nextRole;
           };
           const savedNotes = state.savedNotes.filter((note) => {
-            const matches =
-              normalizePlayerName(note.playerName).toLocaleLowerCase() === playerKey &&
-              note.text === removedText;
+            const matches = noteId
+              ? note.id === noteId
+              : normalizePlayerName(note.playerName).toLocaleLowerCase() === playerKey &&
+                note.text === removedText;
             removed ||= matches;
             return !matches;
-          });
-          const friends = state.friends.map((friend) => {
-            if (normalizePlayerName(friend.name).toLocaleLowerCase() !== playerKey) {
-              return friend;
-            }
-
-            const noteMatches = (note: FriendNote) =>
-              noteId ? note.id === noteId : note.text === removedText;
-            const notes = friend.notes?.filter((note) => !noteMatches(note));
-            if (notes?.length === friend.notes?.length) {
-              return friend;
-            }
-
-            removed = true;
-            return { ...friend, notes: notes?.length ? notes : undefined };
           });
           const roleCatalog = state.roleCatalog.map(removeTargetedRoleNote);
           const scripts = state.scripts.map((script) => ({
@@ -632,7 +589,7 @@ export const useGameStore = create<GameState>()(
               : game,
           );
 
-          return { friends, games, roleCatalog, savedNotes, scripts };
+          return { games, roleCatalog, savedNotes, scripts };
         });
 
         return removed;
@@ -813,36 +770,22 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'grim-keeper-game-store-v1',
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() => localStorage),
       migrate: (persistedState, version) => {
-        if (!persistedState || version >= 2) {
+        if (!persistedState || version >= 3) {
           return persistedState as Partial<GameState> | undefined;
         }
 
         const state = persistedState as Partial<GameState> & {
-          friends?: Array<Friend & { notes?: Array<string | FriendNote> }>;
+          friends?: Array<Friend & { notes?: Array<string | LegacyFriendNote> }>;
         };
 
-        return {
-          ...state,
-          friends: state.friends?.map((friend) => ({
-            ...friend,
-            notes: friend.notes
-              ?.map((note) => {
-                if (typeof note === 'string') {
-                  return {
-                    id: createId('friend-note'),
-                    text: note,
-                    createdAt: friend.createdAt,
-                  };
-                }
+        if (version < 2) {
+          return migrateV1ToV3(state);
+        }
 
-                return note;
-              })
-              .filter((note): note is FriendNote => !!note?.text),
-          })),
-        };
+        return migrateV2ToV3(state);
       },
       partialize: (state) => ({
         appUserName: state.appUserName,
@@ -889,32 +832,6 @@ function mergeRoleNotes(roles: Role[], sources: Role[]) {
   });
 }
 
-function appendUniqueNote(notes: string[] | undefined, note: string) {
-  return notes?.includes(note) ? notes : [...(notes ?? []), note];
-}
-
-function appendUniqueFriendNote(
-  notes: FriendNote[] | undefined,
-  next: { text: string; gameId: string; scriptId?: string; day: number; createdAt: string },
-) {
-  const key = `${next.text} ${next.gameId} ${next.day}`;
-  const existing = notes?.some(
-    (note) => `${note.text} ${note.gameId ?? ''} ${note.day ?? ''}` === key,
-  );
-  if (existing) {
-    return notes ?? [];
-  }
-
-  const friendNote: FriendNote = {
-    id: createId('friend-note'),
-    text: next.text,
-    gameId: next.gameId,
-    scriptId: next.scriptId,
-    day: next.day,
-    createdAt: next.createdAt,
-  };
-  return [...(notes ?? []), friendNote];
-}
 
 function removeRoleNote(role: Role, note: string) {
   if (!role.notes?.includes(note)) {

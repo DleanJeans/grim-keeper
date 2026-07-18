@@ -4,7 +4,48 @@ import { RoleReferencedNoteText } from '@/components/role-referenced-note-text';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Game, Player, Role, SavedNote } from '@/types/game';
-import { getSavedNoteTextsForRole } from '@/utils/saved-note-utils';
+
+export type ClaimedRoleNote = {
+  key: string;
+  roleName: string;
+  text: string;
+  scriptName: string;
+  day: number;
+  createdAt: string;
+};
+
+export function collectClaimedRoleNotes(
+  savedNotes: SavedNote[],
+  claimedRoles: Role[],
+): ClaimedRoleNote[] {
+  if (claimedRoles.length === 0) {
+    return [];
+  }
+
+  const seen = new Set<string>();
+  const notes: ClaimedRoleNote[] = [];
+  for (const role of claimedRoles) {
+    for (const savedNote of savedNotes) {
+      if (!savedNote.roleIds.includes(role.id)) {
+        continue;
+      }
+      const dedupeKey = `${role.id}:${savedNote.id}`;
+      if (seen.has(dedupeKey)) {
+        continue;
+      }
+      seen.add(dedupeKey);
+      notes.push({
+        createdAt: savedNote.createdAt,
+        day: savedNote.day,
+        key: dedupeKey,
+        roleName: role.name,
+        scriptName: savedNote.scriptName,
+        text: savedNote.text,
+      });
+    }
+  }
+  return notes;
+}
 
 export function ClaimedRoleNotes({
   day,
@@ -27,25 +68,27 @@ export function ClaimedRoleNotes({
 
   return (
     <View style={styles.card}>
-      <Text selectable style={styles.title}>
-        Claimed role notes
-      </Text>
-      {notes.map((note) => (
-        <View key={note.key} style={styles.noteRow}>
-          <RoleReferencedNoteText
-            day={day}
-            game={game}
-            players={players}
-            roles={roles}
-            scriptId={scriptId}
-            style={styles.noteText}
-            text={note.text}
-          />
-          <Text selectable style={styles.roleName}>
-            {note.roleName}
-          </Text>
-        </View>
-      ))}
+      {notes.map((note) => {
+        const labelParts = [note.roleName];
+        if (note.scriptName) {
+          labelParts.push(note.scriptName);
+        }
+        labelParts.push(formatClaimedRoleDate(note.createdAt));
+        return (
+          <View key={note.key} style={styles.noteRow}>
+            <RoleReferencedNoteText
+              day={note.day || day}
+              game={game}
+              players={players}
+              roles={roles}
+              scriptId={scriptId}
+              style={styles.noteText}
+              text={note.text}
+            />
+            <Text style={styles.roleName}>{labelParts.join(' - ')}</Text>
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -58,12 +101,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 8,
     padding: 12,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 0.3,
   },
   noteRow: { gap: 2 },
   noteText: {
@@ -80,31 +117,18 @@ const styles = StyleSheet.create({
   },
 });
 
-export type ClaimedRoleNote = {
-  key: string;
-  roleName: string;
-  text: string;
-};
-
-export function collectClaimedRoleNotes(
-  savedNotes: SavedNote[],
-  claimedRoles: Role[],
-): ClaimedRoleNote[] {
-  if (claimedRoles.length === 0) {
-    return [];
+function formatClaimedRoleDate(createdAt: string) {
+  const date = new Date(createdAt);
+  if (Number.isNaN(date.getTime())) {
+    return createdAt;
   }
 
-  const seen = new Set<string>();
-  const notes: ClaimedRoleNote[] = [];
-  for (const role of claimedRoles) {
-    for (const text of getSavedNoteTextsForRole(savedNotes, role.id)) {
-      const dedupeKey = `${role.id}:${text}`;
-      if (seen.has(dedupeKey)) {
-        continue;
-      }
-      seen.add(dedupeKey);
-      notes.push({ key: dedupeKey, roleName: role.name, text });
-    }
-  }
-  return notes;
+  const monthDay = new Intl.DateTimeFormat(undefined, {
+    day: 'numeric',
+    month: 'long',
+  }).format(date);
+
+  return date.getFullYear() === new Date().getFullYear()
+    ? monthDay
+    : `${monthDay}, ${date.getFullYear()}`;
 }

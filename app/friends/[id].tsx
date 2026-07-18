@@ -4,8 +4,9 @@ import { Alert, ScrollView, View } from 'react-native';
 import { FriendNameEditor } from '@/components/friends/friend-name-editor';
 import { FriendNotes } from '@/components/friends/friend-notes';
 import { Text } from '@/components/text';
-import { useGameStore } from '@/store/game-store';
+import { getNotesForPlayer, useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
+import type { SavedNote } from '@/types/game';
 import { getFriendSummaries } from '@/utils/friend-utils';
 
 export default function FriendDetailRoute() {
@@ -13,6 +14,8 @@ export default function FriendDetailRoute() {
   const appUserName = useGameStore((state) => state.appUserName);
   const games = useGameStore((state) => state.games);
   const storedFriends = useGameStore((state) => state.friends);
+  const savedNotes = useGameStore((state) => state.savedNotes);
+  const scripts = useGameStore((state) => state.scripts);
   const removeNoteFromFutureGames = useGameStore((state) => state.removeNoteFromFutureGames);
   const renameFriend = useGameStore((state) => state.renameFriend);
   const friends = useMemo(
@@ -20,6 +23,7 @@ export default function FriendDetailRoute() {
     [appUserName, games, storedFriends],
   );
   const friend = friends.find((candidate) => candidate.id === id);
+  const notes = friend ? getNotesForPlayer(savedNotes, friend.name) : [];
 
   if (!friend) {
     return (
@@ -32,7 +36,7 @@ export default function FriendDetailRoute() {
     );
   }
 
-  function handleDeleteNote(note: { id: string; text: string }) {
+  function handleDeleteNote(note: SavedNote) {
     if (!friend) return;
     Alert.alert('Delete note?', note.text, [
       { text: 'Cancel', style: 'cancel' },
@@ -64,7 +68,7 @@ export default function FriendDetailRoute() {
           </Text>
         </View>
 
-        {friend.notes?.length ? (
+        {notes.length ? (
           <View
             style={{
               backgroundColor: colors.surface,
@@ -76,8 +80,10 @@ export default function FriendDetailRoute() {
           >
             <FriendNotes
               friendId={friend.id}
-              notes={friend.notes}
+              games={games}
+              notes={notes}
               onDeleteNote={handleDeleteNote}
+              scripts={scripts}
             />
           </View>
         ) : (

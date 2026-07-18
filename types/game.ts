@@ -83,9 +83,16 @@ export type PlayerDayNote = {
 
 export type SavedNote = {
   id: string;
+  /** Empty string when the note is saved for the app user with no player context. */
   playerName: string;
   roleIds: string[];
   text: string;
+  /** Game this note originated from. May be empty for legacy notes pre-dating the unification. */
+  gameId: string;
+  scriptId?: string;
+  /** Cached at save time. Empty string for legacy notes without a scriptId. */
+  scriptName: string;
+  day: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -102,20 +109,10 @@ export type Game = {
   playerDayNotes?: PlayerDayNote[];
 };
 
-export type FriendNote = {
-  id: string;
-  text: string;
-  gameId?: string;
-  scriptId?: string;
-  day?: number;
-  createdAt: string;
-};
-
 export type Friend = {
   id: string;
   name: string;
   createdAt: string;
-  notes?: FriendNote[];
 };
 
 export type FriendSummary = Friend & {
