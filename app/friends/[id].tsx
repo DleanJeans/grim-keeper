@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import { FriendGamesList } from '@/components/friends/friend-games-list';
 import {
   FriendNameEditToggle,
   FriendNameInputRow,
@@ -11,8 +12,8 @@ import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
 import { getNotesForPlayer, useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
+import { normalizePlayerName } from '@/utils/conversation-utils';
 import { getFriendSummaries } from '@/utils/friend-utils';
-import { normalizePlayerName } from '@/utils/conversation-utils';;
 
 export default function FriendDetailRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -63,8 +64,7 @@ export default function FriendDetailRoute() {
   const draftNormalized = normalizePlayerName(draftName);
   const duplicateName =
     editing &&
-    (normalizePlayerName(appUserName).toLocaleLowerCase() ===
-      draftNormalized.toLocaleLowerCase() ||
+    (normalizePlayerName(appUserName).toLocaleLowerCase() === draftNormalized.toLocaleLowerCase() ||
       friends.some(
         (candidate) =>
           candidate.id !== friend.id &&
@@ -115,25 +115,58 @@ export default function FriendDetailRoute() {
           <Text selectable style={{ color: colors.danger, fontSize: 14, textAlign: 'center' }}>
             That name is already in use.
           </Text>
-        ) : (
-          <Text selectable style={{ color: colors.textMuted, fontSize: 14, textAlign: 'center' }}>
-            {friend.gamesPlayed} {friend.gamesPlayed === 1 ? 'game played' : 'games played'}
-          </Text>
-        )}
+        ) : null}
 
         {notes.length ? (
-          <SavedNotes
-            games={games}
-            mode="note"
-            notes={notes}
-            roles={roleCatalog}
-            scripts={scripts}
-          />
+          <View style={{ gap: 6 }}>
+            <Text
+              selectable
+              style={{
+                color: colors.textMuted,
+                fontSize: 12,
+                fontWeight: '900',
+                letterSpacing: 0.5,
+                textAlign: 'center',
+                textTransform: 'uppercase',
+              }}
+            >
+              Notes
+            </Text>
+            <SavedNotes
+              games={games}
+              mode="note"
+              notes={notes}
+              roles={roleCatalog}
+              scripts={scripts}
+            />
+          </View>
         ) : (
-          <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
+          <Text selectable style={{ color: colors.textMuted, fontSize: 15, textAlign: 'center' }}>
             No saved notes yet.
           </Text>
         )}
+
+        <View style={{ gap: 6 }}>
+          <Text
+            selectable
+            style={{
+              color: colors.textMuted,
+              fontSize: 12,
+              fontWeight: '900',
+              letterSpacing: 0.5,
+              textAlign: 'center',
+              textTransform: 'uppercase',
+            }}
+          >
+            {friend.gamesPlayed} {friend.gamesPlayed === 1 ? 'game played' : 'games played'}
+          </Text>
+          <FriendGamesList
+            friendName={friend.name}
+            games={games}
+            roleCatalog={roleCatalog}
+            scripts={scripts}
+          />
+        </View>
       </ScrollView>
     </>
   );

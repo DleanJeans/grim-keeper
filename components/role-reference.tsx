@@ -46,7 +46,7 @@ export function RoleReference({
       }
       onPress={onPress}
       style={({ pressed }) => [
-        { alignItems: 'center', flexDirection: 'row', opacity: pressed ? 0.65 : 1 },
+        { alignItems: 'center', flexDirection: 'row', opacity: pressed ? 0.65 : 1, gap: 2 },
         typeof containerStyle === 'function' ? containerStyle({ pressed }) : containerStyle,
       ]}
     >
