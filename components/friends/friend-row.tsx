@@ -11,10 +11,16 @@ type FriendRowProps = {
 };
 
 export function FriendRow({ friend }: FriendRowProps) {
+  const gamesLabel = `${friend.gamesPlayed} ${friend.gamesPlayed === 1 ? 'game' : 'games'}`;
+  const notesCount = friend.notes?.length ?? 0;
+  const notesLabel = notesCount > 0 ? `${notesCount} ${notesCount === 1 ? 'note' : 'notes'}` : null;
+  const stats = notesLabel ? `${gamesLabel} · ${notesLabel}` : gamesLabel;
+  const summary = stats.replace('·', ',');
+
   return (
     <Pressable
       accessibilityHint="Opens this friend's details"
-      accessibilityLabel={`${friend.name}, ${friend.gamesPlayed} ${friend.gamesPlayed === 1 ? 'game' : 'games'}`}
+      accessibilityLabel={`${friend.name}, ${summary}`}
       accessibilityRole="button"
       onPress={() => router.push({ pathname: '/friends/[id]', params: { id: friend.id } })}
       style={({ pressed }) => ({
@@ -37,7 +43,7 @@ export function FriendRow({ friend }: FriendRowProps) {
             selectable
             style={{ color: colors.textMuted, fontSize: 14, fontVariant: ['tabular-nums'] }}
           >
-            {friend.gamesPlayed} {friend.gamesPlayed === 1 ? 'game' : 'games'}
+            {stats}
           </Text>
           <ChevronRight color={colors.textMuted} size={18} strokeWidth={2.5} />
         </View>
