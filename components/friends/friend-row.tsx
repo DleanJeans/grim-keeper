@@ -41,40 +41,7 @@ export function FriendRow({ friend }: FriendRowProps) {
           </Text>
           <ChevronRight color={colors.textMuted} size={18} strokeWidth={2.5} />
         </View>
-        <FriendNotes friendId={friend.id} notes={friend.notes} />
       </View>
     </Pressable>
-  );
-}
-
-export function FriendNotes({ friendId, notes }: { friendId: string; notes?: string[] }) {
-  if (!notes?.length) {
-    return null;
-  }
-
-  return (
-    <View style={{ gap: 3 }}>
-      <Text
-        selectable
-        style={{
-          color: colors.textMuted,
-          fontSize: 11,
-          fontWeight: '900',
-          letterSpacing: 0.5,
-          textTransform: 'uppercase',
-        }}
-      >
-        Notes
-      </Text>
-      {notes.map((note) => (
-        <Text
-          key={`${friendId}-note-${note}`}
-          selectable
-          style={{ color: colors.textMuted, fontSize: 13, lineHeight: 18 }}
-        >
-          {note}
-        </Text>
-      ))}
-    </View>
   );
 }

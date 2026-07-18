@@ -1,8 +1,8 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
 import { FriendNameEditor } from '@/components/friends/friend-name-editor';
-import { FriendNotes } from '@/components/friends/friend-row';
+import { FriendNotes } from '@/components/friends/friend-notes';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
@@ -13,6 +13,7 @@ export default function FriendDetailRoute() {
   const appUserName = useGameStore((state) => state.appUserName);
   const games = useGameStore((state) => state.games);
   const storedFriends = useGameStore((state) => state.friends);
+  const removeNoteFromFutureGames = useGameStore((state) => state.removeNoteFromFutureGames);
   const renameFriend = useGameStore((state) => state.renameFriend);
   const friends = useMemo(
     () => getFriendSummaries(games, storedFriends, appUserName),
@@ -29,6 +30,18 @@ export default function FriendDetailRoute() {
         </Text>
       </View>
     );
+  }
+
+  function handleDeleteNote(note: string) {
+    if (!friend) return;
+    Alert.alert('Delete note?', note, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => removeNoteFromFutureGames(friend.name, [], note),
+      },
+    ]);
   }
 
   return (
@@ -61,7 +74,11 @@ export default function FriendDetailRoute() {
               padding: 16,
             }}
           >
-            <FriendNotes friendId={friend.id} notes={friend.notes} />
+            <FriendNotes
+              friendId={friend.id}
+              notes={friend.notes}
+              onDeleteNote={handleDeleteNote}
+            />
           </View>
         ) : (
           <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
