@@ -1,6 +1,7 @@
 import { Check, Pencil } from 'lucide-react-native';
 import { Pressable, TextInput, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { ClaimedRoleNotes, collectClaimedRoleNotes } from '@/components/game/notes-tab/claimed-role-notes';
 import { NotesTabScriptPicker } from '@/components/game/notes-tab/notes-tab-script-picker';
 import { PlayerNoteSection } from '@/components/game/notes-tab/player-note-section';
 import { RoleAssignmentActions } from '@/components/game/notes-tab/role-assignment-actions';
@@ -13,6 +14,7 @@ import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Player } from '@/types/game';
 import { getFriendByName } from '@/utils/friend-utils';
+import { getRoleAssignmentForDayOrPrevious, getRolesByIds } from '@/utils/role-utils';
 
 const noteTextInputStyle = {
   backgroundColor: '#111827',
@@ -134,17 +136,36 @@ function DayNoteRow({ player, day, text }: { player: Player; day: number; text: 
 }
 
 export function NotesTab() {
-  const { activeDay, focusedPlayer, game, players } = useGameRouteContext();
+  const { activeDay, focusedPlayer, game, players, showRoles } = useGameRouteContext();
   const friends = useGameStore((state) => state.friends);
+  const savedNotes = useGameStore((state) => state.savedNotes);
 
   if (focusedPlayer) {
     const savedFriendNotes = getFriendByName(friends, focusedPlayer.name)?.notes;
+    const claimedRoleIds = new Set(
+      getRoleAssignmentForDayOrPrevious(focusedPlayer.roleAssignments, activeDay, 'claim')
+        ?.roleIds ?? [],
+    );
+    const claimedRoles = game.script
+      ? getRolesByIds([...claimedRoleIds], game.script.roles)
+      : [];
+    const claimedRoleNotes = showRoles ? collectClaimedRoleNotes(savedNotes, claimedRoles) : [];
 
     return (
       <View style={{ gap: 14 }}>
         <NotesTabScriptPicker />
         <RoleAssignmentActions />
         <PlayerNoteSection player={focusedPlayer} />
+        {showRoles ? (
+          <ClaimedRoleNotes
+            day={activeDay}
+            game={game}
+            notes={claimedRoleNotes}
+            players={game.players}
+            roles={game.script?.roles ?? []}
+            scriptId={game.script?.id}
+          />
+        ) : null}
         <SavedFriendNotes
           day={activeDay}
           game={game}
