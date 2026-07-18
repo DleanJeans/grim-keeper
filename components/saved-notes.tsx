@@ -72,7 +72,7 @@ export function SavedNotes({
         </Text>
       ) : null}
       {notes.map((note) => {
-        const context = resolveNoteContext(note, games, scripts);
+        const context = resolveNoteContext(note, games, scripts, mode);
         return (
           <View
             key={note.id}
@@ -180,6 +180,7 @@ function resolveNoteContext(
   note: SavedNote,
   games?: Game[],
   scripts?: StoredScript[],
+  mode: 'note' | 'role' = 'note',
 ): NoteContext {
   const game = note.gameId
     ? games?.find((candidate) => candidate.id === note.gameId)
@@ -190,7 +191,7 @@ function resolveNoteContext(
       ? scripts?.find((candidate) => candidate.id === note.scriptId)
       : undefined);
   const labelParts: string[] = [];
-  if (note.playerName) {
+  if (mode === 'role' && note.playerName) {
     labelParts.push(note.playerName);
   }
   if (note.scriptName) {

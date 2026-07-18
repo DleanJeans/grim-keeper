@@ -40,6 +40,7 @@ export default function RoleNotesScreen() {
     );
   }
 
+  const description = scriptRole?.ability ?? catalogRole?.ability;
   const roleSavedNotes = savedNotes.filter((note) => note.roleIds.includes(role.id));
   const mergedNotes: SavedNote[] = [];
   const seenTexts = new Set<string>();
@@ -72,6 +73,11 @@ export default function RoleNotesScreen() {
           <RoleIcon role={role} size={48} />
           <Text selectable style={{ color: colors.text, flex: 1, fontSize: 24, fontWeight: '900' }}>
             {role.name}
+          </Text>
+        </View>
+        <View style={{ marginTop: -20 }}>
+          <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
+            {description ?? 'No description available.'}
           </Text>
         </View>
 
