@@ -36,7 +36,12 @@ import {
 } from '@/utils/role-utils';
 
 export default function GameRoute() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, day: dayParam, playerId: playerIdParam, tab: tabParam } = useLocalSearchParams<{
+    day?: string;
+    id: string;
+    playerId?: string;
+    tab?: string;
+  }>();
   const { height, width } = useWindowDimensions();
   const games = useGameStore((state) => state.games);
   const setPlayerDeath = useGameStore((state) => state.setPlayerDeath);
@@ -73,15 +78,39 @@ export default function GameRoute() {
   const mapHeight = Math.max(mapWidth, Math.floor(height * 0.52));
   const openedGameId = useRef<string | null>(null);
 
-  // Always open the saved game on its last day with data.
+  // Always open the saved game on its last day with data, unless a deep link
+  // requested a specific day.
   useEffect(() => {
     if (!game || openedGameId.current === game.id) return;
     openedGameId.current = game.id;
+    const requestedDay = Number.parseInt(dayParam ?? '', 10);
+    if (Number.isFinite(requestedDay) && requestedDay > 0) {
+      if (game.activeDay !== requestedDay) {
+        setActiveDay(game.id, requestedDay);
+      }
+      return;
+    }
     const lastDayWithData = getLastDayWithData(game);
     if (game.activeDay < lastDayWithData) {
       setActiveDay(game.id, lastDayWithData);
     }
-  }, [game, setActiveDay]);
+  }, [dayParam, game, setActiveDay]);
+
+  // Apply deep-link focus and tab on first mount.
+  useEffect(() => {
+    if (!game) return;
+    if (playerIdParam && game.players.some((player) => player.id === playerIdParam)) {
+      setFocusedPlayerId(playerIdParam);
+    }
+    if (
+      tabParam === 'interactions' ||
+      tabParam === 'nominations' ||
+      tabParam === 'deaths' ||
+      tabParam === 'notes'
+    ) {
+      setActiveTab(tabParam);
+    }
+  }, [game, playerIdParam, tabParam]);
 
   if (!game) {
     return (

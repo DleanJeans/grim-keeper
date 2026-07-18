@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { Trash2 } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
@@ -5,6 +6,7 @@ import { RoleReferencedNoteText } from '@/components/role-referenced-note-text';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Game, Player, Role, SavedNote, StoredScript } from '@/types/game';
+import { normalizePlayerName } from '@/utils/conversation-utils';
 
 export function SavedNotes({
   compact = false,
@@ -85,19 +87,47 @@ export function SavedNotes({
                 }}
               >
                 {context.label ? (
-                  <Text
-                    selectable
-                    style={{
-                      color: colors.textMuted,
-                      flex: 1,
-                      fontSize: 10,
-                      fontWeight: '700',
-                      letterSpacing: 0.4,
-                      textTransform: 'uppercase',
+                  <Pressable
+                    accessibilityHint="Opens this game at the day this note was written"
+                    accessibilityLabel={context.label}
+                    accessibilityRole="button"
+                    disabled={!context.game || !note.day}
+                    onPress={() => {
+                      if (!context.game || !note.day) return;
+                      const player = context.game.players.find(
+                        (candidate) =>
+                          normalizePlayerName(candidate.name).toLocaleLowerCase() ===
+                          normalizePlayerName(note.playerName).toLocaleLowerCase(),
+                      );
+                      router.push({
+                        params: {
+                          day: String(note.day),
+                          id: context.game.id,
+                          playerId: player?.id,
+                          tab: 'notes',
+                        },
+                        pathname: '/game/[id]',
+                      });
                     }}
+                    style={({ pressed }) => ({
+                      flex: 1,
+                      opacity: pressed ? 0.6 : 1,
+                    })}
                   >
-                    {context.label}
-                  </Text>
+                    <Text
+                      selectable={false}
+                      style={{
+                        color: colors.textMuted,
+                        fontSize: 10,
+                        fontWeight: '700',
+                        letterSpacing: 0.4,
+                        textDecorationLine: 'underline',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {context.label}
+                    </Text>
+                  </Pressable>
                 ) : (
                   <View style={{ flex: 1 }} />
                 )}
