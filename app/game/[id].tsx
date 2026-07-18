@@ -36,7 +36,12 @@ import {
 } from '@/utils/role-utils';
 
 export default function GameRoute() {
-  const { id, day: dayParam, playerId: playerIdParam, tab: tabParam } = useLocalSearchParams<{
+  const {
+    id,
+    day: dayParam,
+    playerId: playerIdParam,
+    tab: tabParam,
+  } = useLocalSearchParams<{
     day?: string;
     id: string;
     playerId?: string;

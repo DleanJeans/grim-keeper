@@ -182,14 +182,10 @@ function resolveNoteContext(
   scripts?: StoredScript[],
   mode: 'note' | 'role' = 'note',
 ): NoteContext {
-  const game = note.gameId
-    ? games?.find((candidate) => candidate.id === note.gameId)
-    : undefined;
+  const game = note.gameId ? games?.find((candidate) => candidate.id === note.gameId) : undefined;
   const script =
     game?.script ??
-    (note.scriptId
-      ? scripts?.find((candidate) => candidate.id === note.scriptId)
-      : undefined);
+    (note.scriptId ? scripts?.find((candidate) => candidate.id === note.scriptId) : undefined);
   const labelParts: string[] = [];
   if (mode === 'role' && note.playerName) {
     labelParts.push(note.playerName);

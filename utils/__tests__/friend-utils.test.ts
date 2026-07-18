@@ -1,9 +1,5 @@
 import type { Friend, Game } from '@/types/game';
-import {
-  addMissingFriends,
-  getFriendSummaries,
-  hasFriendName,
-} from '@/utils/friend-utils';
+import { addMissingFriends, getFriendSummaries, hasFriendName } from '@/utils/friend-utils';
 
 const games: Game[] = [
   {

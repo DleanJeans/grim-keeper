@@ -1,8 +1,8 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
-
 import { ScriptRoleList } from '@/components/scripts/script-role-list';
 import { Text } from '@/components/text';
+import { TitleHeader } from '@/components/title-header';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { StoredScript } from '@/types/game';
@@ -25,7 +25,12 @@ export default function ScriptDetailRoute() {
 
   return (
     <>
-      <Stack.Screen options={{ title: script.name }} />
+      <Stack.Screen
+        options={{
+          header: () => <TitleHeader title={script.name} />,
+          title: script.name,
+        }}
+      />
       <ScriptRoleList
         header={<ScriptDetailHeader script={script} />}
         roleCatalog={roleCatalog}
@@ -38,13 +43,8 @@ export default function ScriptDetailRoute() {
 
 function ScriptDetailHeader({ script }: { script: StoredScript }) {
   return (
-    <View style={{ gap: 4 }}>
-      <Text selectable style={{ color: colors.text, fontSize: 24, fontWeight: '900' }}>
-        {script.name}
-      </Text>
-      <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
-        {script.author ? `${script.author} · ` : ''}v{script.version} · {script.roles.length} roles
-      </Text>
-    </View>
+    <Text selectable style={{ color: colors.textMuted, fontSize: 14, textAlign: 'center' }}>
+      {script.author ? `${script.author} · ` : ''}v{script.version} · {script.roles.length} roles
+    </Text>
   );
 }

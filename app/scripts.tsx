@@ -2,10 +2,10 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Search } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
-
 import { RemoteScriptCard } from '@/components/scripts/remote-script-card';
 import { ScriptCard } from '@/components/scripts/script-card';
 import { Text, TextInput } from '@/components/text';
+import { TitleHeader } from '@/components/title-header';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { StoredScript } from '@/types/game';
@@ -162,17 +162,27 @@ export default function ScriptsRoute() {
 
   return (
     <>
-      <Stack.Screen options={{ title: isSelectingForGame ? 'Select Script' : 'Scripts' }} />
+      <Stack.Screen
+        options={{
+          header: () => <TitleHeader title={isSelectingForGame ? 'Select Script' : 'Scripts'} />,
+          title: isSelectingForGame ? 'Select Script' : 'Scripts',
+        }}
+      />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         style={{ backgroundColor: colors.background, flex: 1 }}
         contentContainerStyle={{ gap: 22, padding: 20, paddingBottom: 40 }}
       >
         <View style={{ gap: 6 }}>
-          <Text selectable style={{ color: colors.text, fontSize: 24, fontWeight: '900' }}>
-            {isSelectingForGame ? 'Choose a script' : 'Scripts'}
-          </Text>
-          <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 21 }}>
+          <Text
+            selectable
+            style={{
+              color: colors.textMuted,
+              fontSize: 15,
+              lineHeight: 21,
+              textAlign: 'center',
+            }}
+          >
             Download scripts from BotC Scripts, then add or remove roles before using them in a
             game.
           </Text>
@@ -193,7 +203,10 @@ export default function ScriptsRoute() {
         />
 
         <View style={{ gap: 10 }}>
-          <Text selectable style={{ color: colors.text, fontSize: 18, fontWeight: '900' }}>
+          <Text
+            selectable
+            style={{ color: colors.text, fontSize: 18, fontWeight: '900', textAlign: 'center' }}
+          >
             Download from BotC Scripts
           </Text>
           <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -294,7 +307,10 @@ function SavedScriptsSection({
 }) {
   return (
     <View style={{ gap: 10 }}>
-      <Text selectable style={{ color: colors.text, fontSize: 18, fontWeight: '900' }}>
+      <Text
+        selectable
+        style={{ color: colors.text, fontSize: 18, fontWeight: '900', textAlign: 'center' }}
+      >
         Downloaded scripts
       </Text>
       {scripts.length === 0 ? (

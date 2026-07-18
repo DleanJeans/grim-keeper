@@ -1,9 +1,9 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { ScrollView, View } from 'react-native';
-
 import { RoleIcon } from '@/components/role-icon';
 import { SavedNotes } from '@/components/saved-notes';
 import { Text } from '@/components/text';
+import { TitleHeader } from '@/components/title-header';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { SavedNote } from '@/types/game';
@@ -63,23 +63,22 @@ export default function RoleNotesScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: `${role.name} Notes` }} />
+      <Stack.Screen
+        options={{
+          header: () => (
+            <TitleHeader icon={<RoleIcon role={role} scale={2} size={28} />} title={role.name} />
+          ),
+          title: role.name,
+        }}
+      />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ gap: 18, padding: 20, paddingBottom: 40 }}
+        contentContainerStyle={{ gap: 18, paddingHorizontal: 20, paddingBottom: 40 }}
         style={{ backgroundColor: colors.background, flex: 1 }}
       >
-        <View style={{ alignItems: 'center', flexDirection: 'row', gap: 12 }}>
-          <RoleIcon role={role} size={48} />
-          <Text selectable style={{ color: colors.text, flex: 1, fontSize: 24, fontWeight: '900' }}>
-            {role.name}
-          </Text>
-        </View>
-        <View style={{ marginTop: -20 }}>
-          <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
-            {description ?? 'No description available.'}
-          </Text>
-        </View>
+        <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
+          {description ?? 'No description available.'}
+        </Text>
 
         {hasNotes ? (
           <SavedNotes

@@ -7,6 +7,7 @@ import { CreateFormHeader } from '@/components/create/create-form-header';
 import { CreateHeaderDoneButton } from '@/components/create/create-header-done-button';
 import { type DraftPlayer, PlayerRow } from '@/components/create/player-row';
 import { Text } from '@/components/text';
+import { TitleHeader } from '@/components/title-header';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { hasDuplicatePlayerName, normalizePlayerName } from '@/utils/conversation-utils';
@@ -173,9 +174,16 @@ export default function CreateRoute() {
     <>
       <Stack.Screen
         options={{
-          headerRight: isEditing
-            ? () => <CreateHeaderDoneButton canStart={canStart} onPress={handleStart} />
-            : undefined,
+          header: () => (
+            <TitleHeader
+              right={
+                isEditing ? (
+                  <CreateHeaderDoneButton canStart={canStart} onPress={handleStart} />
+                ) : undefined
+              }
+              title={isEditing ? 'Edit Players' : 'New Game'}
+            />
+          ),
           title: isEditing ? 'Edit Players' : 'New Game',
         }}
       />

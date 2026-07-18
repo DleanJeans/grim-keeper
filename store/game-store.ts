@@ -22,10 +22,10 @@ import { getTokenSize } from '@/utils/layout-utils';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 import {
   getNotesForPlayer,
+  type LegacyFriendNote,
   migrateV1ToV3,
   migrateV2ToV3,
   resolveScriptName,
-  type LegacyFriendNote,
 } from '@/utils/saved-note-store';
 
 export { getNotesForPlayer, migrateV2ToV3 };
@@ -582,8 +582,7 @@ export const useGameStore = create<GameState>()(
           });
           const stillReferenced = (text: string, candidateRoleId: string) =>
             nextSavedNotes.some(
-              (savedNote) =>
-                savedNote.text === text && savedNote.roleIds.includes(candidateRoleId),
+              (savedNote) => savedNote.text === text && savedNote.roleIds.includes(candidateRoleId),
             );
           const pruneRole = (role: Role) => {
             if (!affectedRoleIds.includes(role.id)) {
@@ -808,7 +807,6 @@ function mergeRoleNotes(roles: Role[], sources: Role[]) {
     return { ...role, notes: [...new Set([...(role.notes ?? []), ...sourceNotes])] };
   });
 }
-
 
 function removeRoleNote(role: Role, note: string) {
   if (!role.notes?.includes(note)) {

@@ -2,7 +2,7 @@ import { DarkTheme, ThemeProvider } from 'expo-router/react-navigation';
 import { Stack } from 'expo-router/stack';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { CompactHeader } from '@/components/compact-header';
+import { GameHeader } from '@/components/game-header';
 import { OfficialScriptsLoader } from '@/components/scripts/official-scripts-loader';
 import { useAppFonts } from '@/hooks/use-app-fonts';
 import { colors } from '@/theme/colors';
@@ -53,7 +53,7 @@ export default function RootLayout() {
         <Stack
           screenOptions={{
             contentStyle: { backgroundColor: colors.background },
-            header: (props) => <CompactHeader {...props} />,
+            header: (props) => <GameHeader {...props} />,
             headerLargeStyle: { backgroundColor: colors.background },
             headerShadowVisible: false,
             headerStyle: { backgroundColor: colors.background },

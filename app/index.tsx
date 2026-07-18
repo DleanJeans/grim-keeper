@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { Plus, ScrollText, Users } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
@@ -6,6 +6,7 @@ import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { AppUserNameCard } from '@/components/app-user-name-card';
 import { SavedGameRow } from '@/components/saved-game-row';
 import { Text } from '@/components/text';
+import { TitleHeader } from '@/components/title-header';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { getFriendSummaries } from '@/utils/friend-utils';
@@ -34,56 +35,64 @@ export default function HomeRoute() {
   }
 
   return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      style={{ backgroundColor: colors.background, flex: 1 }}
-      contentContainerStyle={{ gap: 24, padding: 20, paddingBottom: 40 }}
-    >
-      <AppUserNameCard appUserName={appUserName} onSave={setAppUserName} />
-
-      <View style={{ flexDirection: 'row', gap: 12 }}>
-        <HomeActionButton icon="plus" label="New Game" onPress={() => router.push('/create')} />
-        <HomeActionButton
-          count={friends.length}
-          icon="users"
-          label="Friends"
-          onPress={() => router.push('/friends')}
-        />
-      </View>
-
-      <HomeActionButton
-        count={scripts.length}
-        icon="scripts"
-        label="Scripts"
-        onPress={() => router.push('/scripts')}
+    <>
+      <Stack.Screen
+        options={{ header: () => <TitleHeader title="Grim Keeper" />, title: 'Grim Keeper' }}
       />
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        style={{ backgroundColor: colors.background, flex: 1 }}
+        contentContainerStyle={{ gap: 24, padding: 20, paddingBottom: 40 }}
+      >
+        <AppUserNameCard appUserName={appUserName} onSave={setAppUserName} />
 
-      <View style={{ gap: 12 }}>
-        <Text selectable style={{ color: colors.text, fontSize: 22, fontWeight: '800' }}>
-          Previous games
-        </Text>
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <HomeActionButton icon="plus" label="New Game" onPress={() => router.push('/create')} />
+          <HomeActionButton
+            count={friends.length}
+            icon="users"
+            label="Friends"
+            onPress={() => router.push('/friends')}
+          />
+        </View>
 
-        {games.length === 0 ? (
-          <View
-            style={{
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-              borderRadius: 8,
-              borderWidth: 1,
-              padding: 16,
-            }}
+        <HomeActionButton
+          count={scripts.length}
+          icon="scripts"
+          label="Scripts"
+          onPress={() => router.push('/scripts')}
+        />
+
+        <View style={{ gap: 12 }}>
+          <Text
+            selectable
+            style={{ color: colors.text, fontSize: 22, fontWeight: '800', textAlign: 'center' }}
           >
-            <Text selectable style={{ color: colors.textMuted, fontSize: 16, lineHeight: 22 }}>
-              No games yet.
-            </Text>
-          </View>
-        ) : (
-          games.map((game) => (
-            <SavedGameRow key={game.id} game={game} onDelete={confirmDeleteGame} />
-          ))
-        )}
-      </View>
-    </ScrollView>
+            Previous games
+          </Text>
+
+          {games.length === 0 ? (
+            <View
+              style={{
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                borderRadius: 8,
+                borderWidth: 1,
+                padding: 16,
+              }}
+            >
+              <Text selectable style={{ color: colors.textMuted, fontSize: 16, lineHeight: 22 }}>
+                No games yet.
+              </Text>
+            </View>
+          ) : (
+            games.map((game) => (
+              <SavedGameRow key={game.id} game={game} onDelete={confirmDeleteGame} />
+            ))
+          )}
+        </View>
+      </ScrollView>
+    </>
   );
 }
 

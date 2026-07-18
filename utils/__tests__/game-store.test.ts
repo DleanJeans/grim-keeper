@@ -15,7 +15,12 @@ const baseNote: Omit<SavedNote, 'playerName' | 'createdAt'> = {
 describe('getNotesForPlayer', () => {
   it('returns only notes whose player name matches after normalization', () => {
     const savedNotes: SavedNote[] = [
-      { ...baseNote, id: 'note-1', playerName: 'Alice Smith', createdAt: '2026-07-17T00:00:00.000Z' },
+      {
+        ...baseNote,
+        id: 'note-1',
+        playerName: 'Alice Smith',
+        createdAt: '2026-07-17T00:00:00.000Z',
+      },
       { ...baseNote, id: 'note-2', playerName: 'Ben', createdAt: '2026-07-17T00:01:00.000Z' },
     ];
 

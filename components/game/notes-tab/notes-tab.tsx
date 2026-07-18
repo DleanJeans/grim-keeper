@@ -46,7 +46,12 @@ export function NotesTab() {
         <RoleAssignmentActions />
         <PlayerNoteSection player={focusedPlayer} />
         {claimedRoleCounts.map(({ count, role }) => (
-          <ClaimedRoleNotesLink count={count} key={role.id} role={role} scriptId={game.script?.id} />
+          <ClaimedRoleNotesLink
+            count={count}
+            key={role.id}
+            role={role}
+            scriptId={game.script?.id}
+          />
         ))}
         {savedFriendNotes.length > 0 && focusedFriend ? (
           <SavedFriendNotesLink

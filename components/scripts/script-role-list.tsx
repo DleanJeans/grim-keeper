@@ -54,7 +54,7 @@ export function ScriptRoleList({
   return (
     <SectionList
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+      contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
       ListHeaderComponent={header}
       ListHeaderComponentStyle={{ paddingBottom: 8 }}
       renderItem={({ item }) => (
@@ -90,6 +90,7 @@ function ScriptRoleSectionHeader({ label }: { label: string }) {
           fontSize: 12,
           fontWeight: '900',
           letterSpacing: 0.5,
+          textAlign: 'center',
           textTransform: 'uppercase',
         }}
       >
