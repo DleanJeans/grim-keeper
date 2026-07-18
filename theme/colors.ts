@@ -19,4 +19,18 @@ export const colors = {
   warning: '#f4dfaa',
   warningText: '#4b3510',
   line: '#b7c7d9',
+  // Note input
+  inputBackground: '#111827',
+  inputBorder: '#334155',
+  inputText: '#f8fafc',
+  inputPlaceholder: '#64748b',
+  // Note save button
+  saveButton: '#16a34a',
+  saveButtonPressed: '#15803d',
+  // Note row
+  noteText: '#cbd5e1',
+  noteDayHeader: '#94a3b8',
+  // Role assignment labels
+  roleClaim: '#fcd34d',
+  roleConfirm: '#86efac',
 };

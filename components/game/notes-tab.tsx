@@ -3,7 +3,7 @@ import { Pressable, TextInput, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { NotesTabScriptPicker } from '@/components/game/notes-tab-script-picker';
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
-import { PlayerNoteSection } from '@/components/game/player-notes';
+import { PlayerNoteSection } from '@/components/game/player-note-section';
 import { RoleAssignmentActions } from '@/components/game/role-assignment-actions';
 import { SaveNoteForFutureButton } from '@/components/game/save-note-for-future-button';
 import { SavedFriendNotes } from '@/components/game/saved-friend-notes';
