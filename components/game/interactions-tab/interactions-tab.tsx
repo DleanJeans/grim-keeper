@@ -1,12 +1,12 @@
 import { List, Table2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { InteractionButton } from '@/components/game/action-buttons/interaction-button';
-import { ConversationTable } from '@/components/game/conversation-table';
-import { InteractionList } from '@/components/game/interaction-list';
-import { TrackingConfirmActions } from '@/components/game/tracking-confirm-actions';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { innerActionRow, tabBarButtonStyle, tabBarContainer, tabBarLabelStyle } from '@/components/game/styles';
+import { InteractionButton } from '@/components/game/interactions-tab/action-buttons/interaction-button';
+import { ConversationTable } from '@/components/game/interactions-tab/conversation-table';
+import { InteractionList } from '@/components/game/interactions-tab/interaction-list';
+import { TrackingConfirmActions } from '@/components/game/interactions-tab/tracking-confirm-actions';
 import { Text } from '@/components/text';
 
 type InteractionSubtab = 'list' | 'table';

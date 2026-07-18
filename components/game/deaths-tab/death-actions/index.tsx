@@ -5,10 +5,10 @@ export { UndoDeathButton } from './undo-death-button';
 
 import { useState } from 'react';
 import { View } from 'react-native';
-import { KillAttributionPanel } from '@/components/game/death-actions/kill-attribution-panel';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { innerActionRow } from '@/components/game/styles';
 import { ExecuteButton } from './execute-button';
+import { KillAttributionPanel } from './kill-attribution-panel';
 import { KillButton } from './kill-button';
 import { ReviveButton } from './revive-button';
 import { UndoDeathButton } from './undo-death-button';

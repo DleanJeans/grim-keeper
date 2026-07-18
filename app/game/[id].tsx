@@ -1,8 +1,8 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, useWindowDimensions, View } from 'react-native';
-import { FocusedDeathActionPanel } from '@/components/game/death-actions';
-import { DeathLog } from '@/components/game/death-log';
+import { FocusedDeathActionPanel } from '@/components/game/deaths-tab/death-actions';
+import { DeathLog } from '@/components/game/deaths-tab/death-log';
 import { GameMap } from '@/components/game/game-map';
 import {
   type GameRouteContextValue,
@@ -13,14 +13,14 @@ import {
 import { GameTabs } from '@/components/game/game-tabs';
 import { HeaderLeft } from '@/components/game/header-left';
 import { HeaderTitle } from '@/components/game/header-title';
-import { InteractionsTab } from '@/components/game/interactions-tab';
+import { InteractionsTab } from '@/components/game/interactions-tab/interactions-tab';
 import { MapModeActions } from '@/components/game/map-mode-actions';
-import { NominationList } from '@/components/game/nomination-list';
-import { NotesTab } from '@/components/game/notes-tab';
+import { NominationList } from '@/components/game/noms-tab/nomination-list';
+import { NotesTab } from '@/components/game/notes-tab/notes-tab';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
 import { RevealRolesButton } from '@/components/game/show-roles-button';
-import { TrackingConfirmActions } from '@/components/game/tracking-confirm-actions';
-import { VoteConfirmActions } from '@/components/game/vote-confirm-actions';
+import { TrackingConfirmActions } from '@/components/game/interactions-tab/tracking-confirm-actions';
+import { VoteConfirmActions } from '@/components/game/noms-tab/vote-confirm-actions';
 import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
 import type { KillAttribution, PlayerPosition, PlayerRoleAssignment } from '@/types/game';

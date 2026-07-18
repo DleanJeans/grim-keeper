@@ -1,10 +1,10 @@
 import { Check, Pencil } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
-import { NoteAutocompleteInput } from '@/components/game/note-autocomplete-input';
-import { SaveNoteForFutureButton } from '@/components/game/save-note-for-future-button';
 import { innerActionRow } from '@/components/game/styles';
-import { PlayerNoteRoleAssignment } from '@/components/game/player-notes';
+import { NoteAutocompleteInput } from '@/components/game/notes-tab/note-autocomplete-input';
+import { PlayerNoteRoleAssignment } from '@/components/game/notes-tab/player-notes';
+import { SaveNoteForFutureButton } from '@/components/game/notes-tab/save-note-for-future-button';
 import { RoleReferencedNoteText } from '@/components/role-referenced-note-text';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';

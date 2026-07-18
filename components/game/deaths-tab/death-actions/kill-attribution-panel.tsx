@@ -4,8 +4,8 @@ import { Pressable, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
-import { RolePicker } from '@/components/game/role-picker';
 import { innerActionRow } from '@/components/game/styles';
+import { RolePicker } from '@/components/game/notes-tab/role-picker';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';

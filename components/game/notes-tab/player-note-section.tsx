@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
-import { PlayerNoteRow } from '@/components/game/player-note-row';
+import { PlayerNoteRow } from '@/components/game/notes-tab/player-note-row';
 import type { Player } from '@/types/game';
 
 export function PlayerNoteSection({ player }: { player: Player }) {

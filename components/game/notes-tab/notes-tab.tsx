@@ -1,13 +1,13 @@
 import { Check, Pencil } from 'lucide-react-native';
 import { Pressable, TextInput, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
-import { NotesTabScriptPicker } from '@/components/game/notes-tab-script-picker';
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
-import { PlayerNoteSection } from '@/components/game/player-note-section';
-import { RoleAssignmentActions } from '@/components/game/role-assignment-actions';
-import { SaveNoteForFutureButton } from '@/components/game/save-note-for-future-button';
-import { SavedFriendNotes } from '@/components/game/saved-friend-notes';
 import { innerActionRow } from '@/components/game/styles';
+import { NotesTabScriptPicker } from '@/components/game/notes-tab/notes-tab-script-picker';
+import { PlayerNoteSection } from '@/components/game/notes-tab/player-note-section';
+import { RoleAssignmentActions } from '@/components/game/notes-tab/role-assignment-actions';
+import { SaveNoteForFutureButton } from '@/components/game/notes-tab/save-note-for-future-button';
+import { SavedFriendNotes } from '@/components/game/notes-tab/saved-friend-notes';
 import { RoleReferencedNoteText } from '@/components/role-referenced-note-text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';

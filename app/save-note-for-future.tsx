@@ -3,7 +3,7 @@ import { Check, Trash2, X } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
-import { RolePicker } from '@/components/game/role-picker';
+import { RolePicker } from '@/components/game/notes-tab/role-picker';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';

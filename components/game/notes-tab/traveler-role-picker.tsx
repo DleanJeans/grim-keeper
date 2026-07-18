@@ -2,7 +2,7 @@ import { ChevronDown, Search, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, View } from 'react-native';
 
-import { RolePicker } from '@/components/game/role-picker';
+import { RolePicker } from '@/components/game/notes-tab/role-picker';
 import { RoleIcon } from '@/components/role-icon';
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';

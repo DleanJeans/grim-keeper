@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { DeadVoteIcon } from '@/components/game/dead-vote-icon';
-import { NomIcon } from '@/components/game/nom-icon';
+import { NomIcon } from '@/components/game/noms-tab/nom-icon';
 import { Text } from '@/components/text';
 import type { Player, PlayerPosition, Role } from '@/types/game';
 import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
