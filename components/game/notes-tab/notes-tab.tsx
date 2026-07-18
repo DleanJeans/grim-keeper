@@ -29,15 +29,11 @@ export function NotesTab() {
       getRoleAssignmentForDayOrPrevious(focusedPlayer.roleAssignments, activeDay, 'claim')
         ?.roleIds ?? [],
     );
-    const claimedRoles = game.script
-      ? getRolesByIds([...claimedRoleIds], game.script.roles)
-      : [];
+    const claimedRoles = game.script ? getRolesByIds([...claimedRoleIds], game.script.roles) : [];
     const claimedRoleCounts = showRoles
       ? claimedRoles
           .map((role) => ({
-            count: savedNotes.filter(
-              (note) => note.roleIds.includes(role.id) && note.playerName === focusedPlayer.name,
-            ).length,
+            count: savedNotes.filter((note) => note.roleIds.includes(role.id)).length,
             role,
           }))
           .filter((entry) => entry.count > 0)
@@ -50,12 +46,7 @@ export function NotesTab() {
         <RoleAssignmentActions />
         <PlayerNoteSection player={focusedPlayer} />
         {claimedRoleCounts.map(({ count, role }) => (
-          <ClaimedRoleCountRow
-            count={count}
-            key={role.id}
-            role={role}
-            scriptId={game.script?.id}
-          />
+          <ClaimedRoleCountRow count={count} key={role.id} role={role} scriptId={game.script?.id} />
         ))}
         {savedFriendNotes.length > 0 && focusedFriend ? (
           <SavedFriendCountRow
