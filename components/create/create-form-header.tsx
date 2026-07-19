@@ -1,7 +1,7 @@
 import { Play, Plus } from 'lucide-react-native';
 import type { RefObject } from 'react';
 import type { TextInput as RNTextInput } from 'react-native';
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { FixedPlayerRow } from '@/components/create/fixed-player-row';
 import { LoricPicker } from '@/components/create/loric-picker';
@@ -65,7 +65,7 @@ export function CreateFormHeader({
   selectedLoricIds,
 }: CreateFormHeaderProps) {
   return (
-    <View style={{ gap: 14, paddingBottom: 12 }}>
+    <View style={styles.container}>
       <GameScriptPicker
         onBrowse={onBrowseScripts}
         onSelect={onSelectScript}
@@ -74,36 +74,38 @@ export function CreateFormHeader({
       />
       <LoricPicker lorics={lorics} onChange={onSelectLorics} selectedRoleIds={selectedLoricIds} />
 
-      <View style={{ gap: 8 }}>
-        <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '700' }}>
+      <View style={styles.nameSection}>
+        <Text selectable style={styles.label}>
           Player name
         </Text>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <TextInput
-            autoCapitalize="words"
-            autoCorrect={false}
-            enterKeyHint="done"
-            ref={inputRef}
-            onBlur={onBlurName}
-            onChangeText={onChangeName}
-            onFocus={onFocusName}
-            onSubmitEditing={onSubmitName}
-            returnKeyType="done"
-            submitBehavior="submit"
-            value={name}
-            style={{
-              backgroundColor: colors.surface,
-              borderColor: duplicateName ? colors.danger : colors.border,
-              borderRadius: 8,
-              borderWidth: 1,
-              color: colors.text,
-              flex: 1,
-              fontSize: 18,
-              minHeight: 52,
-              paddingHorizontal: 16,
-              paddingVertical: 14,
-            }}
-          />
+        <View style={styles.nameRow}>
+          <View style={styles.inputContainer}>
+            <View
+              accessibilityElementsHidden={!nameFocused}
+              importantForAccessibility={nameFocused ? 'auto' : 'no-hide-descendants'}
+              pointerEvents={nameFocused ? 'auto' : 'none'}
+              style={[
+                styles.friendPopover,
+                nameFocused ? styles.friendPopoverVisible : styles.friendPopoverHidden,
+              ]}
+            >
+              <FriendSuggestions friends={friends} onSelectFriend={onSelectFriend} />
+            </View>
+            <TextInput
+              autoCapitalize="words"
+              autoCorrect={false}
+              enterKeyHint="done"
+              ref={inputRef}
+              onBlur={onBlurName}
+              onChangeText={onChangeName}
+              onFocus={onFocusName}
+              onSubmitEditing={onSubmitName}
+              returnKeyType="done"
+              submitBehavior="submit"
+              value={name}
+              style={[styles.nameInput, duplicateName ? styles.nameInputDuplicate : null]}
+            />
+          </View>
           <Pressable
             accessibilityRole="button"
             disabled={!canAddPlayer}
@@ -137,12 +139,10 @@ export function CreateFormHeader({
             </Text>
           </Pressable>
         </View>
-        <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+        <Text selectable style={styles.instructions}>
           Add players from the player on the left then clockwise.
         </Text>
       </View>
-
-      {nameFocused ? <FriendSuggestions friends={friends} onSelectFriend={onSelectFriend} /> : null}
 
       {!isEditing ? (
         <View style={{ flexDirection: 'row', gap: 12 }}>
@@ -194,3 +194,60 @@ export function CreateFormHeader({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    gap: 14,
+    paddingBottom: 12,
+  },
+  friendPopover: {
+    bottom: '100%',
+    left: 0,
+    marginBottom: 8,
+    position: 'absolute',
+    right: 0,
+    zIndex: 10,
+  },
+  friendPopoverHidden: {
+    opacity: 0,
+  },
+  friendPopoverVisible: {
+    opacity: 1,
+  },
+  inputContainer: {
+    flex: 1,
+    position: 'relative',
+    zIndex: 10,
+  },
+  instructions: {
+    color: colors.textMuted,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  label: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  nameInput: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    color: colors.text,
+    fontSize: 18,
+    minHeight: 52,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  nameInputDuplicate: {
+    borderColor: colors.danger,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  nameSection: {
+    gap: 8,
+  },
+});
