@@ -5,7 +5,7 @@ export const NOTE_REFERENCE_ICON_SIZE = 16;
 
 export const noteReferenceStyles = StyleSheet.create({
   container: {
-    gap: 4,
+    gap: 0,
     paddingHorizontal: 0,
   },
   text: {
