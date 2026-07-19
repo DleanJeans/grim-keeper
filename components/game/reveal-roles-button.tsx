@@ -1,6 +1,6 @@
 import { Eye } from 'lucide-react-native';
-import { useRef } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Keyboard, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
@@ -18,6 +18,23 @@ export function RevealRolesButton({
 }) {
   const color = showRoles ? colors.primary : colors.textMuted;
   const isIcon = variant === 'icon';
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    if (!isIcon || Platform.OS !== 'android') return;
+
+    const showSubscription = Keyboard.addListener('keyboardDidShow', (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+    });
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, [isIcon]);
 
   // Track press start to distinguish a short tap (toggle) from a long press
   // (show while held, hide on release).
@@ -97,16 +114,13 @@ export function RevealRolesButton({
       onPressOut={handlePressOut}
       onTouchCancel={handleTouchCancel}
       pressRetentionOffset={10}
-      style={styles.iconWrapper}
+      style={[styles.iconWrapper, { transform: [{ translateY: keyboardHeight }] }]}
     >
       {({ pressed }) => (
         <>
           <Text
             pointerEvents="none"
-            style={[
-              styles.iconLabel,
-              pressed ? styles.iconLabelShown : styles.iconLabelHidden,
-            ]}
+            style={[styles.iconLabel, pressed ? styles.iconLabelShown : styles.iconLabelHidden]}
           >
             Reveal roles
           </Text>
