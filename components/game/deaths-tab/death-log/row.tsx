@@ -1,5 +1,4 @@
 import { FlameKindling, HeartPulse, Pencil, Skull } from 'lucide-react-native';
-import type { ComponentType } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
@@ -21,15 +20,6 @@ export type ReviveLogEntry = {
 type KillerDescription = {
   killerPlayers: Player[];
   killerRoles: Role[];
-};
-
-type RowPresentation = {
-  Icon: ComponentType<{ color: string; size: number; strokeWidth: number }>;
-  accent: string;
-  actionLabel: string;
-  day: number;
-  dayLabel: string;
-  isCurrent: boolean;
 };
 
 const executionColor = '#fca5a5';
@@ -54,84 +44,22 @@ export function DeathLogRow({
   killerDescription?: KillerDescription;
   onEdit?: () => void;
 }) {
-  return 'death' in entry ? (
-    <DeathLogDeathRow
-      activeDay={activeDay}
-      entry={entry}
-      killerDescription={killerDescription}
-      onEdit={onEdit}
-    />
-  ) : (
-    <DeathLogReviveRow activeDay={activeDay} entry={entry} />
-  );
-}
+  const isDeath = 'death' in entry;
+  const isExecution = isDeath && entry.death.kind === 'execution';
+  const eventDay = isDeath ? entry.death.day : entry.revive.day;
+  const accent = !isDeath ? reviveColor : isExecution ? executionColor : nightColor;
+  const Icon = !isDeath ? HeartPulse : isExecution ? FlameKindling : Skull;
+  const actionLabel = !isDeath ? 'Revived' : isExecution ? 'Executed' : 'Killed';
+  const dayLabel = `${!isDeath ? 'R' : isExecution ? 'D' : 'N'}${eventDay}`;
 
-function DeathLogDeathRow({
-  activeDay,
-  entry,
-  killerDescription,
-  onEdit,
-}: {
-  activeDay: number;
-  entry: DeathLogEntry;
-  killerDescription?: KillerDescription;
-  onEdit?: () => void;
-}) {
-  const isExecution = entry.death.kind === 'execution';
-  const accent = isExecution ? executionColor : nightColor;
-  const Icon = isExecution ? FlameKindling : Skull;
-  const actionLabel = isExecution ? 'Executed' : 'Killed';
-  const dayLabel = isExecution ? `D${entry.death.day}` : `N${entry.death.day}`;
-
-  return (
-    <DeathLogEntryRow
-      presentation={{
-        Icon,
-        accent,
-        actionLabel,
-        day: entry.death.day,
-        dayLabel,
-        isCurrent: entry.death.day === activeDay,
-      }}
-      killerDescription={killerDescription}
-      onEdit={onEdit}
-      player={entry.player}
-    />
-  );
-}
-
-function DeathLogReviveRow({ activeDay, entry }: { activeDay: number; entry: ReviveLogEntry }) {
-  return (
-    <DeathLogEntryRow
-      presentation={{
-        Icon: HeartPulse,
-        accent: reviveColor,
-        actionLabel: 'Revived',
-        day: entry.revive.day,
-        dayLabel: `R${entry.revive.day}`,
-        isCurrent: entry.revive.day === activeDay,
-      }}
-      player={entry.player}
-    />
-  );
-}
-
-function DeathLogEntryRow({
-  player,
-  killerDescription,
-  onEdit,
-  presentation: { Icon, accent, actionLabel, dayLabel, isCurrent },
-}: {
-  killerDescription?: KillerDescription;
-  onEdit?: () => void;
-  player: Player;
-  presentation: RowPresentation;
-}) {
   return (
     <View
       style={[
         styles.row,
-        isCurrent && { backgroundColor: colors.surfaceRaised, borderColor: accent },
+        eventDay === activeDay && {
+          backgroundColor: colors.surfaceRaised,
+          borderColor: accent,
+        },
       ]}
     >
       <View style={[styles.dayBadge, { borderColor: accent }]}>
@@ -142,12 +70,12 @@ function DeathLogEntryRow({
       </View>
       <View style={styles.body}>
         <View style={styles.titleRow}>
-          <PlayerNameWithRole player={player} textStyle={styles.playerName} />
+          <PlayerNameWithRole player={entry.player} textStyle={styles.playerName} />
           <Text selectable style={[styles.action, { color: accent }]}>
             {actionLabel}
           </Text>
         </View>
-        {killerDescription ? <KillerDescriptionView {...killerDescription} /> : null}
+        {isDeath && killerDescription ? <KillerDescriptionView {...killerDescription} /> : null}
       </View>
       {onEdit ? <EditKillerButton onPress={onEdit} /> : null}
     </View>
