@@ -35,7 +35,6 @@ export function BigWigPlayerPicker({
           selectedPlayer ? `Big Wig: ${selectedPlayer.name}` : 'Select a player as Big Wig'
         }
         containerStyle={({ pressed }) => [styles.trigger, pressed && styles.pressed]}
-        leading={<UserRoundSearch color={colors.textMuted} size={16} strokeWidth={2.4} />}
         onPress={() => setOpen(true)}
         role={bigWig}
         textStyle={styles.triggerText}
