@@ -1,6 +1,8 @@
+import { File, Paths } from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { Download, FileUp, Upload } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Pressable, Share, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
@@ -9,25 +11,33 @@ import { createBackup, parseBackup } from '@/utils/data-transfer';
 
 export function DataTransferCard() {
   const [backupText, setBackupText] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
   const importData = useGameStore((state) => state.importData);
 
   async function exportData() {
-    const state = useGameStore.getState();
-    const json = createBackup({
-      appUserName: state.appUserName,
-      friends: state.friends,
-      games: state.games,
-      roleCatalog: state.roleCatalog,
-      savedNotes: state.savedNotes,
-      scripts: state.scripts,
-    });
+    try {
+      setIsExporting(true);
+      const state = useGameStore.getState();
+      const json = createBackup({
+        appUserName: state.appUserName,
+        friends: state.friends,
+        games: state.games,
+        roleCatalog: state.roleCatalog,
+        savedNotes: state.savedNotes,
+        scripts: state.scripts,
+      });
 
-    if (process.env.EXPO_OS === 'web') {
-      downloadBackup(json);
-      return;
+      if (process.env.EXPO_OS === 'web') {
+        downloadBackup(json);
+        return;
+      }
+
+      await shareBackupFile(json);
+    } catch (error) {
+      Alert.alert('Could not export backup', getErrorMessage(error));
+    } finally {
+      setIsExporting(false);
     }
-
-    await Share.share({ message: json, title: 'Grim Keeper backup' });
   }
 
   function confirmImport() {
@@ -94,7 +104,12 @@ export function DataTransferCard() {
         </Text>
       </View>
 
-      <ActionButton icon="download" label="Export data" onPress={exportData} />
+      <ActionButton
+        disabled={isExporting}
+        icon="download"
+        label={isExporting ? 'Preparing backup…' : 'Export data'}
+        onPress={exportData}
+      />
 
       <TextInput
         accessibilityLabel="Backup JSON"
@@ -239,6 +254,29 @@ function downloadBackup(json: string) {
   link.download = `grim-keeper-backup-${new Date().toISOString().slice(0, 10)}.json`;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+async function shareBackupFile(json: string) {
+  if (!(await Sharing.isAvailableAsync())) {
+    throw new Error('File sharing is not available on this device.');
+  }
+
+  const file = new File(Paths.cache, getBackupFilename());
+  file.write(json);
+
+  try {
+    await Sharing.shareAsync(file.uri, {
+      dialogTitle: 'Export Grim Keeper backup',
+      mimeType: 'application/json',
+      UTI: 'public.json',
+    });
+  } finally {
+    file.delete();
+  }
+}
+
+function getBackupFilename() {
+  return `grim-keeper-backup-${new Date().toISOString().replaceAll(':', '-')}.json`;
 }
 
 function getErrorMessage(error: unknown) {
