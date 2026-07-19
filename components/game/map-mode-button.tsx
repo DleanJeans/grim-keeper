@@ -59,7 +59,7 @@ export function MapModeButton({
         borderColor: '#334155',
         borderRadius: 8,
         borderWidth: 1,
-        flex: width !== undefined ? 0 : flex,
+        flex: width === undefined ? flex : undefined,
         flexBasis: width !== undefined ? undefined : 0,
         flexDirection: 'row',
         gap: 6,
