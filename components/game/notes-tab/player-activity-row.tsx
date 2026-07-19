@@ -41,19 +41,12 @@ export function PlayerActivityRow({ activity, day }: { activity: PlayerActivity;
         <PlayerNameWithRole
           day={day}
           player={activity.subject}
-          roleIconSize={14}
           textStyle={styles.playerName}
+          variant="note"
         />
         <Text style={styles.preposition}>is</Text>
         {activity.roles.map((role) => (
-          <RoleReference
-            iconSize={18}
-            iconScale={1}
-            key={role.id}
-            role={role}
-            scriptId={activity.scriptId}
-            textStyle={styles.roleReferenceText}
-          />
+          <RoleReference key={role.id} role={role} scriptId={activity.scriptId} variant="note" />
         ))}
       </View>
     );
@@ -73,8 +66,8 @@ export function PlayerActivityRow({ activity, day }: { activity: PlayerActivity;
           <PlayerNameWithRole
             day={day}
             player={player}
-            roleIconSize={14}
             textStyle={styles.playerName}
+            variant="note"
           />
         </View>
       ))}
@@ -124,9 +117,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 13,
     lineHeight: 18,
-  },
-  roleReferenceText: {
-    fontSize: 12,
   },
   separator: {
     color: colors.noteText,

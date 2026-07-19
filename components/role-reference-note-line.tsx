@@ -104,8 +104,8 @@ export function RoleReferenceNoteLine({
           key={`role-${match.role.id}-${match.start}`}
           role={match.role}
           scriptId={scriptId}
-          textStyle={[{ fontSize: 13 }, style]}
-          iconScale={1}
+          textStyle={style}
+          variant="note"
         />
       ) : (
         <PlayerNameWithRole
@@ -113,9 +113,9 @@ export function RoleReferenceNoteLine({
           game={game}
           key={`player-${match.player.id}-${match.start}`}
           player={match.player}
-          roleIconSize={16}
           showRoles={showPlayerRoles}
-          textStyle={[{ color: colors.textMuted, fontSize: 13, fontWeight: '700' }, style]}
+          textStyle={[styles.playerReferenceText, style]}
+          variant="note"
         />
       ),
     );
@@ -204,6 +204,10 @@ const styles = StyleSheet.create({
   plainText: {
     color: colors.textMuted,
   },
+  playerReferenceText: {
+    color: colors.textMuted,
+    fontWeight: '700',
+  },
 });
 
 function getPlainTextParts(
@@ -219,7 +223,7 @@ function getPlainTextParts(
     if (line) {
       parts.push(
         <Text key={`${keyPrefix}-${offset}`} selectable style={[styles.plainText, style]}>
-          {line}
+          {line.trim()}
         </Text>,
       );
     }

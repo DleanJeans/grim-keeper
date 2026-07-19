@@ -66,14 +66,7 @@ function ClaimOrConfirmRow({
         <Check color={colors.roleConfirm} size={14} strokeWidth={3} />
       ) : null}
       {roles.map((role) => (
-        <RoleReference
-          iconSize={18}
-          iconScale={1}
-          key={role.id}
-          role={role}
-          scriptId={scriptId}
-          textStyle={styles.roleReferenceText}
-        />
+        <RoleReference key={role.id} role={role} scriptId={scriptId} variant="note" />
       ))}
     </View>
   );
@@ -89,9 +82,6 @@ const styles = StyleSheet.create({
   roleLabel: {
     fontSize: 12,
     fontWeight: '900',
-  },
-  roleReferenceText: {
-    fontSize: 12,
   },
 });
 

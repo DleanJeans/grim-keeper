@@ -1,7 +1,11 @@
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Pressable, type StyleProp, type TextStyle, View, type ViewStyle } from 'react-native';
-
+import {
+  NOTE_REFERENCE_ICON_SCALE,
+  NOTE_REFERENCE_ICON_SIZE,
+  noteReferenceStyles,
+} from '@/components/note-reference-styles';
 import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
@@ -19,6 +23,7 @@ type RoleReferenceProps = {
   role: Role;
   scriptId?: string;
   textStyle?: StyleProp<TextStyle>;
+  variant?: 'default' | 'note';
 };
 
 export function RoleReference({
@@ -26,14 +31,18 @@ export function RoleReference({
   children,
   containerStyle,
   contentStyle,
-  iconSize = 24,
-  iconScale = 1.35,
+  iconSize,
+  iconScale,
   leading,
   onPress,
   role,
   scriptId,
   textStyle,
+  variant = 'default',
 }: RoleReferenceProps) {
+  const resolvedIconSize = iconSize ?? (variant === 'note' ? NOTE_REFERENCE_ICON_SIZE : 24);
+  const resolvedIconScale = iconScale ?? (variant === 'note' ? NOTE_REFERENCE_ICON_SCALE : 1.35);
+
   return (
     <Pressable
       accessibilityHint="Long press to open notes for this role"
@@ -49,15 +58,20 @@ export function RoleReference({
       onPress={onPress}
       style={({ pressed }) => [
         { alignItems: 'center', flexDirection: 'row', opacity: pressed ? 0.65 : 1, gap: 2 },
+        variant === 'note' && noteReferenceStyles.container,
         typeof containerStyle === 'function' ? containerStyle({ pressed }) : containerStyle,
       ]}
     >
       {leading}
-      <RoleIcon role={role} size={iconSize} scale={iconScale} />
+      <RoleIcon role={role} scale={resolvedIconScale} size={resolvedIconSize} />
       <View style={[{ flexShrink: 1, gap: 1 }, contentStyle]}>
         <Text
           selectable
-          style={[{ color: colors.textMuted, fontSize: 13, fontWeight: '700' }, textStyle]}
+          style={[
+            { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
+            textStyle,
+            variant === 'note' && noteReferenceStyles.text,
+          ]}
         >
           {role.name}
         </Text>
