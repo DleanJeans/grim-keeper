@@ -5,6 +5,7 @@ import { UndoDeathButton } from '@/components/game/deaths-tab/death-actions/undo
 import { BigWigPlayerPicker } from '@/components/game/noms-tab/big-wig-player-picker';
 import { DeleteNominationButton } from '@/components/game/noms-tab/delete-nomination-button';
 import { EditVotesButton } from '@/components/game/noms-tab/edit-votes-button';
+import { KillBigWigButton } from '@/components/game/noms-tab/kill-big-wig-button';
 import { NominationPlayers } from '@/components/game/noms-tab/nomination-players';
 import { VoterList } from '@/components/game/noms-tab/voter-list';
 import { Text } from '@/components/text';
@@ -20,6 +21,7 @@ type NominationRowProps = {
   onDelete: () => void;
   onEditVotes: (voterIds: string[]) => void;
   onExecute: (player: Player) => void;
+  onKillBigWig: (player: Player, bigWig: Role) => void;
   onSelectBigWig: (playerId?: string) => void;
   onUndoExecution: (player: Player) => void;
   players: Player[];
@@ -33,6 +35,7 @@ export function NominationRow({
   onDelete,
   onEditVotes,
   onExecute,
+  onKillBigWig,
   onSelectBigWig,
   onUndoExecution,
   players,
@@ -49,6 +52,9 @@ export function NominationRow({
     : undefined;
   const nomineeIsDead = nominee ? isPlayerCurrentlyDead(nominee, activeDay) : false;
   const nomineeWasExecuted = nomineeIsDead && nominee?.death?.kind === 'execution';
+  const selectedBigWigPlayerIsDead = selectedBigWigPlayer
+    ? isPlayerCurrentlyDead(selectedBigWigPlayer, activeDay)
+    : false;
 
   return (
     <View style={styles.row}>
@@ -59,12 +65,21 @@ export function NominationRow({
         <NominationPlayers nominee={nominee} nominator={nominator} />
       </View>
       {bigWig ? (
-        <BigWigPlayerPicker
-          bigWig={bigWig}
-          onSelect={onSelectBigWig}
-          players={players}
-          selectedPlayer={selectedBigWigPlayer}
-        />
+        <View style={styles.bigWigActions}>
+          <BigWigPlayerPicker
+            bigWig={bigWig}
+            onSelect={onSelectBigWig}
+            players={players}
+            selectedPlayer={selectedBigWigPlayer}
+          />
+          {selectedBigWigPlayer ? (
+            <KillBigWigButton
+              disabled={selectedBigWigPlayerIsDead}
+              onPress={() => onKillBigWig(selectedBigWigPlayer, bigWig)}
+              playerName={selectedBigWigPlayer.name}
+            />
+          ) : null}
+        </View>
       ) : null}
       <VoterList day={nomination.day} players={players} voterIds={voterIds} />
       <View style={styles.actions}>
@@ -101,6 +116,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
+  bigWigActions: { alignItems: 'center', flexDirection: 'row', gap: 8 },
   header: { flex: 1, gap: 8 },
   label: {
     color: colors.textMuted,

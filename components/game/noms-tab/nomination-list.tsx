@@ -98,6 +98,14 @@ export function NominationList() {
                 updatedAt: new Date().toISOString(),
               })
             }
+            onKillBigWig={(player, role) =>
+              setPlayerDeath(game.id, player.id, {
+                day: activeDay,
+                killerRoleIds: [role.id],
+                kind: 'night',
+                updatedAt: new Date().toISOString(),
+              })
+            }
             onSelectBigWig={(playerId) => setNominationBigWig(game.id, nomination.id, playerId)}
             onUndoExecution={(nominee) => setPlayerDeath(game.id, nominee.id, null)}
             players={players}
