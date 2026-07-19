@@ -1,6 +1,6 @@
-import { FlameKindling, HeartPulse, Skull } from 'lucide-react-native';
+import { FlameKindling, HeartPulse, Pencil, Skull } from 'lucide-react-native';
 import type { ComponentType } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { RoleReference } from '@/components/role-reference';
@@ -47,13 +47,20 @@ export function DeathLogRow({
   activeDay,
   entry,
   killerDescription,
+  onEdit,
 }: {
   activeDay: number;
   entry: DeathLogEntry | ReviveLogEntry;
   killerDescription?: KillerDescription;
+  onEdit?: () => void;
 }) {
   return 'death' in entry ? (
-    <DeathLogDeathRow activeDay={activeDay} entry={entry} killerDescription={killerDescription} />
+    <DeathLogDeathRow
+      activeDay={activeDay}
+      entry={entry}
+      killerDescription={killerDescription}
+      onEdit={onEdit}
+    />
   ) : (
     <DeathLogReviveRow activeDay={activeDay} entry={entry} />
   );
@@ -63,10 +70,12 @@ function DeathLogDeathRow({
   activeDay,
   entry,
   killerDescription,
+  onEdit,
 }: {
   activeDay: number;
   entry: DeathLogEntry;
   killerDescription?: KillerDescription;
+  onEdit?: () => void;
 }) {
   const isExecution = entry.death.kind === 'execution';
   const accent = isExecution ? executionColor : nightColor;
@@ -85,6 +94,7 @@ function DeathLogDeathRow({
         isCurrent: entry.death.day === activeDay,
       }}
       killerDescription={killerDescription}
+      onEdit={onEdit}
       player={entry.player}
     />
   );
@@ -109,9 +119,11 @@ function DeathLogReviveRow({ activeDay, entry }: { activeDay: number; entry: Rev
 function DeathLogEntryRow({
   player,
   killerDescription,
+  onEdit,
   presentation: { Icon, accent, actionLabel, dayLabel, isCurrent },
 }: {
   killerDescription?: KillerDescription;
+  onEdit?: () => void;
   player: Player;
   presentation: RowPresentation;
 }) {
@@ -137,7 +149,22 @@ function DeathLogEntryRow({
         </View>
         {killerDescription ? <KillerDescriptionView {...killerDescription} /> : null}
       </View>
+      {onEdit ? <EditKillerButton onPress={onEdit} /> : null}
     </View>
+  );
+}
+
+function EditKillerButton({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityLabel="Edit killer"
+      accessibilityRole="button"
+      hitSlop={8}
+      onPress={onPress}
+      style={({ pressed }) => [styles.editButton, pressed && styles.editButtonPressed]}
+    >
+      <Pencil color={colors.text} size={14} strokeWidth={2.6} />
+    </Pressable>
   );
 }
 
@@ -235,6 +262,20 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     gap: 2,
+  },
+  editButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.border,
+    borderRadius: 7,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  editButtonPressed: {
+    backgroundColor: colors.surfacePressed,
   },
   titleRow: {
     alignItems: 'center',

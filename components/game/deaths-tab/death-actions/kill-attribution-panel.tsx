@@ -9,21 +9,35 @@ import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import type { KillAttribution } from '@/types/game';
+import type { KillAttribution, Player } from '@/types/game';
 import { getKillerRoleOptions, getRoleOwnerNamesForDay } from '@/utils/role-utils';
 
 type KillAttributionPanelProps = {
+  confirmLabel?: string;
+  initialAttribution?: KillAttribution;
   onCancel: () => void;
   onConfirm: (attribution: KillAttribution) => void;
+  player?: Player;
+  title?: string;
 };
 
-export function KillAttributionPanel({ onCancel, onConfirm }: KillAttributionPanelProps) {
+export function KillAttributionPanel({
+  confirmLabel = 'Confirm Kill',
+  initialAttribution,
+  onCancel,
+  onConfirm,
+  player,
+  title = 'Kill',
+}: KillAttributionPanelProps) {
   const { activeDay, focusedPlayer, game, players, showRoles } = useGameRouteContext();
   const roleCatalog = useGameStore((state) => state.roleCatalog);
-  const [killerRoleIds, setKillerRoleIds] = useState<string[]>([]);
+  const [killerRoleIds, setKillerRoleIds] = useState<string[]>(
+    initialAttribution?.killerRoleIds ?? [],
+  );
   const killerRoles = getKillerRoleOptions(game.script?.roles ?? [], roleCatalog);
+  const targetPlayer = player ?? focusedPlayer;
 
-  if (!focusedPlayer) {
+  if (!targetPlayer) {
     return null;
   }
 
@@ -56,10 +70,10 @@ export function KillAttributionPanel({ onCancel, onConfirm }: KillAttributionPan
       <View style={{ gap: 4 }}>
         <View style={{ alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
           <Text selectable style={{ color: colors.text, fontSize: 17, fontWeight: '900' }}>
-            Kill
+            {title}
           </Text>
           <PlayerNameWithRole
-            player={focusedPlayer}
+            player={targetPlayer}
             textStyle={{ color: colors.text, fontSize: 17, fontWeight: '900' }}
           />
         </View>
@@ -78,7 +92,7 @@ export function KillAttributionPanel({ onCancel, onConfirm }: KillAttributionPan
       />
       <View style={innerActionRow}>
         <KillFormButton icon={X} label="Cancel" onPress={onCancel} />
-        <KillFormButton icon={Check} label="Confirm Kill" onPress={handleConfirm} primary />
+        <KillFormButton icon={Check} label={confirmLabel} onPress={handleConfirm} primary />
       </View>
     </View>
   );
