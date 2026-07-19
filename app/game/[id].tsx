@@ -60,7 +60,8 @@ export default function GameRoute() {
   const setPlayerRoleAssignment = useGameStore((state) => state.setPlayerRoleAssignment);
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const setGameScript = useGameStore((state) => state.setGameScript);
-  const setPlayerDayNote = useGameStore((state) => state.setPlayerDayNote);
+  const addPlayerDayNote = useGameStore((state) => state.addPlayerDayNote);
+  const editPlayerDayNote = useGameStore((state) => state.editPlayerDayNote);
   const updatePlayerPosition = useGameStore((state) => state.updatePlayerPosition);
   const updatePlayerPositions = useGameStore((state) => state.updatePlayerPositions);
   const addConversation = useGameStore((state) => state.addConversation);
@@ -75,8 +76,11 @@ export default function GameRoute() {
   const [focusedPlayerId, setFocusedPlayerId] = useState<string | null>(null);
   const [highlightedVoterIds, setHighlightedVoterIds] = useState<string[] | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
-  const [noteEditingDay, setNoteEditingDay] = useState<number | null>(null);
-  const [noteEditingPlayerId, setNoteEditingPlayerId] = useState<string | null>(null);
+  const [noteEditor, setNoteEditor] = useState<{
+    day: number;
+    noteId: string | null;
+    playerId: string;
+  } | null>(null);
   const [isRearrangeMode, setIsRearrangeMode] = useState(false);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [roleAssignmentKind, setRoleAssignmentKind] = useState<PlayerRoleAssignment['kind'] | null>(
@@ -527,7 +531,7 @@ export default function GameRoute() {
       activeGame.activeDay,
       roleAssignmentKind,
       roleIds,
-      roleAssignmentKind === 'rumor' ? rumorSubjectPlayerId ?? undefined : undefined,
+      roleAssignmentKind === 'rumor' ? (rumorSubjectPlayerId ?? undefined) : undefined,
     );
     handleCancelRoleAssignment();
   }
@@ -568,26 +572,50 @@ export default function GameRoute() {
     setPlayerDeath(activeGame.id, focusedPlayer.id, null);
   }
 
-  function handleShowPlayerNoteForDay(playerId: string, day: number) {
+  function handleStartEditNote(playerId: string, day: number, noteId: string) {
     if (!activeGame.players.some((p) => p.id === playerId)) {
       return;
     }
-    const existing = activeGame.playerDayNotes?.find(
-      (n) => n.playerId === playerId && n.day === day,
-    );
-    setNoteEditingPlayerId(playerId);
-    setNoteEditingDay(day);
-    setNoteDraft(existing?.text ?? '');
+    const existing = activeGame.playerDayNotes
+      ?.find((entry) => entry.playerId === playerId && entry.day === day)
+      ?.notes.find((note) => note.id === noteId);
+    if (!existing) {
+      return;
+    }
+    setNoteEditor({ day, noteId, playerId });
+    setNoteDraft(existing.text);
   }
 
-  function handleSavePlayerNote() {
-    if (noteEditingPlayerId === null || noteEditingDay === null) {
+  function handleStartAddNote(playerId: string, day: number) {
+    if (!activeGame.players.some((player) => player.id === playerId)) {
+      return;
+    }
+    setNoteEditor({ day, noteId: null, playerId });
+    setNoteDraft('');
+  }
+
+  function handleCancelNoteEdit() {
+    setNoteEditor(null);
+    setNoteDraft('');
+  }
+
+  function handleSaveNoteEdit() {
+    if (!noteEditor) {
       return;
     }
 
-    setPlayerDayNote(activeGame.id, noteEditingPlayerId, noteEditingDay, noteDraft);
-    setNoteEditingPlayerId(null);
-    setNoteEditingDay(null);
+    if (noteEditor.noteId) {
+      editPlayerDayNote(
+        activeGame.id,
+        noteEditor.playerId,
+        noteEditor.day,
+        noteEditor.noteId,
+        noteDraft,
+      );
+    } else {
+      addPlayerDayNote(activeGame.id, noteEditor.playerId, noteEditor.day, noteDraft);
+    }
+    handleCancelNoteEdit();
   }
 
   const contextValue: GameRouteContextValue = {
@@ -616,8 +644,10 @@ export default function GameRoute() {
     focusedPlayerIsDead,
     nominationDisabled,
     noteDraft,
-    noteEditingDay,
-    noteEditingPlayerId,
+    noteEditingNoteId: noteEditor?.noteId ?? null,
+    noteEditorDay: noteEditor?.day ?? null,
+    noteEditorPlayerId: noteEditor?.playerId ?? null,
+    addingNewNote: !!noteEditor && noteEditor.noteId === null,
     isRearrangeMode,
     selectedPlayerIds,
     highlightedPlayerIds,
@@ -651,8 +681,10 @@ export default function GameRoute() {
     handleSetFocusedPlayerDeath,
     handleReviveFocusedPlayer,
     handleUndoFocusedPlayerDeath,
-    handleShowPlayerNoteForDay,
-    handleSavePlayerNote,
+    handleStartEditNote,
+    handleStartAddNote,
+    handleCancelNoteEdit,
+    handleSaveNoteEdit,
     handleDeleteConversation,
     handleDeleteNomination,
     enterRearrangeMode,
@@ -728,7 +760,7 @@ export default function GameRoute() {
               )}
             </View>
           </Animated.ScrollView>
-          
+
           {focusedPlayer ? (
             <View style={styles.selectingBar}>
               <Text style={styles.selectingLabel}>Selecting: {focusedPlayer.name}</Text>

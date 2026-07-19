@@ -8,6 +8,8 @@ import type {
   Friend,
   Game,
   Player,
+  PlayerDayNote,
+  PlayerDayNoteEntry,
   PlayerDeath,
   PlayerPosition,
   PlayerRevive,
@@ -63,7 +65,20 @@ type GameState = {
     roleIds: string[],
     subjectPlayerId?: string,
   ) => void;
-  setPlayerDayNote: (gameId: string, playerId: string, day: number, text: string) => void;
+  addPlayerDayNote: (
+    gameId: string,
+    playerId: string,
+    day: number,
+    text: string,
+  ) => string | undefined;
+  editPlayerDayNote: (
+    gameId: string,
+    playerId: string,
+    day: number,
+    noteId: string,
+    text: string,
+  ) => void;
+  removePlayerDayNote: (gameId: string, playerId: string, day: number, noteId: string) => void;
   saveNoteForFutureGames: (
     playerName: string,
     roleIds: string[],
@@ -427,9 +442,7 @@ export const useGameStore = create<GameState>()(
           day,
           kind,
           roleIds: [...new Set(roleIds)],
-          ...(kind === 'rumor' && subjectPlayerId
-            ? { subjectPlayerId }
-            : {}),
+          ...(kind === 'rumor' && subjectPlayerId ? { subjectPlayerId } : {}),
           updatedAt: new Date().toISOString(),
         };
 
@@ -458,7 +471,38 @@ export const useGameStore = create<GameState>()(
           ),
         }));
       },
-      setPlayerDayNote: (gameId, playerId, day, text) => {
+      addPlayerDayNote: (gameId, playerId, day, text) => {
+        const nextText = text.trim();
+        if (!nextText) {
+          return undefined;
+        }
+        const updatedAt = new Date().toISOString();
+        const newNote: PlayerDayNoteEntry = {
+          createdAt: updatedAt,
+          id: createId('note'),
+          text: nextText,
+          updatedAt,
+        };
+
+        set((state) => ({
+          games: state.games.map((game) => {
+            if (game.id !== gameId) {
+              return game;
+            }
+            return {
+              ...game,
+              updatedAt,
+              playerDayNotes: upsertPlayerDayNote(game.playerDayNotes, playerId, day, (notes) => [
+                ...notes,
+                newNote,
+              ]),
+            };
+          }),
+        }));
+
+        return newNote.id;
+      },
+      editPlayerDayNote: (gameId, playerId, day, noteId, text) => {
         const nextText = text.trim();
         const updatedAt = new Date().toISOString();
 
@@ -467,26 +511,34 @@ export const useGameStore = create<GameState>()(
             if (game.id !== gameId) {
               return game;
             }
-
-            const existingNotes = game.playerDayNotes ?? [];
-            const otherNotes = existingNotes.filter(
-              (note) => note.playerId !== playerId || note.day !== day,
-            );
-
             return {
               ...game,
               updatedAt,
-              playerDayNotes: nextText
-                ? [
-                    ...otherNotes,
-                    {
-                      day,
-                      playerId,
-                      text: nextText,
-                      updatedAt,
-                    },
-                  ]
-                : otherNotes,
+              playerDayNotes: upsertPlayerDayNote(game.playerDayNotes, playerId, day, (notes) =>
+                nextText
+                  ? notes.map((note) =>
+                      note.id === noteId ? { ...note, text: nextText, updatedAt } : note,
+                    )
+                  : notes.filter((note) => note.id !== noteId),
+              ),
+            };
+          }),
+        }));
+      },
+      removePlayerDayNote: (gameId, playerId, day, noteId) => {
+        const updatedAt = new Date().toISOString();
+
+        set((state) => ({
+          games: state.games.map((game) => {
+            if (game.id !== gameId) {
+              return game;
+            }
+            return {
+              ...game,
+              updatedAt,
+              playerDayNotes: upsertPlayerDayNote(game.playerDayNotes, playerId, day, (notes) =>
+                notes.filter((note) => note.id !== noteId),
+              ),
             };
           }),
         }));
@@ -750,10 +802,10 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'grim-keeper-game-store-v1',
-      version: 3,
+      version: 4,
       storage: createJSONStorage(() => localStorage),
       migrate: (persistedState, version) => {
-        if (!persistedState || version >= 3) {
+        if (!persistedState || version >= 4) {
           return persistedState as Partial<GameState> | undefined;
         }
 
@@ -761,11 +813,9 @@ export const useGameStore = create<GameState>()(
           friends?: Array<Friend & { notes?: Array<string | LegacyFriendNote> }>;
         };
 
-        if (version < 2) {
-          return migrateV1ToV3(state);
-        }
-
-        return migrateV2ToV3(state);
+        const v3State =
+          version < 2 ? migrateV1ToV3(state) : version < 3 ? migrateV2ToV3(state) : state;
+        return migratePlayerDayNotes(v3State as Partial<GameState>);
       },
       partialize: (state) => ({
         appUserName: state.appUserName,
@@ -785,6 +835,65 @@ export function getGameById(games: Game[], gameId: string | undefined) {
 
 function createId(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function upsertPlayerDayNote(
+  playerDayNotes: PlayerDayNote[] | undefined,
+  playerId: string,
+  day: number,
+  updateNotes: (notes: PlayerDayNoteEntry[]) => PlayerDayNoteEntry[],
+) {
+  const existingNotes = playerDayNotes ?? [];
+  const existing = existingNotes.find((entry) => entry.playerId === playerId && entry.day === day);
+  const notes = updateNotes(existing?.notes ?? []);
+  const otherEntries = existingNotes.filter(
+    (entry) => entry.playerId !== playerId || entry.day !== day,
+  );
+
+  if (notes.length === 0) {
+    return otherEntries;
+  }
+
+  return [
+    ...otherEntries,
+    {
+      day,
+      playerId,
+      notes,
+      updatedAt: new Date().toISOString(),
+    },
+  ];
+}
+
+function migratePlayerDayNotes(state: Partial<GameState>): Partial<GameState> {
+  return {
+    ...state,
+    games: state.games?.map((game) => ({
+      ...game,
+      playerDayNotes: game.playerDayNotes?.map((entry) => {
+        const legacyEntry = entry as PlayerDayNote & { text?: string };
+        if (Array.isArray(legacyEntry.notes)) {
+          return legacyEntry;
+        }
+        const text = legacyEntry.text?.trim();
+        return {
+          day: entry.day,
+          playerId: entry.playerId,
+          notes: text
+            ? [
+                {
+                  createdAt: entry.updatedAt,
+                  id: createId('note'),
+                  text,
+                  updatedAt: entry.updatedAt,
+                },
+              ]
+            : [],
+          updatedAt: entry.updatedAt,
+        };
+      }),
+    })),
+  };
 }
 
 function dedupeRoles(roles: Role[]) {

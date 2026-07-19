@@ -90,7 +90,7 @@ export function NotesTab() {
           return null;
         }
         return (
-          <DayNoteRow day={activeDay} key={entry.playerId} player={player} text={entry.text} />
+          <DayNoteRow day={activeDay} key={entry.playerId} notes={entry.notes} player={player} />
         );
       })}
     </View>

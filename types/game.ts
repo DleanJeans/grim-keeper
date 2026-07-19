@@ -76,10 +76,17 @@ export type Conversation = {
   createdAt: string;
 };
 
+export type PlayerDayNoteEntry = {
+  id: string;
+  text: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type PlayerDayNote = {
   day: number;
   playerId: string;
-  text: string;
+  notes: PlayerDayNoteEntry[];
   updatedAt: string;
 };
 

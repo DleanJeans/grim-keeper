@@ -1,28 +1,69 @@
-import { FlameKindling, Skull, Vote } from 'lucide-react-native';
+import { FlameKindling, Megaphone, Skull, Vote } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
 
 import { DeadVoteIcon } from '@/components/game/dead-vote-icon';
 import { NomIcon } from '@/components/game/noms-tab/nom-icon';
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
+import { gameStyles } from '@/components/game/styles';
+import { RoleReference } from '@/components/role-reference';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { Player } from '@/types/game';
+import type { Player, Role } from '@/types/game';
 
 const badgeColors = colors.playerTokenEdgeBadge;
 
-export type PlayerActivity = {
-  kind: 'death-execution' | 'death-night' | 'nominated' | 'nominator' | 'vote';
+type StandardActivityKind = 'death-execution' | 'death-night' | 'nominated' | 'nominator' | 'vote';
+
+type StandardPlayerActivity = {
+  kind: StandardActivityKind;
   players: Player[];
   preposition?: 'by' | 'for';
   verb: string;
 };
 
+type RumorPlayerActivity = {
+  kind: 'rumor';
+  roles: Role[];
+  scriptId?: string;
+  subject: Player;
+};
+
+export type PlayerActivity = StandardPlayerActivity | RumorPlayerActivity;
+
 export function PlayerActivityRow({ activity, day }: { activity: PlayerActivity; day: number }) {
+  if (activity.kind === 'rumor') {
+    return (
+      <View style={[styles.row, gameStyles.noteCard]}>
+        <View style={styles.icon}>
+          <Megaphone color={colors.roleRumor} size={14} strokeWidth={2.5} />
+        </View>
+        <Text style={styles.verbRumor}>Rumor</Text>
+        <PlayerNameWithRole
+          day={day}
+          player={activity.subject}
+          roleIconSize={14}
+          textStyle={styles.playerName}
+        />
+        <Text style={styles.preposition}>is</Text>
+        {activity.roles.map((role) => (
+          <RoleReference
+            iconSize={18}
+            iconScale={1}
+            key={role.id}
+            role={role}
+            scriptId={activity.scriptId}
+            textStyle={styles.roleReferenceText}
+          />
+        ))}
+      </View>
+    );
+  }
+
   const color = getActivityColor(activity.kind);
   const verbStyle = getActivityVerbStyle(activity.kind);
 
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, gameStyles.noteCard]}>
       <View style={styles.icon}>{getActivityIcon(activity.kind, color)}</View>
       <Text style={[styles.verb, verbStyle]}>{activity.verb}</Text>
       {activity.preposition ? <Text style={styles.preposition}>{activity.preposition}</Text> : null}
@@ -63,6 +104,12 @@ const styles = StyleSheet.create({
   verbNominated: { color: badgeColors.nominatedIcon },
   verbNominator: { color: badgeColors.nominatorIcon },
   verbVote: { color: badgeColors.deadVoteIcon },
+  verbRumor: {
+    color: colors.roleRumor,
+    fontSize: 13,
+    fontWeight: '800',
+    lineHeight: 18,
+  },
   player: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -78,6 +125,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
+  roleReferenceText: {
+    fontSize: 12,
+  },
   separator: {
     color: colors.noteText,
     fontSize: 13,
@@ -85,7 +135,7 @@ const styles = StyleSheet.create({
   },
 });
 
-function getActivityColor(kind: PlayerActivity['kind']) {
+function getActivityColor(kind: StandardActivityKind) {
   switch (kind) {
     case 'death-execution':
       return badgeColors.deathExecutionIcon;
@@ -100,7 +150,7 @@ function getActivityColor(kind: PlayerActivity['kind']) {
   }
 }
 
-function getActivityVerbStyle(kind: PlayerActivity['kind']) {
+function getActivityVerbStyle(kind: StandardActivityKind) {
   switch (kind) {
     case 'death-execution':
       return styles.verbDeathExecution;
@@ -115,7 +165,7 @@ function getActivityVerbStyle(kind: PlayerActivity['kind']) {
   }
 }
 
-function getActivityIcon(kind: PlayerActivity['kind'], color: string) {
+function getActivityIcon(kind: StandardActivityKind, color: string) {
   switch (kind) {
     case 'death-execution':
       return <FlameKindling color={color} size={14} strokeWidth={2} />;

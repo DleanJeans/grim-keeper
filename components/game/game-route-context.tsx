@@ -43,6 +43,10 @@ export type GameRouteContextValue = {
   focusedPlayerIsDead: boolean;
   nominationDisabled: boolean;
   noteDraft: string;
+  noteEditingNoteId: string | null;
+  noteEditorDay: number | null;
+  noteEditorPlayerId: string | null;
+  addingNewNote: boolean;
   isRearrangeMode: boolean;
   selectedPlayerIds: string[];
   highlightedPlayerIds: string[];
@@ -78,10 +82,10 @@ export type GameRouteContextValue = {
   handleSetFocusedPlayerDeath: (kind: 'execution' | 'night', attribution?: KillAttribution) => void;
   handleReviveFocusedPlayer: () => void;
   handleUndoFocusedPlayerDeath: () => void;
-  handleShowPlayerNoteForDay: (playerId: string, day: number) => void;
-  handleSavePlayerNote: () => void;
-  noteEditingDay: number | null;
-  noteEditingPlayerId: string | null;
+  handleStartEditNote: (playerId: string, day: number, noteId: string) => void;
+  handleStartAddNote: (playerId: string, day: number) => void;
+  handleCancelNoteEdit: () => void;
+  handleSaveNoteEdit: () => void;
   handleDeleteConversation: (conversationId: string) => void;
   handleDeleteNomination: (nominationId: string) => void;
   enterRearrangeMode: () => void;

@@ -64,7 +64,19 @@ describe('getLastDayWithData', () => {
         },
       ],
       playerDayNotes: [
-        { day: 5, playerId: 'p1', text: 'loud', updatedAt: '2026-01-05T00:00:00.000Z' },
+        {
+          day: 5,
+          playerId: 'p1',
+          notes: [
+            {
+              createdAt: '2026-01-05T00:00:00.000Z',
+              id: 'note-1',
+              text: 'loud',
+              updatedAt: '2026-01-05T00:00:00.000Z',
+            },
+          ],
+          updatedAt: '2026-01-05T00:00:00.000Z',
+        },
       ],
     });
 

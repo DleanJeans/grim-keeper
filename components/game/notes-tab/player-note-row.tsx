@@ -1,61 +1,60 @@
-import { Check, Pencil } from 'lucide-react-native';
+import { Plus } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
-import { NoteAutocompleteInput } from '@/components/game/notes-tab/note-autocomplete-input';
 import {
   type PlayerActivity,
   PlayerActivityRow,
 } from '@/components/game/notes-tab/player-activity-row';
+import { PlayerDayNoteEditor } from '@/components/game/notes-tab/player-day-note-editor';
 import { PlayerNoteRoleAssignment } from '@/components/game/notes-tab/player-notes';
-import { SaveNoteForFutureButton } from '@/components/game/notes-tab/save-note-for-future-button';
-import { innerActionRow } from '@/components/game/styles';
-import { RoleReferencedNoteText } from '@/components/role-referenced-note-text';
+import { RoleReferenceNoteLine } from '@/components/role-reference-note-line';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { Conversation, Player } from '@/types/game';
+import type { Conversation, Player, PlayerDayNoteEntry } from '@/types/game';
 import {
-  getRumorAboutPlayerForDay,
   getRoleAssignmentForDay,
   getRolesByIds,
+  getRumorAboutPlayerForDay,
 } from '@/utils/role-utils';
 
 export function PlayerNoteRow({
   player,
   day,
-  text,
+  notes = [],
 }: {
   player: Player;
   day: number;
-  text?: string;
+  notes?: PlayerDayNoteEntry[];
 }) {
   const {
+    addingNewNote,
     activeDay,
-    noteDraft,
-    noteEditingDay,
-    noteEditingPlayerId,
+    noteEditingNoteId,
+    noteEditorDay,
+    noteEditorPlayerId,
     game,
     showRoles,
-    setNoteDraft: onChangeNoteDraft,
-    handleShowPlayerNoteForDay: onShowNote,
-    handleSavePlayerNote: onSaveNote,
+    handleStartAddNote: onAddNote,
+    handleStartEditNote: onEditNote,
   } = useGameRouteContext();
 
-  const isEditing = noteEditingDay === day && noteEditingPlayerId === player.id;
+  const isEditingRow = noteEditorDay === day && noteEditorPlayerId === player.id;
   const isActiveDay = day === activeDay;
-  const reusableNoteText = isEditing ? noteDraft : (text ?? '');
   const roleAssignment = showRoles
     ? getRoleAssignmentForDay(player.roleAssignments, day)
     : undefined;
   const roles =
     roleAssignment && game.script ? getRolesByIds(roleAssignment.roleIds, game.script.roles) : [];
-  const rumorAboutThisPlayer = showRoles && game.script
-    ? getRumorAboutPlayerForDay(game.players, player.id, day, game.script.roles)
-    : [];
-  const ownRumor = showRoles && game.script && player.roleAssignments
-    ? player.roleAssignments.filter(
-        (assignment) => assignment.kind === 'rumor' && assignment.day === day,
-      )
-    : [];
+  const rumorAboutThisPlayer =
+    showRoles && game.script
+      ? getRumorAboutPlayerForDay(game.players, player.id, day, game.script.roles)
+      : [];
+  const ownRumor =
+    showRoles && game.script && player.roleAssignments
+      ? player.roleAssignments.filter(
+          (assignment) => assignment.kind === 'rumor' && assignment.day === day,
+        )
+      : [];
   const playersById = new Map(game.players.map((candidate) => [candidate.id, candidate]));
   const dayHeaderStyle = isActiveDay ? styles.noteDayHeaderActive : styles.noteDayHeader;
   const activityLines = getPlayerActivityLines(player, day, game.players, game.conversations);
@@ -65,23 +64,15 @@ export function PlayerNoteRow({
       <View style={styles.rowHeader}>
         <Text style={dayHeaderStyle}>Day {day}</Text>
         <Pressable
-          accessibilityLabel={`Edit day ${day} note for ${player.name}`}
+          accessibilityLabel={`Add day ${day} note for ${player.name}`}
           accessibilityRole="button"
           hitSlop={8}
-          onPress={() => onShowNote(player.id, day)}
-          style={styles.editIcon}
+          onPress={() => onAddNote(player.id, day)}
+          style={styles.addNoteButton}
         >
-          <Pencil color={colors.textMuted} size={14} strokeWidth={2.5} />
+          <Plus color={colors.textMuted} size={14} strokeWidth={2.5} />
+          <Text style={styles.addNoteLabel}>Add new note</Text>
         </Pressable>
-        {reusableNoteText.trim() ? (
-          <SaveNoteForFutureButton
-            day={day}
-            disabled={false}
-            playerId={player.id}
-            playerName={player.name}
-            text={reusableNoteText}
-          />
-        ) : null}
       </View>
 
       <View style={styles.noteLines}>
@@ -106,6 +97,7 @@ export function PlayerNoteRow({
           }
           return (
             <PlayerNoteRoleAssignment
+              day={day}
               kind="rumor"
               key={`own-rumor-${rumor.subjectPlayerId}-${day}`}
               roles={rumorRoles}
@@ -118,6 +110,7 @@ export function PlayerNoteRow({
 
         {rumorAboutThisPlayer.map((rumor) => (
           <PlayerNoteRoleAssignment
+            day={day}
             kind="rumor"
             key={`rumor-${rumor.sourcePlayer.id}-${day}`}
             roles={rumor.roles}
@@ -131,38 +124,26 @@ export function PlayerNoteRow({
           <PlayerActivityRow activity={activity} day={day} key={activity.kind} />
         ))}
 
-        {isEditing ? (
-          <View style={innerActionRow}>
-            <NoteAutocompleteInput
-              accessibilityLabel={`Day ${day} note for ${player.name}`}
+        {notes.map((note) =>
+          isEditingRow && noteEditingNoteId === note.id ? (
+            <PlayerDayNoteEditor day={day} key={note.id} player={player} />
+          ) : (
+            <RoleReferenceNoteLine
               day={day}
               game={game}
-              onChangeText={onChangeNoteDraft}
-              placeholder={`What did ${player.name} say?`}
-              placeholderTextColor={colors.inputPlaceholder}
-              style={styles.noteInput}
-              value={noteDraft}
+              key={note.id}
+              onEdit={() => onEditNote(player.id, day, note.id)}
+              playerId={player.id}
+              playerName={player.name}
+              players={game.players}
+              roles={game.script?.roles ?? []}
+              scriptId={game.script?.id}
+              style={styles.noteText}
+              text={note.text}
             />
-            <Pressable
-              accessibilityLabel={`Save day ${day} note for ${player.name}`}
-              accessibilityRole="button"
-              onPress={onSaveNote}
-              style={noteSaveButtonStyle}
-            >
-              <Check color={colors.inputText} size={18} strokeWidth={2.8} />
-            </Pressable>
-          </View>
-        ) : text ? (
-          <RoleReferencedNoteText
-            day={day}
-            game={game}
-            players={game.players}
-            roles={game.script?.roles ?? []}
-            scriptId={game.script?.id}
-            style={styles.noteText}
-            text={text}
-          />
-        ) : null}
+          ),
+        )}
+        {isEditingRow && addingNewNote ? <PlayerDayNoteEditor day={day} player={player} /> : null}
       </View>
     </View>
   );
@@ -196,46 +177,25 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
-  editIcon: {
+  addNoteButton: {
     alignItems: 'center',
     borderRadius: 6,
+    flexDirection: 'row',
+    gap: 4,
     justifyContent: 'center',
     paddingHorizontal: 6,
     paddingVertical: 4,
   },
-  noteInput: {
-    backgroundColor: colors.inputBackground,
-    borderColor: colors.inputBorder,
-    borderRadius: 8,
-    borderWidth: 1,
-    color: colors.inputText,
-    flex: 1,
-    fontSize: 15,
-    minHeight: 48,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    textAlignVertical: 'top',
+  addNoteLabel: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
   },
   noteText: {
     color: colors.noteText,
     fontSize: 14,
     lineHeight: 20,
   },
-});
-
-const noteSaveButtonStatic = StyleSheet.create({
-  noteSaveButton: {
-    alignItems: 'center',
-    borderRadius: 8,
-    justifyContent: 'center',
-    minWidth: 48,
-    width: 48,
-  },
-});
-
-const noteSaveButtonStyle = ({ pressed }: { pressed: boolean }) => ({
-  ...noteSaveButtonStatic.noteSaveButton,
-  backgroundColor: pressed ? colors.saveButtonPressed : colors.saveButton,
 });
 
 function getPlayerActivityLines(
@@ -287,9 +247,9 @@ function getNominationActivity(playerId: string, day: number, conversations: Con
 }
 
 function formatActivity(
-  kind: PlayerActivity['kind'],
+  kind: Exclude<PlayerActivity['kind'], 'rumor'>,
   verb: string,
-  preposition: PlayerActivity['preposition'],
+  preposition: 'by' | 'for' | undefined,
   playerIds: string[],
   playersById: Map<string, Player>,
 ): PlayerActivity | undefined {

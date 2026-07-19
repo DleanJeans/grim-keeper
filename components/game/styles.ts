@@ -1,9 +1,22 @@
-import type { TextStyle, ViewStyle } from 'react-native';
+import { StyleSheet, type TextStyle, type ViewStyle } from 'react-native';
+
+import { colors } from '@/theme/colors';
 
 const slateBg = '#111827';
 const slateBgPressed = '#1f2937';
 const slateBorder = '#334155';
 const onDark = '#f8fafc';
+
+export const gameStyles = StyleSheet.create({
+  noteCard: {
+    backgroundColor: colors.inputBackground,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+});
 
 /**
  * Outlined "neutral" action button — used for pressable actions that sit in
