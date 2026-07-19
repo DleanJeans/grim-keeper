@@ -65,6 +65,15 @@ export function PlayerNoteRow({
           />
         ) : null}
       </View>
+
+      {roleAssignment && roles.length > 0 ? (
+        <PlayerNoteRoleAssignment
+          kind={roleAssignment.kind}
+          roles={roles}
+          scriptId={game.script?.id}
+        />
+      ) : null}
+
       {isEditing ? (
         <View style={innerActionRow}>
           <NoteAutocompleteInput
@@ -95,13 +104,6 @@ export function PlayerNoteRow({
           scriptId={game.script?.id}
           style={styles.noteText}
           text={text}
-        />
-      ) : null}
-      {roleAssignment && roles.length > 0 ? (
-        <PlayerNoteRoleAssignment
-          kind={roleAssignment.kind}
-          roles={roles}
-          scriptId={game.script?.id}
         />
       ) : null}
     </View>
