@@ -710,17 +710,23 @@ export default function GameRoute() {
             <GameMap />
 
             <View key="day-and-counts" style={styles.dayAndCountsRow}>
-              <CharacterTypeCountEditor
-                counts={activeGame.characterTypeCounts}
-                onChange={(counts) => setCharacterTypeCounts(activeGame.id, counts)}
-                playerCount={nonTravelerPlayers.length}
-              />
-              <DayCount activeDay={activeGame.activeDay} lastDayWithData={lastDayWithData} />
-              <PlayerCountStatus
-                alivePlayerCount={alivePlayerCount}
-                deadPlayerCount={deadPlayerCount}
-                travelerPlayerCount={travelerPlayerCount}
-              />
+              <View style={styles.leftCounts}>
+                <CharacterTypeCountEditor
+                  counts={activeGame.characterTypeCounts}
+                  onChange={(counts) => setCharacterTypeCounts(activeGame.id, counts)}
+                  playerCount={nonTravelerPlayers.length}
+                />
+              </View>
+              <View style={styles.centeredDayCount}>
+                <DayCount activeDay={activeGame.activeDay} lastDayWithData={lastDayWithData} />
+              </View>
+              <View style={styles.rightCounts}>
+                <PlayerCountStatus
+                  alivePlayerCount={alivePlayerCount}
+                  deadPlayerCount={deadPlayerCount}
+                  travelerPlayerCount={travelerPlayerCount}
+                />
+              </View>
             </View>
 
             {isRearrangeMode ? (
@@ -806,9 +812,10 @@ const styles = StyleSheet.create({
   dayAndCountsRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
-    justifyContent: 'center',
   },
+  centeredDayCount: { alignItems: 'center', flex: 1 },
+  leftCounts: { alignItems: 'flex-start', flex: 1 },
+  rightCounts: { alignItems: 'flex-end', flex: 1 },
   scroll: {
     flex: 1,
   },
