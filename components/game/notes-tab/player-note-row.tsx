@@ -2,6 +2,10 @@ import { Check, Pencil } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { NoteAutocompleteInput } from '@/components/game/notes-tab/note-autocomplete-input';
+import {
+  type PlayerActivity,
+  PlayerActivityRow,
+} from '@/components/game/notes-tab/player-activity-row';
 import { PlayerNoteRoleAssignment } from '@/components/game/notes-tab/player-notes';
 import { SaveNoteForFutureButton } from '@/components/game/notes-tab/save-note-for-future-button';
 import { innerActionRow } from '@/components/game/styles';
@@ -75,10 +79,8 @@ export function PlayerNoteRow({
         />
       ) : null}
 
-      {activityLines.map((line) => (
-        <Text key={line} style={styles.activityText}>
-          {line}
-        </Text>
+      {activityLines.map((activity) => (
+        <PlayerActivityRow activity={activity} day={day} key={activity.kind} />
       ))}
 
       {isEditing ? (
@@ -163,11 +165,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  activityText: {
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 18,
-  },
 });
 
 const noteSaveButtonStatic = StyleSheet.create({
@@ -191,7 +188,7 @@ function getPlayerActivityLines(
   players: Player[],
   conversations: Conversation[],
 ) {
-  const playerNamesById = new Map(players.map(({ id, name }) => [id, name]));
+  const playersById = new Map(players.map((candidate) => [candidate.id, candidate]));
   const killerIds =
     player.death?.day === day
       ? (player.death.killerPlayerIds ??
@@ -200,11 +197,17 @@ function getPlayerActivityLines(
   const nominationActivity = getNominationActivity(player.id, day, conversations);
 
   return [
-    formatActivityLine('Killed by', killerIds, playerNamesById),
-    formatActivityLine('Nominated for', nominationActivity.nomineeIds, playerNamesById),
-    formatActivityLine('Nominated by', nominationActivity.nominatorIds, playerNamesById),
-    formatActivityLine('Voted for', nominationActivity.votedForIds, playerNamesById),
-  ].filter((line): line is string => !!line);
+    formatActivity(
+      player.death?.kind === 'execution' ? 'death-execution' : 'death-night',
+      'Killed',
+      'by',
+      killerIds,
+      playersById,
+    ),
+    formatActivity('nominator', 'Nominated', undefined, nominationActivity.nomineeIds, playersById),
+    formatActivity('nominated', 'Nominated', 'by', nominationActivity.nominatorIds, playersById),
+    formatActivity('vote', 'Voted', 'for', nominationActivity.votedForIds, playersById),
+  ].filter((activity): activity is PlayerActivity => !!activity);
 }
 
 function getNominationActivity(playerId: string, day: number, conversations: Conversation[]) {
@@ -227,11 +230,13 @@ function getNominationActivity(playerId: string, day: number, conversations: Con
   };
 }
 
-function formatActivityLine(
-  label: string,
+function formatActivity(
+  kind: PlayerActivity['kind'],
+  verb: string,
+  preposition: PlayerActivity['preposition'],
   playerIds: string[],
-  playerNamesById: Map<string, string>,
-) {
-  const names = [...new Set(playerIds)].flatMap((playerId) => playerNamesById.get(playerId) ?? []);
-  return names.length > 0 ? `${label} ${names.join(', ')}` : undefined;
+  playersById: Map<string, Player>,
+): PlayerActivity | undefined {
+  const players = [...new Set(playerIds)].flatMap((playerId) => playersById.get(playerId) ?? []);
+  return players.length > 0 ? { kind, players, preposition, verb } : undefined;
 }

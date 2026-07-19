@@ -14,6 +14,7 @@ import Animated, {
 import { DeadVoteIcon } from '@/components/game/dead-vote-icon';
 import { NomIcon } from '@/components/game/noms-tab/nom-icon';
 import { Text } from '@/components/text';
+import { colors } from '@/theme/colors';
 import type { Player, PlayerPosition, Role } from '@/types/game';
 import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
 import { getRoleIconUrl, isTravelerRole } from '@/utils/role-utils';
@@ -21,29 +22,18 @@ import { getRoleIconUrl, isTravelerRole } from '@/utils/role-utils';
 const BADGE_SIZE = 18;
 const ROLE_IMAGE_SCALE = 1.4;
 const ROLE_IMAGE_OPACITY = 0.4;
+const badgeColors = colors.playerTokenEdgeBadge;
 const Colors = {
   backgroundDefault: '#f8fafc',
   backgroundDeath: '#1f2937',
   backgroundDragReady: '#38bdf8',
   backgroundInitiator: '#fde68a',
   backgroundSelected: '#bbf7d0',
-  badgeConfirmedBackground: '#166534',
-  badgeConfirmedIcon: '#dcfce7',
-  badgeDeadVoteBackground: '#166534',
-  badgeDeadVoteIcon: '#dcfce7',
-  badgeDeathExecutionBackground: '#7f1d1d',
-  badgeDeathNightBackground: '#1e3a8a',
-  badgeNominatedBackground: '#713f12',
-  badgeNominatedIcon: '#fef3c7',
-  badgeNominatorBackground: '#312e81',
-  badgeNominatorIcon: '#ddd6fe',
   borderDefault: '#94a3b8',
   borderDeath: '#64748b',
   borderDragReady: '#e0f2fe',
   borderInitiator: '#f59e0b',
   borderSelected: '#22c55e',
-  deathExecutionIcon: '#fecaca',
-  deathNightIcon: '#bfdbfe',
   textDefault: '#0b1120',
   textDeath: '#cbd5e1',
   textDragReady: '#082f49',
@@ -99,7 +89,9 @@ export function PlayerToken({
   const backgroundRole = visibleRoles.find(isTravelerRole) ?? visibleRoles[0];
   const DeathIcon = player.death?.kind === 'execution' ? FlameKindling : Skull;
   const deathIconColor =
-    player.death?.kind === 'execution' ? Colors.deathExecutionIcon : Colors.deathNightIcon;
+    player.death?.kind === 'execution'
+      ? badgeColors.deathExecutionIcon
+      : badgeColors.deathNightIcon;
   const x = useSharedValue(position.x);
   const y = useSharedValue(position.y);
   const startX = useSharedValue(position.x);
@@ -221,8 +213,8 @@ export function PlayerToken({
           <PlayerTokenEdgeBadge
             backgroundColor={
               player.death.kind === 'execution'
-                ? Colors.badgeDeathExecutionBackground
-                : Colors.badgeDeathNightBackground
+                ? badgeColors.deathExecutionBackground
+                : badgeColors.deathNightBackground
             }
             position={{ bottom: -2, right: -2 }}
           >
@@ -231,34 +223,34 @@ export function PlayerToken({
         ) : null}
         {player.death && player.deadVoteUsed !== true ? (
           <PlayerTokenEdgeBadge
-            backgroundColor={Colors.badgeDeadVoteBackground}
+            backgroundColor={badgeColors.deadVoteBackground}
             position={{ bottom: -2, left: -2 }}
           >
-            <DeadVoteIcon color={Colors.badgeDeadVoteIcon} />
+            <DeadVoteIcon color={badgeColors.deadVoteIcon} />
           </PlayerTokenEdgeBadge>
         ) : null}
         {isNominator ? (
           <PlayerTokenEdgeBadge
-            backgroundColor={Colors.badgeNominatorBackground}
+            backgroundColor={badgeColors.nominatorBackground}
             position={{ left: -2, top: -2 }}
           >
-            <NomIcon color={Colors.badgeNominatorIcon} size={12} strokeWidth={2.3} />
+            <NomIcon color={badgeColors.nominatorIcon} size={12} strokeWidth={2.3} />
           </PlayerTokenEdgeBadge>
         ) : null}
         {isNominated ? (
           <PlayerTokenEdgeBadge
-            backgroundColor={Colors.badgeNominatedBackground}
+            backgroundColor={badgeColors.nominatedBackground}
             position={{ right: -2, top: -2 }}
           >
-            <Vote color={Colors.badgeNominatedIcon} size={12} strokeWidth={2.3} />
+            <Vote color={badgeColors.nominatedIcon} size={12} strokeWidth={2.3} />
           </PlayerTokenEdgeBadge>
         ) : null}
         {rolesConfirmed && visibleRoles.length > 0 && !visibleRoles.some(isTravelerRole) ? (
           <PlayerTokenEdgeBadge
-            backgroundColor={Colors.badgeConfirmedBackground}
+            backgroundColor={badgeColors.confirmedBackground}
             position={{ right: -10, top: tokenSize / 2 - BADGE_SIZE / 2 }}
           >
-            <CircleCheck color={Colors.badgeConfirmedIcon} size={12} strokeWidth={2.8} />
+            <CircleCheck color={badgeColors.confirmedIcon} size={12} strokeWidth={2.8} />
           </PlayerTokenEdgeBadge>
         ) : null}
       </Animated.View>
