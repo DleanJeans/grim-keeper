@@ -20,6 +20,8 @@ import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
 import { getRoleIconUrl, isTravelerRole } from '@/utils/role-utils';
 
 const BADGE_SIZE = 18;
+const DEFAULT_BORDER_WIDTH = 2;
+const SELECTED_BORDER_WIDTH = 3;
 const ROLE_IMAGE_SCALE = 1.4;
 const ROLE_IMAGE_OPACITY = 0.4;
 const badgeColors = colors.playerTokenEdgeBadge;
@@ -81,6 +83,7 @@ export function PlayerToken({
 }: PlayerTokenProps) {
   const [isDragReady, setIsDragReady] = useState(false);
   const tokenSize = getTokenSize(tokenSizeProp);
+  const borderWidth = isSelected ? SELECTED_BORDER_WIDTH : DEFAULT_BORDER_WIDTH;
   const displayedRoles =
     rolesConfirmed && confirmedRoleIds
       ? roles.filter((role) => confirmedRoleIds.includes(role.id))
@@ -119,6 +122,7 @@ export function PlayerToken({
         mapWidth,
         mapHeight,
         tokenSize,
+        borderWidth,
       );
 
       x.value = nextPosition.x;
@@ -166,7 +170,7 @@ export function PlayerToken({
                     ? Colors.borderInitiator
                     : Colors.borderDefault,
             borderRadius: tokenSize / 2,
-            borderWidth: isSelected ? 3 : 2,
+            borderWidth,
             opacity: disabled ? 0.42 : player.death && !isDragReady ? 0.72 : 1,
             height: tokenSize,
             justifyContent: 'center',

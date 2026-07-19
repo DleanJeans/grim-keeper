@@ -67,10 +67,11 @@ export function clampTokenPosition(
   mapWidth: number,
   mapHeight: number,
   tokenSize = defaultTokenSize,
+  edgeInset = 0,
 ): PlayerPosition {
   'worklet';
 
-  const inset = getTokenSize(tokenSize) / 2;
+  const inset = getTokenSize(tokenSize) / 2 + edgeInset;
   const maxX = Math.max(inset, mapWidth - inset);
   const maxY = Math.max(inset, mapHeight - inset);
 

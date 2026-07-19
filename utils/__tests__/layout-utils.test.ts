@@ -1,5 +1,5 @@
 import type { Player } from '@/types/game';
-import { getPlayerMapPosition } from '@/utils/layout-utils';
+import { clampTokenPosition, getPlayerMapPosition } from '@/utils/layout-utils';
 
 const players: Player[] = Array.from({ length: 8 }, (_, seat) => ({
   id: `player-${seat}`,
@@ -21,5 +21,12 @@ describe('layout utils', () => {
       { x: 234, y: 100 },
       { x: 217, y: 166 },
     ]);
+  });
+
+  it('keeps the token border inside the map', () => {
+    expect(clampTokenPosition({ x: 0, y: 200 }, 200, 200, 68, 3)).toEqual({
+      x: 37,
+      y: 163,
+    });
   });
 });
