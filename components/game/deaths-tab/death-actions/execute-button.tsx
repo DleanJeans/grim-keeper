@@ -7,6 +7,7 @@ import { Text } from '@/components/text';
 type ExecuteButtonProps = {
   compact?: boolean;
   disabled?: boolean;
+  disabledLabel?: string;
   flex?: number;
   onPress: () => void;
   playerName: string;
@@ -15,6 +16,7 @@ type ExecuteButtonProps = {
 export function ExecuteButton({
   compact = false,
   disabled = false,
+  disabledLabel = 'Executed',
   flex = 1,
   onPress,
   playerName,
@@ -42,7 +44,7 @@ export function ExecuteButton({
         size={compact ? 15 : 17}
         strokeWidth={2.7}
       />
-      <Text style={onDarkTextStrong}>{disabled ? 'Executed' : 'Execute'}</Text>
+      <Text style={onDarkTextStrong}>{disabled ? disabledLabel : 'Execute'}</Text>
     </Pressable>
   );
 }

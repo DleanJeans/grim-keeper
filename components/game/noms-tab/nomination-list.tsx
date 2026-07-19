@@ -169,6 +169,7 @@ export function NominationList() {
                       <ExecuteButton
                         compact
                         disabled={nomineeIsDead}
+                        disabledLabel="Already Killed"
                         onPress={() =>
                           setPlayerDeath(game.id, nominee.id, {
                             day: activeDay,
