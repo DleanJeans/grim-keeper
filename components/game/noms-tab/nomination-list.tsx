@@ -6,9 +6,8 @@ import { NominateButton } from '@/components/game/noms-tab/action-buttons/nomina
 import { DeleteNominationButton } from '@/components/game/noms-tab/delete-nomination-button';
 import { EditVotesButton } from '@/components/game/noms-tab/edit-votes-button';
 import { HighlightVotersButton } from '@/components/game/noms-tab/highlight-voters-button';
-import { NomIcon } from '@/components/game/noms-tab/nom-icon';
+import { NominationPlayers } from '@/components/game/noms-tab/nomination-players';
 import { VoterList } from '@/components/game/noms-tab/voter-list';
-import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
@@ -119,35 +118,7 @@ export function NominationList() {
                   >
                     Nomination {index + 1}
                   </Text>
-                  <View style={{ alignItems: 'center', flexDirection: 'row', gap: 6 }}>
-                    {nominator ? (
-                      <PlayerNameWithRole
-                        player={nominator}
-                        textStyle={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
-                      />
-                    ) : (
-                      <Text
-                        selectable
-                        style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
-                      >
-                        Unknown
-                      </Text>
-                    )}
-                    <NomIcon color={colors.text} size={16} />
-                    {nominee ? (
-                      <PlayerNameWithRole
-                        player={nominee}
-                        textStyle={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
-                      />
-                    ) : (
-                      <Text
-                        selectable
-                        style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
-                      >
-                        Unknown
-                      </Text>
-                    )}
-                  </View>
+                  <NominationPlayers nominee={nominee} nominator={nominator} />
                 </View>
               </View>
               <VoterList day={nomination.day} players={players} voterIds={voterIds} />
