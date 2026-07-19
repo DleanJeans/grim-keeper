@@ -86,7 +86,12 @@ function getRoleSections(roles: Role[]) {
   ]
     .map(({ label, team }) => ({
       label,
-      roles: roles.filter((role) => role.team?.toLocaleLowerCase() === team),
+      roles: roles
+        .filter((role) => role.team?.toLocaleLowerCase() === team)
+        .sort(
+          (left, right) =>
+            Number(right.id.startsWith('generic_')) - Number(left.id.startsWith('generic_')),
+        ),
     }))
     .filter(({ roles: sectionRoles }) => sectionRoles.length > 0);
   const knownTeams = new Set(['townsfolk', 'outsider', 'minion', 'demon']);

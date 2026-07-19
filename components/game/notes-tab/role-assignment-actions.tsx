@@ -11,11 +11,16 @@ import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Role } from '@/types/game';
 import {
+  GENERIC_CHARACTER_TYPE_ROLE_REFERENCES,
   getRoleDisplayForDayOrPrevious,
   getRoleOwnerNamesForDay,
   getTravelerClaimRoles,
   isTravelerRole,
 } from '@/utils/role-utils';
+
+const GENERIC_ASSIGNMENT_ROLES = GENERIC_CHARACTER_TYPE_ROLE_REFERENCES.filter(
+  (role) => role.name === 'Townsfolk' || role.name === 'Outsider',
+);
 
 export function RoleAssignmentActions() {
   const {
@@ -36,7 +41,10 @@ export function RoleAssignmentActions() {
     return null;
   }
 
-  const selectableRoles = mergeRoleLists(game.script.roles, roleCatalog.filter(isTravelerRole));
+  const selectableRoles = mergeRoleLists(
+    [...GENERIC_ASSIGNMENT_ROLES, ...game.script.roles],
+    roleCatalog.filter(isTravelerRole),
+  );
   const assignmentRoles =
     roleAssignmentKind === 'claim'
       ? selectableRoles.filter((role) => !isTravelerRole(role))
