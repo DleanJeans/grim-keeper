@@ -33,6 +33,7 @@ export const colors = {
   // Role assignment labels
   roleClaim: '#fcd34d',
   roleConfirm: '#86efac',
+  roleRumor: '#c4b5fd',
   playerTokenEdgeBadge: {
     confirmedBackground: '#166534',
     confirmedIcon: '#dcfce7',

@@ -3,11 +3,17 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { SaveNoteForFutureButton } from '@/components/game/notes-tab/save-note-for-future-button';
+import { PlayerNoteRoleAssignment } from '@/components/game/notes-tab/player-notes';
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { innerActionRow } from '@/components/game/styles';
 import { RoleReferencedNoteText } from '@/components/role-referenced-note-text';
 import { colors } from '@/theme/colors';
 import type { Player } from '@/types/game';
+import {
+  getRoleAssignmentForDay,
+  getRolesByIds,
+  getRumorAboutPlayerForDay,
+} from '@/utils/role-utils';
 
 export function DayNoteRow({ player, day, text }: { player: Player; day: number; text: string }) {
   const {
@@ -15,6 +21,7 @@ export function DayNoteRow({ player, day, text }: { player: Player; day: number;
     noteEditingDay,
     noteEditingPlayerId,
     game,
+    showRoles,
     setNoteDraft: onChangeNoteDraft,
     handleShowPlayerNoteForDay: onShowNote,
     handleSavePlayerNote: onSaveNote,
@@ -22,6 +29,20 @@ export function DayNoteRow({ player, day, text }: { player: Player; day: number;
 
   const isEditing = noteEditingDay === day && noteEditingPlayerId === player.id;
   const reusableNoteText = isEditing ? noteDraft : text;
+  const roleAssignment = showRoles
+    ? getRoleAssignmentForDay(player.roleAssignments, day)
+    : undefined;
+  const roles =
+    roleAssignment && game.script ? getRolesByIds(roleAssignment.roleIds, game.script.roles) : [];
+  const rumorAboutThisPlayer = showRoles && game.script
+    ? getRumorAboutPlayerForDay(game.players, player.id, day, game.script.roles)
+    : [];
+  const ownRumor = showRoles && game.script && player.roleAssignments
+    ? player.roleAssignments.filter(
+        (assignment) => assignment.kind === 'rumor' && assignment.day === day,
+      )
+    : [];
+  const playersById = new Map(game.players.map((candidate) => [candidate.id, candidate]));
 
   return (
     <View style={styles.row}>
@@ -44,37 +65,82 @@ export function DayNoteRow({ player, day, text }: { player: Player; day: number;
           text={reusableNoteText}
         />
       </View>
-      {isEditing ? (
-        <View style={innerActionRow}>
-          <TextInput
-            accessibilityLabel={`Day ${day} note for ${player.name}`}
-            multiline
-            onChangeText={onChangeNoteDraft}
-            placeholder={`What did ${player.name} say?`}
-            placeholderTextColor={colors.inputPlaceholder}
-            style={styles.noteInput}
-            value={noteDraft}
+
+      <View style={styles.noteLines}>
+        {roleAssignment && roleAssignment.kind !== 'rumor' && roles.length > 0 ? (
+          <PlayerNoteRoleAssignment
+            kind={roleAssignment.kind}
+            roles={roles}
+            scriptId={game.script?.id}
           />
-          <Pressable
-            accessibilityLabel={`Save day ${day} note for ${player.name}`}
-            accessibilityRole="button"
-            onPress={onSaveNote}
-            style={saveButtonStyle}
-          >
-            <Check color={colors.inputText} size={18} strokeWidth={2.8} />
-          </Pressable>
-        </View>
-      ) : (
-        <RoleReferencedNoteText
-          day={day}
-          game={game}
-          players={game.players}
-          roles={game.script?.roles ?? []}
-          scriptId={game.script?.id}
-          style={styles.noteText}
-          text={text}
-        />
-      )}
+        ) : null}
+
+        {ownRumor.map((rumor) => {
+          const subject = rumor.subjectPlayerId
+            ? playersById.get(rumor.subjectPlayerId)
+            : undefined;
+          if (!subject) {
+            return null;
+          }
+          const rumorRoles = getRolesByIds(rumor.roleIds, game.script?.roles ?? []);
+          if (rumorRoles.length === 0) {
+            return null;
+          }
+          return (
+            <PlayerNoteRoleAssignment
+              kind="rumor"
+              key={`own-rumor-${rumor.subjectPlayerId}-${day}`}
+              roles={rumorRoles}
+              scriptId={game.script?.id}
+              source={player}
+              subject={subject}
+            />
+          );
+        })}
+
+        {rumorAboutThisPlayer.map((rumor) => (
+          <PlayerNoteRoleAssignment
+            kind="rumor"
+            key={`rumor-${rumor.sourcePlayer.id}-${day}`}
+            roles={rumor.roles}
+            scriptId={game.script?.id}
+            source={rumor.sourcePlayer}
+            subject={player}
+          />
+        ))}
+
+        {isEditing ? (
+          <View style={innerActionRow}>
+            <TextInput
+              accessibilityLabel={`Day ${day} note for ${player.name}`}
+              multiline
+              onChangeText={onChangeNoteDraft}
+              placeholder={`What did ${player.name} say?`}
+              placeholderTextColor={colors.inputPlaceholder}
+              style={styles.noteInput}
+              value={noteDraft}
+            />
+            <Pressable
+              accessibilityLabel={`Save day ${day} note for ${player.name}`}
+              accessibilityRole="button"
+              onPress={onSaveNote}
+              style={saveButtonStyle}
+            >
+              <Check color={colors.inputText} size={18} strokeWidth={2.8} />
+            </Pressable>
+          </View>
+        ) : text ? (
+          <RoleReferencedNoteText
+            day={day}
+            game={game}
+            players={game.players}
+            roles={game.script?.roles ?? []}
+            scriptId={game.script?.id}
+            style={styles.noteText}
+            text={text}
+          />
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -115,6 +181,13 @@ const styles = StyleSheet.create({
     color: colors.noteText,
     fontSize: 14,
     lineHeight: 20,
+  },
+  noteLines: {
+    borderLeftColor: colors.border,
+    borderLeftWidth: 2,
+    gap: 4,
+    marginLeft: 4,
+    paddingLeft: 10,
   },
 });
 

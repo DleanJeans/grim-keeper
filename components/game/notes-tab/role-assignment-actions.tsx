@@ -1,4 +1,4 @@
-import { ShieldCheck, Tag } from 'lucide-react-native';
+import { Megaphone, ShieldCheck, Tag } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
@@ -9,7 +9,7 @@ import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import type { Role } from '@/types/game';
+import type { Player, Role } from '@/types/game';
 import {
   GENERIC_CHARACTER_TYPE_ROLE_REFERENCES,
   getRoleDisplayForDayOrPrevious,
@@ -18,8 +18,15 @@ import {
   isTravelerRole,
 } from '@/utils/role-utils';
 
-const GENERIC_ASSIGNMENT_ROLES = GENERIC_CHARACTER_TYPE_ROLE_REFERENCES.filter(
-  (role) => role.name === 'Townsfolk' || role.name === 'Outsider',
+const GENERIC_ASSIGNMENT_ROLE_NAMES = new Set([
+  'Townsfolk',
+  'Outsider',
+  'Minion',
+  'Demon',
+]);
+
+const GENERIC_ASSIGNMENT_ROLES = GENERIC_CHARACTER_TYPE_ROLE_REFERENCES.filter((role) =>
+  GENERIC_ASSIGNMENT_ROLE_NAMES.has(role.name),
 );
 
 export function RoleAssignmentActions() {
@@ -29,6 +36,7 @@ export function RoleAssignmentActions() {
     handleCancelRoleAssignment,
     handleStartRoleAssignment,
     handleToggleRoleAssignment,
+    rumorSubjectPlayerId,
     interactionMode,
     players,
     roleAssignmentKind,
@@ -63,6 +71,13 @@ export function RoleAssignmentActions() {
   const roleOwnerNames = showRoles
     ? getRoleOwnerNamesForDay(players, game.activeDay, selectableRoles)
     : undefined;
+  const rumorSubjectSelectionPending =
+    roleAssignmentKind === 'rumor' && rumorSubjectPlayerId === '';
+  const rumorSubject = rumorSubjectSelectionPending
+    ? null
+    : rumorSubjectPlayerId
+      ? (players.find((player) => player.id === rumorSubjectPlayerId) ?? null)
+      : null;
 
   return (
     <View style={{ gap: 10 }}>
@@ -78,6 +93,12 @@ export function RoleAssignmentActions() {
           label="Confirm"
           onPress={() => handleStartRoleAssignment('confirm')}
           selected={roleAssignmentKind === 'confirm'}
+        />
+        <RoleAssignmentButton
+          icon={Megaphone}
+          label="Rumor"
+          onPress={() => handleStartRoleAssignment('rumor')}
+          selected={roleAssignmentKind === 'rumor'}
         />
       </View>
       {roleAssignmentKind ? (
@@ -97,21 +118,47 @@ export function RoleAssignmentActions() {
             onPress={handleCancelRoleAssignment}
             selected={false}
           />
-          <View style={{ gap: 3 }}>
-            <View style={{ alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
-              <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
-                {roleAssignmentKind === 'confirm' ? 'Confirm' : 'Claim'} roles for
+          {roleAssignmentKind === 'rumor' ? (
+            <RumorHeader
+              source={focusedPlayer}
+              subject={rumorSubject}
+              subjectSelectionPending={rumorSubjectSelectionPending}
+            />
+          ) : (
+            <View style={{ gap: 3 }}>
+              <View
+                style={{ alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}
+              >
+                <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
+                  {roleAssignmentKind === 'confirm' ? 'Confirm' : 'Claim'} roles for
+                </Text>
+                <PlayerNameWithRole
+                  player={focusedPlayer}
+                  textStyle={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
+                />
+              </View>
+              <Text selectable style={{ color: colors.textMuted, fontSize: 13 }}>
+                Day {game.activeDay}
               </Text>
-              <PlayerNameWithRole
-                player={focusedPlayer}
-                textStyle={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
-              />
             </View>
-            <Text selectable style={{ color: colors.textMuted, fontSize: 13 }}>
-              Day {game.activeDay}
-            </Text>
-          </View>
-          {isTravelerClaim ? (
+          )}
+          {roleAssignmentKind === 'rumor' ? (
+            rumorSubject ? (
+              <RolePicker
+                description={`What role did ${focusedPlayer.name} say ${rumorSubject.name} is?`}
+                onToggleRole={handleToggleRoleAssignment}
+                roles={regularRoles}
+                roleOwnerNames={roleOwnerNames}
+                sectioned
+                selectedRoleIds={roleAssignmentRoleIds}
+              />
+            ) : (
+              <Text selectable style={{ color: colors.textMuted, fontSize: 13, lineHeight: 18 }}>
+                Tap a player on the map, or use the button above, to set the subject of the
+                rumor.
+              </Text>
+            )
+          ) : isTravelerClaim ? (
             <RolePicker
               description="Choose which alignment this traveler is claiming."
               onToggleRole={handleToggleRoleAssignment}
@@ -137,6 +184,51 @@ export function RoleAssignmentActions() {
             />
           ) : null}
         </View>
+      ) : null}
+    </View>
+  );
+}
+
+function RumorHeader({
+  source,
+  subject,
+  subjectSelectionPending,
+}: {
+  source: Player;
+  subject: Player | null;
+  subjectSelectionPending: boolean;
+}) {
+  return (
+    <View style={{ gap: 8 }}>
+      <View style={{ alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
+        <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
+          Rumor from
+        </Text>
+        <PlayerNameWithRole
+          player={source}
+          textStyle={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
+        />
+        <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
+          about
+        </Text>
+        {subject ? (
+          <PlayerNameWithRole
+            player={subject}
+            textStyle={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
+          />
+        ) : (
+          <Text
+            selectable
+            style={{ color: colors.textMuted, fontStyle: 'italic', fontSize: 16, fontWeight: '900' }}
+          >
+            (no one yet)
+          </Text>
+        )}
+      </View>
+      {subjectSelectionPending ? (
+        <Text selectable style={{ color: colors.textMuted, fontSize: 13, lineHeight: 18 }}>
+          Tap a player on the map to set the subject of the rumor.
+        </Text>
       ) : null}
     </View>
   );

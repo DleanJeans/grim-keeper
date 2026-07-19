@@ -49,6 +49,7 @@ export type GameRouteContextValue = {
   voterHighlightsActive: boolean;
   roleAssignmentKind: PlayerRoleAssignment['kind'] | null;
   roleAssignmentRoleIds: string[];
+  rumorSubjectPlayerId: string | null;
   showRoles: boolean;
 
   // Handlers
@@ -72,6 +73,7 @@ export type GameRouteContextValue = {
   handleCancelRoleAssignment: () => void;
   handleToggleRoleAssignment: (roleId: string) => void;
   handleSaveRoleAssignment: (roleIds?: string[]) => void;
+  handleConfirmRumorSubject: (subjectPlayerId: string) => void;
   setShowRoles: (show: boolean) => void;
   handleSetFocusedPlayerDeath: (kind: 'execution' | 'night', attribution?: KillAttribution) => void;
   handleReviveFocusedPlayer: () => void;

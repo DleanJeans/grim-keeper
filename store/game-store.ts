@@ -61,6 +61,7 @@ type GameState = {
     day: number,
     kind: PlayerRoleAssignment['kind'],
     roleIds: string[],
+    subjectPlayerId?: string,
   ) => void;
   setPlayerDayNote: (gameId: string, playerId: string, day: number, text: string) => void;
   saveNoteForFutureGames: (
@@ -421,11 +422,14 @@ export const useGameStore = create<GameState>()(
           ),
         }));
       },
-      setPlayerRoleAssignment: (gameId, playerId, day, kind, roleIds) => {
+      setPlayerRoleAssignment: (gameId, playerId, day, kind, roleIds, subjectPlayerId) => {
         const assignment: PlayerRoleAssignment = {
           day,
           kind,
           roleIds: [...new Set(roleIds)],
+          ...(kind === 'rumor' && subjectPlayerId
+            ? { subjectPlayerId }
+            : {}),
           updatedAt: new Date().toISOString(),
         };
 

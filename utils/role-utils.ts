@@ -244,8 +244,58 @@ export function getRoleOwnerNamesForDay(players: Player[], day: number, roles: R
   return roleOwnerNames;
 }
 
+export type RumorAboutPlayer = {
+  /** The player who is the source of the rumor (who said it). */
+  sourcePlayer: Player;
+  /** The rumor assignment (always kind === 'rumor'). */
+  assignment: PlayerRoleAssignment;
+  /** The role(s) the source claims the subject has. */
+  roles: Role[];
+};
+
+/**
+ * Returns all rumor assignments for the given day where the target player is
+ * the subject (i.e. someone reported that this player is one of the roles).
+ * Used to surface "Rumor" rows on the subject player's note row in addition
+ * to the source player's own row.
+ */
+export function getRumorAboutPlayerForDay(
+  players: Player[],
+  subjectPlayerId: string,
+  day: number,
+  roles: Role[],
+): RumorAboutPlayer[] {
+  const rolesById = new Map(roles.map((role) => [role.id, role]));
+  const results: RumorAboutPlayer[] = [];
+
+  for (const source of players) {
+    if (source.id === subjectPlayerId) {
+      continue;
+    }
+    const rumor = getLatestRumor(source.roleAssignments, day, subjectPlayerId);
+    if (!rumor) {
+      continue;
+    }
+    const rumorRoles = rumor.roleIds.flatMap((roleId) => {
+      const role = rolesById.get(roleId) ?? getTravelerClaimRoleById(roleId, roles);
+      return role ? [role] : [];
+    });
+    results.push({ assignment: rumor, roles: rumorRoles, sourcePlayer: source });
+  }
+
+  return results;
+}
+
 export function getRolesByIds(roleIds: string[], roles: Role[]) {
   const roleById = new Map(roles.map((role) => [role.id, role]));
+  // Seed the lookup with generic character-type roles (Demon, Minion, etc.) so
+  // a saved roleId like 'generic_minion' resolves to "Minion" + the matching
+  // icon instead of falling through to the "Generic Minion" name formatter.
+  for (const role of GENERIC_CHARACTER_TYPE_ROLE_REFERENCES) {
+    if (!roleById.has(role.id)) {
+      roleById.set(role.id, role);
+    }
+  }
   return roleIds.map(
     (roleId) =>
       roleById.get(roleId) ??
@@ -359,6 +409,25 @@ function getLatestAssignment(
 ) {
   return assignments
     .filter((assignment) => assignment.kind === kind)
+    .reduce<PlayerRoleAssignment | undefined>(
+      (latest, assignment) =>
+        latest && latest.updatedAt > assignment.updatedAt ? latest : assignment,
+      undefined,
+    );
+}
+
+function getLatestRumor(
+  assignments: PlayerRoleAssignment[] | undefined,
+  day: number,
+  subjectPlayerId: string,
+) {
+  return (assignments ?? [])
+    .filter(
+      (assignment): assignment is PlayerRoleAssignment =>
+        assignment.kind === 'rumor' &&
+        assignment.day === day &&
+        assignment.subjectPlayerId === subjectPlayerId,
+    )
     .reduce<PlayerRoleAssignment | undefined>(
       (latest, assignment) =>
         latest && latest.updatedAt > assignment.updatedAt ? latest : assignment,

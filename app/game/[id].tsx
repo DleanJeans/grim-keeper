@@ -83,6 +83,7 @@ export default function GameRoute() {
     null,
   );
   const [roleAssignmentRoleIds, setRoleAssignmentRoleIds] = useState<string[]>([]);
+  const [rumorSubjectPlayerId, setRumorSubjectPlayerId] = useState<string | null>(null);
   const [showRoles, setShowRoles] = useState(false);
   const game = getGameById(games, id);
   const mapWidth = Math.max(1, width - 40);
@@ -173,7 +174,20 @@ export default function GameRoute() {
     ? selectedPlayerIds
     : votingNominationId
       ? selectedPlayerIds
-      : (highlightedVoterIds ?? (focusedPlayerId ? [focusedPlayerId] : []));
+      : (highlightedVoterIds ??
+        (() => {
+          const ids: string[] = [];
+          if (focusedPlayerId) {
+            ids.push(focusedPlayerId);
+          }
+          // When in rumor mode with a chosen subject, highlight the subject
+          // alongside the focused player so the user can see the source/subject
+          // pairing on the map.
+          if (roleAssignmentKind === 'rumor' && rumorSubjectPlayerId) {
+            ids.push(rumorSubjectPlayerId);
+          }
+          return ids;
+        })());
   const hideConnectionCurves = trackingMode === 'nomination' || !!votingNominationId;
   const activeTokenSize = getTokenSize(activeGame.tokenSize);
   const activeDayNominations = activeGame.conversations.filter(
@@ -261,6 +275,12 @@ export default function GameRoute() {
 
   function handleSelectPlayer(playerId: string) {
     setHighlightedVoterIds(null);
+
+    if (roleAssignmentKind === 'rumor') {
+      handleConfirmRumorSubject(playerId);
+      return;
+    }
+
     setRoleAssignmentKind(null);
     setRoleAssignmentRoleIds([]);
 
@@ -452,11 +472,30 @@ export default function GameRoute() {
         : currentRoleIds;
     setRoleAssignmentKind(kind);
     setRoleAssignmentRoleIds(selectableRoleIds.slice(0, 1));
+    if (kind === 'rumor') {
+      // Enter subject-picking mode immediately so the user can tap any
+      // player on the map. The empty string marks "subject pending".
+      setRumorSubjectPlayerId('');
+    } else {
+      setRumorSubjectPlayerId(null);
+    }
+  }
+
+  function handleConfirmRumorSubject(subjectPlayerId: string) {
+    if (!focusedPlayer || !activeGame.script || roleAssignmentKind !== 'rumor') {
+      return;
+    }
+    if (subjectPlayerId === focusedPlayer.id) {
+      // Tapping the source player is a no-op; the rumor is always about someone else.
+      return;
+    }
+    setRumorSubjectPlayerId(subjectPlayerId);
   }
 
   function handleCancelRoleAssignment() {
     setRoleAssignmentKind(null);
     setRoleAssignmentRoleIds([]);
+    setRumorSubjectPlayerId(null);
   }
 
   function handleToggleRoleAssignment(roleId: string) {
@@ -478,12 +517,17 @@ export default function GameRoute() {
       return;
     }
 
+    if (roleAssignmentKind === 'rumor' && !rumorSubjectPlayerId) {
+      return;
+    }
+
     setPlayerRoleAssignment(
       activeGame.id,
       focusedPlayer.id,
       activeGame.activeDay,
       roleAssignmentKind,
       roleIds,
+      roleAssignmentKind === 'rumor' ? rumorSubjectPlayerId ?? undefined : undefined,
     );
     handleCancelRoleAssignment();
   }
@@ -580,6 +624,7 @@ export default function GameRoute() {
     voterHighlightsActive: highlightedVoterIds !== null,
     roleAssignmentKind,
     roleAssignmentRoleIds,
+    rumorSubjectPlayerId,
     showRoles,
     setActiveTab,
     setNoteDraft,
@@ -601,6 +646,7 @@ export default function GameRoute() {
     handleCancelRoleAssignment,
     handleToggleRoleAssignment,
     handleSaveRoleAssignment,
+    handleConfirmRumorSubject,
     setShowRoles,
     handleSetFocusedPlayerDeath,
     handleReviveFocusedPlayer,

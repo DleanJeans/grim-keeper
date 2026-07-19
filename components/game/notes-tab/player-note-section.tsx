@@ -29,5 +29,5 @@ export function PlayerNoteSection({ player }: { player: Player }) {
 }
 
 const styles = StyleSheet.create({
-  section: { gap: 6 },
+  section: { gap: 14 },
 });

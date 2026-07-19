@@ -26,8 +26,10 @@ export type StoredScript = {
 
 export type PlayerRoleAssignment = {
   day: number;
-  kind: 'claim' | 'confirm';
+  kind: 'claim' | 'confirm' | 'rumor';
   roleIds: string[];
+  /** Only set for kind === 'rumor'. Identifies the player the rumor is about. */
+  subjectPlayerId?: string;
   updatedAt: string;
 };
 
