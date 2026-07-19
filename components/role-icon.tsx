@@ -1,4 +1,3 @@
-import { StyleSheet } from 'react-native';
 import Svg, { Defs, FeColorMatrix, Filter, Image } from 'react-native-svg';
 
 import type { Role } from '@/types/game';
@@ -13,16 +12,10 @@ export function RoleIcon({
   size?: number;
   scale?: number;
 }) {
-  const dynamicStyles = StyleSheet.create({
-    icon: {
-      height: size,
-      transform: [{ scale }],
-      width: size,
-    },
-  });
+  const scaledSize = size * scale;
 
   return (
-    <Svg height={size} style={dynamicStyles.icon} viewBox="0 0 100 100" width={size}>
+    <Svg height={scaledSize} viewBox={`0 0 ${scaledSize} ${scaledSize}`} width={scaledSize}>
       <Defs>
         <Filter id="removeNearWhite">
           <FeColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 -1 -1 -1 2.7 0" />
@@ -30,10 +23,10 @@ export function RoleIcon({
       </Defs>
       <Image
         filter="url(#removeNearWhite)"
-        height="100"
+        height={scaledSize}
         href={{ uri: getRoleIconUrl(role) }}
         preserveAspectRatio="xMidYMid slice"
-        width="100"
+        width={scaledSize}
       />
     </Svg>
   );
