@@ -1,9 +1,10 @@
-import { Pencil, Trash2 } from 'lucide-react-native';
-import { Alert, Pressable, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { ExecuteButton } from '@/components/game/deaths-tab/death-actions/execute-button';
 import { UndoDeathButton } from '@/components/game/deaths-tab/death-actions/undo-death-button';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { NominateButton } from '@/components/game/noms-tab/action-buttons/nominate-button';
+import { DeleteNominationButton } from '@/components/game/noms-tab/delete-nomination-button';
+import { EditVotesButton } from '@/components/game/noms-tab/edit-votes-button';
 import { HighlightVotersButton } from '@/components/game/noms-tab/highlight-voters-button';
 import { NomIcon } from '@/components/game/noms-tab/nom-icon';
 import { VoterList } from '@/components/game/noms-tab/voter-list';
@@ -148,78 +149,40 @@ export function NominationList() {
                     )}
                   </View>
                 </View>
-                {nominee ? (
-                  nomineeWasExecuted ? (
-                    <UndoDeathButton
-                      compact
-                      onPress={() => setPlayerDeath(game.id, nominee.id, null)}
-                      playerName={nominee.name}
-                    />
-                  ) : (
-                    <ExecuteButton
-                      compact
-                      disabled={nomineeIsDead}
-                      onPress={() =>
-                        setPlayerDeath(game.id, nominee.id, {
-                          day: activeDay,
-                          kind: 'execution',
-                          updatedAt: new Date().toISOString(),
-                        })
-                      }
-                      playerName={nominee.name}
-                    />
-                  )
-                ) : null}
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() =>
-                    Alert.alert('Delete nomination?', 'This removes the nomination and votes.', [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Delete',
-                        style: 'destructive',
-                        onPress: () => handleDeleteNomination(nomination.id),
-                      },
-                    ])
-                  }
-                  style={({ pressed }) => ({
-                    alignItems: 'center',
-                    backgroundColor: pressed ? colors.surfacePressed : colors.dangerSurface,
-                    borderColor: colors.danger,
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    flexDirection: 'row',
-                    gap: 6,
-                    paddingHorizontal: 8,
-                    paddingVertical: 8,
-                  })}
-                >
-                  <Trash2 color={colors.danger} size={15} strokeWidth={2.6} />
-                </Pressable>
               </View>
               <VoterList day={nomination.day} players={players} voterIds={voterIds} />
-              <Pressable
-                accessibilityLabel={`Edit ${voterIds.length} votes`}
-                accessibilityRole="button"
-                onPress={() => handleEditNominationVotes(nomination.id, voterIds)}
-                style={({ pressed }) => ({
-                  alignItems: 'center',
-                  alignSelf: 'flex-start',
-                  backgroundColor: pressed ? colors.surfacePressed : colors.surfaceRaised,
-                  borderColor: colors.border,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  flexDirection: 'row',
-                  gap: 6,
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                })}
-              >
-                <Pencil color={colors.text} size={15} strokeWidth={2.6} />
-                <Text style={{ color: colors.text, fontSize: 13, fontWeight: '800' }}>
-                  {voterIds.length} votes
-                </Text>
-              </Pressable>
+              <View style={styles.nominationActions}>
+                <EditVotesButton
+                  onPress={() => handleEditNominationVotes(nomination.id, voterIds)}
+                  voteCount={voterIds.length}
+                />
+                <View style={styles.nominationRightActions}>
+                  {nominee ? (
+                    nomineeWasExecuted ? (
+                      <UndoDeathButton
+                        compact
+                        label="Unexecute"
+                        onPress={() => setPlayerDeath(game.id, nominee.id, null)}
+                        playerName={nominee.name}
+                      />
+                    ) : (
+                      <ExecuteButton
+                        compact
+                        disabled={nomineeIsDead}
+                        onPress={() =>
+                          setPlayerDeath(game.id, nominee.id, {
+                            day: activeDay,
+                            kind: 'execution',
+                            updatedAt: new Date().toISOString(),
+                          })
+                        }
+                        playerName={nominee.name}
+                      />
+                    )
+                  ) : null}
+                  <DeleteNominationButton onDelete={() => handleDeleteNomination(nomination.id)} />
+                </View>
+              </View>
             </View>
           );
         })
@@ -234,3 +197,16 @@ export function NominationList() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  nominationActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  nominationRightActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+});
