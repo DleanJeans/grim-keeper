@@ -236,6 +236,14 @@ describe('role utilities', () => {
     ).toBe(false);
     expect(
       canRoleKill({
+        ability:
+          'Each night, choose a player & a good character: they are "mad" they are this character tomorrow, or might be executed.',
+        id: 'cerenovus',
+        name: 'Cerenovus',
+      }),
+    ).toBe(true);
+    expect(
+      canRoleKill({
         ability: 'You learn if the Demon dies.',
         id: 'undertaker',
         name: 'Undertaker',
