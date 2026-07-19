@@ -8,7 +8,7 @@ import { innerActionRow } from '@/components/game/styles';
 import { RoleReferencedNoteText } from '@/components/role-referenced-note-text';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { Player } from '@/types/game';
+import type { Conversation, Player } from '@/types/game';
 import { getRoleAssignmentForDay, getRolesByIds } from '@/utils/role-utils';
 
 export function PlayerNoteRow({
@@ -41,6 +41,7 @@ export function PlayerNoteRow({
   const roles =
     roleAssignment && game.script ? getRolesByIds(roleAssignment.roleIds, game.script.roles) : [];
   const dayHeaderStyle = isActiveDay ? styles.noteDayHeaderActive : styles.noteDayHeader;
+  const activityLines = getPlayerActivityLines(player, day, game.players, game.conversations);
 
   return (
     <View style={styles.row}>
@@ -73,6 +74,12 @@ export function PlayerNoteRow({
           scriptId={game.script?.id}
         />
       ) : null}
+
+      {activityLines.map((line) => (
+        <Text key={line} style={styles.activityText}>
+          {line}
+        </Text>
+      ))}
 
       {isEditing ? (
         <View style={innerActionRow}>
@@ -156,6 +163,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+  activityText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+  },
 });
 
 const noteSaveButtonStatic = StyleSheet.create({
@@ -172,3 +184,54 @@ const noteSaveButtonStyle = ({ pressed }: { pressed: boolean }) => ({
   ...noteSaveButtonStatic.noteSaveButton,
   backgroundColor: pressed ? colors.saveButtonPressed : colors.saveButton,
 });
+
+function getPlayerActivityLines(
+  player: Player,
+  day: number,
+  players: Player[],
+  conversations: Conversation[],
+) {
+  const playerNamesById = new Map(players.map(({ id, name }) => [id, name]));
+  const killerIds =
+    player.death?.day === day
+      ? (player.death.killerPlayerIds ??
+        (player.death.killerPlayerId ? [player.death.killerPlayerId] : []))
+      : [];
+  const nominationActivity = getNominationActivity(player.id, day, conversations);
+
+  return [
+    formatActivityLine('Killed by', killerIds, playerNamesById),
+    formatActivityLine('Nominated for', nominationActivity.nomineeIds, playerNamesById),
+    formatActivityLine('Nominated by', nominationActivity.nominatorIds, playerNamesById),
+    formatActivityLine('Voted for', nominationActivity.votedForIds, playerNamesById),
+  ].filter((line): line is string => !!line);
+}
+
+function getNominationActivity(playerId: string, day: number, conversations: Conversation[]) {
+  const nominations = conversations.filter(
+    ({ kind, day: nominationDay }) => kind === 'nomination' && nominationDay === day,
+  );
+  const getNomineeId = (nomination: (typeof nominations)[number]) =>
+    nomination.participantIds.find((participantId) => participantId !== nomination.initiatorId);
+
+  return {
+    nomineeIds: nominations
+      .filter(({ initiatorId }) => initiatorId === playerId)
+      .flatMap((nomination) => getNomineeId(nomination) ?? []),
+    nominatorIds: nominations
+      .filter((nomination) => getNomineeId(nomination) === playerId)
+      .map(({ initiatorId }) => initiatorId),
+    votedForIds: nominations
+      .filter(({ voterIds }) => voterIds?.includes(playerId))
+      .flatMap((nomination) => getNomineeId(nomination) ?? []),
+  };
+}
+
+function formatActivityLine(
+  label: string,
+  playerIds: string[],
+  playerNamesById: Map<string, string>,
+) {
+  const names = [...new Set(playerIds)].flatMap((playerId) => playerNamesById.get(playerId) ?? []);
+  return names.length > 0 ? `${label} ${names.join(', ')}` : undefined;
+}
