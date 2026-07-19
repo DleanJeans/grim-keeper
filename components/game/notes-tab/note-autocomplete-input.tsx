@@ -16,6 +16,7 @@ import { colors } from '@/theme/colors';
 import type { Game, Player, Role } from '@/types/game';
 import {
   applyNoteAutocompleteSuggestion,
+  getCursorAfterTextChange,
   getNoteAutocompleteQuery,
 } from '@/utils/note-autocomplete-utils';
 import { GENERIC_CHARACTER_TYPE_ROLE_REFERENCES } from '@/utils/role-utils';
@@ -58,7 +59,12 @@ export function NoteAutocompleteInput({
   const popoverVisible = !!query && suggestions.length > 0;
 
   function handleChangeText(nextText: string) {
-    const cursor = selection.start === value.length ? nextText.length : selection.start;
+    const cursor =
+      process.env.EXPO_OS === 'web'
+        ? getCursorAfterTextChange(value, nextText, selection)
+        : selection.start === value.length
+          ? nextText.length
+          : selection.start;
     setSelection({ end: cursor, start: cursor });
     onChangeText(nextText);
   }

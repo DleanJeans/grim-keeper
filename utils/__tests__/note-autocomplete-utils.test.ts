@@ -1,9 +1,19 @@
 import {
   applyNoteAutocompleteSuggestion,
+  getCursorAfterTextChange,
   getNoteAutocompleteQuery,
 } from '@/utils/note-autocomplete-utils';
 
 describe('note autocomplete utilities', () => {
+  it('moves the cursor back after deleting before it', () => {
+    expect(getCursorAfterTextChange('ABCD', 'BCD', { end: 1, start: 1 })).toBe(0);
+  });
+
+  it('keeps the cursor at the edit boundary for forward deletion and insertion', () => {
+    expect(getCursorAfterTextChange('ABCD', 'ACD', { end: 1, start: 1 })).toBe(1);
+    expect(getCursorAfterTextChange('ABCD', 'AXBCD', { end: 1, start: 1 })).toBe(2);
+  });
+
   it('finds an @ query with spaces', () => {
     expect(getNoteAutocompleteQuery('Talk to @Alice S', 16)).toEqual({
       end: 16,

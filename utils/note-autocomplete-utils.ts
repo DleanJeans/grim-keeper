@@ -4,6 +4,44 @@ export type NoteAutocompleteQuery = {
   start: number;
 };
 
+export function getCursorAfterTextChange(
+  previousText: string,
+  nextText: string,
+  selection: { end: number; start: number },
+) {
+  let prefixLength = 0;
+  while (
+    prefixLength < previousText.length &&
+    prefixLength < nextText.length &&
+    previousText[prefixLength] === nextText[prefixLength]
+  ) {
+    prefixLength += 1;
+  }
+
+  let suffixLength = 0;
+  while (
+    suffixLength < previousText.length - prefixLength &&
+    suffixLength < nextText.length - prefixLength &&
+    previousText[previousText.length - suffixLength - 1] ===
+      nextText[nextText.length - suffixLength - 1]
+  ) {
+    suffixLength += 1;
+  }
+
+  const previousChangeEnd = previousText.length - suffixLength;
+  const nextChangeEnd = nextText.length - suffixLength;
+
+  if (selection.end < prefixLength) {
+    return selection.end;
+  }
+
+  if (selection.start > previousChangeEnd) {
+    return selection.start + nextText.length - previousText.length;
+  }
+
+  return nextChangeEnd;
+}
+
 export function getNoteAutocompleteQuery(
   text: string,
   cursor: number,
