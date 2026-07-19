@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
 
 import { AppUserNameCard } from '@/components/app-user-name-card';
+import { HomeHeaderActions } from '@/components/home/home-header-actions';
 import { SavedGameRow } from '@/components/saved-game-row';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
@@ -37,7 +38,10 @@ export default function HomeRoute() {
   return (
     <>
       <Stack.Screen
-        options={{ header: () => <TitleHeader title="Grim Keeper" />, title: 'Grim Keeper' }}
+        options={{
+          header: () => <TitleHeader right={<HomeHeaderActions />} title="Grim Keeper" />,
+          title: 'Grim Keeper',
+        }}
       />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"

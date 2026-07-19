@@ -39,13 +39,16 @@ type CreateGameInput = {
   script?: StoredScript;
 };
 
-type GameState = {
+export type GameData = {
   appUserName: string;
   games: Game[];
   friends: Friend[];
   roleCatalog: Role[];
   savedNotes: SavedNote[];
   scripts: StoredScript[];
+};
+
+type GameState = GameData & {
   addFriend: (name: string) => void;
   renameFriend: (friendId: string, currentName: string, nextName: string) => boolean;
   createGame: (input: CreateGameInput) => Game;
@@ -110,6 +113,7 @@ type GameState = {
   setNominationBigWig: (gameId: string, nominationId: string, playerId?: string) => void;
   deleteConversation: (gameId: string, conversationId: string) => void;
   setAppUserName: (name: string) => void;
+  importData: (data: GameData) => void;
 };
 
 export const useGameStore = create<GameState>()(
@@ -848,6 +852,7 @@ export const useGameStore = create<GameState>()(
 
         set({ appUserName: normalizedName });
       },
+      importData: (data) => set(data),
     }),
     {
       name: 'grim-keeper-game-store-v1',
