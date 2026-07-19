@@ -133,8 +133,8 @@ function RoleChoiceButton({
           borderWidth: 1,
           flexDirection: 'row',
           gap: 6,
+          height: 44,
           paddingHorizontal: 10,
-          paddingVertical: 9,
         })}
         textStyle={{
           color: selected ? colors.text : colors.textMuted,
