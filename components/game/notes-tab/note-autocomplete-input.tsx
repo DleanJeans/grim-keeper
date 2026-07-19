@@ -1,10 +1,10 @@
 import { useMemo, useRef, useState } from 'react';
 import {
-  InteractionManager,
   Pressable,
   type TextInput as RNTextInput,
   ScrollView,
   type StyleProp,
+  StyleSheet,
   type TextStyle,
   View,
 } from 'react-native';
@@ -67,6 +67,18 @@ export function NoteAutocompleteInput({
           : selection.start;
     setSelection({ end: cursor, start: cursor });
     onChangeText(nextText);
+
+    if (
+      process.env.EXPO_OS === 'web' &&
+      popoverVisible &&
+      getNoteSuggestions(
+        game.players,
+        scriptRoles,
+        getNoteAutocompleteQuery(nextText, cursor)?.query,
+      ).length === 0
+    ) {
+      focusInputOnNextFrame();
+    }
   }
 
   function handleSelectSuggestion(suggestion: NoteSuggestion) {
@@ -77,11 +89,15 @@ export function NoteAutocompleteInput({
     const result = applyNoteAutocompleteSuggestion(value, query, suggestion.label);
     onChangeText(result.text);
     setSelection({ end: result.cursor, start: result.cursor });
-    InteractionManager.runAfterInteractions(() => inputRef.current?.focus());
+    focusInputOnNextFrame();
+  }
+
+  function focusInputOnNextFrame() {
+    requestAnimationFrame(() => inputRef.current?.focus());
   }
 
   return (
-    <View style={{ flex: 1, zIndex: 20 }}>
+    <View style={styles.container}>
       <TextInput
         accessibilityLabel={accessibilityLabel}
         multiline
@@ -162,21 +178,7 @@ function NoteSuggestionDropdown({
       importantForAccessibility={visible ? 'auto' : 'no-hide-descendants'}
       keyboardShouldPersistTaps="always"
       pointerEvents={visible ? 'auto' : 'none'}
-      style={{
-        backgroundColor: colors.surfaceRaised,
-        borderColor: colors.borderStrong,
-        borderRadius: 8,
-        borderWidth: 1,
-        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.32)',
-        bottom: '100%',
-        left: 0,
-        marginBottom: 4,
-        maxHeight: 220,
-        opacity: visible ? 1 : 0,
-        position: 'absolute',
-        right: 0,
-        zIndex: 20,
-      }}
+      style={[styles.dropdown, visible ? styles.dropdownVisible : styles.dropdownHidden]}
     >
       {suggestions.map((suggestion) => (
         <Pressable
@@ -184,11 +186,7 @@ function NoteSuggestionDropdown({
           accessibilityRole="button"
           key={suggestion.key}
           onPress={() => onSelect(suggestion)}
-          style={({ pressed }) => ({
-            backgroundColor: pressed ? colors.surfacePressed : colors.surfaceRaised,
-            paddingHorizontal: 12,
-            paddingVertical: 9,
-          })}
+          style={({ pressed }) => [styles.suggestion, pressed ? styles.suggestionPressed : null]}
         >
           {suggestion.kind === 'player' ? (
             <PlayerNameWithRole
@@ -199,9 +197,9 @@ function NoteSuggestionDropdown({
               textStyle={{ color: colors.text, fontWeight: '700' }}
             />
           ) : (
-            <View style={{ alignItems: 'center', flexDirection: 'row', gap: 7 }}>
+            <View style={styles.roleSuggestion}>
               <RoleIcon role={suggestion.role} size={20} />
-              <Text selectable style={{ color: colors.text, fontWeight: '700' }}>
+              <Text selectable style={styles.suggestionText}>
                 {suggestion.label}
               </Text>
             </View>
@@ -211,3 +209,47 @@ function NoteSuggestionDropdown({
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    zIndex: 20,
+  },
+  dropdown: {
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.borderStrong,
+    borderRadius: 8,
+    borderWidth: 1,
+    bottom: '100%',
+    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.32)',
+    left: 0,
+    marginBottom: 4,
+    maxHeight: 220,
+    position: 'absolute',
+    right: 0,
+    zIndex: 20,
+  },
+  dropdownHidden: {
+    opacity: 0,
+  },
+  dropdownVisible: {
+    opacity: 1,
+  },
+  roleSuggestion: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 7,
+  },
+  suggestion: {
+    backgroundColor: colors.surfaceRaised,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  suggestionPressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  suggestionText: {
+    color: colors.text,
+    fontWeight: '700',
+  },
+});
