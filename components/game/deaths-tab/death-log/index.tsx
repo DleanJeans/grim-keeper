@@ -6,7 +6,7 @@ import { useGameRouteContext } from '@/components/game/game-route-context';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import type { Player, StoredScript } from '@/types/game';
+import type { Player, Role, StoredScript } from '@/types/game';
 import { GENERIC_KILLER_ROLES, getRolesByIds } from '@/utils/role-utils';
 
 import { collectLogEntries } from './entries';
@@ -40,7 +40,10 @@ export function DeathLog({ activeDay, players, script }: DeathLogProps) {
         </Text>
       ) : (
         entries.map((entry) => {
-          const killerDescription = getKillerDescription(entry, playerById, script);
+          const killerDescription = getKillerDescription(entry, playerById, [
+            ...(script?.roles ?? []),
+            ...(game.lorics ?? []),
+          ]);
           const isEditing = 'death' in entry && editingPlayerId === entry.player.id;
 
           return (
@@ -116,7 +119,7 @@ const styles = StyleSheet.create({
 function getKillerDescription(
   entry: Parameters<typeof DeathLogRow>[0]['entry'],
   playerById: Map<string, Player>,
-  script: StoredScript | undefined,
+  roles: Role[],
 ) {
   if (!('death' in entry) || entry.death.kind !== 'night') {
     return undefined;
@@ -129,7 +132,7 @@ function getKillerDescription(
     return player ? [player] : [];
   });
   const killerRoles = getRolesByIds(entry.death.killerRoleIds ?? [], [
-    ...(script?.roles ?? []),
+    ...roles,
     ...GENERIC_KILLER_ROLES,
   ]);
 
