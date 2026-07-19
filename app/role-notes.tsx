@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { RoleIcon } from '@/components/role-icon';
+import { RoleWikiLink } from '@/components/role-wiki-link';
 import { SavedNotes } from '@/components/saved-notes';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
@@ -31,9 +32,9 @@ export default function RoleNotesScreen() {
 
   if (!role) {
     return (
-      <View style={{ alignItems: 'center', flex: 1, justifyContent: 'center', padding: 20 }}>
+      <View style={styles.notFoundContainer}>
         <Stack.Screen options={{ title: 'Role not found' }} />
-        <Text selectable style={{ color: colors.text, fontSize: 17, fontWeight: '800' }}>
+        <Text selectable style={styles.notFoundText}>
           Role not found.
         </Text>
       </View>
@@ -73,12 +74,14 @@ export default function RoleNotesScreen() {
       />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ gap: 18, paddingHorizontal: 20, paddingBottom: 40 }}
-        style={{ backgroundColor: colors.background, flex: 1 }}
+        contentContainerStyle={styles.content}
+        style={styles.screen}
       >
-        <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
+        <Text selectable style={styles.description}>
           {description ?? 'No description available.'}
         </Text>
+
+        <RoleWikiLink roleName={role.name} />
 
         {hasNotes ? (
           <SavedNotes
@@ -93,7 +96,7 @@ export default function RoleNotesScreen() {
             scripts={scripts}
           />
         ) : (
-          <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
+          <Text selectable style={styles.emptyText}>
             No notes for this role.
           </Text>
         )}
@@ -101,6 +104,38 @@ export default function RoleNotesScreen() {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  content: {
+    gap: 18,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+  },
+  description: {
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  emptyText: {
+    color: colors.textMuted,
+    fontSize: 15,
+  },
+  notFoundContainer: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+  },
+  notFoundText: {
+    color: colors.text,
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  screen: {
+    backgroundColor: colors.background,
+    flex: 1,
+  },
+});
 
 function buildLegacyNote(text: string, roleId: string, script?: { id: string; name: string }) {
   return {
