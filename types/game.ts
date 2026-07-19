@@ -67,6 +67,7 @@ export type Player = {
 };
 
 export type Conversation = {
+  bigWigPlayerId?: string;
   id: string;
   day: number;
   kind?: 'interaction' | 'nomination';
@@ -115,6 +116,7 @@ export type Game = {
   characterTypeCounts?: CharacterTypeCounts;
   players: Player[];
   conversations: Conversation[];
+  lorics?: Role[];
   script?: StoredScript;
   playerDayNotes?: PlayerDayNote[];
 };

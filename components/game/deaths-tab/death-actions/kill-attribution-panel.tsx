@@ -34,7 +34,10 @@ export function KillAttributionPanel({
   const [killerRoleIds, setKillerRoleIds] = useState<string[]>(
     initialAttribution?.killerRoleIds ?? [],
   );
-  const killerRoles = getKillerRoleOptions(game.script?.roles ?? [], roleCatalog);
+  const killerRoles = getKillerRoleOptions(
+    [...(game.script?.roles ?? []), ...(game.lorics ?? [])],
+    roleCatalog,
+  );
   const killerRoleSections = getKillerRoleSections(killerRoles);
   const targetPlayer = player ?? focusedPlayer;
 
@@ -103,6 +106,12 @@ export function KillAttributionPanel({
 function getKillerRoleSections(roles: Role[]) {
   return [
     { label: 'Generic', roles: roles.filter((role) => role.id.startsWith('generic_')) },
+    {
+      label: 'Loric',
+      roles: roles.filter(
+        (role) => !role.id.startsWith('generic_') && role.team?.toLocaleLowerCase() === 'loric',
+      ),
+    },
     {
       label: 'Townsfolk',
       roles: roles.filter(

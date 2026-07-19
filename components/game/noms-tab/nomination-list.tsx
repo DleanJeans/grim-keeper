@@ -1,22 +1,17 @@
-import { StyleSheet, View } from 'react-native';
-import { ExecuteButton } from '@/components/game/deaths-tab/death-actions/execute-button';
-import { UndoDeathButton } from '@/components/game/deaths-tab/death-actions/undo-death-button';
+import { View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { NominateButton } from '@/components/game/noms-tab/action-buttons/nominate-button';
-import { DeleteNominationButton } from '@/components/game/noms-tab/delete-nomination-button';
-import { EditVotesButton } from '@/components/game/noms-tab/edit-votes-button';
 import { HighlightVotersButton } from '@/components/game/noms-tab/highlight-voters-button';
-import { NominationPlayers } from '@/components/game/noms-tab/nomination-players';
-import { VoterList } from '@/components/game/noms-tab/voter-list';
+import { NominationRow } from '@/components/game/noms-tab/nomination-row';
 import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 import { isFlowerGirlRole } from '@/utils/role-utils';
 
 export function NominationList() {
   const setPlayerDeath = useGameStore((state) => state.setPlayerDeath);
+  const setNominationBigWig = useGameStore((state) => state.setNominationBigWig);
   const {
     activeDay,
     conversations,
@@ -39,6 +34,7 @@ export function NominationList() {
   );
   const voterIds = [...new Set(nominations.flatMap((nomination) => nomination.voterIds ?? []))];
   const hasFlowerGirl = game.script?.roles.some(isFlowerGirlRole) ?? false;
+  const bigWig = game.lorics?.find((role) => role.id === 'bigwig');
   const focusedPlayerNomination = focusedPlayer
     ? nominations.find((nomination) => nomination.initiatorId === focusedPlayer.id)
     : undefined;
@@ -84,80 +80,29 @@ export function NominationList() {
           </Text>
         </View>
       ) : (
-        nominations.map((nomination, index) => {
-          const nominator = playerById.get(nomination.initiatorId);
-          const voterIds = nomination.voterIds ?? [];
-          const nomineeId = nomination.participantIds.find(
-            (playerId) => playerId !== nomination.initiatorId,
-          );
-          const nominee = nomineeId ? playerById.get(nomineeId) : undefined;
-          const nomineeIsDead = nominee ? isPlayerCurrentlyDead(nominee, activeDay) : false;
-          const nomineeWasExecuted = nomineeIsDead && nominee?.death?.kind === 'execution';
-          return (
-            <View
-              key={nomination.id}
-              style={{
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                borderRadius: 8,
-                borderWidth: 1,
-                gap: 8,
-                padding: 14,
-              }}
-            >
-              <View style={{ alignItems: 'flex-start', flexDirection: 'row', gap: 10 }}>
-                <View style={{ flex: 1, gap: 8 }}>
-                  <Text
-                    selectable
-                    style={{
-                      color: colors.textMuted,
-                      fontSize: 13,
-                      fontVariant: ['tabular-nums'],
-                      fontWeight: '800',
-                    }}
-                  >
-                    Nomination {index + 1}
-                  </Text>
-                  <NominationPlayers nominee={nominee} nominator={nominator} />
-                </View>
-              </View>
-              <VoterList day={nomination.day} players={players} voterIds={voterIds} />
-              <View style={styles.nominationActions}>
-                <EditVotesButton
-                  onPress={() => handleEditNominationVotes(nomination.id, voterIds)}
-                  voteCount={voterIds.length}
-                />
-                <View style={styles.nominationRightActions}>
-                  {nominee ? (
-                    nomineeWasExecuted ? (
-                      <UndoDeathButton
-                        compact
-                        label="Unexecute"
-                        onPress={() => setPlayerDeath(game.id, nominee.id, null)}
-                        playerName={nominee.name}
-                      />
-                    ) : (
-                      <ExecuteButton
-                        compact
-                        disabled={nomineeIsDead}
-                        disabledLabel="Already Killed"
-                        onPress={() =>
-                          setPlayerDeath(game.id, nominee.id, {
-                            day: activeDay,
-                            kind: 'execution',
-                            updatedAt: new Date().toISOString(),
-                          })
-                        }
-                        playerName={nominee.name}
-                      />
-                    )
-                  ) : null}
-                  <DeleteNominationButton onDelete={() => handleDeleteNomination(nomination.id)} />
-                </View>
-              </View>
-            </View>
-          );
-        })
+        nominations.map((nomination, index) => (
+          <NominationRow
+            activeDay={activeDay}
+            bigWig={bigWig}
+            index={index}
+            key={nomination.id}
+            nomination={nomination}
+            onDelete={() => handleDeleteNomination(nomination.id)}
+            onEditVotes={(nominationVoterIds) =>
+              handleEditNominationVotes(nomination.id, nominationVoterIds)
+            }
+            onExecute={(nominee) =>
+              setPlayerDeath(game.id, nominee.id, {
+                day: activeDay,
+                kind: 'execution',
+                updatedAt: new Date().toISOString(),
+              })
+            }
+            onSelectBigWig={(playerId) => setNominationBigWig(game.id, nomination.id, playerId)}
+            onUndoExecution={(nominee) => setPlayerDeath(game.id, nominee.id, null)}
+            players={players}
+          />
+        ))
       )}
       {hasFlowerGirl ? (
         <HighlightVotersButton
@@ -169,16 +114,3 @@ export function NominationList() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  nominationActions: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  nominationRightActions: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
-  },
-});

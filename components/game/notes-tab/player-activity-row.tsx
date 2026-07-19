@@ -12,12 +12,19 @@ import type { Player, Role } from '@/types/game';
 
 const badgeColors = colors.playerTokenEdgeBadge;
 
-type StandardActivityKind = 'death-execution' | 'death-night' | 'nominated' | 'nominator' | 'vote';
+type StandardActivityKind =
+  | 'big-wig'
+  | 'death-execution'
+  | 'death-night'
+  | 'nominated'
+  | 'nominator'
+  | 'vote';
 
 type StandardPlayerActivity = {
   kind: StandardActivityKind;
   players: Player[];
   preposition?: 'by' | 'for';
+  role?: Role;
   verb: string;
 };
 
@@ -86,6 +93,12 @@ export function PlayerActivityRow({ activity, day }: { activity: PlayerActivity;
           />
         </View>
       ))}
+      {activity.role ? (
+        <>
+          <Text style={styles.preposition}>as</Text>
+          <RoleReference role={activity.role} variant="note" />
+        </>
+      ) : null}
     </View>
   );
 }
@@ -108,6 +121,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   verbDeathExecution: { color: badgeColors.deathExecutionIcon },
+  verbBigWig: { color: colors.roleRumor },
   verbDeathNight: { color: badgeColors.deathNightIcon },
   verbNominated: { color: badgeColors.nominatedIcon },
   verbNominator: { color: badgeColors.nominatorIcon },
@@ -146,6 +160,8 @@ const styles = StyleSheet.create({
 
 function getActivityColor(kind: StandardActivityKind) {
   switch (kind) {
+    case 'big-wig':
+      return colors.roleRumor;
     case 'death-execution':
       return badgeColors.deathExecutionIcon;
     case 'death-night':
@@ -161,6 +177,8 @@ function getActivityColor(kind: StandardActivityKind) {
 
 function getActivityVerbStyle(kind: StandardActivityKind) {
   switch (kind) {
+    case 'big-wig':
+      return styles.verbBigWig;
     case 'death-execution':
       return styles.verbDeathExecution;
     case 'death-night':
@@ -176,6 +194,8 @@ function getActivityVerbStyle(kind: StandardActivityKind) {
 
 function getActivityIcon(kind: StandardActivityKind, color: string) {
   switch (kind) {
+    case 'big-wig':
+      return <Megaphone color={color} size={14} strokeWidth={2.5} />;
     case 'death-execution':
       return <FlameKindling color={color} size={14} strokeWidth={2} />;
     case 'death-night':

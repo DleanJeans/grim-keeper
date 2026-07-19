@@ -10,7 +10,7 @@ import { PlayerNoteRoleAssignment } from '@/components/game/notes-tab/player-not
 import { RoleReferenceNoteLine } from '@/components/role-reference-note-line';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { Conversation, Player, PlayerDayNoteEntry } from '@/types/game';
+import type { Conversation, Player, PlayerDayNoteEntry, Role } from '@/types/game';
 import {
   getRoleAssignmentForDay,
   getRolesByIds,
@@ -57,7 +57,13 @@ export function PlayerNoteRow({
       : [];
   const playersById = new Map(game.players.map((candidate) => [candidate.id, candidate]));
   const dayHeaderStyle = isActiveDay ? styles.noteDayHeaderActive : styles.noteDayHeader;
-  const activityLines = getPlayerActivityLines(player, day, game.players, game.conversations);
+  const activityLines = getPlayerActivityLines(
+    player,
+    day,
+    game.players,
+    game.conversations,
+    game.lorics ?? [],
+  );
 
   return (
     <View style={styles.row}>
@@ -204,6 +210,7 @@ function getPlayerActivityLines(
   day: number,
   players: Player[],
   conversations: Conversation[],
+  lorics: Role[],
 ) {
   const playersById = new Map(players.map((candidate) => [candidate.id, candidate]));
   const killerIds =
@@ -212,6 +219,7 @@ function getPlayerActivityLines(
         (player.death.killerPlayerId ? [player.death.killerPlayerId] : []))
       : [];
   const nominationActivity = getNominationActivity(player.id, day, conversations);
+  const bigWig = lorics.find((role) => role.id === 'bigwig');
 
   return [
     formatActivity(
@@ -223,6 +231,16 @@ function getPlayerActivityLines(
     ),
     formatActivity('nominator', 'Nominated', undefined, nominationActivity.nomineeIds, playersById),
     formatActivity('nominated', 'Nominated', 'by', nominationActivity.nominatorIds, playersById),
+    bigWig
+      ? formatActivity(
+          'big-wig',
+          'Chose',
+          undefined,
+          nominationActivity.bigWigPlayerIds,
+          playersById,
+          bigWig,
+        )
+      : undefined,
     formatActivity('vote', 'Voted', 'for', nominationActivity.votedForIds, playersById),
   ].filter((activity): activity is PlayerActivity => !!activity);
 }
@@ -241,6 +259,9 @@ function getNominationActivity(playerId: string, day: number, conversations: Con
     nominatorIds: nominations
       .filter((nomination) => getNomineeId(nomination) === playerId)
       .map(({ initiatorId }) => initiatorId),
+    bigWigPlayerIds: nominations
+      .filter((nomination) => getNomineeId(nomination) === playerId)
+      .flatMap(({ bigWigPlayerId }) => bigWigPlayerId ?? []),
     votedForIds: nominations
       .filter(({ voterIds }) => voterIds?.includes(playerId))
       .flatMap((nomination) => getNomineeId(nomination) ?? []),
@@ -253,7 +274,8 @@ function formatActivity(
   preposition: 'by' | 'for' | undefined,
   playerIds: string[],
   playersById: Map<string, Player>,
+  role?: Role,
 ): PlayerActivity | undefined {
   const players = [...new Set(playerIds)].flatMap((playerId) => playersById.get(playerId) ?? []);
-  return players.length > 0 ? { kind, players, preposition, verb } : undefined;
+  return players.length > 0 ? { kind, players, preposition, role, verb } : undefined;
 }

@@ -4,11 +4,12 @@ import type { TextInput as RNTextInput } from 'react-native';
 import { Pressable, View } from 'react-native';
 
 import { FixedPlayerRow } from '@/components/create/fixed-player-row';
+import { LoricPicker } from '@/components/create/loric-picker';
 import { FriendSuggestions } from '@/components/friends/friend-suggestions';
 import { GameScriptPicker } from '@/components/scripts/game-script-picker';
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { FriendSummary, StoredScript } from '@/types/game';
+import type { FriendSummary, Role, StoredScript } from '@/types/game';
 
 type CreateFormHeaderProps = {
   canAddPlayer: boolean;
@@ -19,6 +20,7 @@ type CreateFormHeaderProps = {
   helperText: string;
   inputRef: RefObject<RNTextInput | null>;
   isEditing: boolean;
+  lorics: Role[];
   name: string;
   nameFocused: boolean;
   onAddPlayer: () => void;
@@ -27,11 +29,13 @@ type CreateFormHeaderProps = {
   onChangeName: (name: string) => void;
   onFocusName: () => void;
   onSelectFriend: (name: string) => void;
+  onSelectLorics: (roleIds: string[]) => void;
   onSelectScript: (scriptId: string | null) => void;
   onStart: () => void;
   onSubmitName: () => void;
   scripts: StoredScript[];
   selectedScriptId: string | null;
+  selectedLoricIds: string[];
 };
 
 export function CreateFormHeader({
@@ -43,6 +47,7 @@ export function CreateFormHeader({
   helperText,
   inputRef,
   isEditing,
+  lorics,
   name,
   nameFocused,
   onAddPlayer,
@@ -51,11 +56,13 @@ export function CreateFormHeader({
   onChangeName,
   onFocusName,
   onSelectFriend,
+  onSelectLorics,
   onSelectScript,
   onStart,
   onSubmitName,
   scripts,
   selectedScriptId,
+  selectedLoricIds,
 }: CreateFormHeaderProps) {
   return (
     <View style={{ gap: 14, paddingBottom: 12 }}>
@@ -65,6 +72,7 @@ export function CreateFormHeader({
         scripts={scripts}
         selectedScriptId={selectedScriptId}
       />
+      <LoricPicker lorics={lorics} onChange={onSelectLorics} selectedRoleIds={selectedLoricIds} />
 
       <View style={{ gap: 8 }}>
         <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '700' }}>

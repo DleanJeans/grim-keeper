@@ -34,6 +34,7 @@ import {
 export { getNotesForPlayer, migrateV2ToV3 };
 
 type CreateGameInput = {
+  lorics?: Role[];
   playerNames: string[];
   script?: StoredScript;
 };
@@ -52,6 +53,7 @@ type GameState = {
   updateScript: (script: StoredScript) => void;
   deleteScript: (scriptId: string) => void;
   setGameScript: (gameId: string, script?: StoredScript) => void;
+  setGameLorics: (gameId: string, lorics: Role[]) => void;
   setRoleCatalog: (roles: Role[]) => void;
   addPlayer: (gameId: string, name: string) => void;
   deleteGame: (gameId: string) => void;
@@ -105,6 +107,7 @@ type GameState = {
     kind?: 'interaction' | 'nomination',
   ) => Conversation | undefined;
   updateNominationVotes: (gameId: string, nominationId: string, voterIds: string[]) => void;
+  setNominationBigWig: (gameId: string, nominationId: string, playerId?: string) => void;
   deleteConversation: (gameId: string, conversationId: string) => void;
   setAppUserName: (name: string) => void;
 };
@@ -218,7 +221,7 @@ export const useGameStore = create<GameState>()(
 
         return renamed;
       },
-      createGame: ({ playerNames, script }) => {
+      createGame: ({ lorics, playerNames, script }) => {
         const now = new Date().toISOString();
         const appUserName = normalizePlayerName(get().appUserName) || 'You';
         const appUserKey = appUserName.toLocaleLowerCase();
@@ -239,6 +242,7 @@ export const useGameStore = create<GameState>()(
           tokenSize: getTokenSize(),
           players,
           conversations: [],
+          lorics: lorics?.map((role) => ({ ...role })),
           script: script ? { ...script, roles: [...script.roles] } : undefined,
         };
 
@@ -319,6 +323,19 @@ export const useGameStore = create<GameState>()(
           ),
         }));
       },
+      setGameLorics: (gameId, lorics) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? {
+                  ...game,
+                  lorics: lorics.map((role) => ({ ...role })),
+                  updatedAt: new Date().toISOString(),
+                }
+              : game,
+          ),
+        }));
+      },
       setRoleCatalog: (roles) => {
         set((state) => ({
           roleCatalog: mergeRoleNotes(dedupeRoles(roles), state.roleCatalog),
@@ -392,6 +409,10 @@ export const useGameStore = create<GameState>()(
                 .filter((conversation) => !conversation.participantIds.includes(playerId))
                 .map((conversation) => ({
                   ...conversation,
+                  bigWigPlayerId:
+                    conversation.bigWigPlayerId === playerId
+                      ? undefined
+                      : conversation.bigWigPlayerId,
                   voterIds: conversation.voterIds?.filter((voterId) => voterId !== playerId),
                 })),
             };
@@ -783,6 +804,23 @@ export const useGameStore = create<GameState>()(
                   conversations: game.conversations.map((conversation) =>
                     conversation.id === nominationId
                       ? { ...conversation, voterIds: uniqueVoterIds }
+                      : conversation,
+                  ),
+                }
+              : game,
+          ),
+        }));
+      },
+      setNominationBigWig: (gameId, nominationId, playerId) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? {
+                  ...game,
+                  updatedAt: new Date().toISOString(),
+                  conversations: game.conversations.map((conversation) =>
+                    conversation.id === nominationId
+                      ? { ...conversation, bigWigPlayerId: playerId }
                       : conversation,
                   ),
                 }

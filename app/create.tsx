@@ -25,6 +25,8 @@ export default function CreateRoute() {
   const games = useGameStore((state) => state.games);
   const scripts = useGameStore((state) => state.scripts);
   const setGameScript = useGameStore((state) => state.setGameScript);
+  const setGameLorics = useGameStore((state) => state.setGameLorics);
+  const roleCatalog = useGameStore((state) => state.roleCatalog);
   const storedFriends = useGameStore((state) => state.friends);
   const inputRef = useRef<RNTextInput>(null);
   const [name, setName] = useState('');
@@ -33,6 +35,7 @@ export default function CreateRoute() {
   const [draftSelectedScriptId, setDraftSelectedScriptId] = useState<string | null>(
     scriptIdParam ?? null,
   );
+  const [selectedLoricIds, setSelectedLoricIds] = useState<string[]>([]);
   const editingGame = gameIdParam ? games.find((game) => game.id === gameIdParam) : undefined;
   const isEditing = Boolean(gameIdParam);
   const players = editingGame
@@ -88,6 +91,12 @@ export default function CreateRoute() {
       setDraftSelectedScriptId(editingGame?.script?.id ?? null);
     }
   }, [editingGame?.script?.id, isEditing, scriptIdParam]);
+
+  useEffect(() => {
+    if (isEditing) {
+      setSelectedLoricIds(editingGame?.lorics?.map((role) => role.id) ?? []);
+    }
+  }, [editingGame?.lorics, isEditing]);
 
   const helperText = useMemo(() => {
     if (duplicateName) {
@@ -159,11 +168,16 @@ export default function CreateRoute() {
 
     if (isEditing && editingGame) {
       setGameScript(editingGame.id, selectedScript);
+      setGameLorics(
+        editingGame.id,
+        roleCatalog.filter((role) => selectedLoricIds.includes(role.id)),
+      );
       router.back();
       return;
     }
 
     const game = createGame({
+      lorics: roleCatalog.filter((role) => selectedLoricIds.includes(role.id)),
       playerNames: players.map((player) => player.name),
       script: selectedScript,
     });
@@ -252,10 +266,13 @@ export default function CreateRoute() {
               onFocusName={() => setNameFocused(true)}
               onSelectFriend={handleSelectFriend}
               onSelectScript={setDraftSelectedScriptId}
+              lorics={roleCatalog.filter((role) => role.team?.toLocaleLowerCase() === 'loric')}
+              onSelectLorics={setSelectedLoricIds}
               onStart={handleStart}
               onSubmitName={handleAddPlayer}
               scripts={availableScripts}
               selectedScriptId={selectedScriptId}
+              selectedLoricIds={selectedLoricIds}
             />
           }
           onDragEnd={({ data }) => {
