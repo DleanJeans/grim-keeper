@@ -25,6 +25,7 @@ type RumorPlayerActivity = {
   kind: 'rumor';
   roles: Role[];
   scriptId?: string;
+  source?: Player;
   subject: Player;
 };
 
@@ -38,6 +39,20 @@ export function PlayerActivityRow({ activity, day }: { activity: PlayerActivity;
           <Megaphone color={colors.roleRumor} size={14} strokeWidth={2.5} />
         </View>
         <Text style={styles.verbRumor}>Rumor</Text>
+        {activity.source ? (
+          <>
+            <Text style={styles.preposition}>from</Text>
+            <View style={styles.source}>
+              <PlayerNameWithRole
+                day={day}
+                player={activity.source}
+                textStyle={styles.playerName}
+                variant="note"
+              />
+              <Text style={styles.preposition}>:</Text>
+            </View>
+          </>
+        ) : null}
         <PlayerNameWithRole
           day={day}
           player={activity.subject}
@@ -122,6 +137,10 @@ const styles = StyleSheet.create({
     color: colors.noteText,
     fontSize: 13,
     lineHeight: 18,
+  },
+  source: {
+    alignItems: 'center',
+    flexDirection: 'row',
   },
 });
 

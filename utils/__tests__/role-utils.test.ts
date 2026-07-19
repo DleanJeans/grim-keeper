@@ -14,6 +14,7 @@ import {
   getRolesForDay,
   getRolesForDayOrPrevious,
   getRolesWithKillAbility,
+  getRumorAboutPlayerForDay,
   getTravelerClaimRoles,
   isFlowerGirlRole,
   isTravelerRole,
@@ -201,6 +202,28 @@ describe('role utilities', () => {
 
   it('formats unknown role ids for display', () => {
     expect(getRoleNames(['custom_role'], [])).toEqual(['Custom Role']);
+  });
+
+  it('resolves generic roles when mirroring a rumor on its subject', () => {
+    const source = {
+      id: 'source',
+      name: 'Alice',
+      roleAssignments: [
+        {
+          day: 1,
+          kind: 'rumor' as const,
+          roleIds: ['generic_evil'],
+          subjectPlayerId: 'subject',
+          updatedAt: '2026-07-19T00:00:00.000Z',
+        },
+      ],
+      seat: 0,
+    };
+    const subject = { id: 'subject', name: 'Stefan', seat: 1 };
+
+    expect(getRumorAboutPlayerForDay([source, subject], subject.id, 1, [])[0].roles).toEqual([
+      expect.objectContaining({ id: 'generic_evil', name: 'Evil' }),
+    ]);
   });
 
   it('identifies traveler characters from the role catalog', () => {

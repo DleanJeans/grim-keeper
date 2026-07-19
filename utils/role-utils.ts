@@ -265,7 +265,6 @@ export function getRumorAboutPlayerForDay(
   day: number,
   roles: Role[],
 ): RumorAboutPlayer[] {
-  const rolesById = new Map(roles.map((role) => [role.id, role]));
   const results: RumorAboutPlayer[] = [];
 
   for (const source of players) {
@@ -276,10 +275,7 @@ export function getRumorAboutPlayerForDay(
     if (!rumor) {
       continue;
     }
-    const rumorRoles = rumor.roleIds.flatMap((roleId) => {
-      const role = rolesById.get(roleId) ?? getTravelerClaimRoleById(roleId, roles);
-      return role ? [role] : [];
-    });
+    const rumorRoles = getRolesByIds(rumor.roleIds, roles);
     results.push({ assignment: rumor, roles: rumorRoles, sourcePlayer: source });
   }
 

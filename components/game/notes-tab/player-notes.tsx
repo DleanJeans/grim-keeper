@@ -18,6 +18,7 @@ type ClaimOrConfirmProps = CommonProps & {
 type RumorProps = CommonProps & {
   day: number;
   kind: 'rumor';
+  showSource?: boolean;
   /** The player who is the source of the rumor (the focused player who said it). */
   source: Player;
   /** The player the rumor is about. */
@@ -38,6 +39,7 @@ export function PlayerNoteRoleAssignment(props: PlayerNoteRoleAssignmentProps) {
           kind: 'rumor',
           roles: props.roles,
           scriptId: props.scriptId,
+          source: props.showSource ? props.source : undefined,
           subject: props.subject,
         }}
         day={props.day}

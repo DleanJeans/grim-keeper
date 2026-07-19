@@ -115,6 +115,7 @@ export function PlayerNoteRow({
             key={`rumor-${rumor.sourcePlayer.id}-${day}`}
             roles={rumor.roles}
             scriptId={game.script?.id}
+            showSource
             source={rumor.sourcePlayer}
             subject={player}
           />
