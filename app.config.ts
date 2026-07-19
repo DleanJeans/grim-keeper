@@ -41,7 +41,9 @@ const config: ExpoConfig = {
     ],
   },
   web: {
+    bundler: 'metro',
     favicon: './assets/favicon.png',
+    output: 'single',
   },
   updates: {
     url: `https://u.expo.dev/${projectId}`,
