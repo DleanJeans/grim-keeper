@@ -121,6 +121,7 @@ function RoleReferencedNoteLine({
           role={match.role}
           scriptId={scriptId}
           textStyle={[{ fontSize: 13 }, style]}
+          iconScale={1}
         />
       ) : (
         <PlayerNameWithRole

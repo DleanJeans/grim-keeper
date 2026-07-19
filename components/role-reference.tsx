@@ -13,6 +13,7 @@ type RoleReferenceProps = {
   containerStyle?: StyleProp<ViewStyle> | ((state: { pressed: boolean }) => StyleProp<ViewStyle>);
   contentStyle?: StyleProp<ViewStyle>;
   iconSize?: number;
+  iconScale?: number;
   leading?: ReactNode;
   onPress?: () => void;
   role: Role;
@@ -26,6 +27,7 @@ export function RoleReference({
   containerStyle,
   contentStyle,
   iconSize = 24,
+  iconScale = 1.35,
   leading,
   onPress,
   role,
@@ -51,7 +53,7 @@ export function RoleReference({
       ]}
     >
       {leading}
-      <RoleIcon role={role} size={iconSize} />
+      <RoleIcon role={role} size={iconSize} scale={iconScale} />
       <View style={[{ flexShrink: 1, gap: 1 }, contentStyle]}>
         <Text
           selectable
