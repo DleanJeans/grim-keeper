@@ -1,12 +1,11 @@
 import { router } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import Animated, { type SharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EditGameButton } from '@/components/game/edit-game-button';
 import { ViewScriptButton } from '@/components/game/view-script-button';
-import { gameHeaderTranslateY } from '@/components/game-header-visibility';
 import { colors } from '@/theme/colors';
 import type { Game } from '@/types/game';
 
@@ -17,10 +16,15 @@ const ROW_HEIGHT = 40;
 const VISUAL_GAP = 20;
 export const INLINE_GAME_HEADER_HEIGHT = ROW_HEIGHT + VISUAL_GAP;
 
-export function InlineGameHeader({ activeGame }: { activeGame: Game }) {
+type InlineGameHeaderProps = {
+  activeGame: Game;
+  headerTranslateY: SharedValue<number>;
+};
+
+export function InlineGameHeader({ activeGame, headerTranslateY }: InlineGameHeaderProps) {
   const insets = useSafeAreaInsets();
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: gameHeaderTranslateY.value }],
+    transform: [{ translateY: headerTranslateY.value }],
   }));
   const gameScriptId = activeGame.script?.id;
   return (
@@ -53,10 +57,12 @@ export function InlineGameHeader({ activeGame }: { activeGame: Game }) {
         <View style={styles.slot}>
           {gameScriptId ? (
             <ViewScriptButton
-              onPress={() => router.push({ pathname: '/scripts/[id]', params: { id: gameScriptId } })}
+              onPress={() =>
+                router.push({ pathname: '/scripts/[id]', params: { id: gameScriptId } })
+              }
             />
           ) : null}
-          </View>
+        </View>
       </View>
     </Animated.View>
   );

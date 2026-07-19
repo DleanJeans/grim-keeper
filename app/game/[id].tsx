@@ -28,7 +28,6 @@ import { NotesTab } from '@/components/game/notes-tab/notes-tab';
 import { PlayerCountStatus } from '@/components/game/player-count-status';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
 import { RevealRolesButton } from '@/components/game/reveal-roles-button';
-import { gameHeaderTranslateY } from '@/components/game-header-visibility';
 import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
 import type { KillAttribution, PlayerPosition, PlayerRoleAssignment } from '@/types/game';
@@ -97,8 +96,8 @@ export default function GameRoute() {
   const openedGameId = useRef<string | null>(null);
 
   // Slide the entire header up off-screen on scroll-down, slide it back in on
-  // scroll-up. Writes to a module-level shared value that the GameHeader
-  // (rendered by the navigator) reads via useAnimatedStyle.
+  // scroll-up.
+  const gameHeaderTranslateY = useSharedValue(0);
   const lastScrollY = useSharedValue(0);
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -698,7 +697,7 @@ export default function GameRoute() {
 
       <GameRouteProvider value={contextValue}>
         <View style={styles.body}>
-          <InlineGameHeader activeGame={activeGame} />
+          <InlineGameHeader activeGame={activeGame} headerTranslateY={gameHeaderTranslateY} />
           <Animated.ScrollView
             contentInsetAdjustmentBehavior="automatic"
             keyboardShouldPersistTaps="always"
