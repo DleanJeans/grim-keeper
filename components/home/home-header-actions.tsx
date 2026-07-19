@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { Settings } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { FullscreenButton } from '@/components/home/fullscreen-button';
+import { FullscreenButton } from '@/components/fullscreen-button';
 import { colors } from '@/theme/colors';
 
 export function HomeHeaderActions() {

@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { type SharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { FullscreenButton } from '@/components/fullscreen-button';
 import { EditGameButton } from '@/components/game/edit-game-button';
 import { ViewScriptButton } from '@/components/game/view-script-button';
 import { colors } from '@/theme/colors';
@@ -64,6 +65,7 @@ export function InlineGameHeader({ activeGame, headerTranslateY }: InlineGameHea
             />
           ) : null}
         </View>
+        <FullscreenButton />
       </View>
     </Animated.View>
   );
