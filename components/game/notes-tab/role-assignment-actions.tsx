@@ -152,12 +152,7 @@ export function RoleAssignmentActions() {
                 sectioned
                 selectedRoleIds={roleAssignmentRoleIds}
               />
-            ) : (
-              <Text selectable style={{ color: colors.textMuted, fontSize: 13, lineHeight: 18 }}>
-                Tap a player on the map, or use the button above, to set the subject of the
-                rumor.
-              </Text>
-            )
+            ) : null
           ) : isTravelerClaim ? (
             <RolePicker
               description="Choose which alignment this traveler is claiming."
