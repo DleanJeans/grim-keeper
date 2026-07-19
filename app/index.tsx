@@ -39,7 +39,9 @@ export default function HomeRoute() {
     <>
       <Stack.Screen
         options={{
-          header: () => <TitleHeader right={<HomeHeaderActions />} title="Grim Keeper" />,
+          header: () => (
+            <TitleHeader right={<HomeHeaderActions />} showBack={false} title="Grim Keeper" />
+          ),
           title: 'Grim Keeper',
         }}
       />

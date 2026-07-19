@@ -1,36 +1,39 @@
-import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
-import { type ReactNode, useCallback } from 'react';
+import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
+import { goBackOrHome } from '@/utils/navigation-utils';
 
 type TitleHeaderProps = {
   center?: ReactNode;
   icon?: ReactNode;
   right?: ReactNode;
+  showBack?: boolean;
   title: string;
 };
 
-export function TitleHeader({ center, icon, right, title }: TitleHeaderProps) {
+export function TitleHeader({ center, icon, right, showBack = true, title }: TitleHeaderProps) {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const handleBack = useCallback(() => router.back(), [router]);
 
   return (
     <View style={[styles.header, { paddingTop: insets.top }]}>
       <View style={styles.headerContent}>
-        <Pressable
-          accessibilityLabel="Go back"
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={handleBack}
-          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
-        >
-          <ChevronLeft color={colors.text} size={24} strokeWidth={2.5} />
-        </Pressable>
+        {showBack ? (
+          <Pressable
+            accessibilityLabel="Go back"
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={goBackOrHome}
+            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+          >
+            <ChevronLeft color={colors.text} size={24} strokeWidth={2.5} />
+          </Pressable>
+        ) : (
+          <View style={styles.backSpacer} />
+        )}
         <View
           style={center ? styles.titleRowWithCenter : styles.titleRow}
           pointerEvents={center ? 'auto' : 'none'}
@@ -60,6 +63,9 @@ const styles = StyleSheet.create({
     height: 36,
     justifyContent: 'center',
     marginLeft: -8,
+    width: 36,
+  },
+  backSpacer: {
     width: 36,
   },
   header: {

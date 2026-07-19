@@ -8,6 +8,7 @@ import { EditGameButton } from '@/components/game/edit-game-button';
 import { ViewScriptButton } from '@/components/game/view-script-button';
 import { colors } from '@/theme/colors';
 import type { Game } from '@/types/game';
+import { goBackOrHome } from '@/utils/navigation-utils';
 
 // Visual gap between the bottom of the header and the first content item.
 // Combined with the row height to compute the total reserved space the scroll
@@ -42,7 +43,7 @@ export function InlineGameHeader({ activeGame, headerTranslateY }: InlineGameHea
             accessibilityLabel="Go back"
             accessibilityRole="button"
             hitSlop={8}
-            onPress={() => router.back()}
+            onPress={goBackOrHome}
             style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
           >
             <ChevronLeft color={colors.text} size={24} strokeWidth={2.5} />

@@ -4,12 +4,14 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors } from '@/theme/colors';
+import { goBackOrHome } from '@/utils/navigation-utils';
 
-export function GameHeader({ back, navigation, options, route }: NativeStackHeaderProps) {
+export function GameHeader({ options, route }: NativeStackHeaderProps) {
   const insets = useSafeAreaInsets();
   const HeaderLeft = options.headerLeft;
   const HeaderRight = options.headerRight;
-  const hasHeaderLeft = Boolean(back || HeaderLeft);
+  const showBack = route.name !== 'index' && options.headerBackVisible !== false;
+  const hasHeaderLeft = Boolean(showBack || HeaderLeft);
   const hasHeaderRight = Boolean(HeaderRight);
   const HeaderTitle = typeof options.headerTitle === 'function' ? options.headerTitle : null;
   const title =
@@ -20,18 +22,18 @@ export function GameHeader({ back, navigation, options, route }: NativeStackHead
       <View style={[styles.headerContent, route.name === 'game/[id]' && styles.gameHeaderContent]}>
         {hasHeaderLeft ? (
           <View style={[styles.headerSide, styles.headerLeft]}>
-            {back && options.headerBackVisible !== false ? (
+            {showBack ? (
               <Pressable
                 accessibilityLabel="Go back"
                 accessibilityRole="button"
                 hitSlop={8}
-                onPress={navigation.goBack}
+                onPress={goBackOrHome}
                 style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
               >
                 <ChevronLeft color={colors.text} size={24} strokeWidth={2.5} />
               </Pressable>
             ) : null}
-            {HeaderLeft ? <HeaderLeft canGoBack={Boolean(back)} tintColor={colors.text} /> : null}
+            {HeaderLeft ? <HeaderLeft canGoBack={showBack} tintColor={colors.text} /> : null}
           </View>
         ) : hasHeaderRight ? (
           <View style={styles.headerSide} />
@@ -57,7 +59,7 @@ export function GameHeader({ back, navigation, options, route }: NativeStackHead
         </View>
         {hasHeaderRight ? (
           <View style={[styles.headerSide, styles.headerRight]}>
-            {HeaderRight ? <HeaderRight canGoBack={Boolean(back)} tintColor={colors.text} /> : null}
+            {HeaderRight ? <HeaderRight canGoBack={showBack} tintColor={colors.text} /> : null}
           </View>
         ) : hasHeaderLeft ? (
           <View style={styles.headerSide} />
