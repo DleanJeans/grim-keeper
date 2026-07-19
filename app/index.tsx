@@ -1,9 +1,10 @@
 import { router, Stack } from 'expo-router';
 import { Plus, ScrollText, Users } from 'lucide-react-native';
 import { useMemo } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { AppUserNameCard } from '@/components/app-user-name-card';
+import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { HomeHeaderActions } from '@/components/home/home-header-actions';
 import { SavedGameRow } from '@/components/saved-game-row';
 import { Text } from '@/components/text';
@@ -13,6 +14,7 @@ import { colors } from '@/theme/colors';
 import { getFriendSummaries } from '@/utils/friend-utils';
 
 export default function HomeRoute() {
+  const showDialog = useAppDialog();
   const appUserName = useGameStore((state) => state.appUserName);
   const games = useGameStore((state) => state.games);
   const storedFriends = useGameStore((state) => state.friends);
@@ -25,7 +27,7 @@ export default function HomeRoute() {
   );
 
   function confirmDeleteGame(gameId: string) {
-    Alert.alert('Delete saved game?', 'This removes the game and all tracked data.', [
+    showDialog('Delete saved game?', 'This removes the game and all tracked data.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',

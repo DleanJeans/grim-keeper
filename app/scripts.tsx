@@ -1,7 +1,8 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Search } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
+import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { RemoteScriptCard } from '@/components/scripts/remote-script-card';
 import { ScriptCard } from '@/components/scripts/script-card';
 import { Text, TextInput } from '@/components/text';
@@ -18,6 +19,7 @@ import {
 } from '@/utils/script-service';
 
 export default function ScriptsRoute() {
+  const showDialog = useAppDialog();
   const { gameId, selectForGame } = useLocalSearchParams<{
     gameId?: string;
     selectForGame?: string;
@@ -123,7 +125,7 @@ export default function ScriptsRoute() {
 
       saveScript(createStoredScript(remoteScript, content, catalog, existingScript?.id));
     } catch {
-      Alert.alert('Download failed', 'The script could not be saved. Please try again.');
+      showDialog('Download failed', 'The script could not be saved. Please try again.');
     } finally {
       setDownloadingId(null);
     }
@@ -145,7 +147,7 @@ export default function ScriptsRoute() {
   }
 
   function confirmDeleteScript(script: StoredScript) {
-    Alert.alert('Delete downloaded script?', `Remove ${script.name} from this device?`, [
+    showDialog('Delete downloaded script?', `Remove ${script.name} from this device?`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',

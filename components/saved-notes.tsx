@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { Trash2 } from 'lucide-react-native';
-import { Alert, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
+import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { RoleReferencedNoteText } from '@/components/role-referenced-note-text';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
@@ -32,6 +33,7 @@ export function SavedNotes({
   roles: Role[];
   scripts?: StoredScript[];
 }) {
+  const showDialog = useAppDialog();
   const deleteSavedNote = useGameStore((state) => state.deleteSavedNote);
 
   if (!notes.length) {
@@ -39,7 +41,7 @@ export function SavedNotes({
   }
 
   function handleDeletePress(note: SavedNote) {
-    Alert.alert('Delete note?', note.text, [
+    showDialog('Delete note?', note.text, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',

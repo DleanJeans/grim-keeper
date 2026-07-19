@@ -2,14 +2,16 @@ import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Download, FileUp, Upload } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
+import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { createBackup, parseBackup } from '@/utils/data-transfer';
 
 export function DataTransferCard() {
+  const showDialog = useAppDialog();
   const [backupText, setBackupText] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const importData = useGameStore((state) => state.importData);
@@ -34,7 +36,7 @@ export function DataTransferCard() {
 
       await shareBackupFile(json);
     } catch (error) {
-      Alert.alert('Could not export backup', getErrorMessage(error));
+      showDialog('Could not export backup', getErrorMessage(error));
     } finally {
       setIsExporting(false);
     }
@@ -44,14 +46,7 @@ export function DataTransferCard() {
     try {
       const data = parseBackup(backupText);
 
-      if (process.env.EXPO_OS === 'web') {
-        if (window.confirm('Replace all app data with this backup?')) {
-          completeImport(data);
-        }
-        return;
-      }
-
-      Alert.alert(
+      showDialog(
         'Replace all app data?',
         'Importing this backup replaces the data currently stored on this device.',
         [
@@ -64,7 +59,7 @@ export function DataTransferCard() {
         ],
       );
     } catch (error) {
-      Alert.alert('Could not import backup', getErrorMessage(error));
+      showDialog('Could not import backup', getErrorMessage(error));
     }
   }
 
@@ -72,11 +67,7 @@ export function DataTransferCard() {
     importData(data);
     setBackupText('');
 
-    if (process.env.EXPO_OS === 'web') {
-      window.alert('Import complete. Your Grim Keeper data has been restored.');
-    } else {
-      Alert.alert('Import complete', 'Your Grim Keeper data has been restored.');
-    }
+    showDialog('Import complete', 'Your Grim Keeper data has been restored.');
   }
 
   function chooseBackupFile() {

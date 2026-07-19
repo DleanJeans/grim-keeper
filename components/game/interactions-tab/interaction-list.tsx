@@ -1,6 +1,7 @@
 import { MessagesSquare, Trash2 } from 'lucide-react-native';
-import { Alert, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
+import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
@@ -22,6 +23,7 @@ export function InteractionList({
   players,
   selectedPlayerId = null,
 }: InteractionListProps) {
+  const showDialog = useAppDialog();
   const playerById = new Map(players.map((player) => [player.id, player]));
   const activeDayConversations = conversations.filter(
     (conversation) => conversation.day === activeDay && conversation.kind !== 'nomination',
@@ -145,7 +147,7 @@ export function InteractionList({
               <Pressable
                 accessibilityRole="button"
                 onPress={() =>
-                  Alert.alert('Delete interaction?', 'This removes the recorded conversation.', [
+                  showDialog('Delete interaction?', 'This removes the recorded conversation.', [
                     { text: 'Cancel', style: 'cancel' },
                     {
                       text: 'Delete',

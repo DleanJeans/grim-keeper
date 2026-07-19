@@ -1,5 +1,6 @@
 import { Trash2 } from 'lucide-react-native';
-import { Alert, Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
+import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { colors } from '@/theme/colors';
 
 type DeleteNominationButtonProps = {
@@ -7,8 +8,9 @@ type DeleteNominationButtonProps = {
 };
 
 export function DeleteNominationButton({ onDelete }: DeleteNominationButtonProps) {
+  const showDialog = useAppDialog();
   const handlePress = () => {
-    Alert.alert('Delete nomination?', 'This removes the nomination and votes.', [
+    showDialog('Delete nomination?', 'This removes the nomination and votes.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: onDelete },
     ]);

@@ -2,6 +2,7 @@ import { DarkTheme, ThemeProvider } from 'expo-router/react-navigation';
 import { Stack } from 'expo-router/stack';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { AppDialogProvider } from '@/components/dialog/app-dialog-provider';
 import { GameHeader } from '@/components/game-header';
 import { OfficialScriptsLoader } from '@/components/scripts/official-scripts-loader';
 import { useAppFonts } from '@/hooks/use-app-fonts';
@@ -49,43 +50,45 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={grimKeeperTheme}>
-        <OfficialScriptsLoader />
-        <Stack
-          screenOptions={{
-            contentStyle: { backgroundColor: colors.background },
-            header: (props) => <GameHeader {...props} />,
-            headerLargeStyle: { backgroundColor: colors.background },
-            headerShadowVisible: false,
-            headerStyle: { backgroundColor: colors.background },
-            headerTintColor: colors.text,
-            headerTitleStyle: {
-              color: colors.text,
-              fontFamily: 'GoogleSans-Bold',
-              fontSize: 15,
-            },
-          }}
-        >
-          <Stack.Screen
-            name="index"
-            options={{
+        <AppDialogProvider>
+          <OfficialScriptsLoader />
+          <Stack
+            screenOptions={{
+              contentStyle: { backgroundColor: colors.background },
+              header: (props) => <GameHeader {...props} />,
+              headerLargeStyle: { backgroundColor: colors.background },
+              headerShadowVisible: false,
+              headerStyle: { backgroundColor: colors.background },
+              headerTintColor: colors.text,
               headerTitleStyle: {
                 color: colors.text,
                 fontFamily: 'GoogleSans-Bold',
-                fontSize: 30,
+                fontSize: 15,
               },
-              title: 'Grim Keeper',
             }}
-          />
-          <Stack.Screen name="create" options={{ title: 'New Game' }} />
-          <Stack.Screen name="friends" options={{ title: 'Friends' }} />
-          <Stack.Screen name="friends/[id]" options={{ title: 'Friend' }} />
-          <Stack.Screen name="scripts" options={{ title: 'Scripts' }} />
-          <Stack.Screen name="scripts/[id]" options={{ title: 'Script' }} />
-          <Stack.Screen name="role-notes" options={{ title: 'Role Notes' }} />
-          <Stack.Screen name="settings" options={{ title: 'Settings' }} />
-          <Stack.Screen name="save-note-for-future" options={{ title: 'Save Note for Future' }} />
-          <Stack.Screen name="game/[id]" options={{ title: 'Game' }} />
-        </Stack>
+          >
+            <Stack.Screen
+              name="index"
+              options={{
+                headerTitleStyle: {
+                  color: colors.text,
+                  fontFamily: 'GoogleSans-Bold',
+                  fontSize: 30,
+                },
+                title: 'Grim Keeper',
+              }}
+            />
+            <Stack.Screen name="create" options={{ title: 'New Game' }} />
+            <Stack.Screen name="friends" options={{ title: 'Friends' }} />
+            <Stack.Screen name="friends/[id]" options={{ title: 'Friend' }} />
+            <Stack.Screen name="scripts" options={{ title: 'Scripts' }} />
+            <Stack.Screen name="scripts/[id]" options={{ title: 'Script' }} />
+            <Stack.Screen name="role-notes" options={{ title: 'Role Notes' }} />
+            <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+            <Stack.Screen name="save-note-for-future" options={{ title: 'Save Note for Future' }} />
+            <Stack.Screen name="game/[id]" options={{ title: 'Game' }} />
+          </Stack>
+        </AppDialogProvider>
       </ThemeProvider>
       <StatusBar style="light" />
     </GestureHandlerRootView>
