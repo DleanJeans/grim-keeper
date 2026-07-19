@@ -68,12 +68,12 @@ export const GENERIC_CHARACTER_TYPE_ROLE_REFERENCES: Role[] = GENERIC_CHARACTER_
 ]);
 
 export const GENERIC_KILLER_ROLES: Role[] = [
-  ...GENERIC_CHARACTER_TYPE_ROLES.filter(({ name }) => name === 'Demon' || name === 'Evil'),
   {
     id: 'generic_unknown',
-    imageUrl: `${BOTC_ROLE_ICON_BASE_URL}/generic/unknown.webp`,
+    imageUrl: `${BOTC_ROLE_ICON_BASE_URL}/generic/custom.webp`,
     name: 'Unknown',
   },
+  ...GENERIC_CHARACTER_TYPE_ROLES.filter(({ name }) => name === 'Demon' || name === 'Evil'),
 ];
 
 export function getRoleIconUrl(role: Role) {

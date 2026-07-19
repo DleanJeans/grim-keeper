@@ -318,7 +318,7 @@ describe('role utilities', () => {
       { id: 'vortox', name: 'Vortox', team: 'demon' },
     ]);
 
-    expect(roles.map((role) => role.id)).toEqual(['generic_demon', 'generic_unknown', 'imp']);
+    expect(roles.map((role) => role.id)).toEqual(['generic_unknown', 'generic_demon', 'imp']);
   });
 
   it('keeps generic evil when multiple evil roles can kill', () => {
@@ -338,8 +338,8 @@ describe('role utilities', () => {
     ]);
 
     expect(roles.map((role) => role.id)).toEqual([
-      'generic_evil',
       'generic_unknown',
+      'generic_evil',
       'imp',
       'assassin',
     ]);
