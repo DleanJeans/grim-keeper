@@ -11,6 +11,7 @@ type RolePickerProps = {
   description?: string;
   roles: Role[];
   roleOwnerNames?: Record<string, string[]>;
+  sections?: Array<{ label: string; roles: Role[] }>;
   sectioned?: boolean;
   selectedFirst?: boolean;
   selectedRoleIds: string[];
@@ -22,6 +23,7 @@ export function RolePicker({
   onToggleRole,
   roles,
   roleOwnerNames,
+  sections,
   sectioned = false,
   selectedFirst = false,
   selectedRoleIds,
@@ -33,8 +35,9 @@ export function RolePicker({
         ...roles.filter((role) => !selectedRoleIdSet.has(role.id)),
       ]
     : roles;
-  const roleSections =
-    sectioned && !selectedFirst
+  const roleSections = sections
+    ? sections.filter(({ roles: sectionRoles }) => sectionRoles.length > 0)
+    : sectioned && !selectedFirst
       ? getRoleSections(orderedRoles)
       : [{ label: undefined, roles: orderedRoles }];
 

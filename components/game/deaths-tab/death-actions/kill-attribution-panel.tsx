@@ -9,7 +9,7 @@ import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import type { KillAttribution, Player } from '@/types/game';
+import type { KillAttribution, Player, Role } from '@/types/game';
 import { getKillerRoleOptions, getRoleOwnerNamesForDay } from '@/utils/role-utils';
 
 type KillAttributionPanelProps = {
@@ -35,6 +35,7 @@ export function KillAttributionPanel({
     initialAttribution?.killerRoleIds ?? [],
   );
   const killerRoles = getKillerRoleOptions(game.script?.roles ?? [], roleCatalog);
+  const killerRoleSections = getKillerRoleSections(killerRoles);
   const targetPlayer = player ?? focusedPlayer;
 
   if (!targetPlayer) {
@@ -88,6 +89,7 @@ export function KillAttributionPanel({
         roleOwnerNames={
           showRoles ? getRoleOwnerNamesForDay(players, activeDay, killerRoles) : undefined
         }
+        sections={killerRoleSections}
         selectedRoleIds={killerRoleIds}
       />
       <View style={innerActionRow}>
@@ -96,6 +98,30 @@ export function KillAttributionPanel({
       </View>
     </View>
   );
+}
+
+function getKillerRoleSections(roles: Role[]) {
+  return [
+    { label: 'Generic', roles: roles.filter((role) => role.id.startsWith('generic_')) },
+    {
+      label: 'Townsfolk',
+      roles: roles.filter(
+        (role) => !role.id.startsWith('generic_') && role.team?.toLocaleLowerCase() === 'townsfolk',
+      ),
+    },
+    {
+      label: 'Minion',
+      roles: roles.filter(
+        (role) => !role.id.startsWith('generic_') && role.team?.toLocaleLowerCase() === 'minion',
+      ),
+    },
+    {
+      label: 'Demon',
+      roles: roles.filter(
+        (role) => !role.id.startsWith('generic_') && role.team?.toLocaleLowerCase() === 'demon',
+      ),
+    },
+  ];
 }
 
 function KillFormButton({
