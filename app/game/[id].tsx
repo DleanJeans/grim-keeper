@@ -6,6 +6,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { CharacterTypeCountEditor } from '@/components/game/character-type-counts';
 import { DayCount } from '@/components/game/day-count';
 import { FocusedDeathActionPanel } from '@/components/game/deaths-tab/death-actions';
 import { DeathLog } from '@/components/game/deaths-tab/death-log';
@@ -69,6 +70,7 @@ export default function GameRoute() {
   const deleteConversation = useGameStore((state) => state.deleteConversation);
   const setActiveDay = useGameStore((state) => state.setActiveDay);
   const setTokenSize = useGameStore((state) => state.setTokenSize);
+  const setCharacterTypeCounts = useGameStore((state) => state.setCharacterTypeCounts);
   const [activeTab, setActiveTab] = useState<GameTab>('interactions');
   const [trackingMode, setTrackingMode] = useState<TrackingMode | null>(null);
   const [votingNominationId, setVotingNominationId] = useState<string | null>(null);
@@ -708,6 +710,11 @@ export default function GameRoute() {
             <GameMap />
 
             <View key="day-and-counts" style={styles.dayAndCountsRow}>
+              <CharacterTypeCountEditor
+                counts={activeGame.characterTypeCounts}
+                onChange={(counts) => setCharacterTypeCounts(activeGame.id, counts)}
+                playerCount={nonTravelerPlayers.length}
+              />
               <DayCount activeDay={activeGame.activeDay} lastDayWithData={lastDayWithData} />
               <PlayerCountStatus
                 alivePlayerCount={alivePlayerCount}

@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import type {
+  CharacterTypeCounts,
   Conversation,
   Friend,
   Game,
@@ -93,6 +94,7 @@ type GameState = {
   ) => boolean;
   deleteSavedNote: (note: SavedNote, roleId?: string) => void;
   setTokenSize: (gameId: string, tokenSize: number) => void;
+  setCharacterTypeCounts: (gameId: string, counts?: CharacterTypeCounts) => void;
   setActiveDay: (gameId: string, day: number) => void;
   updatePlayerPosition: (gameId: string, playerId: string, position: PlayerPosition) => void;
   updatePlayerPositions: (gameId: string, positions: Record<string, PlayerPosition>) => void;
@@ -676,6 +678,15 @@ export const useGameStore = create<GameState>()(
                   tokenSize: getTokenSize(tokenSize),
                   updatedAt: new Date().toISOString(),
                 }
+              : game,
+          ),
+        }));
+      },
+      setCharacterTypeCounts: (gameId, characterTypeCounts) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? { ...game, characterTypeCounts, updatedAt: new Date().toISOString() }
               : game,
           ),
         }));

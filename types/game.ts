@@ -112,10 +112,18 @@ export type Game = {
   updatedAt: string;
   activeDay: number;
   tokenSize?: number;
+  characterTypeCounts?: CharacterTypeCounts;
   players: Player[];
   conversations: Conversation[];
   script?: StoredScript;
   playerDayNotes?: PlayerDayNote[];
+};
+
+export type CharacterTypeCounts = {
+  townsfolk: number;
+  outsiders: number;
+  minions: number;
+  demons: number;
 };
 
 export type Friend = {
