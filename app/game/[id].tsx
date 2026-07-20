@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { type ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
@@ -93,6 +93,7 @@ export default function GameRoute() {
   const mapWidth = Math.max(1, width - 40);
   const mapHeight = Math.max(mapWidth, Math.floor(height * 0.52));
   const openedGameId = useRef<string | null>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   // Slide the entire header up off-screen on scroll-down, slide it back in on
   // scroll-up.
@@ -524,6 +525,12 @@ export default function GameRoute() {
     }
 
     handleSaveRoleAssignment(nextRoleIds);
+
+    if (travelerRole && isTravelerRole(travelerRole)) {
+      requestAnimationFrame(() => {
+        scrollViewRef.current?.scrollTo({ animated: true, y: 0 });
+      });
+    }
   }
 
   function handleSaveRoleAssignment(roleIds = roleAssignmentRoleIds.slice(0, 1)) {
@@ -727,6 +734,7 @@ export default function GameRoute() {
             contentInsetAdjustmentBehavior="automatic"
             keyboardShouldPersistTaps="always"
             onScroll={scrollHandler}
+            ref={scrollViewRef}
             scrollEventThrottle={16}
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
