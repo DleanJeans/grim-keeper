@@ -127,7 +127,7 @@ export function InteractionList({
                             key={player.id}
                             bordered
                             player={player}
-                            roleIconSize={20}
+                            iconSize={20}
                             textStyle={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}
                           />
                         ) : (

@@ -32,7 +32,7 @@ export function VoterList({ day, players, voterIds }: VoterListProps) {
               <PlayerNameWithRole
                 bordered
                 player={player}
-                roleIconSize={14}
+                iconSize={14}
                 textStyle={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}
               />
             </View>

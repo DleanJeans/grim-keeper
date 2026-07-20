@@ -117,7 +117,7 @@ function KillerDescriptionView({ killerPlayers, killerRoles }: KillerDescription
       </Text>
       {killerPlayers.map((player, index) => (
         <View key={player.id} style={styles.killerName}>
-          <PlayerNameWithRole player={player} roleIconSize={14} textStyle={styles.subtitle} />
+          <PlayerNameWithRole player={player} iconSize={14} textStyle={styles.subtitle} />
           {index < killerPlayers.length - 1 ? (
             <Text selectable style={styles.subtitle}>
               ,

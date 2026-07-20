@@ -45,7 +45,7 @@ export function NominateButton({
           <Text style={{ ...onDarkTextStrong, color: '#94a3b8' }}>Already Nominated</Text>
           <PlayerNameWithRole
             player={alreadyNominatedPlayer}
-            roleIconSize={14}
+            iconSize={14}
             textStyle={{ ...onDarkTextStrong, color: '#94a3b8' }}
           />
         </View>

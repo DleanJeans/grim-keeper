@@ -87,8 +87,8 @@ function PlayerNameCell({ player, name }: { player?: Player; name: string }) {
         player={player}
         style={styles.playerCell}
         textStyle={styles.playerCellText}
-        roleIconSize={16}
-        roleIconScale={2}
+        iconSize={16}
+        iconScale={2}
       />
     );
   }
@@ -139,8 +139,8 @@ function TalkedToPill({ name, player, repeated }: TalkedToPillProps) {
       {player ? (
         <PlayerNameWithRole
           player={player}
-          roleIconSize={16}
-          roleIconScale={2}
+          iconSize={16}
+          iconScale={2}
           textStyle={textStyle}
         />
       ) : (

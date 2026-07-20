@@ -18,8 +18,8 @@ type PlayerNameWithRoleProps = {
   game?: Game;
   day?: number;
   player: Player;
-  roleIconSize?: number;
-  roleIconScale?: number;
+  iconSize?: number;
+  iconScale?: number;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
   showRoles?: boolean;
@@ -31,8 +31,8 @@ export function PlayerNameWithRole({
   day,
   game: providedGame,
   player,
-  roleIconSize,
-  roleIconScale,
+  iconSize,
+  iconScale,
   style,
   textStyle,
   showRoles: providedShowRoles,
@@ -47,9 +47,9 @@ export function PlayerNameWithRole({
     showRoles && script
       ? getRoleDisplayForDayOrPrevious(player.roleAssignments, activeDay, script.roles).roles[0]
       : undefined;
-  const resolvedRoleIconSize = roleIconSize ?? (variant === 'note' ? NOTE_REFERENCE_ICON_SIZE : 20);
+  const resolvedRoleIconSize = iconSize ?? (variant === 'note' ? NOTE_REFERENCE_ICON_SIZE : 20);
   const resolvedRoleIconScale =
-    roleIconScale ?? (variant === 'note' ? NOTE_REFERENCE_ICON_SCALE : 1.75);
+    iconScale ?? (variant === 'note' ? NOTE_REFERENCE_ICON_SCALE : 1.75);
 
   return (
     <View

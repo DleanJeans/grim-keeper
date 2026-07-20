@@ -193,7 +193,7 @@ function NoteSuggestionDropdown({
               day={day}
               game={game}
               player={suggestion.player}
-              roleIconSize={20}
+              iconSize={20}
               textStyle={{ color: colors.text, fontWeight: '700' }}
             />
           ) : (

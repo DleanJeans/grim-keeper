@@ -78,7 +78,7 @@ export function TrackingConfirmActions() {
             </Text>
             <PlayerNameWithRole
               player={confirmPlayer}
-              roleIconSize={14}
+              iconSize={14}
               style={{ flexShrink: 1 }}
               textStyle={{ ...confirmTextBase, color: disabled ? '#94a3b8' : '#f8fafc' }}
             />
