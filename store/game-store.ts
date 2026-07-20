@@ -22,6 +22,7 @@ import type {
 import { normalizePlayerName } from '@/utils/conversation-utils';
 import { addMissingFriends, getFriendSummaries, hasFriendName } from '@/utils/friend-utils';
 import { getTokenSize } from '@/utils/layout-utils';
+import { createFriendId, createGameId, createScriptId, migrateObjectIds } from '@/utils/object-id';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 import {
   getNotesForPlayer,
@@ -50,7 +51,7 @@ export type GameData = {
 
 type GameState = GameData & {
   addFriend: (name: string) => void;
-  renameFriend: (friendId: string, currentName: string, nextName: string) => boolean;
+  renameFriend: (friendId: string, currentName: string, nextName: string) => string | undefined;
   createGame: (input: CreateGameInput) => Game;
   saveScript: (script: StoredScript) => void;
   updateScript: (script: StoredScript) => void;
@@ -151,7 +152,14 @@ export const useGameStore = create<GameState>()(
           return {
             friends: [
               ...state.friends,
-              { id: createId('friend'), name: normalizedName, createdAt },
+              {
+                id: createFriendId(
+                  normalizedName,
+                  state.friends.map((friend) => friend.id),
+                ),
+                name: normalizedName,
+                createdAt,
+              },
             ],
           };
         });
@@ -161,10 +169,10 @@ export const useGameStore = create<GameState>()(
         const normalizedNextName = normalizePlayerName(nextName);
         const currentKey = normalizedCurrentName.toLocaleLowerCase();
         const nextKey = normalizedNextName.toLocaleLowerCase();
-        let renamed = false;
+        let renamedFriendId: string | undefined;
 
         if (!normalizedNextName || normalizedCurrentName === normalizedNextName) {
-          return false;
+          return undefined;
         }
 
         set((state) => {
@@ -183,22 +191,28 @@ export const useGameStore = create<GameState>()(
             return state;
           }
 
-          renamed = true;
           const updatedAt = new Date().toISOString();
           const existingFriendIndex = state.friends.findIndex(
             (friend) =>
               friend.id === friendId ||
               normalizePlayerName(friend.name).toLocaleLowerCase() === currentKey,
           );
+          const nextFriendId = createFriendId(
+            normalizedNextName,
+            state.friends.filter((friend) => friend.id !== friendId).map((friend) => friend.id),
+          );
+          renamedFriendId = nextFriendId;
           const friends =
             existingFriendIndex >= 0
               ? state.friends.map((friend, index) =>
-                  index === existingFriendIndex ? { ...friend, name: normalizedNextName } : friend,
+                  index === existingFriendIndex
+                    ? { ...friend, id: nextFriendId, name: normalizedNextName }
+                    : friend,
                 )
               : [
                   ...state.friends,
                   {
-                    id: friendId,
+                    id: nextFriendId,
                     name: normalizedNextName,
                     createdAt: updatedAt,
                   },
@@ -223,7 +237,7 @@ export const useGameStore = create<GameState>()(
           return { friends, games, savedNotes };
         });
 
-        return renamed;
+        return renamedFriendId;
       },
       createGame: ({ lorics, playerNames, script }) => {
         const now = new Date().toISOString();
@@ -239,7 +253,11 @@ export const useGameStore = create<GameState>()(
           seat: index,
         }));
         const game: Game = {
-          id: createId('game'),
+          id: createGameId(
+            script?.name,
+            now,
+            get().games.map((existingGame) => existingGame.id),
+          ),
           createdAt: now,
           updatedAt: now,
           activeDay: 1,
@@ -264,10 +282,20 @@ export const useGameStore = create<GameState>()(
       },
       saveScript: (script) => {
         set((state) => {
+          const normalizedScript = {
+            ...script,
+            id: createScriptId(
+              script,
+              state.scripts
+                .filter((existingScript) => existingScript.id !== script.id)
+                .map((existingScript) => existingScript.id),
+            ),
+          };
           const existingIndex = state.scripts.findIndex(
             (existingScript) =>
-              existingScript.id === script.id ||
-              (script.remoteId !== undefined && existingScript.remoteId === script.remoteId),
+              existingScript.id === normalizedScript.id ||
+              (normalizedScript.remoteId !== undefined &&
+                existingScript.remoteId === normalizedScript.remoteId),
           );
 
           if (existingIndex < 0) {
@@ -275,8 +303,8 @@ export const useGameStore = create<GameState>()(
               scripts: [
                 ...state.scripts,
                 {
-                  ...script,
-                  roles: mergeRoleNotes(script.roles, state.roleCatalog),
+                  ...normalizedScript,
+                  roles: mergeRoleNotes(normalizedScript.roles, state.roleCatalog),
                 },
               ],
             };
@@ -284,9 +312,9 @@ export const useGameStore = create<GameState>()(
 
           const scripts = [...state.scripts];
           scripts[existingIndex] = {
-            ...script,
+            ...normalizedScript,
             id: state.scripts[existingIndex].id,
-            roles: mergeRoleNotes(script.roles, [
+            roles: mergeRoleNotes(normalizedScript.roles, [
               ...state.roleCatalog,
               ...state.scripts[existingIndex].roles,
             ]),
@@ -852,14 +880,17 @@ export const useGameStore = create<GameState>()(
 
         set({ appUserName: normalizedName });
       },
-      importData: (data) => set(data),
+      importData: (data) => {
+        const migratedData = migrateObjectIds(data) as GameData;
+        set(migratedData);
+      },
     }),
     {
       name: 'grim-keeper-game-store-v1',
-      version: 4,
+      version: 5,
       storage: createJSONStorage(() => localStorage),
       migrate: (persistedState, version) => {
-        if (!persistedState || version >= 4) {
+        if (!persistedState || version >= 5) {
           return persistedState as Partial<GameState> | undefined;
         }
 
@@ -869,7 +900,10 @@ export const useGameStore = create<GameState>()(
 
         const v3State =
           version < 2 ? migrateV1ToV3(state) : version < 3 ? migrateV2ToV3(state) : state;
-        return migratePlayerDayNotes(v3State as Partial<GameState>);
+        const v4State =
+          version < 4 ? migratePlayerDayNotes(v3State as Partial<GameState>) : v3State;
+        const migratedState = migrateObjectIds(v4State) as Partial<GameState>;
+        return migratedState;
       },
       partialize: (state) => ({
         appUserName: state.appUserName,

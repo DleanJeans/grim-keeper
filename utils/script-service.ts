@@ -1,9 +1,10 @@
 import type { Role, StoredScript } from '@/types/game';
+import { createScriptId } from '@/utils/object-id';
 import { BOTC_ROLE_CATALOG_URL, mergeScriptRoles, normalizeRoleCatalog } from '@/utils/role-utils';
 
 export const BOTC_SCRIPTS_API_URL = 'https://www.botcscripts.com/api/scripts';
 export const OFFICIAL_SCRIPT_AUTHOR = 'The Pandemonium Institute';
-export const OFFICIAL_CAROUSEL_SCRIPT_ID = 'script-official-carousel';
+export const OFFICIAL_CAROUSEL_SCRIPT_ID = 'carousel';
 
 const officialScriptNames = new Set(['Trouble Brewing', 'Sects and Violets', 'Bad Moon Rising']);
 
@@ -69,7 +70,10 @@ export function createStoredScript(
   remoteScript: RemoteScript,
   content: unknown,
   catalog: Role[],
-  existingId = `script-remote-${remoteScript.pk}`,
+  existingId = createScriptId(
+    { author: remoteScript.author, name: remoteScript.name, remoteId: remoteScript.pk },
+    [],
+  ),
 ): StoredScript {
   return {
     id: existingId,

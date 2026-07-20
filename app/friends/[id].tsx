@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { FriendGamesList } from '@/components/friends/friend-games-list';
@@ -16,6 +16,7 @@ import { normalizePlayerName } from '@/utils/conversation-utils';
 import { getFriendSummaries } from '@/utils/friend-utils';
 
 export default function FriendDetailRoute() {
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const appUserName = useGameStore((state) => state.appUserName);
   const games = useGameStore((state) => state.games);
@@ -56,7 +57,13 @@ export default function FriendDetailRoute() {
   const handleSave = () => {
     const normalizedName = normalizePlayerName(draftName);
     if (normalizedName && normalizedName !== friend.name) {
-      renameFriend(friend.id, friend.name, normalizedName);
+      const renamedFriendId = renameFriend(friend.id, friend.name, normalizedName);
+      if (renamedFriendId) {
+        router.replace({
+          pathname: '/friends/[id]',
+          params: { id: renamedFriendId },
+        });
+      }
     }
     setEditing(false);
   };

@@ -22,10 +22,9 @@ describe('script service', () => {
         remoteScript,
         [{ id: '_meta', name: 'Trouble Brewing' }, { id: 'imp' }],
         [{ id: 'imp', name: 'Imp', team: 'demon', edition: 'tb' }],
-        'script-42',
       ),
     ).toMatchObject({
-      id: 'script-42',
+      id: '42-trouble-brewing',
       remoteId: 42,
       name: 'Trouble Brewing',
       roles: [{ id: 'imp', name: 'Imp', team: 'demon', edition: 'tb' }],

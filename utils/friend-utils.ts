@@ -1,5 +1,6 @@
 import type { Friend, FriendSummary, Game } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
+import { createFriendId } from '@/utils/object-id';
 
 export function getFriendSummaries(
   games: Game[],
@@ -38,7 +39,10 @@ export function getFriendSummaries(
 
       if (!summaries.has(key)) {
         summaries.set(key, {
-          id: `friend-${key}`,
+          id: createFriendId(
+            name,
+            [...summaries.values()].map((friend) => friend.id),
+          ),
           name,
           createdAt: game.createdAt,
           gamesPlayed: 0,
@@ -86,7 +90,10 @@ export function addMissingFriends(friends: Friend[], names: string[], createdAt:
     if (key && !friendKeys.has(key)) {
       friendKeys.add(key);
       nextFriends.push({
-        id: createFriendId(),
+        id: createFriendId(
+          normalizedName,
+          nextFriends.map((friend) => friend.id),
+        ),
         name: normalizedName,
         createdAt,
       });
@@ -94,8 +101,4 @@ export function addMissingFriends(friends: Friend[], names: string[], createdAt:
   }
 
   return nextFriends;
-}
-
-function createFriendId() {
-  return `friend-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
