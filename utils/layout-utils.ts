@@ -118,30 +118,39 @@ export function resolveTokenCollisions(
 
   const positions = new Map<string, PlayerPosition>();
   for (const player of players) {
-    positions.set(player.id, player.position ?? { x: 0, y: 0 });
+    // Players without a position haven't been placed on the map yet. They
+    // get their default placement from getPlayerMapPosition, so we leave
+    // them out of the collision math entirely — otherwise they'd be treated
+    // as overlapping at (0, 0) and pushed around in a way that "teleports"
+    // them to a real position on the perimeter.
+    if (player.position) {
+      positions.set(player.id, player.position);
+    }
   }
 
-  if (players.length < 2) {
+  if (positions.size < 2) {
     return { positions: {} };
   }
 
   const resolved: Record<string, PlayerPosition> = {};
-
-  const getPosition = (id: string): PlayerPosition => {
-    const next = positions.get(id);
-    return next ?? { x: 0, y: 0 };
-  };
 
   const setResolved = (id: string, next: PlayerPosition) => {
     positions.set(id, next);
     resolved[id] = next;
   };
 
+  const anchorHasPosition = anchorId !== undefined && positions.has(anchorId);
+
   for (let iteration = 0; iteration < COLLISION_RESOLUTION_MAX_ITERATIONS; iteration += 1) {
     let movedThisIteration = false;
+    // Read positions from the live map (not the input) so updates from
+    // earlier iterations are visible here.
     const movablePlayers: ResolvablePlayer[] = players
-      .filter((player) => player.id !== anchorId)
-      .map((player) => ({ id: player.id, position: getPosition(player.id) }));
+      .filter((player) => player.id !== anchorId && positions.has(player.id))
+      .map((player) => {
+        const pos = positions.get(player.id) as PlayerPosition;
+        return { id: player.id, position: pos };
+      });
 
     for (let i = 0; i < movablePlayers.length; i += 1) {
       for (let j = i + 1; j < movablePlayers.length; j += 1) {
@@ -194,9 +203,9 @@ export function resolveTokenCollisions(
 
       // Also check movable player against the anchor (if any) so the
       // anchor's immovable position still shoves its neighbors aside.
-      if (anchorId && players.some((player) => player.id === anchorId)) {
+      if (anchorHasPosition) {
         const movable = movablePlayers[i];
-        const anchor = getPosition(anchorId);
+        const anchor = positions.get(anchorId as string) as PlayerPosition;
         const dx = movable.position.x - anchor.x;
         const dy = movable.position.y - anchor.y;
         const distance = Math.sqrt(dx * dx + dy * dy);

@@ -115,4 +115,20 @@ describe('resolveTokenCollisions', () => {
     expect(result.positions.b).toBeDefined();
     expect(result.positions.b!.x).toBeGreaterThanOrEqual(30);
   });
+
+  it('skips players without a position so they keep their default placement', () => {
+    // Regression: resizing tokens on a fresh game used to teleport every
+    // unpositioned player to (0, 0) because the resolver treated "no
+    // position" as "overlapping at the origin". Unpositioned players should
+    // be left alone so getPlayerMapPosition can place them on the perimeter.
+    const a = makePlayer('a', 100, 100);
+    const b: Player = { id: 'b', name: 'b', seat: 1 };
+    const c: Player = { id: 'c', name: 'c', seat: 2 };
+    const d = makePlayer('d', 120, 100);
+
+    const result = resolveTokenCollisions([a, b, c, d], mapWidth, mapHeight, tokenSize);
+
+    expect(result.positions.b).toBeUndefined();
+    expect(result.positions.c).toBeUndefined();
+  });
 });
