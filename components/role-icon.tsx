@@ -1,3 +1,4 @@
+import { StyleSheet, View } from 'react-native';
 import Svg, { Defs, FeColorMatrix, Filter, Image } from 'react-native-svg';
 
 import type { Role } from '@/types/game';
@@ -13,21 +14,38 @@ export function RoleIcon({
   scale?: number;
 }) {
   const scaledSize = size * scale;
+  const overflow = (scaledSize - size) / 2;
 
   return (
-    <Svg height={scaledSize} viewBox={`0 0 ${scaledSize} ${scaledSize}`} width={scaledSize}>
-      <Defs>
-        <Filter id="removeNearWhite">
-          <FeColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 -1 -1 -1 2.7 0" />
-        </Filter>
-      </Defs>
-      <Image
-        filter="url(#removeNearWhite)"
+    <View style={{ height: size, width: size }}>
+      <Svg
         height={scaledSize}
-        href={{ uri: getRoleIconUrl(role) }}
-        preserveAspectRatio="xMidYMid slice"
+        style={[
+          styles.svg,
+          { height: scaledSize, left: -overflow, top: -overflow, width: scaledSize },
+        ]}
+        viewBox={`0 0 ${scaledSize} ${scaledSize}`}
         width={scaledSize}
-      />
-    </Svg>
+      >
+        <Defs>
+          <Filter id="removeNearWhite">
+            <FeColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 -1 -1 -1 2.7 0" />
+          </Filter>
+        </Defs>
+        <Image
+          filter="url(#removeNearWhite)"
+          height={scaledSize}
+          href={{ uri: getRoleIconUrl(role) }}
+          preserveAspectRatio="xMidYMid slice"
+          width={scaledSize}
+        />
+      </Svg>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  svg: {
+    position: 'absolute',
+  },
+});

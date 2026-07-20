@@ -1,5 +1,5 @@
 import type { StyleProp, TextStyle, ViewStyle } from 'react-native';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { useOptionalGameRouteContext } from '@/components/game/game-route-context';
 import {
@@ -54,21 +54,10 @@ export function PlayerNameWithRole({
   return (
     <View
       style={[
-        {
-          alignItems: 'center',
-          backgroundColor: bordered ? colors.surfaceRaised : undefined,
-          borderColor: bordered ? colors.borderStrong : undefined,
-          borderRadius: bordered ? 999 : undefined,
-          borderWidth: bordered ? 1 : undefined,
-          flexDirection: 'row',
-          flexShrink: 1,
-          gap: 4,
-          minWidth: 0,
-          paddingHorizontal: bordered ? 8 : undefined,
-          paddingVertical: bordered ? 3 : undefined,
-        },
-        variant === 'note' && noteReferenceStyles.container,
+        styles.container,
+        bordered && styles.bordered,
         style,
+        variant === 'note' && noteReferenceStyles.container,
       ]}
     >
       {role ? (
@@ -80,3 +69,21 @@ export function PlayerNameWithRole({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  bordered: {
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.borderStrong,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  container: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexShrink: 1,
+    gap: 4,
+    minWidth: 0,
+  },
+});
