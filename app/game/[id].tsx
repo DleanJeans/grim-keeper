@@ -6,10 +6,9 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { ActiveGameTab } from '@/components/game/active-game-tab';
 import { CharacterTypeCountEditor } from '@/components/game/character-type-counts';
 import { DayCount } from '@/components/game/day-count';
-import { FocusedDeathActionPanel } from '@/components/game/deaths-tab/death-actions';
-import { DeathLog } from '@/components/game/deaths-tab/death-log';
 import { GameMap } from '@/components/game/game-map';
 import {
   type GameRouteContextValue,
@@ -17,14 +16,10 @@ import {
   type GameTab,
   type TrackingMode,
 } from '@/components/game/game-route-context';
+import { GameTabContent } from '@/components/game/game-tab-content';
 import { GameTabs } from '@/components/game/game-tabs';
 import { INLINE_GAME_HEADER_HEIGHT, InlineGameHeader } from '@/components/game/inline-game-header';
-import { InteractionsTab } from '@/components/game/interactions-tab/interactions-tab';
-import { TrackingConfirmActions } from '@/components/game/interactions-tab/tracking-confirm-actions';
 import { MapModeActions } from '@/components/game/map-mode-actions';
-import { NominationList } from '@/components/game/noms-tab/nomination-list';
-import { VoteConfirmActions } from '@/components/game/noms-tab/vote-confirm-actions';
-import { NotesTab } from '@/components/game/notes-tab/notes-tab';
 import { PlayerCountStatus } from '@/components/game/player-count-status';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
 import { RevealRolesButton } from '@/components/game/reveal-roles-button';
@@ -742,35 +737,9 @@ export default function GameRoute() {
               <GameTabs />
             </View>
 
-            <View key={`${activeTab}-tab`} style={styles.tabContent}>
-              {activeTab === 'nominations' ? (
-                <>
-                  {votingNominationId ? (
-                    <View key="vote-actions">
-                      <VoteConfirmActions />
-                    </View>
-                  ) : trackingMode ? (
-                    <View key="tracking-actions">
-                      <TrackingConfirmActions />
-                    </View>
-                  ) : null}
-                  <NominationList />
-                </>
-              ) : activeTab === 'deaths' ? (
-                <>
-                  <FocusedDeathActionPanel />
-                  <DeathLog
-                    activeDay={activeGame.activeDay}
-                    players={activeGame.players}
-                    script={activeGame.script}
-                  />
-                </>
-              ) : activeTab === 'notes' ? (
-                <NotesTab />
-              ) : (
-                <InteractionsTab />
-              )}
-            </View>
+            <GameTabContent>
+              <ActiveGameTab />
+            </GameTabContent>
           </Animated.ScrollView>
 
           {focusedPlayer ? (
@@ -821,13 +790,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     gap: 20,
     paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingBottom: 132,
     paddingTop: INLINE_GAME_HEADER_HEIGHT,
-  },
-  // Reserve roughly one screen of height so the outer ScrollView doesn't
-  // shrink when switching tabs, which would snap the scroll position.
-  tabContent: {
-    minHeight: 480,
   },
   selectingBar: {
     backgroundColor: '#111827',
