@@ -321,10 +321,9 @@ export function getRoleDisplayForDayOrPrevious(
   day: number,
   roles: Role[],
 ) {
-  const eligibleAssignments = (assignments ?? []).filter((assignment) => assignment.day <= day);
-  const latestDay = Math.max(...eligibleAssignments.map((assignment) => assignment.day));
-  const assignment =
-    latestDay > 0 ? getRoleAssignmentForDay(eligibleAssignments, latestDay) : undefined;
+  const confirmedAssignment = getRoleAssignmentForDayOrPrevious(assignments, day, 'confirm');
+  const claimedAssignment = getRoleAssignmentForDayOrPrevious(assignments, day, 'claim');
+  const assignment = confirmedAssignment?.roleIds.length ? confirmedAssignment : claimedAssignment;
 
   return {
     kind: assignment?.kind,

@@ -423,6 +423,26 @@ describe('role utilities', () => {
     });
   });
 
+  it('falls back to the claimed role after the confirmed role is cleared', () => {
+    expect(
+      getRoleDisplayForDayOrPrevious(
+        [
+          { day: 1, kind: 'claim', roleIds: ['empath'], updatedAt: '2026-07-14T00:00:00.000Z' },
+          { day: 1, kind: 'confirm', roleIds: [], updatedAt: '2026-07-14T00:02:00.000Z' },
+        ],
+        1,
+        [
+          { id: 'empath', name: 'Empath', team: 'townsfolk' },
+          { id: 'imp', name: 'Imp', team: 'demon' },
+        ],
+      ),
+    ).toEqual({
+      kind: 'claim',
+      roleIds: ['empath'],
+      roles: [{ id: 'empath', name: 'Empath', team: 'townsfolk' }],
+    });
+  });
+
   it('groups effective role owners by day with confirmation priority', () => {
     expect(
       getRoleOwnerNamesForDay(
