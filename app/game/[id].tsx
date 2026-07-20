@@ -27,7 +27,11 @@ import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
 import type { KillAttribution, PlayerPosition, PlayerRoleAssignment } from '@/types/game';
 import { getLastDayWithData } from '@/utils/game-utils';
-import { getTokenSize, rotatePlayerMapPositions } from '@/utils/layout-utils';
+import {
+  getTokenSize,
+  resolveTokenCollisions,
+  rotatePlayerMapPositions,
+} from '@/utils/layout-utils';
 import { hasDeadVoteAvailable, isPlayerCurrentlyDead } from '@/utils/player-utils';
 import {
   addRoleToScript,
@@ -449,7 +453,17 @@ export default function GameRoute() {
   }
 
   function handleResizeTokens(sizeDelta: number) {
-    setTokenSize(activeGame.id, activeTokenSize + sizeDelta);
+    const nextSize = getTokenSize(activeTokenSize + sizeDelta);
+    setTokenSize(activeGame.id, nextSize);
+    // Pushing is only needed when tokens grow into each other; shrinking can
+    // never create new overlaps.
+    if (nextSize <= activeTokenSize) {
+      return;
+    }
+    const { positions } = resolveTokenCollisions(activeGame.players, mapWidth, mapHeight, nextSize);
+    if (Object.keys(positions).length > 0) {
+      updatePlayerPositions(activeGame.id, positions);
+    }
   }
 
   function handleStartRoleAssignment(kind: PlayerRoleAssignment['kind']) {
@@ -534,6 +548,22 @@ export default function GameRoute() {
 
   function handleMovePlayer(playerId: string, position: PlayerPosition) {
     updatePlayerPosition(activeGame.id, playerId, position);
+    // Push any tokens the dragged player is now overlapping out of the way.
+    // The dragged player is the anchor — it stays at `position`, the others
+    // get shoved.
+    const playersWithMoved = activeGame.players.map((player) =>
+      player.id === playerId ? { ...player, position } : player,
+    );
+    const { positions } = resolveTokenCollisions(
+      playersWithMoved,
+      mapWidth,
+      mapHeight,
+      activeTokenSize,
+      playerId,
+    );
+    if (Object.keys(positions).length > 0) {
+      updatePlayerPositions(activeGame.id, positions);
+    }
   }
 
   function handleSetFocusedPlayerDeath(kind: 'execution' | 'night', attribution?: KillAttribution) {

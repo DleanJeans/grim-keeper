@@ -24,6 +24,7 @@ const DEFAULT_BORDER_WIDTH = 2;
 const SELECTED_BORDER_WIDTH = 3;
 const ROLE_IMAGE_SCALE = 1.4;
 const ROLE_IMAGE_OPACITY = 0.4;
+const EMPTY_OTHER_TOKEN_POSITIONS: { x: number; y: number }[] = [];
 const badgeColors = colors.playerTokenEdgeBadge;
 const Colors = {
   backgroundDefault: '#f8fafc',
@@ -51,6 +52,7 @@ type PlayerTokenProps = {
   isNominated?: boolean;
   isNominator?: boolean;
   isSelected?: boolean;
+  otherTokenPositions?: { x: number; y: number }[];
   player: Player;
   position: PlayerPosition;
   roles?: Role[];
@@ -73,6 +75,7 @@ export function PlayerToken({
   mapWidth,
   onMove,
   onSelect,
+  otherTokenPositions = EMPTY_OTHER_TOKEN_POSITIONS,
   player,
   position,
   rearrangeMode = false,
@@ -99,6 +102,7 @@ export function PlayerToken({
   const y = useSharedValue(position.y);
   const startX = useSharedValue(position.x);
   const startY = useSharedValue(position.y);
+  const otherPositionsShared = useSharedValue<{ x: number; y: number }[]>(otherTokenPositions);
 
   useEffect(() => {
     x.value = withSpring(position.x);
@@ -107,6 +111,55 @@ export function PlayerToken({
     startY.value = position.y;
   }, [position.x, position.y, startX, startY, x, y]);
 
+  useEffect(() => {
+    otherPositionsShared.value = otherTokenPositions;
+  }, [otherTokenPositions, otherPositionsShared]);
+
+  // Worklet: clamp the proposed center so it doesn't overlap any other token.
+  // For each blocker, project the proposed center onto the boundary circle of
+  // the blocker (radius = tokenSize) along the vector from blocker to proposed
+  // center. Pick the candidate closest to the original proposed center — that
+  // is the one furthest along the drag direction, so the dragged token stops
+  // at the first blocker it actually hits.
+  function clampToOtherTokens(px: number, py: number) {
+    'worklet';
+
+    const blockers = otherPositionsShared.value;
+    let bestX = px;
+    let bestY = py;
+    let bestDistanceSquared = 0;
+    for (let i = 0; i < blockers.length; i += 1) {
+      const blocker = blockers[i];
+      const dx = px - blocker.x;
+      const dy = py - blocker.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      if (distance >= tokenSize) {
+        continue;
+      }
+      if (distance === 0) {
+        // Coincident centers: nudge along +x by exactly tokenSize.
+        const candidateX = blocker.x + tokenSize;
+        const candidateY = blocker.y;
+        const candidateDistanceSquared = (candidateX - px) ** 2 + (candidateY - py) ** 2;
+        if (candidateDistanceSquared < bestDistanceSquared) {
+          bestX = candidateX;
+          bestY = candidateY;
+          bestDistanceSquared = candidateDistanceSquared;
+        }
+        continue;
+      }
+      const candidateX = blocker.x + (dx / distance) * tokenSize;
+      const candidateY = blocker.y + (dy / distance) * tokenSize;
+      const candidateDistanceSquared = (candidateX - px) ** 2 + (candidateY - py) ** 2;
+      if (candidateDistanceSquared < bestDistanceSquared) {
+        bestX = candidateX;
+        bestY = candidateY;
+        bestDistanceSquared = candidateDistanceSquared;
+      }
+    }
+    return { x: bestX, y: bestY };
+  }
+
   const pan = Gesture.Pan()
     .onStart(() => {
       startX.value = x.value;
@@ -114,7 +167,7 @@ export function PlayerToken({
       runOnJS(setIsDragReady)(true);
     })
     .onUpdate((event) => {
-      const nextPosition = clampTokenPosition(
+      const clamped = clampTokenPosition(
         {
           x: startX.value + event.translationX,
           y: startY.value + event.translationY,
@@ -124,9 +177,10 @@ export function PlayerToken({
         tokenSize,
         borderWidth,
       );
+      const blocked = clampToOtherTokens(clamped.x, clamped.y);
 
-      x.value = nextPosition.x;
-      y.value = nextPosition.y;
+      x.value = blocked.x;
+      y.value = blocked.y;
     })
     .onEnd(() => {
       runOnJS(onMove)(player.id, { x: x.value, y: y.value });

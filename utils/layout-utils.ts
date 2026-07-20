@@ -81,6 +81,153 @@ export function clampTokenPosition(
   };
 }
 
+export type TokenCollisionResolution = {
+  /** Map of player id → resolved position. Only includes players whose position changed. */
+  positions: Record<string, PlayerPosition>;
+};
+
+const COLLISION_RESOLUTION_MAX_ITERATIONS = 16;
+const COLLISION_RESOLUTION_EPSILON = 0.5;
+
+type ResolvablePlayer = {
+  id: string;
+  position: PlayerPosition;
+};
+
+/**
+ * Resolves overlaps between circular tokens of equal `tokenSize` by pushing the
+ * non-anchor token away from the anchor along the line connecting their centers.
+ * Repeats until no further overlap is detected (or the iteration cap is hit),
+ * which lets pushes cascade through a chain of touching tokens.
+ *
+ * `anchorId`, if provided, is treated as immovable: other tokens are pushed
+ * around it but it is never moved. Other tokens may be pushed out of bounds and
+ * clamped to the map edge; the anchor is left at its starting position even
+ * when the resulting residual overlap cannot be resolved.
+ */
+export function resolveTokenCollisions(
+  players: Player[],
+  mapWidth: number,
+  mapHeight: number,
+  tokenSize: number,
+  anchorId?: string,
+): TokenCollisionResolution {
+  const resolvedTokenSize = getTokenSize(tokenSize);
+  const radius = resolvedTokenSize / 2;
+  const minDistance = resolvedTokenSize;
+
+  const positions = new Map<string, PlayerPosition>();
+  for (const player of players) {
+    positions.set(player.id, player.position ?? { x: 0, y: 0 });
+  }
+
+  if (players.length < 2) {
+    return { positions: {} };
+  }
+
+  const resolved: Record<string, PlayerPosition> = {};
+
+  const getPosition = (id: string): PlayerPosition => {
+    const next = positions.get(id);
+    return next ?? { x: 0, y: 0 };
+  };
+
+  const setResolved = (id: string, next: PlayerPosition) => {
+    positions.set(id, next);
+    resolved[id] = next;
+  };
+
+  for (let iteration = 0; iteration < COLLISION_RESOLUTION_MAX_ITERATIONS; iteration += 1) {
+    let movedThisIteration = false;
+    const movablePlayers: ResolvablePlayer[] = players
+      .filter((player) => player.id !== anchorId)
+      .map((player) => ({ id: player.id, position: getPosition(player.id) }));
+
+    for (let i = 0; i < movablePlayers.length; i += 1) {
+      for (let j = i + 1; j < movablePlayers.length; j += 1) {
+        const a = movablePlayers[i];
+        const b = movablePlayers[j];
+        const ax = a.position.x;
+        const ay = a.position.y;
+        const bx = b.position.x;
+        const by = b.position.y;
+        const dx = bx - ax;
+        const dy = by - ay;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance >= minDistance - COLLISION_RESOLUTION_EPSILON) {
+          continue;
+        }
+
+        const directionX = distance === 0 ? 1 : dx / distance;
+        const directionY = distance === 0 ? 0 : dy / distance;
+        // Split the overlap evenly so both sides move the same amount. When
+        // one of the pair is the anchor, push the movable side by the full
+        // overlap instead.
+        const overlap = minDistance - distance;
+        const pushAMagnitude = anchorId === b.id ? overlap : overlap / 2;
+        const pushBMagnitude = anchorId === a.id ? overlap : overlap / 2;
+
+        const newAx = ax - directionX * pushAMagnitude;
+        const newAy = ay - directionY * pushAMagnitude;
+        const newBx = bx + directionX * pushBMagnitude;
+        const newBy = by + directionY * pushBMagnitude;
+
+        const clampedA = clampTokenPosition(
+          { x: newAx, y: newAy },
+          mapWidth,
+          mapHeight,
+          resolvedTokenSize,
+        );
+        const clampedB = clampTokenPosition(
+          { x: newBx, y: newBy },
+          mapWidth,
+          mapHeight,
+          resolvedTokenSize,
+        );
+
+        a.position = clampedA;
+        b.position = clampedB;
+        setResolved(a.id, clampedA);
+        setResolved(b.id, clampedB);
+        movedThisIteration = true;
+      }
+
+      // Also check movable player against the anchor (if any) so the
+      // anchor's immovable position still shoves its neighbors aside.
+      if (anchorId && players.some((player) => player.id === anchorId)) {
+        const movable = movablePlayers[i];
+        const anchor = getPosition(anchorId);
+        const dx = movable.position.x - anchor.x;
+        const dy = movable.position.y - anchor.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance < minDistance - COLLISION_RESOLUTION_EPSILON) {
+          const overlap = minDistance - distance;
+          const directionX = distance === 0 ? 1 : dx / distance;
+          const directionY = distance === 0 ? 0 : dy / distance;
+          const newPos = clampTokenPosition(
+            {
+              x: movable.position.x + directionX * overlap,
+              y: movable.position.y + directionY * overlap,
+            },
+            mapWidth,
+            mapHeight,
+            resolvedTokenSize,
+          );
+          movable.position = newPos;
+          setResolved(movable.id, newPos);
+          movedThisIteration = true;
+        }
+      }
+    }
+
+    if (!movedThisIteration) {
+      break;
+    }
+  }
+
+  return { positions: resolved };
+}
+
 export function rotatePlayerMapPositions(
   players: Player[],
   mapWidth: number,

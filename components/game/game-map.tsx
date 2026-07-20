@@ -151,30 +151,43 @@ export function GameMap() {
             })}
       </Svg>
 
-      {players.map((player) => (
-        <PlayerTokenForMap
-          key={player.id}
-          activeDay={activeDay}
-          activeTokenSize={activeTokenSize}
-          disabled={disabledPlayerIdSet.has(player.id)}
-          gameRoles={game.script?.roles ?? []}
-          handleMovePlayer={handleMovePlayer}
-          handleSelectPlayer={handleSelectPlayer}
-          highlightedPlayerIds={highlightedPlayerIds}
-          interactionMode={interactionMode}
-          isNominated={nominatedIds.has(player.id)}
-          isNominator={nominatorIds.has(player.id)}
-          isRearrangeMode={isRearrangeMode}
-          mapHeight={mapHeight}
-          mapWidth={mapWidth}
-          player={stripFutureAndRevivedDeath(player, activeDay)}
-          position={
-            positions.get(player.id) ??
-            getPlayerMapPosition(player, players, mapWidth, mapHeight, activeTokenSize)
+      {players.map((player) => {
+        const ownPosition =
+          positions.get(player.id) ??
+          getPlayerMapPosition(player, players, mapWidth, mapHeight, activeTokenSize);
+        const otherTokenPositions: { x: number; y: number }[] = [];
+        for (const other of players) {
+          if (other.id === player.id) {
+            continue;
           }
-          showRoles={showRoles}
-        />
-      ))}
+          const otherPosition =
+            positions.get(other.id) ??
+            getPlayerMapPosition(other, players, mapWidth, mapHeight, activeTokenSize);
+          otherTokenPositions.push(otherPosition);
+        }
+        return (
+          <PlayerTokenForMap
+            key={player.id}
+            activeDay={activeDay}
+            activeTokenSize={activeTokenSize}
+            disabled={disabledPlayerIdSet.has(player.id)}
+            gameRoles={game.script?.roles ?? []}
+            handleMovePlayer={handleMovePlayer}
+            handleSelectPlayer={handleSelectPlayer}
+            highlightedPlayerIds={highlightedPlayerIds}
+            interactionMode={interactionMode}
+            isNominated={nominatedIds.has(player.id)}
+            isNominator={nominatorIds.has(player.id)}
+            isRearrangeMode={isRearrangeMode}
+            mapHeight={mapHeight}
+            mapWidth={mapWidth}
+            otherTokenPositions={otherTokenPositions}
+            player={stripFutureAndRevivedDeath(player, activeDay)}
+            position={ownPosition}
+            showRoles={showRoles}
+          />
+        );
+      })}
     </View>
   );
 }
@@ -193,6 +206,7 @@ function PlayerTokenForMap({
   isRearrangeMode,
   mapHeight,
   mapWidth,
+  otherTokenPositions,
   player,
   position,
   showRoles,
@@ -210,6 +224,7 @@ function PlayerTokenForMap({
   isRearrangeMode: boolean;
   mapHeight: number;
   mapWidth: number;
+  otherTokenPositions: { x: number; y: number }[];
   player: Player;
   position: PlayerPosition;
   showRoles: boolean;
@@ -229,6 +244,7 @@ function PlayerTokenForMap({
       mapWidth={mapWidth}
       onMove={handleMovePlayer}
       onSelect={handleSelectPlayer}
+      otherTokenPositions={otherTokenPositions}
       player={player}
       position={position}
       rearrangeMode={isRearrangeMode}
