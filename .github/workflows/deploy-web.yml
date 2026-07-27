@@ -22,10 +22,10 @@ jobs:
         with:
           expo-token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Deploy to dev (EAS Hosting alias: dev)
+      - name: "Deploy to dev (EAS Hosting alias: dev)"
         if: ${{ github.ref == 'refs/heads/dev' }}
         run: pnpm deploy:web:dev
 
-      - name: Deploy to prod (EAS Hosting --prod)
+      - name: "Deploy to prod (EAS Hosting --prod)"
         if: ${{ github.ref == 'refs/heads/main' }}
         run: pnpm deploy:web:prod
