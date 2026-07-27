@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AppDialogProvider } from '@/components/dialog/app-dialog-provider';
 import { GameHeader } from '@/components/game-header';
+import { PwaHead } from '@/components/pwa-head';
 import { OfficialScriptsLoader } from '@/components/scripts/official-scripts-loader';
 import { useAppFonts } from '@/hooks/use-app-fonts';
 import { colors } from '@/theme/colors';
@@ -51,6 +52,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={grimKeeperTheme}>
         <AppDialogProvider>
+          <PwaHead />
           <OfficialScriptsLoader />
           <Stack
             screenOptions={{
