@@ -260,6 +260,14 @@ describe('role utilities', () => {
     expect(
       canRoleKill({
         ability:
+          'Each night*, choose 2 players: they die. A dead player you chose last night might be regurgitated.',
+        id: 'shabaloth',
+        name: 'Shabaloth',
+      }),
+    ).toBe(true);
+    expect(
+      canRoleKill({
+        ability:
           'Each nominee chooses a player: until voting, only they may speak & they are mad the nominee is good or they might die.',
         id: 'bigwig',
         name: 'Big Wig',
