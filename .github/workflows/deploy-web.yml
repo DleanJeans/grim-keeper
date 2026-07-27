@@ -1,0 +1,31 @@
+name: Deploy Web
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-web:
+    name: Deploy Web
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup EAS environment
+        uses: dleanjeans/expo-workflows/.github/actions/pnpm-expo@main
+        with:
+          expo-token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Deploy to dev (EAS Hosting alias: dev)
+        if: ${{ github.ref == 'refs/heads/dev' }}
+        run: pnpm deploy:web:dev
+
+      - name: Deploy to prod (EAS Hosting --prod)
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: pnpm deploy:web:prod
