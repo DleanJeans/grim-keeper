@@ -14,10 +14,11 @@ import Animated, {
 import { DeadVoteIcon } from '@/components/game/dead-vote-icon';
 import { NomIcon } from '@/components/game/noms-tab/nom-icon';
 import { Text } from '@/components/text';
+import { useRoleIconSource } from '@/hooks/use-role-icon-source';
 import { colors } from '@/theme/colors';
 import type { Player, PlayerPosition, Role } from '@/types/game';
 import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
-import { getRoleIconUrl, isTravelerRole } from '@/utils/role-utils';
+import { isTravelerRole } from '@/utils/role-utils';
 
 const BADGE_SIZE = 18;
 const DEFAULT_BORDER_WIDTH = 2;
@@ -93,6 +94,7 @@ export function PlayerToken({
       : roles;
   const visibleRoles = showRoleDetails ? displayedRoles : displayedRoles.filter(isTravelerRole);
   const backgroundRole = visibleRoles.find(isTravelerRole) ?? visibleRoles[0];
+  const roleIconSource = useRoleIconSource(backgroundRole);
   const DeathIcon = player.death?.kind === 'execution' ? FlameKindling : Skull;
   const deathIconColor =
     player.death?.kind === 'execution'
@@ -238,7 +240,7 @@ export function PlayerToken({
       >
         {backgroundRole ? (
           <ImageBackground
-            source={{ uri: getRoleIconUrl(backgroundRole) }}
+            source={roleIconSource}
             style={[StyleSheet.absoluteFill, { borderRadius: tokenSize / 2, overflow: 'hidden' }]}
             imageStyle={{
               borderRadius: tokenSize / 2,

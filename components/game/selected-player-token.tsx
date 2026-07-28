@@ -1,8 +1,9 @@
 import { ImageBackground, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
+import { useRoleIconSource } from '@/hooks/use-role-icon-source';
 import type { Player, Role } from '@/types/game';
-import { getRoleIconUrl, isTravelerRole } from '@/utils/role-utils';
+import { isTravelerRole } from '@/utils/role-utils';
 
 type SelectedPlayerTokenProps = {
   isDead: boolean;
@@ -19,6 +20,7 @@ export function SelectedPlayerToken({
 }: SelectedPlayerTokenProps) {
   const visibleRoles = showRoles ? roles : roles.filter(isTravelerRole);
   const backgroundRole = visibleRoles.find(isTravelerRole) ?? visibleRoles[0];
+  const roleIconSource = useRoleIconSource(backgroundRole);
 
   return (
     <View
@@ -28,7 +30,7 @@ export function SelectedPlayerToken({
     >
       {backgroundRole ? (
         <ImageBackground
-          source={{ uri: getRoleIconUrl(backgroundRole) }}
+          source={roleIconSource}
           style={StyleSheet.absoluteFill}
           imageStyle={styles.backgroundImage}
         />

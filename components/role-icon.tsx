@@ -1,8 +1,8 @@
 import { StyleSheet, View } from 'react-native';
 import Svg, { Defs, FeColorMatrix, Filter, Image } from 'react-native-svg';
 
+import { useRoleIconSource } from '@/hooks/use-role-icon-source';
 import type { Role } from '@/types/game';
-import { getRoleIconUrl } from '@/utils/role-utils';
 
 export function RoleIcon({
   role,
@@ -15,6 +15,7 @@ export function RoleIcon({
 }) {
   const scaledSize = size * scale;
   const overflow = (scaledSize - size) / 2;
+  const source = useRoleIconSource(role);
 
   return (
     <View style={{ height: size, width: size }}>
@@ -35,7 +36,7 @@ export function RoleIcon({
         <Image
           filter="url(#removeNearWhite)"
           height={scaledSize}
-          href={{ uri: getRoleIconUrl(role) }}
+          href={source}
           preserveAspectRatio="xMidYMid slice"
           width={scaledSize}
         />
