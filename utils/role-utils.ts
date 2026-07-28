@@ -316,6 +316,63 @@ export function getRolesForDayOrPrevious(
   return getRoleDisplayForDayOrPrevious(assignments, day, roles).roles;
 }
 
+export type PlayerEffectiveRole = {
+  role: Role | null;
+  kind: 'confirm' | 'claim' | null;
+};
+
+/**
+ * Resolves a single "current" role for a player, used by surfaces that only
+ * need one icon per player (e.g. the saved-game role row). Mirrors the
+ * confirm-overrides-claim priority of `getRoleDisplayForDayOrPrevious`, but
+ * collapses multi-role assignments down to the first role id and returns
+ * `null` when the player has neither a confirm nor a claim.
+ */
+export function getEffectiveRoleForPlayer(
+  player: Player,
+  roles: Role[],
+  activeDay: number,
+): PlayerEffectiveRole {
+  const confirmed = getRoleAssignmentForDayOrPrevious(player.roleAssignments, activeDay, 'confirm');
+  if (confirmed?.roleIds.length) {
+    const [role] = getRolesByIds([confirmed.roleIds[0]], roles);
+    return { role, kind: 'confirm' };
+  }
+
+  const claimed = getRoleAssignmentForDayOrPrevious(player.roleAssignments, activeDay, 'claim');
+  if (claimed?.roleIds.length) {
+    const [role] = getRolesByIds([claimed.roleIds[0]], roles);
+    return { role, kind: 'claim' };
+  }
+
+  return { role: null, kind: null };
+}
+
+/**
+ * Returns a sort index for a player based on their effective role's team,
+ * with the app user pinned to bucket 0. Used to order the saved-game role
+ * row: app user, then townsfolk, outsiders, minions, demons, then unknown.
+ */
+export function getPlayerRoleBucket(player: Player, roles: Role[], activeDay: number): number {
+  if (player.isAppUser) {
+    return 0;
+  }
+
+  const team = getEffectiveRoleForPlayer(player, roles, activeDay).role?.team?.toLocaleLowerCase();
+  switch (team) {
+    case 'townsfolk':
+      return 1;
+    case 'outsider':
+      return 2;
+    case 'minion':
+      return 3;
+    case 'demon':
+      return 4;
+    default:
+      return 5;
+  }
+}
+
 export function getRoleDisplayForDayOrPrevious(
   assignments: PlayerRoleAssignment[] | undefined,
   day: number,

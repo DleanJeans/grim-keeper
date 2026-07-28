@@ -4,7 +4,9 @@ import {
   GENERIC_CHARACTER_TYPE_ROLES,
   getAssignedRoleIdsForDay,
   getAssignedRoleIdsForDayOrPrevious,
+  getEffectiveRoleForPlayer,
   getKillerRoleOptions,
+  getPlayerRoleBucket,
   getRoleAssignmentForDay,
   getRoleDisplayForDayOrPrevious,
   getRoleIconUrl,
@@ -480,5 +482,200 @@ describe('role utilities', () => {
         ],
       ),
     ).toEqual({ empath: ['Bob'], imp: ['Alice'] });
+  });
+
+  it('returns the confirmed role for a player when both claim and confirm exist', () => {
+    const player = {
+      id: 'p1',
+      isAppUser: true,
+      name: 'Alice',
+      seat: 0,
+      roleAssignments: [
+        {
+          day: 1,
+          kind: 'claim' as const,
+          roleIds: ['empath'],
+          updatedAt: '2026-07-14T00:00:00.000Z',
+        },
+        {
+          day: 1,
+          kind: 'confirm' as const,
+          roleIds: ['imp'],
+          updatedAt: '2026-07-14T00:01:00.000Z',
+        },
+      ],
+    };
+    const roles = [
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+    ];
+
+    expect(getEffectiveRoleForPlayer(player, roles, 1)).toEqual({
+      role: { id: 'imp', name: 'Imp', team: 'demon' },
+      kind: 'confirm',
+    });
+  });
+
+  it('falls back to the claimed role when no confirmation exists', () => {
+    const player = {
+      id: 'p1',
+      name: 'Alice',
+      seat: 0,
+      roleAssignments: [
+        {
+          day: 1,
+          kind: 'claim' as const,
+          roleIds: ['empath'],
+          updatedAt: '2026-07-14T00:00:00.000Z',
+        },
+      ],
+    };
+
+    expect(
+      getEffectiveRoleForPlayer(player, [{ id: 'empath', name: 'Empath', team: 'townsfolk' }], 1),
+    ).toEqual({
+      role: { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      kind: 'claim',
+    });
+  });
+
+  it('returns null when the player has no claim and no confirm', () => {
+    expect(getEffectiveRoleForPlayer({ id: 'p1', name: 'Alice', seat: 0 }, [], 1)).toEqual({
+      role: null,
+      kind: null,
+    });
+  });
+
+  it('ignores role assignments that occur after the active day', () => {
+    const player = {
+      id: 'p1',
+      name: 'Alice',
+      seat: 0,
+      roleAssignments: [
+        { day: 3, kind: 'claim' as const, roleIds: ['imp'], updatedAt: '2026-07-14T00:00:00.000Z' },
+      ],
+    };
+
+    expect(
+      getEffectiveRoleForPlayer(player, [{ id: 'imp', name: 'Imp', team: 'demon' }], 1),
+    ).toEqual({ role: null, kind: null });
+  });
+
+  it('buckets the app user first then townsfolk, outsiders, minions, demons, and unknown', () => {
+    const roles = [
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'drunk', name: 'Drunk', team: 'outsider' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+    ];
+    const appUser = {
+      id: 'app',
+      isAppUser: true,
+      name: 'App',
+      seat: 0,
+      roleAssignments: [
+        {
+          day: 1,
+          kind: 'claim' as const,
+          roleIds: ['empath'],
+          updatedAt: '2026-07-14T00:00:00.000Z',
+        },
+      ],
+    };
+    const townsfolk = {
+      id: 'town',
+      name: 'Town',
+      seat: 1,
+      roleAssignments: [
+        {
+          day: 1,
+          kind: 'claim' as const,
+          roleIds: ['empath'],
+          updatedAt: '2026-07-14T00:00:00.000Z',
+        },
+      ],
+    };
+    const outsider = {
+      id: 'out',
+      name: 'Out',
+      seat: 2,
+      roleAssignments: [
+        {
+          day: 1,
+          kind: 'claim' as const,
+          roleIds: ['drunk'],
+          updatedAt: '2026-07-14T00:00:00.000Z',
+        },
+      ],
+    };
+    const minion = {
+      id: 'mini',
+      name: 'Mini',
+      seat: 3,
+      roleAssignments: [
+        {
+          day: 1,
+          kind: 'claim' as const,
+          roleIds: ['poisoner'],
+          updatedAt: '2026-07-14T00:00:00.000Z',
+        },
+      ],
+    };
+    const demon = {
+      id: 'dem',
+      name: 'Dem',
+      seat: 4,
+      roleAssignments: [
+        { day: 1, kind: 'claim' as const, roleIds: ['imp'], updatedAt: '2026-07-14T00:00:00.000Z' },
+      ],
+    };
+    const unknown = { id: 'unk', name: 'Unk', seat: 5 };
+
+    expect(getPlayerRoleBucket(appUser, roles, 1)).toBe(0);
+    expect(getPlayerRoleBucket(townsfolk, roles, 1)).toBe(1);
+    expect(getPlayerRoleBucket(outsider, roles, 1)).toBe(2);
+    expect(getPlayerRoleBucket(minion, roles, 1)).toBe(3);
+    expect(getPlayerRoleBucket(demon, roles, 1)).toBe(4);
+    expect(getPlayerRoleBucket(unknown, roles, 1)).toBe(5);
+  });
+
+  it('sorts a mixed player list by app user, alignment bucket, then seat', () => {
+    const roles = [
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'drunk', name: 'Drunk', team: 'outsider' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+    ];
+    const claim = (roleId: string, day = 1) => ({
+      day,
+      kind: 'claim' as const,
+      roleIds: [roleId],
+      updatedAt: '2026-07-14T00:00:00.000Z',
+    });
+    const players = [
+      { id: 'p2', name: 'Townsfolk-B', seat: 4, roleAssignments: [claim('empath')] },
+      { id: 'p1', isAppUser: true, name: 'App', seat: 0, roleAssignments: [claim('empath')] },
+      { id: 'p3', name: 'Demon', seat: 6, roleAssignments: [claim('imp')] },
+      { id: 'p4', name: 'Townsfolk-A', seat: 2, roleAssignments: [claim('empath')] },
+      { id: 'p5', name: 'Outsider', seat: 3, roleAssignments: [claim('drunk')] },
+      { id: 'p6', name: 'Minion', seat: 5, roleAssignments: [claim('poisoner')] },
+      { id: 'p7', name: 'Unknown', seat: 1 },
+    ];
+
+    const sorted = [...players].sort(
+      (first, second) =>
+        getPlayerRoleBucket(first, roles, 1) - getPlayerRoleBucket(second, roles, 1) ||
+        first.seat - second.seat,
+    );
+
+    expect(sorted.map((player) => player.id)).toEqual([
+      'p1', // app user
+      'p4', // townsfolk, seat 2
+      'p2', // townsfolk, seat 4
+      'p5', // outsider, seat 3
+      'p6', // minion, seat 5
+      'p3', // demon, seat 6
+      'p7', // unknown, seat 1
+    ]);
   });
 });
