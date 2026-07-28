@@ -66,13 +66,23 @@ export function CreateFormHeader({
 }: CreateFormHeaderProps) {
   return (
     <View style={styles.container}>
-      <GameScriptPicker
-        onBrowse={onBrowseScripts}
-        onSelect={onSelectScript}
-        scripts={scripts}
-        selectedScriptId={selectedScriptId}
-      />
-      <LoricPicker lorics={lorics} onChange={onSelectLorics} selectedRoleIds={selectedLoricIds} />
+      <View style={styles.pickerRow}>
+        <View style={styles.pickerCell}>
+          <GameScriptPicker
+            onBrowse={onBrowseScripts}
+            onSelect={onSelectScript}
+            scripts={scripts}
+            selectedScriptId={selectedScriptId}
+          />
+        </View>
+        <View style={styles.pickerCell}>
+          <LoricPicker
+            lorics={lorics}
+            onChange={onSelectLorics}
+            selectedRoleIds={selectedLoricIds}
+          />
+        </View>
+      </View>
 
       <View style={styles.nameSection}>
         <Text selectable style={styles.label}>
@@ -246,6 +256,14 @@ const styles = StyleSheet.create({
   nameRow: {
     flexDirection: 'row',
     gap: 8,
+  },
+  pickerCell: {
+    flex: 1,
+    minWidth: 0,
+  },
+  pickerRow: {
+    flexDirection: 'row',
+    gap: 12,
   },
   nameSection: {
     gap: 8,

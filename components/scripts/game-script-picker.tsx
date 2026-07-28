@@ -168,7 +168,7 @@ export function GameScriptPicker({
 
 function getScriptDescription(script?: StoredScript) {
   if (!script) {
-    return 'Assign roles later from the game screen';
+    return 'Assign roles later in game';
   }
 
   return `${script.roles.length} roles${script.author ? ` · ${script.author}` : ''}`;
