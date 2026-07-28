@@ -116,6 +116,7 @@ function RoleLine({ label, roles }: { label: string; roles: Role[] }) {
         <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {roles.map((role) => (
             <RoleReference
+              disablePress
               iconSize={18}
               key={role.id}
               role={role}
