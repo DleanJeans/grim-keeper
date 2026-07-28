@@ -55,6 +55,7 @@ export function LoricPicker({ lorics, onChange, selectedRoleIds }: LoricPickerPr
         </View>
         <ChevronDown color={colors.textMuted} size={18} strokeWidth={2.6} />
       </Pressable>
+
       <Modal animationType="slide" onRequestClose={() => setOpen(false)} transparent visible={open}>
         <View style={styles.backdrop}>
           <Pressable
@@ -108,7 +109,11 @@ export function LoricPicker({ lorics, onChange, selectedRoleIds }: LoricPickerPr
                     onPress={() => toggleRole(role.id)}
                     role={role}
                     textStyle={styles.optionText}
-                  />
+                  >
+                    <Text selectable style={styles.optionDescription}>
+                      {role.ability ?? 'No description available.'}
+                    </Text>
+                  </RoleReference>
                 );
               })}
             </ScrollView>
@@ -168,6 +173,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   optionContent: { flex: 1 },
+  optionDescription: { color: colors.textMuted, fontSize: 13, lineHeight: 18 },
   optionPressed: { backgroundColor: colors.surfacePressed },
   optionSelected: { borderColor: colors.primary },
   optionText: { color: colors.text, fontSize: 15, fontWeight: '800' },
