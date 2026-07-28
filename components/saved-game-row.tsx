@@ -21,7 +21,6 @@ export function SavedGameRow({ game, onDelete }: SavedGameRowProps) {
         borderRadius: 8,
         borderWidth: 1,
         flexDirection: 'row',
-        gap: 8,
       }}
     >
       <Pressable
