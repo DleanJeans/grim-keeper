@@ -85,6 +85,9 @@ export function CreateFormHeader({
       </View>
 
       <View style={styles.nameSection}>
+        <Text selectable style={styles.instructions}>
+          Add players from the player on the left then clockwise.
+        </Text>
         <Text selectable style={styles.label}>
           Player name
         </Text>
@@ -149,9 +152,6 @@ export function CreateFormHeader({
             </Text>
           </Pressable>
         </View>
-        <Text selectable style={styles.instructions}>
-          Add players from the player on the left then clockwise.
-        </Text>
       </View>
 
       {!isEditing ? (
@@ -211,11 +211,11 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   friendPopover: {
-    bottom: '100%',
     left: 0,
-    marginBottom: 8,
+    marginTop: 8,
     position: 'absolute',
     right: 0,
+    top: '100%',
     zIndex: 10,
   },
   friendPopoverHidden: {
@@ -267,5 +267,6 @@ const styles = StyleSheet.create({
   },
   nameSection: {
     gap: 8,
+    zIndex: 10,
   },
 });

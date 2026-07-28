@@ -1,7 +1,7 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TextInput as RNTextInput } from 'react-native';
-import { Keyboard, KeyboardAvoidingView, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, StyleSheet, View } from 'react-native';
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import { CreateFormHeader } from '@/components/create/create-form-header';
 import { CreateHeaderDoneButton } from '@/components/create/create-header-done-button';
@@ -275,6 +275,7 @@ export default function CreateRoute() {
               selectedLoricIds={selectedLoricIds}
             />
           }
+          ListHeaderComponentStyle={styles.listHeader}
           onDragEnd={({ data }) => {
             if (!isEditing) {
               setDraftPlayers(data);
@@ -300,3 +301,9 @@ export default function CreateRoute() {
 function createDraftId() {
   return `draft-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
+
+const styles = StyleSheet.create({
+  listHeader: {
+    zIndex: 10,
+  },
+});
