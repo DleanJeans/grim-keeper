@@ -1,3 +1,5 @@
+import type { ImageSourcePropType } from 'react-native';
+
 export type PlayerPosition = {
   x: number;
   y: number;
@@ -10,6 +12,7 @@ export type Role = {
   notes?: string[];
   team?: string;
   edition?: string;
+  imageSource?: ImageSourcePropType;
   imageUrl?: string;
 };
 

@@ -1,3 +1,4 @@
+import unknownRoleIcon from '@/assets/role-icons/unknown.webp';
 import type { Player, PlayerRoleAssignment, Role, StoredScript } from '@/types/game';
 
 export const BOTC_ROLE_CATALOG_URL = 'https://release.botc.app/resources/data/roles.json';
@@ -70,7 +71,7 @@ export const GENERIC_CHARACTER_TYPE_ROLE_REFERENCES: Role[] = GENERIC_CHARACTER_
 export const GENERIC_KILLER_ROLES: Role[] = [
   {
     id: 'generic_unknown',
-    imageUrl: `${BOTC_ROLE_ICON_BASE_URL}/generic/custom.webp`,
+    imageSource: unknownRoleIcon,
     name: 'Unknown',
   },
   ...GENERIC_CHARACTER_TYPE_ROLES.filter(({ name }) => name === 'Demon' || name === 'Evil'),

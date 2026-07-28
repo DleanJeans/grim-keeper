@@ -1,6 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import { type ImageSourcePropType, Platform } from 'react-native';
 
 import type { Role } from '@/types/game';
 import { getRoleIconUrl } from '@/utils/role-utils';
@@ -13,17 +13,25 @@ const pendingDownloads = new Map<string, Promise<string>>();
 const pendingWebDownloads = new Map<string, Promise<string>>();
 
 export function useRoleIconSource(role: Role | undefined) {
-  const remoteUri = role ? getRoleIconUrl(role) : undefined;
+  const localSource = role?.imageSource;
+  const remoteUri = localSource ? undefined : role ? getRoleIconUrl(role) : undefined;
   const [source, setSource] = useState(() => ({
     remoteUri,
-    uri: Platform.OS === 'web' ? undefined : remoteUri,
+    source: localSource ?? getInitialRemoteSource(remoteUri),
   }));
 
   useEffect(() => {
     let mounted = true;
 
+    if (localSource) {
+      setSource({ remoteUri, source: localSource });
+      return () => {
+        mounted = false;
+      };
+    }
+
     if (!remoteUri) {
-      setSource({ remoteUri, uri: undefined });
+      setSource({ remoteUri, source: undefined });
       return () => {
         mounted = false;
       };
@@ -31,14 +39,18 @@ export function useRoleIconSource(role: Role | undefined) {
 
     cacheRoleIcon(remoteUri).then((cachedUri) => {
       if (mounted) {
-        setSource({ remoteUri, uri: cachedUri });
+        setSource({ remoteUri, source: { uri: cachedUri } });
       }
     });
 
     return () => {
       mounted = false;
     };
-  }, [remoteUri]);
+  }, [localSource, remoteUri]);
+
+  if (localSource) {
+    return localSource;
+  }
 
   if (source.remoteUri !== remoteUri) {
     if (Platform.OS === 'web') {
@@ -48,7 +60,11 @@ export function useRoleIconSource(role: Role | undefined) {
     return remoteUri ? { uri: remoteUri } : undefined;
   }
 
-  return source.uri ? { uri: source.uri } : undefined;
+  return source.source;
+}
+
+function getInitialRemoteSource(remoteUri: string | undefined): ImageSourcePropType | undefined {
+  return Platform.OS === 'web' || !remoteUri ? undefined : { uri: remoteUri };
 }
 
 function cacheRoleIcon(remoteUri: string) {
