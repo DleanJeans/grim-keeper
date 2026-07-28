@@ -20,7 +20,7 @@ export function FriendSuggestions({ friends, onSelectFriend }: FriendSuggestions
         <Pressable
           accessibilityRole="button"
           key={friend.id}
-          onPressIn={() => onSelectFriend(friend.name)}
+          onPress={() => onSelectFriend(friend.name)}
           style={({ pressed }) => [styles.friend, pressed ? styles.friendPressed : null]}
         >
           <Text style={styles.friendName}>{friend.name}</Text>

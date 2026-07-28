@@ -147,7 +147,7 @@ export default function CreateRoute() {
     }
     setName('');
     setNameFocused(true);
-    setTimeout(() => inputRef.current?.focus(), 0);
+    requestAnimationFrame(() => inputRef.current?.focus());
   }
 
   function handleRemovePlayer(playerId: string) {

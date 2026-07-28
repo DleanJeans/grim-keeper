@@ -83,7 +83,7 @@ export function CreateFormHeader({
             <View
               accessibilityElementsHidden={!nameFocused}
               importantForAccessibility={nameFocused ? 'auto' : 'no-hide-descendants'}
-              pointerEvents={nameFocused ? 'auto' : 'none'}
+              pointerEvents="box-none"
               style={[
                 styles.friendPopover,
                 nameFocused ? styles.friendPopoverVisible : styles.friendPopoverHidden,
