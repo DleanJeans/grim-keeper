@@ -6,18 +6,24 @@ import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { StoredScript } from '@/types/game';
 
+const PICKER_TRIGGER_CHROME_HEIGHT = 24;
+
 type GameScriptPickerProps = {
   scripts: StoredScript[];
   selectedScriptId: string | null;
   onBrowse: () => void;
   onSelect: (scriptId: string | null) => void;
+  onTriggerHeightChange?: (height: number) => void;
+  triggerHeight?: number;
 };
 
 export function GameScriptPicker({
   onBrowse,
   onSelect,
+  onTriggerHeightChange,
   scripts,
   selectedScriptId,
+  triggerHeight,
 }: GameScriptPickerProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const selectedScript = scripts.find((script) => script.id === selectedScriptId);
@@ -51,11 +57,19 @@ export function GameScriptPicker({
             borderWidth: 1,
             flexDirection: 'row',
             gap: 10,
+            height: triggerHeight,
             paddingHorizontal: 12,
             paddingVertical: 11,
           })}
         >
-          <View style={{ flex: 1, gap: 2 }}>
+          <View
+            onLayout={(event) =>
+              onTriggerHeightChange?.(
+                Math.ceil(event.nativeEvent.layout.height + PICKER_TRIGGER_CHROME_HEIGHT),
+              )
+            }
+            style={{ flex: 1, gap: 2 }}
+          >
             <Text selectable style={{ color: colors.text, fontWeight: '800' }}>
               {selectedScript?.name ?? 'No script'}
             </Text>

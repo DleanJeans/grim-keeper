@@ -1,5 +1,5 @@
 import { Play, Plus } from 'lucide-react-native';
-import type { RefObject } from 'react';
+import { type RefObject, useState } from 'react';
 import type { TextInput as RNTextInput } from 'react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -64,6 +64,18 @@ export function CreateFormHeader({
   selectedScriptId,
   selectedLoricIds,
 }: CreateFormHeaderProps) {
+  const [pickerHeights, setPickerHeights] = useState({ script: 0, lorics: 0 });
+  const syncedPickerHeight = Math.max(
+    pickerHeights.script,
+    lorics.length > 0 ? pickerHeights.lorics : 0,
+  );
+
+  function handlePickerHeightChange(key: 'script' | 'lorics', height: number) {
+    setPickerHeights((current) =>
+      current[key] === height ? current : { ...current, [key]: height },
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.pickerRow}>
@@ -71,15 +83,19 @@ export function CreateFormHeader({
           <GameScriptPicker
             onBrowse={onBrowseScripts}
             onSelect={onSelectScript}
+            onTriggerHeightChange={(height) => handlePickerHeightChange('script', height)}
             scripts={scripts}
             selectedScriptId={selectedScriptId}
+            triggerHeight={syncedPickerHeight || undefined}
           />
         </View>
         <View style={styles.pickerCell}>
           <LoricPicker
             lorics={lorics}
             onChange={onSelectLorics}
+            onTriggerHeightChange={(height) => handlePickerHeightChange('lorics', height)}
             selectedRoleIds={selectedLoricIds}
+            triggerHeight={syncedPickerHeight || undefined}
           />
         </View>
       </View>

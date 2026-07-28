@@ -7,13 +7,23 @@ import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Role } from '@/types/game';
 
+const PICKER_TRIGGER_CHROME_HEIGHT = 24;
+
 type LoricPickerProps = {
   lorics: Role[];
   onChange: (roleIds: string[]) => void;
   selectedRoleIds: string[];
+  onTriggerHeightChange?: (height: number) => void;
+  triggerHeight?: number;
 };
 
-export function LoricPicker({ lorics, onChange, selectedRoleIds }: LoricPickerProps) {
+export function LoricPicker({
+  lorics,
+  onChange,
+  onTriggerHeightChange,
+  selectedRoleIds,
+  triggerHeight,
+}: LoricPickerProps) {
   const [open, setOpen] = useState(false);
 
   if (lorics.length === 0) {
@@ -39,9 +49,20 @@ export function LoricPicker({ lorics, onChange, selectedRoleIds }: LoricPickerPr
         accessibilityLabel={`Lorics: ${selectedLorics.map((role) => role.name).join(', ') || 'None'}`}
         accessibilityRole="button"
         onPress={() => setOpen(true)}
-        style={({ pressed }) => [styles.trigger, pressed && styles.optionPressed]}
+        style={({ pressed }) => [
+          styles.trigger,
+          triggerHeight ? { height: triggerHeight } : null,
+          pressed && styles.optionPressed,
+        ]}
       >
-        <View style={styles.triggerText}>
+        <View
+          onLayout={(event) =>
+            onTriggerHeightChange?.(
+              Math.ceil(event.nativeEvent.layout.height + PICKER_TRIGGER_CHROME_HEIGHT),
+            )
+          }
+          style={styles.triggerText}
+        >
           <Text selectable style={styles.triggerTitle}>
             {selectedLorics.length === 0
               ? 'No Lorics'
