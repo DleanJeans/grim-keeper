@@ -94,6 +94,7 @@ export function KillAttributionPanel({
         }
         sections={killerRoleSections}
         selectedRoleIds={killerRoleIds}
+        scriptId={game.script?.id}
       />
       <View style={innerActionRow}>
         <KillFormButton icon={X} label="Cancel" onPress={onCancel} />

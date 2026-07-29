@@ -18,12 +18,7 @@ import {
   isTravelerRole,
 } from '@/utils/role-utils';
 
-const GENERIC_ASSIGNMENT_ROLE_NAMES = new Set([
-  'Townsfolk',
-  'Outsider',
-  'Minion',
-  'Demon',
-]);
+const GENERIC_ASSIGNMENT_ROLE_NAMES = new Set(['Townsfolk', 'Outsider', 'Minion', 'Demon']);
 
 const GENERIC_ASSIGNMENT_ROLES = GENERIC_CHARACTER_TYPE_ROLE_REFERENCES.filter((role) =>
   GENERIC_ASSIGNMENT_ROLE_NAMES.has(role.name),
@@ -151,6 +146,7 @@ export function RoleAssignmentActions() {
                 roleOwnerNames={roleOwnerNames}
                 sectioned
                 selectedRoleIds={roleAssignmentRoleIds}
+                scriptId={game.script.id}
               />
             ) : null
           ) : isTravelerClaim ? (
@@ -159,6 +155,7 @@ export function RoleAssignmentActions() {
               onToggleRole={handleToggleRoleAssignment}
               roles={travelerClaimRoles}
               selectedRoleIds={roleAssignmentRoleIds}
+              scriptId={game.script.id}
             />
           ) : (
             <RolePicker
@@ -168,6 +165,7 @@ export function RoleAssignmentActions() {
               roleOwnerNames={roleOwnerNames}
               sectioned
               selectedRoleIds={roleAssignmentRoleIds}
+              scriptId={game.script.id}
             />
           )}
           {roleAssignmentKind === 'confirm' ? (
@@ -176,6 +174,7 @@ export function RoleAssignmentActions() {
               onToggleRole={handleToggleRoleAssignment}
               roles={assignmentRoles.filter(isTravelerRole)}
               selectedRoleIds={roleAssignmentRoleIds}
+              scriptId={game.script.id}
             />
           ) : null}
         </View>
@@ -214,7 +213,12 @@ function RumorHeader({
         ) : (
           <Text
             selectable
-            style={{ color: colors.textMuted, fontStyle: 'italic', fontSize: 16, fontWeight: '900' }}
+            style={{
+              color: colors.textMuted,
+              fontStyle: 'italic',
+              fontSize: 16,
+              fontWeight: '900',
+            }}
           >
             (no one yet)
           </Text>

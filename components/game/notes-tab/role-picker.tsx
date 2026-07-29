@@ -15,6 +15,7 @@ type RolePickerProps = {
   sectioned?: boolean;
   selectedFirst?: boolean;
   selectedRoleIds: string[];
+  scriptId?: string;
   onToggleRole: (roleId: string) => void;
 };
 
@@ -27,6 +28,7 @@ export function RolePicker({
   sectioned = false,
   selectedFirst = false,
   selectedRoleIds,
+  scriptId,
 }: RolePickerProps) {
   const selectedRoleIdSet = new Set(selectedRoleIds);
   const orderedRoles = selectedFirst
@@ -71,6 +73,7 @@ export function RolePicker({
                 selected={selectedRoleIdSet.has(role.id)}
                 animated={selectedFirst}
                 onPress={() => onToggleRole(role.id)}
+                scriptId={scriptId}
               />
             ))}
           </View>
@@ -109,12 +112,14 @@ function RoleChoiceButton({
   ownerNames,
   role,
   selected,
+  scriptId,
 }: {
   animated: boolean;
   onPress: () => void;
   ownerNames?: string[];
   role: Role;
   selected: boolean;
+  scriptId?: string;
 }) {
   return (
     <Animated.View layout={animated ? LinearTransition.duration(220) : undefined}>
@@ -124,6 +129,7 @@ function RoleChoiceButton({
         leading={selected ? <Check color={colors.primary} size={14} strokeWidth={3} /> : null}
         onPress={onPress}
         role={role}
+        scriptId={scriptId}
         containerStyle={({ pressed }) => ({
           alignItems: 'center',
           backgroundColor: pressed

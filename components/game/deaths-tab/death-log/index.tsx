@@ -52,6 +52,7 @@ export function DeathLog({ activeDay, players, script }: DeathLogProps) {
                 activeDay={activeDay}
                 entry={entry}
                 killerDescription={killerDescription}
+                scriptId={script?.id}
                 onEdit={
                   'death' in entry && entry.death.kind === 'night'
                     ? () => setEditingPlayerId(isEditing ? null : entry.player.id)

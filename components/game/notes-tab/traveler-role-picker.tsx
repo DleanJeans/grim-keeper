@@ -12,6 +12,7 @@ type TravelerRolePickerProps = {
   description?: string;
   roles: Role[];
   selectedRoleIds: string[];
+  scriptId?: string;
   onToggleRole: (roleId: string) => void;
 };
 
@@ -20,6 +21,7 @@ export function TravelerRolePicker({
   onToggleRole,
   roles,
   selectedRoleIds,
+  scriptId,
 }: TravelerRolePickerProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -194,6 +196,7 @@ export function TravelerRolePicker({
                   onToggleRole={onToggleRole}
                   roles={filteredRoles}
                   selectedRoleIds={selectedRoleIds}
+                  scriptId={scriptId}
                 />
               ) : (
                 <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>

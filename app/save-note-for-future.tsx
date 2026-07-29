@@ -124,6 +124,7 @@ export default function SaveNoteForFutureScreen() {
             roles={pickerRoles}
             selectedFirst
             selectedRoleIds={selectedRoleIds}
+            scriptId={noteScriptId}
           />
         ) : (
           <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 21 }}>

@@ -38,11 +38,13 @@ export function DeathLogRow({
   entry,
   killerDescription,
   onEdit,
+  scriptId,
 }: {
   activeDay: number;
   entry: DeathLogEntry | ReviveLogEntry;
   killerDescription?: KillerDescription;
   onEdit?: () => void;
+  scriptId?: string;
 }) {
   const isDeath = 'death' in entry;
   const isExecution = isDeath && entry.death.kind === 'execution';
@@ -75,7 +77,9 @@ export function DeathLogRow({
             {actionLabel}
           </Text>
         </View>
-        {isDeath && killerDescription ? <KillerDescriptionView {...killerDescription} /> : null}
+        {isDeath && killerDescription ? (
+          <KillerDescriptionView {...killerDescription} scriptId={scriptId} />
+        ) : null}
       </View>
       {onEdit ? <EditKillerButton onPress={onEdit} /> : null}
     </View>
@@ -96,7 +100,11 @@ function EditKillerButton({ onPress }: { onPress: () => void }) {
   );
 }
 
-function KillerDescriptionView({ killerPlayers, killerRoles }: KillerDescription) {
+function KillerDescriptionView({
+  killerPlayers,
+  killerRoles,
+  scriptId,
+}: KillerDescription & { scriptId?: string }) {
   if (killerPlayers.length === 0) {
     return (
       <View style={styles.killerDescription}>
@@ -104,7 +112,7 @@ function KillerDescriptionView({ killerPlayers, killerRoles }: KillerDescription
           Killed by:
         </Text>
         {killerRoles.map((role) => (
-          <KillerRoleView key={role.id} role={role} />
+          <KillerRoleView key={role.id} role={role} scriptId={scriptId} />
         ))}
       </View>
     );
@@ -131,19 +139,20 @@ function KillerDescriptionView({ killerPlayers, killerRoles }: KillerDescription
         </Text>
       ) : null}
       {killerRoles.map((role) => (
-        <KillerRoleView key={role.id} role={role} />
+        <KillerRoleView key={role.id} role={role} scriptId={scriptId} />
       ))}
     </View>
   );
 }
 
-function KillerRoleView({ role }: { role: Role }) {
+function KillerRoleView({ role, scriptId }: { role: Role; scriptId?: string }) {
   return (
     <RoleReference
       containerStyle={styles.roleName}
       contentStyle={styles.roleDescription}
       iconSize={14}
       role={role}
+      scriptId={scriptId}
       textStyle={styles.subtitle}
     />
   );
