@@ -152,6 +152,51 @@ describe('role utilities', () => {
     ).toBe('https://release.botc.app/resources/characters/tb/imp_e.webp');
   });
 
+  it('uses custom role image URLs instead of generated role paths', () => {
+    const [townsfolk] = mergeScriptRoles(
+      [
+        {
+          id: 'custom_townsfolk',
+          image: ['https://example.com/townsfolk.webp', 'https://example.com/evil.webp'],
+          name: 'Custom Townsfolk',
+          team: 'townsfolk',
+        },
+      ],
+      [],
+    );
+    const [minion] = mergeScriptRoles(
+      [
+        {
+          id: 'custom_minion',
+          image: ['https://example.com/minion.webp', 'https://example.com/good.webp'],
+          name: 'Custom Minion',
+          team: 'minion',
+        },
+      ],
+      [],
+    );
+
+    expect(getRoleIconUrl(townsfolk)).toBe('https://example.com/townsfolk.webp');
+    expect(getRoleIconUrl(minion)).toBe('https://example.com/good.webp');
+  });
+
+  it('uses official icon paths when a role is in the official catalog', () => {
+    const [officialRole] = mergeScriptRoles(
+      [
+        {
+          id: 'imp',
+          image: ['https://example.com/custom-imp.webp', 'https://example.com/custom-imp-e.webp'],
+          name: 'Imp',
+        },
+      ],
+      [{ edition: 'tb', id: 'imp', name: 'Imp', team: 'demon' }],
+    );
+
+    expect(getRoleIconUrl(officialRole)).toBe(
+      'https://release.botc.app/resources/characters/tb/imp_e.webp',
+    );
+  });
+
   it('builds aligned traveler claim role variants', () => {
     const traveler = { edition: 'carousel', id: 'baron', name: 'Baron', team: 'traveller' };
     const [good, evil] = getTravelerClaimRoles(traveler);
@@ -169,6 +214,28 @@ describe('role utilities', () => {
       imageUrl: 'https://release.botc.app/resources/characters/carousel/baron_e.webp',
       name: 'Evil Baron',
     });
+  });
+
+  it('uses custom traveler image URLs for good and evil claims', () => {
+    const [traveler] = mergeScriptRoles(
+      [
+        {
+          id: 'custom_traveler',
+          image: [
+            'https://example.com/traveler.webp',
+            'https://example.com/traveler-good.webp',
+            'https://example.com/traveler-evil.webp',
+          ],
+          name: 'Custom Traveler',
+          team: 'traveller',
+        },
+      ],
+      [],
+    );
+    const [good, evil] = getTravelerClaimRoles(traveler);
+
+    expect(getRoleIconUrl(good)).toBe('https://example.com/traveler-good.webp');
+    expect(getRoleIconUrl(evil)).toBe('https://example.com/traveler-evil.webp');
   });
 
   it('merges script ids with official role metadata and ignores _meta', () => {

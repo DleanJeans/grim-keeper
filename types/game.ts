@@ -14,6 +14,7 @@ export type Role = {
   edition?: string;
   imageSource?: ImageSourcePropType;
   imageUrl?: string;
+  imageUrls?: string[];
 };
 
 export type StoredScript = {

@@ -78,8 +78,9 @@ export const GENERIC_KILLER_ROLES: Role[] = [
 ];
 
 export function getRoleIconUrl(role: Role) {
-  if (role.imageUrl) {
-    return role.imageUrl;
+  const imageUrl = getRoleImageUrl(role);
+  if (imageUrl) {
+    return imageUrl;
   }
 
   const directory = getRoleEditionDirectory(role);
@@ -90,6 +91,11 @@ export function getRoleIconUrl(role: Role) {
 }
 
 export function getRoleIconUrlForAlignment(role: Role, alignment: 'g' | 'e') {
+  const imageUrl = getRoleImageUrl(role, alignment);
+  if (imageUrl) {
+    return imageUrl;
+  }
+
   const directory = getRoleEditionDirectory(role);
 
   return `${BOTC_ROLE_ICON_BASE_URL}/${directory}/${role.id}_${alignment}.webp`;
@@ -124,6 +130,7 @@ export function getTravelerClaimRoles(role: Role): Role[] {
       ...role,
       id: `${role.id}_good`,
       imageUrl: getRoleIconUrlForAlignment(role, 'g'),
+      imageUrls: undefined,
       name: `Good ${role.name}`,
       team: 'traveller',
     },
@@ -131,6 +138,7 @@ export function getTravelerClaimRoles(role: Role): Role[] {
       ...role,
       id: `${role.id}_evil`,
       imageUrl: getRoleIconUrlForAlignment(role, 'e'),
+      imageUrls: undefined,
       name: `Evil ${role.name}`,
       team: 'traveller',
     },
@@ -520,6 +528,9 @@ function normalizeRole(item: unknown, catalogById: Map<string, Role>): Role | un
   }
 
   const catalogRole = catalogById.get(id);
+  const imageUrls = catalogRole
+    ? catalogRole.imageUrls
+    : (normalizeImageUrls(candidate.image) ?? normalizeImageUrls(candidate.imageUrl));
   const role: Role = {
     ability: (typeof candidate.ability === 'string' && candidate.ability) || catalogRole?.ability,
     id,
@@ -530,13 +541,54 @@ function normalizeRole(item: unknown, catalogById: Map<string, Role>): Role | un
     notes: normalizeRoleNotes(candidate.notes) ?? catalogRole?.notes,
     team: (typeof candidate.team === 'string' && candidate.team) || catalogRole?.team,
     edition: (typeof candidate.edition === 'string' && candidate.edition) || catalogRole?.edition,
-    imageUrl:
-      (typeof candidate.image === 'string' && candidate.image) ||
-      (typeof candidate.imageUrl === 'string' && candidate.imageUrl) ||
-      catalogRole?.imageUrl,
+    imageUrl: catalogRole
+      ? catalogRole.imageUrl
+      : imageUrls?.length === 1
+        ? imageUrls[0]
+        : undefined,
   };
 
+  if (imageUrls) {
+    role.imageUrls = imageUrls;
+  }
+
   return role;
+}
+
+function getRoleImageUrl(role: Role, alignment?: 'g' | 'e') {
+  if (!role.imageUrls?.length) {
+    return role.imageUrl;
+  }
+
+  if (role.imageUrls.length === 1) {
+    return role.imageUrls[0];
+  }
+
+  if (isTravelerRole(role)) {
+    if (alignment === 'e') {
+      return role.imageUrls[2] ?? role.imageUrls[1] ?? role.imageUrls[0];
+    }
+
+    if (alignment === 'g') {
+      return role.imageUrls[1] ?? role.imageUrls[0];
+    }
+
+    return role.imageUrls[0];
+  }
+
+  return getRoleAlignment(role) === 'e'
+    ? (role.imageUrls[1] ?? role.imageUrls[0])
+    : role.imageUrls[0];
+}
+
+function normalizeImageUrls(value: unknown) {
+  const values = Array.isArray(value) ? value : [value];
+  const imageUrls = values
+    .filter((imageUrl): imageUrl is string => typeof imageUrl === 'string')
+    .map((imageUrl) => imageUrl.trim())
+    .filter(Boolean);
+
+  return imageUrls.length > 0 ? imageUrls : undefined;
 }
 
 function normalizeRoleNotes(value: unknown) {
