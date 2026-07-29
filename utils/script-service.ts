@@ -51,6 +51,54 @@ export async function fetchRemoteScriptContent(remoteId: number) {
   return response.json();
 }
 
+export function createHomebrewScript(
+  value: string,
+  catalog: Role[],
+  existingId?: string,
+): StoredScript {
+  let content: unknown;
+
+  try {
+    content = JSON.parse(value);
+  } catch {
+    throw new Error('The file is not valid JSON.');
+  }
+
+  if (!Array.isArray(content)) {
+    throw new Error('The file must contain a script JSON array.');
+  }
+
+  const metadata = content.find(
+    (item): item is Record<string, unknown> => isRecord(item) && item.id === '_meta',
+  );
+  if (!metadata) {
+    throw new Error('The script JSON is missing a _meta entry.');
+  }
+
+  const name = getOptionalText(metadata.name);
+  if (!name) {
+    throw new Error('The script metadata needs a name.');
+  }
+
+  const roles = mergeScriptRoles(content, catalog);
+  if (roles.length === 0) {
+    throw new Error('The script does not contain any usable roles.');
+  }
+
+  const author = getOptionalText(metadata.author);
+
+  return {
+    id: existingId ?? createScriptId({ author, name }, []),
+    name,
+    version: getOptionalText(metadata.version) ?? '1.0.0',
+    scriptType:
+      getOptionalText(metadata.scriptType) ?? getOptionalText(metadata.script_type) ?? 'Full',
+    author,
+    roles,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
 export function createOfficialCarouselScript(
   catalog: Role[],
   existingId = OFFICIAL_CAROUSEL_SCRIPT_ID,
@@ -119,4 +167,12 @@ function parseRemoteScript(value: unknown): RemoteScript[] {
       score: typeof candidate.score === 'number' ? candidate.score : undefined,
     },
   ];
+}
+
+function getOptionalText(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }

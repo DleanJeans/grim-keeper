@@ -1,4 +1,5 @@
 import {
+  createHomebrewScript,
   createOfficialCarouselScript,
   createStoredScript,
   fetchOfficialRemoteScripts,
@@ -7,6 +8,58 @@ import {
 } from '@/utils/script-service';
 
 describe('script service', () => {
+  it('creates a stored homebrew script from standard script JSON', () => {
+    expect(
+      createHomebrewScript(
+        JSON.stringify([
+          { id: '_meta', author: 'Homebrew Author', name: 'Custom Trouble', version: '2.0.0' },
+          'imp',
+          {
+            id: 'custom_role',
+            name: 'Custom Role',
+            team: 'townsfolk',
+            ability: 'A custom ability.',
+          },
+        ]),
+        [{ id: 'imp', name: 'Imp', team: 'demon', edition: 'tb' }],
+      ),
+    ).toMatchObject({
+      id: 'custom-trouble',
+      name: 'Custom Trouble',
+      version: '2.0.0',
+      scriptType: 'Full',
+      author: 'Homebrew Author',
+      roles: [
+        { id: 'imp', name: 'Imp', team: 'demon', edition: 'tb' },
+        { id: 'custom_role', name: 'Custom Role', team: 'townsfolk' },
+      ],
+    });
+  });
+
+  it('uses homebrew defaults and preserves an existing script id', () => {
+    expect(
+      createHomebrewScript(
+        JSON.stringify([{ id: '_meta', name: 'Minimal Script' }, 'imp']),
+        [{ id: 'imp', name: 'Imp' }],
+        'minimal-script-2',
+      ),
+    ).toMatchObject({
+      id: 'minimal-script-2',
+      version: '1.0.0',
+      scriptType: 'Full',
+    });
+  });
+
+  it.each([
+    ['not JSON', 'The file is not valid JSON.'],
+    ['{}', 'The file must contain a script JSON array.'],
+    ['[]', 'The script JSON is missing a _meta entry.'],
+    ['[{"id":"_meta"},"imp"]', 'The script metadata needs a name.'],
+    ['[{"id":"_meta","name":"Empty"}]', 'The script does not contain any usable roles.'],
+  ])('rejects invalid homebrew JSON: %s', (value, message) => {
+    expect(() => createHomebrewScript(value, [])).toThrow(message);
+  });
+
   it('creates a stored script with role metadata merged from the catalog', () => {
     const remoteScript: RemoteScript = {
       pk: 42,

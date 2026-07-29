@@ -5,12 +5,14 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { RemoteScriptCard } from '@/components/scripts/remote-script-card';
 import { ScriptCard } from '@/components/scripts/script-card';
+import { UploadScriptButton } from '@/components/scripts/upload-script-button';
 import { Text, TextInput } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { StoredScript } from '@/types/game';
 import {
+  createHomebrewScript,
   createStoredScript,
   fetchRemoteScriptContent,
   fetchRemoteScripts,
@@ -104,15 +106,21 @@ export default function ScriptsRoute() {
     }
   }
 
+  async function getUsableRoleCatalog() {
+    if (roleCatalog.length > 0 && roleCatalog.some((role) => role.ability)) {
+      return roleCatalog;
+    }
+
+    const catalog = await fetchRoleCatalog();
+    setRoleCatalog(catalog);
+    return catalog;
+  }
+
   async function handleDownload(remoteScript: RemoteScript) {
     setDownloadingId(remoteScript.pk);
 
     try {
-      let catalog = roleCatalog;
-      if (catalog.length === 0 || !catalog.some((role) => role.ability)) {
-        catalog = await fetchRoleCatalog();
-        setRoleCatalog(catalog);
-      }
+      const catalog = await getUsableRoleCatalog();
 
       const existingScript = scripts.find((script) => script.remoteId === remoteScript.pk);
       let content = remoteScript.content;
@@ -128,6 +136,24 @@ export default function ScriptsRoute() {
       showDialog('Download failed', 'The script could not be saved. Please try again.');
     } finally {
       setDownloadingId(null);
+    }
+  }
+
+  async function handleUploadFile(file: File) {
+    try {
+      const catalog = await getUsableRoleCatalog();
+      const uploadedScript = createHomebrewScript(await file.text(), catalog);
+      const existingScript = scripts.find(
+        (script) =>
+          script.remoteId === undefined &&
+          script.name === uploadedScript.name &&
+          script.author === uploadedScript.author,
+      );
+
+      saveScript(existingScript ? { ...uploadedScript, id: existingScript.id } : uploadedScript);
+      showDialog('Upload complete', `${uploadedScript.name} is ready to use.`);
+    } catch (error) {
+      showDialog('Could not upload script', getErrorMessage(error));
     }
   }
 
@@ -185,10 +211,14 @@ export default function ScriptsRoute() {
               textAlign: 'center',
             }}
           >
-            Download scripts from BotC Scripts, then add or remove roles before using them in a
-            game.
+            Download scripts from BotC Scripts or upload a homebrew JSON file, then add or remove
+            roles before using them in a game.
           </Text>
         </View>
+
+        {process.env.EXPO_OS === 'web' ? (
+          <UploadScriptButton onFileSelected={handleUploadFile} />
+        ) : null}
 
         <SavedScriptsSection
           canSelect={isSelectingForGame}
@@ -284,6 +314,10 @@ export default function ScriptsRoute() {
       </ScrollView>
     </>
   );
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'The script could not be read.';
 }
 
 function SavedScriptsSection({
