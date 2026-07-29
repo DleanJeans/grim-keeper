@@ -6,8 +6,8 @@ Each component lives in its own file. The default layout is, top to bottom:
 2. Module-level constants (numbers, lookup tables)
 3. Type/prop declarations
 4. The exported main component
-5. `const styles = StyleSheet.create({ ... })` directly below the component
-6. Stateless subcomponents and helper functions below the styles
+5. Stateless subcomponents and helper functions below the main component
+6. `const styles = StyleSheet.create({ ... })` at the bottom
 
 Rules:
 
@@ -26,6 +26,8 @@ Rules:
 - **Type exports stay co-located with their component.** A `*Props` type lives in the same file
   as the component that uses it. Promote to a shared types file only when a second component
   imports it.
+- Move colors to theme/colors.ts
+- Refactor into a component if it's a nested component inside .map()
 
 ## Navigation header convention
 
