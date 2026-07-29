@@ -1,54 +1,56 @@
 import { Minus, Plus, RotateCcw, RotateCw } from 'lucide-react-native';
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { MapModeButton } from '@/components/game/map-mode-button';
 import { onDarkTextStrong, outlinedActionRow, outlinedActionStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
-import { maxTokenSize, minTokenSize, tokenSizeStep } from '@/utils/layout-utils';
+import {
+  mapHeightStep,
+  maxMapHeight,
+  maxTokenSize,
+  minMapHeight,
+  minTokenSize,
+  tokenSizeStep,
+} from '@/utils/layout-utils';
 
-const tokenSizeDisplayStyle = {
-  alignItems: 'center' as const,
-  backgroundColor: '#111827',
-  borderColor: '#334155',
-  borderRadius: 8,
-  borderWidth: 1,
-  justifyContent: 'center' as const,
-  paddingHorizontal: 12,
-  paddingVertical: 14,
-  width: 58,
-};
+const dimensionDisplayWidth = 58;
 
 export function RearrangeActions() {
-  const { activeTokenSize, exitRearrangeMode, handleResizeTokens, handleRotateTokens } =
-    useGameRouteContext();
-  const canShrink = activeTokenSize > minTokenSize;
-  const canEnlarge = activeTokenSize < maxTokenSize;
+  const {
+    activeTokenSize,
+    exitRearrangeMode,
+    handleResizeMapHeight,
+    handleResizeTokens,
+    handleRotateTokens,
+    mapHeight,
+  } = useGameRouteContext();
+  const canShrinkTokens = activeTokenSize > minTokenSize;
+  const canEnlargeTokens = activeTokenSize < maxTokenSize;
+  const canShrinkMap = mapHeight > minMapHeight;
+  const canEnlargeMap = mapHeight < maxMapHeight;
 
   return (
-    <View style={{ alignSelf: 'stretch', gap: 10 }}>
-      <View style={outlinedActionRow}>
-        <Pressable
-          accessibilityLabel="Shrink player tokens"
-          accessibilityRole="button"
-          disabled={!canShrink}
-          onPress={() => handleResizeTokens(-tokenSizeStep)}
-          style={({ pressed }) => outlinedActionStyle({ pressed, disabled: !canShrink, flex: 1 })}
-        >
-          <Minus color="#f8fafc" size={17} strokeWidth={2.7} />
-        </Pressable>
-        <View style={tokenSizeDisplayStyle}>
-          <Text style={onDarkTextStrong}>{activeTokenSize}</Text>
-        </View>
-        <Pressable
-          accessibilityLabel="Enlarge player tokens"
-          accessibilityRole="button"
-          disabled={!canEnlarge}
-          onPress={() => handleResizeTokens(tokenSizeStep)}
-          style={({ pressed }) => outlinedActionStyle({ pressed, disabled: !canEnlarge, flex: 1 })}
-        >
-          <Plus color="#f8fafc" size={17} strokeWidth={2.7} />
-        </Pressable>
-      </View>
+    <View style={styles.root}>
+      <DimensionAdjustRow
+        canDecrease={canShrinkTokens}
+        canIncrease={canEnlargeTokens}
+        decreaseAccessibilityLabel="Shrink player tokens"
+        increaseAccessibilityLabel="Enlarge player tokens"
+        onDecrease={() => handleResizeTokens(-tokenSizeStep)}
+        onIncrease={() => handleResizeTokens(tokenSizeStep)}
+        title="Token"
+        value={activeTokenSize}
+      />
+      <DimensionAdjustRow
+        canDecrease={canShrinkMap}
+        canIncrease={canEnlargeMap}
+        decreaseAccessibilityLabel="Decrease game map height"
+        increaseAccessibilityLabel="Increase game map height"
+        onDecrease={() => handleResizeMapHeight(-mapHeightStep)}
+        onIncrease={() => handleResizeMapHeight(mapHeightStep)}
+        title="Map"
+        value={mapHeight}
+      />
       <View style={outlinedActionRow}>
         <Pressable
           accessibilityLabel="Rotate tokens left"
@@ -63,7 +65,7 @@ export function RearrangeActions() {
           accessibilityLabel="Done rearranging tokens"
           onPress={exitRearrangeMode}
           variant="confirm"
-          width={tokenSizeDisplayStyle.width}
+          width={dimensionDisplayWidth}
         />
         <Pressable
           accessibilityLabel="Rotate tokens right"
@@ -79,4 +81,77 @@ export function RearrangeActions() {
   );
 }
 
+function DimensionAdjustRow({
+  canDecrease,
+  canIncrease,
+  decreaseAccessibilityLabel,
+  increaseAccessibilityLabel,
+  onDecrease,
+  onIncrease,
+  title,
+  value,
+}: {
+  canDecrease: boolean;
+  canIncrease: boolean;
+  decreaseAccessibilityLabel: string;
+  increaseAccessibilityLabel: string;
+  onDecrease: () => void;
+  onIncrease: () => void;
+  title: string;
+  value: number;
+}) {
+  return (
+    <View style={outlinedActionRow}>
+      <Pressable
+        accessibilityLabel={decreaseAccessibilityLabel}
+        accessibilityRole="button"
+        disabled={!canDecrease}
+        onPress={onDecrease}
+        style={({ pressed }) => outlinedActionStyle({ pressed, disabled: !canDecrease, flex: 1 })}
+      >
+        <Minus color="#f8fafc" size={17} strokeWidth={2.7} />
+      </Pressable>
+      <View style={styles.dimensionDisplay}>
+        <Text style={styles.dimensionTitle}>{title}</Text>
+        <Text selectable style={onDarkTextStrong}>
+          {value}
+        </Text>
+      </View>
+      <Pressable
+        accessibilityLabel={increaseAccessibilityLabel}
+        accessibilityRole="button"
+        disabled={!canIncrease}
+        onPress={onIncrease}
+        style={({ pressed }) => outlinedActionStyle({ pressed, disabled: !canIncrease, flex: 1 })}
+      >
+        <Plus color="#f8fafc" size={17} strokeWidth={2.7} />
+      </Pressable>
+    </View>
+  );
+}
+
 const rotationStepRadians = Math.PI / 8;
+
+const styles = StyleSheet.create({
+  dimensionDisplay: {
+    alignItems: 'center',
+    backgroundColor: '#111827',
+    borderColor: '#334155',
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    gap: 2,
+    paddingVertical: 10,
+    width: dimensionDisplayWidth,
+  },
+  dimensionTitle: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  root: {
+    alignSelf: 'stretch',
+    gap: 10,
+  },
+});

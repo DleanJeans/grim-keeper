@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Svg from 'react-native-svg';
 import {
   ConnectionCurve,
@@ -23,6 +23,7 @@ export function GameMap() {
     interactionMode,
     mapWidth,
     mapHeight,
+    mapScale,
     nominationCurves,
     players,
     isRearrangeMode,
@@ -33,6 +34,9 @@ export function GameMap() {
     handleSelectPlayer,
     showRoles,
   } = useGameRouteContext();
+
+  const displayMapWidth = mapWidth * mapScale;
+  const displayMapHeight = mapHeight * mapScale;
 
   const positions = new Map(
     players.map((player) => [
@@ -56,138 +60,133 @@ export function GameMap() {
   );
 
   return (
-    <View
-      style={{
-        alignSelf: 'center',
-        backgroundColor: '#111827',
-        borderColor: '#334155',
-        borderRadius: 8,
-        borderWidth: 1,
-        height: mapHeight,
-        overflow: 'hidden',
-        position: 'relative',
-        width: mapWidth,
-      }}
-    >
-      <Svg
-        height={mapHeight}
-        pointerEvents="none"
-        style={{ position: 'absolute' }}
-        width={mapWidth}
+    <View style={[styles.mapViewport, { height: displayMapHeight, width: displayMapWidth }]}>
+      <View
+        style={[
+          styles.map,
+          {
+            height: mapHeight,
+            transform: [{ scale: mapScale }],
+            width: mapWidth,
+          },
+        ]}
       >
-        {showNominationCurves &&
-          nominationCurves.map(({ conversationId, initiatorId, nomineeId }) => {
-            const involvesFocused =
-              focusedPlayerId !== null &&
-              (focusedPlayerId === initiatorId || focusedPlayerId === nomineeId);
-            const connectedToFocused = focusedPlayerId === null || involvesFocused;
-            const fromPosition = positions.get(initiatorId);
-            const toPosition = positions.get(nomineeId);
-            if (!fromPosition || !toPosition) {
-              return null;
-            }
-            return (
-              <ConnectionCurve
-                key={`${conversationId}-nom-line`}
-                blockers={players
-                  .filter((player) => player.id !== initiatorId && player.id !== nomineeId)
-                  .map((player) => positions.get(player.id))
-                  .filter((position): position is PlayerPosition => !!position)}
-                from={fromPosition}
-                mapHeight={mapHeight}
-                mapWidth={mapWidth}
-                opacity={connectedToFocused ? 0.76 : 0.18}
-                stroke="#a78bfa"
-                strokeWidth={4}
-                to={toPosition}
-                tokenSize={activeTokenSize}
-              />
-            );
-          })}
-        {showInteractionCurves &&
-          !hideConnectionCurves &&
-          conversations
-            .filter(
-              (conversation) =>
-                conversation.day === activeDay && conversation.kind !== 'nomination',
-            )
-            .flatMap((conversation) => {
-              const repeat = groupRepeats.get(getConversationGroupKey(conversation));
-              const highlighted = repeat?.repeated === true;
-
-              return getInteractionCurvePlayerPairs(conversation).flatMap(([fromId, toId]) => {
-                const fromPosition = positions.get(fromId);
-                const toPosition = positions.get(toId);
-
-                if (!fromPosition || !toPosition) {
-                  return [];
-                }
-
-                const stroke = highlighted ? '#f59e0b' : '#38bdf8';
-                const connectedToSelected =
-                  selectedPlayerIdSet.size === 0 ||
-                  selectedPlayerIdSet.has(fromId) ||
-                  selectedPlayerIdSet.has(toId);
-                const opacity = connectedToSelected ? (highlighted ? 0.95 : 0.76) : 0.18;
-
-                return [
-                  <ConnectionCurve
-                    key={`${conversation.id}-${fromId}-${toId}-line`}
-                    blockers={players
-                      .filter((player) => player.id !== fromId && player.id !== toId)
-                      .map((player) => positions.get(player.id))
-                      .filter((position): position is PlayerPosition => !!position)}
-                    from={fromPosition}
-                    mapHeight={mapHeight}
-                    mapWidth={mapWidth}
-                    opacity={opacity}
-                    stroke={stroke}
-                    strokeWidth={highlighted ? 4 : 3}
-                    to={toPosition}
-                    tokenSize={activeTokenSize}
-                  />,
-                ];
-              });
+        <Svg height={mapHeight} pointerEvents="none" style={styles.svg} width={mapWidth}>
+          {showNominationCurves &&
+            nominationCurves.map(({ conversationId, initiatorId, nomineeId }) => {
+              const involvesFocused =
+                focusedPlayerId !== null &&
+                (focusedPlayerId === initiatorId || focusedPlayerId === nomineeId);
+              const connectedToFocused = focusedPlayerId === null || involvesFocused;
+              const fromPosition = positions.get(initiatorId);
+              const toPosition = positions.get(nomineeId);
+              if (!fromPosition || !toPosition) {
+                return null;
+              }
+              return (
+                <ConnectionCurve
+                  key={`${conversationId}-nom-line`}
+                  blockers={players
+                    .filter((player) => player.id !== initiatorId && player.id !== nomineeId)
+                    .map((player) => positions.get(player.id))
+                    .filter((position): position is PlayerPosition => !!position)}
+                  from={fromPosition}
+                  mapHeight={mapHeight}
+                  mapWidth={mapWidth}
+                  opacity={connectedToFocused ? 0.76 : 0.18}
+                  stroke="#a78bfa"
+                  strokeWidth={4}
+                  to={toPosition}
+                  tokenSize={activeTokenSize}
+                />
+              );
             })}
-      </Svg>
+          {showInteractionCurves &&
+            !hideConnectionCurves &&
+            conversations
+              .filter(
+                (conversation) =>
+                  conversation.day === activeDay && conversation.kind !== 'nomination',
+              )
+              .flatMap((conversation) => {
+                const repeat = groupRepeats.get(getConversationGroupKey(conversation));
+                const highlighted = repeat?.repeated === true;
 
-      {players.map((player) => {
-        const ownPosition =
-          positions.get(player.id) ??
-          getPlayerMapPosition(player, players, mapWidth, mapHeight, activeTokenSize);
-        const otherTokenPositions: { x: number; y: number }[] = [];
-        for (const other of players) {
-          if (other.id === player.id) {
-            continue;
+                return getInteractionCurvePlayerPairs(conversation).flatMap(([fromId, toId]) => {
+                  const fromPosition = positions.get(fromId);
+                  const toPosition = positions.get(toId);
+
+                  if (!fromPosition || !toPosition) {
+                    return [];
+                  }
+
+                  const stroke = highlighted ? '#f59e0b' : '#38bdf8';
+                  const connectedToSelected =
+                    selectedPlayerIdSet.size === 0 ||
+                    selectedPlayerIdSet.has(fromId) ||
+                    selectedPlayerIdSet.has(toId);
+                  const opacity = connectedToSelected ? (highlighted ? 0.95 : 0.76) : 0.18;
+
+                  return [
+                    <ConnectionCurve
+                      key={`${conversation.id}-${fromId}-${toId}-line`}
+                      blockers={players
+                        .filter((player) => player.id !== fromId && player.id !== toId)
+                        .map((player) => positions.get(player.id))
+                        .filter((position): position is PlayerPosition => !!position)}
+                      from={fromPosition}
+                      mapHeight={mapHeight}
+                      mapWidth={mapWidth}
+                      opacity={opacity}
+                      stroke={stroke}
+                      strokeWidth={highlighted ? 4 : 3}
+                      to={toPosition}
+                      tokenSize={activeTokenSize}
+                    />,
+                  ];
+                });
+              })}
+        </Svg>
+
+        {players.map((player) => {
+          const ownPosition =
+            positions.get(player.id) ??
+            getPlayerMapPosition(player, players, mapWidth, mapHeight, activeTokenSize);
+          const otherTokenPositions: { x: number; y: number }[] = [];
+          for (const other of players) {
+            if (other.id === player.id) {
+              continue;
+            }
+            const otherPosition =
+              positions.get(other.id) ??
+              getPlayerMapPosition(other, players, mapWidth, mapHeight, activeTokenSize);
+            otherTokenPositions.push(otherPosition);
           }
-          const otherPosition =
-            positions.get(other.id) ??
-            getPlayerMapPosition(other, players, mapWidth, mapHeight, activeTokenSize);
-          otherTokenPositions.push(otherPosition);
-        }
-        return (
-          <PlayerTokenForMap
-            key={player.id}
-            activeDay={activeDay}
-            activeTokenSize={activeTokenSize}
-            disabled={disabledPlayerIdSet.has(player.id)}
-            gameRoles={game.script?.roles ?? []}
-            handleMovePlayer={handleMovePlayer}
-            handleSelectPlayer={handleSelectPlayer}
-            highlightedPlayerIds={highlightedPlayerIds}
-            interactionMode={interactionMode}
-            isNominated={nominatedIds.has(player.id)}
-            isNominator={nominatorIds.has(player.id)}
-            isRearrangeMode={isRearrangeMode}
-            mapHeight={mapHeight}
-            mapWidth={mapWidth}
-            otherTokenPositions={otherTokenPositions}
-            player={stripFutureAndRevivedDeath(player, activeDay)}
-            position={ownPosition}
-            showRoles={showRoles}
-          />
-        );
-      })}
+          return (
+            <PlayerTokenForMap
+              key={player.id}
+              activeDay={activeDay}
+              activeTokenSize={activeTokenSize}
+              disabled={disabledPlayerIdSet.has(player.id)}
+              gameRoles={game.script?.roles ?? []}
+              handleMovePlayer={handleMovePlayer}
+              handleSelectPlayer={handleSelectPlayer}
+              highlightedPlayerIds={highlightedPlayerIds}
+              interactionMode={interactionMode}
+              isNominated={nominatedIds.has(player.id)}
+              isNominator={nominatorIds.has(player.id)}
+              isRearrangeMode={isRearrangeMode}
+              mapHeight={mapHeight}
+              mapScale={mapScale}
+              mapWidth={mapWidth}
+              otherTokenPositions={otherTokenPositions}
+              player={stripFutureAndRevivedDeath(player, activeDay)}
+              position={ownPosition}
+              showRoles={showRoles}
+            />
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -205,6 +204,7 @@ function PlayerTokenForMap({
   isNominator,
   isRearrangeMode,
   mapHeight,
+  mapScale,
   mapWidth,
   otherTokenPositions,
   player,
@@ -223,6 +223,7 @@ function PlayerTokenForMap({
   isNominator: boolean;
   isRearrangeMode: boolean;
   mapHeight: number;
+  mapScale: number;
   mapWidth: number;
   otherTokenPositions: { x: number; y: number }[];
   player: Player;
@@ -241,6 +242,7 @@ function PlayerTokenForMap({
       isNominator={isNominator}
       isSelected={highlightedPlayerIds.includes(player.id)}
       mapHeight={mapHeight}
+      mapScale={mapScale}
       mapWidth={mapWidth}
       onMove={handleMovePlayer}
       onSelect={handleSelectPlayer}
@@ -271,3 +273,24 @@ function stripFutureAndRevivedDeath(player: Player, activeDay: number): Player {
 
   return player;
 }
+
+const styles = StyleSheet.create({
+  map: {
+    alignItems: 'stretch',
+    backgroundColor: '#111827',
+    borderColor: '#334155',
+    borderRadius: 8,
+    borderWidth: 1,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  mapViewport: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  svg: {
+    position: 'absolute',
+  },
+});

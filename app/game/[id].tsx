@@ -28,9 +28,15 @@ import { getGameById, useGameStore } from '@/store/game-store';
 import type { KillAttribution, PlayerPosition, PlayerRoleAssignment } from '@/types/game';
 import { getLastDayWithData } from '@/utils/game-utils';
 import {
+  clampMapHeight,
+  getDefaultMapHeight,
+  getDefaultMapWidth,
+  getLegacyMapHeight,
+  getMapScale,
   getTokenSize,
   resolveTokenCollisions,
   rotatePlayerMapPositions,
+  scalePlayerMapPositions,
 } from '@/utils/layout-utils';
 import { hasDeadVoteAvailable, isPlayerCurrentlyDead } from '@/utils/player-utils';
 import {
@@ -67,6 +73,7 @@ export default function GameRoute() {
   const updateNominationVotes = useGameStore((state) => state.updateNominationVotes);
   const deleteConversation = useGameStore((state) => state.deleteConversation);
   const setActiveDay = useGameStore((state) => state.setActiveDay);
+  const setMapDimensions = useGameStore((state) => state.setMapDimensions);
   const setTokenSize = useGameStore((state) => state.setTokenSize);
   const setCharacterTypeCounts = useGameStore((state) => state.setCharacterTypeCounts);
   const [activeTab, setActiveTab] = useState<GameTab>('interactions');
@@ -90,10 +97,58 @@ export default function GameRoute() {
   const [rumorSubjectPlayerId, setRumorSubjectPlayerId] = useState<string | null>(null);
   const [showRoles, setShowRoles] = useState(false);
   const game = getGameById(games, id);
-  const mapWidth = Math.max(1, width - 40);
-  const mapHeight = Math.max(mapWidth, Math.floor(height * 0.52));
+  const viewportMapWidth = getDefaultMapWidth(width);
+  const fallbackMapDimensions = useRef<{
+    gameId: string;
+    legacyMapHeight: number;
+    mapHeight: number;
+    mapWidth: number;
+  } | null>(null);
+  if (!fallbackMapDimensions.current || fallbackMapDimensions.current.gameId !== id) {
+    const mapWidth = viewportMapWidth;
+    fallbackMapDimensions.current = {
+      gameId: id,
+      legacyMapHeight: getLegacyMapHeight(mapWidth, height),
+      mapHeight: getDefaultMapHeight(mapWidth, height),
+      mapWidth,
+    };
+  }
+  const fallbackDimensions = fallbackMapDimensions.current;
+  const mapWidth = Math.max(1, Math.round(game?.mapWidth ?? fallbackDimensions.mapWidth));
+  const mapHeight = clampMapHeight(game?.mapHeight ?? fallbackDimensions.mapHeight);
+  const mapScale = getMapScale(viewportMapWidth, mapWidth);
   const openedGameId = useRef<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    if (
+      !game ||
+      (game.mapWidth !== undefined && game.mapHeight !== undefined && game.mapHeight === mapHeight)
+    ) {
+      return;
+    }
+
+    const legacyPositions = scalePlayerMapPositions(
+      game.players,
+      game.mapWidth ?? fallbackDimensions.mapWidth,
+      game.mapHeight ?? fallbackDimensions.legacyMapHeight,
+      mapWidth,
+      mapHeight,
+      getTokenSize(game.tokenSize),
+    );
+    if (Object.keys(legacyPositions).length > 0) {
+      updatePlayerPositions(game.id, legacyPositions);
+    }
+    setMapDimensions(game.id, mapWidth, mapHeight);
+  }, [
+    fallbackDimensions.legacyMapHeight,
+    fallbackDimensions.mapWidth,
+    game,
+    mapHeight,
+    mapWidth,
+    setMapDimensions,
+    updatePlayerPositions,
+  ]);
 
   // Slide the entire header up off-screen on scroll-down, slide it back in on
   // scroll-up.
@@ -467,6 +522,15 @@ export default function GameRoute() {
     }
   }
 
+  function handleResizeMapHeight(sizeDelta: number) {
+    const nextHeight = clampMapHeight(mapHeight + sizeDelta);
+    if (nextHeight === mapHeight) {
+      return;
+    }
+
+    setMapDimensions(activeGame.id, mapWidth, nextHeight);
+  }
+
   function handleStartRoleAssignment(kind: PlayerRoleAssignment['kind']) {
     if (!focusedPlayer || !activeGame.script) {
       return;
@@ -667,6 +731,7 @@ export default function GameRoute() {
     interactionMode: !!trackingMode || !!votingNominationId,
     mapWidth,
     mapHeight,
+    mapScale,
     nominationCurves,
     activeTab,
     trackingMode,
@@ -703,6 +768,7 @@ export default function GameRoute() {
     handleEditNominationVotes,
     handleToggleVoterHighlights,
     handleChangeDay,
+    handleResizeMapHeight,
     handleRotateTokens,
     handleResizeTokens,
     handleStartRoleAssignment,

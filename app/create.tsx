@@ -1,7 +1,13 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TextInput as RNTextInput } from 'react-native';
-import { Keyboard, KeyboardAvoidingView, StyleSheet, View } from 'react-native';
+import {
+  Keyboard,
+  KeyboardAvoidingView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import { CreateFormHeader } from '@/components/create/create-form-header';
 import { CreateHeaderDoneButton } from '@/components/create/create-header-done-button';
@@ -12,6 +18,7 @@ import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { hasDuplicatePlayerName, normalizePlayerName } from '@/utils/conversation-utils';
 import { getFriendSummaries } from '@/utils/friend-utils';
+import { getDefaultMapHeight, getDefaultMapWidth } from '@/utils/layout-utils';
 
 export default function CreateRoute() {
   const { gameId: gameIdParam, scriptId: scriptIdParam } = useLocalSearchParams<{
@@ -28,6 +35,7 @@ export default function CreateRoute() {
   const setGameLorics = useGameStore((state) => state.setGameLorics);
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const storedFriends = useGameStore((state) => state.friends);
+  const { height: viewportHeight, width: viewportWidth } = useWindowDimensions();
   const inputRef = useRef<RNTextInput>(null);
   const [name, setName] = useState('');
   const [nameFocused, setNameFocused] = useState(false);
@@ -55,6 +63,8 @@ export default function CreateRoute() {
   }, [legacyScript, scripts]);
   const selectedScriptId = draftSelectedScriptId;
   const selectedScript = availableScripts.find((script) => script.id === selectedScriptId);
+  const mapWidth = getDefaultMapWidth(viewportWidth);
+  const mapHeight = getDefaultMapHeight(mapWidth, viewportHeight);
   const selectedNames = useMemo(
     () => [fixedPlayerName, ...players.map((player) => player.name)],
     [fixedPlayerName, players],
@@ -178,6 +188,8 @@ export default function CreateRoute() {
 
     const game = createGame({
       lorics: roleCatalog.filter((role) => selectedLoricIds.includes(role.id)),
+      mapHeight,
+      mapWidth,
       playerNames: players.map((player) => player.name),
       script: selectedScript,
     });

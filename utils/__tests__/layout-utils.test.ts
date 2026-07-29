@@ -1,8 +1,16 @@
 import type { Player } from '@/types/game';
 import {
+  clampMapHeight,
   clampTokenPosition,
+  getDefaultMapHeight,
+  getDefaultMapWidth,
+  getDefaultTokenSize,
+  getLegacyMapHeight,
+  getMapScale,
   getPlayerMapPosition,
+  getTokenSize,
   resolveTokenCollisions,
+  scalePlayerMapPositions,
 } from '@/utils/layout-utils';
 
 const players: Player[] = Array.from({ length: 8 }, (_, seat) => ({
@@ -12,6 +20,46 @@ const players: Player[] = Array.from({ length: 8 }, (_, seat) => ({
 }));
 
 describe('layout utils', () => {
+  it('derives stable map dimensions from the initial viewport', () => {
+    expect(getDefaultMapWidth(390)).toBe(350);
+    expect(getDefaultMapHeight(350, 844)).toBe(440);
+    expect(getDefaultMapHeight(350, 1129)).toBe(580);
+    expect(getLegacyMapHeight(350, 1129)).toBe(587);
+    expect(clampMapHeight(587)).toBe(580);
+  });
+
+  it('scales the logical map to the available width', () => {
+    expect(getMapScale(700, 350)).toBe(2);
+    expect(getMapScale(175, 350)).toBe(0.5);
+  });
+
+  it('sizes new-game tokens from the map perimeter and player count', () => {
+    expect(getDefaultTokenSize(20, 400, 300)).toBe(70);
+    expect(getDefaultTokenSize(20, 200, 200)).toBe(40);
+    expect(getDefaultTokenSize(4, 400, 300)).toBe(100);
+  });
+
+  it('clamps token sizes to the supported range', () => {
+    expect(getTokenSize(1)).toBe(40);
+    expect(getTokenSize(1000)).toBe(100);
+  });
+
+  it('scales legacy positions relative to the map edges', () => {
+    const positionedPlayers: Player[] = [
+      { id: 'left', name: 'left', seat: 0, position: { x: 34, y: 50 } },
+      { id: 'right', name: 'right', seat: 1, position: { x: 316, y: 537 } },
+      { id: 'new', name: 'new', seat: 2 },
+    ];
+
+    const positions = scalePlayerMapPositions(positionedPlayers, 350, 587, 350, 580, 68);
+
+    expect(positions.left.x).toBe(34);
+    expect(positions.left.y).toBeCloseTo((50 * 580) / 587);
+    expect(positions.right.x).toBe(316);
+    expect(positions.right.y).toBeCloseTo((537 * 580) / 587);
+    expect(positions.new).toBeUndefined();
+  });
+
   it('places players clockwise along the map borders with the first player at 6 oclock', () => {
     const positions = players.map((player) => getPlayerMapPosition(player, players, 268, 200));
 

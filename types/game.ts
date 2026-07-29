@@ -116,6 +116,8 @@ export type Game = {
   createdAt: string;
   updatedAt: string;
   activeDay: number;
+  mapWidth?: number;
+  mapHeight?: number;
   tokenSize?: number;
   characterTypeCounts?: CharacterTypeCounts;
   players: Player[];

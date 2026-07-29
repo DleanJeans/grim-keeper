@@ -4,11 +4,78 @@ export const defaultTokenSize = 68;
 export const minTokenSize = 40;
 export const maxTokenSize = 100;
 export const tokenSizeStep = 2;
+export const minMapHeight = 240;
+export const maxMapHeight = 2000;
+export const mapHeightStep = 20;
 
 export function getTokenSize(tokenSize = defaultTokenSize) {
   'worklet';
 
   return Math.min(maxTokenSize, Math.max(minTokenSize, tokenSize));
+}
+
+export function getDefaultMapWidth(viewportWidth: number) {
+  return Math.max(1, Math.round(viewportWidth - 40));
+}
+
+export function getLegacyMapHeight(mapWidth: number, viewportHeight: number) {
+  return Math.max(mapWidth, Math.floor(viewportHeight * 0.52));
+}
+
+export function clampMapHeight(mapHeight: number) {
+  const steppedHeight = Math.round(mapHeight / mapHeightStep) * mapHeightStep;
+
+  return Math.min(maxMapHeight, Math.max(minMapHeight, steppedHeight));
+}
+
+export function getDefaultMapHeight(mapWidth: number, viewportHeight: number) {
+  return clampMapHeight(getLegacyMapHeight(mapWidth, viewportHeight));
+}
+
+export function getMapScale(availableWidth: number, mapWidth: number) {
+  return Math.max(0.01, availableWidth / Math.max(1, mapWidth));
+}
+
+export function getDefaultTokenSize(playerCount: number, mapWidth: number, mapHeight: number) {
+  const perimeter = 2 * (Math.max(1, mapWidth) + Math.max(1, mapHeight));
+  const slots = Math.max(1, playerCount);
+
+  return getTokenSize(Math.round(perimeter / slots));
+}
+
+export function scalePlayerMapPositions(
+  players: Player[],
+  sourceMapWidth: number,
+  sourceMapHeight: number,
+  targetMapWidth: number,
+  targetMapHeight: number,
+  tokenSize = defaultTokenSize,
+): Record<string, PlayerPosition> {
+  const sourceWidth = Math.max(1, sourceMapWidth);
+  const sourceHeight = Math.max(1, sourceMapHeight);
+
+  return Object.fromEntries(
+    players.flatMap((player) => {
+      if (!player.position) {
+        return [];
+      }
+
+      return [
+        [
+          player.id,
+          clampTokenPosition(
+            {
+              x: (player.position.x / sourceWidth) * targetMapWidth,
+              y: (player.position.y / sourceHeight) * targetMapHeight,
+            },
+            targetMapWidth,
+            targetMapHeight,
+            tokenSize,
+          ),
+        ],
+      ];
+    }),
+  );
 }
 
 export function getPlayerMapPosition(

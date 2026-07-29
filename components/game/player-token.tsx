@@ -45,6 +45,7 @@ const Colors = {
 
 type PlayerTokenProps = {
   mapHeight: number;
+  mapScale: number;
   mapWidth: number;
   confirmedRoleIds?: string[];
   disabled?: boolean;
@@ -73,6 +74,7 @@ export function PlayerToken({
   isNominator = false,
   isSelected = false,
   mapHeight,
+  mapScale,
   mapWidth,
   onMove,
   onSelect,
@@ -171,8 +173,8 @@ export function PlayerToken({
     .onUpdate((event) => {
       const clamped = clampTokenPosition(
         {
-          x: startX.value + event.translationX,
-          y: startY.value + event.translationY,
+          x: startX.value + event.translationX / mapScale,
+          y: startY.value + event.translationY / mapScale,
         },
         mapWidth,
         mapHeight,

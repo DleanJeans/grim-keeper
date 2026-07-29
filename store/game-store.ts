@@ -21,7 +21,7 @@ import type {
 } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
 import { addMissingFriends, getFriendSummaries, hasFriendName } from '@/utils/friend-utils';
-import { getTokenSize } from '@/utils/layout-utils';
+import { clampMapHeight, getDefaultTokenSize, getTokenSize } from '@/utils/layout-utils';
 import { createFriendId, createGameId, createScriptId, migrateObjectIds } from '@/utils/object-id';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 import {
@@ -36,6 +36,8 @@ export { getNotesForPlayer, migrateV2ToV3 };
 
 type CreateGameInput = {
   lorics?: Role[];
+  mapHeight: number;
+  mapWidth: number;
   playerNames: string[];
   script?: StoredScript;
 };
@@ -99,6 +101,7 @@ type GameState = GameData & {
     noteId?: string,
   ) => boolean;
   deleteSavedNote: (note: SavedNote, roleId?: string) => void;
+  setMapDimensions: (gameId: string, mapWidth: number, mapHeight: number) => void;
   setTokenSize: (gameId: string, tokenSize: number) => void;
   setCharacterTypeCounts: (gameId: string, counts?: CharacterTypeCounts) => void;
   setActiveDay: (gameId: string, day: number) => void;
@@ -239,7 +242,7 @@ export const useGameStore = create<GameState>()(
 
         return renamedFriendId;
       },
-      createGame: ({ lorics, playerNames, script }) => {
+      createGame: ({ lorics, mapHeight, mapWidth, playerNames, script }) => {
         const now = new Date().toISOString();
         const appUserName = normalizePlayerName(get().appUserName) || 'You';
         const appUserKey = appUserName.toLocaleLowerCase();
@@ -252,6 +255,8 @@ export const useGameStore = create<GameState>()(
           name: normalizePlayerName(name),
           seat: index,
         }));
+        const normalizedMapWidth = Math.max(1, Math.round(mapWidth));
+        const normalizedMapHeight = clampMapHeight(mapHeight);
         const game: Game = {
           id: createGameId(
             script?.name,
@@ -261,7 +266,9 @@ export const useGameStore = create<GameState>()(
           createdAt: now,
           updatedAt: now,
           activeDay: 1,
-          tokenSize: getTokenSize(),
+          mapWidth: normalizedMapWidth,
+          mapHeight: normalizedMapHeight,
+          tokenSize: getDefaultTokenSize(players.length, normalizedMapWidth, normalizedMapHeight),
           players,
           conversations: [],
           lorics: lorics?.map((role) => ({ ...role })),
@@ -721,6 +728,20 @@ export const useGameStore = create<GameState>()(
             })),
           };
         });
+      },
+      setMapDimensions: (gameId, mapWidth, mapHeight) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? {
+                  ...game,
+                  mapWidth: Math.max(1, Math.round(mapWidth)),
+                  mapHeight: clampMapHeight(mapHeight),
+                  updatedAt: new Date().toISOString(),
+                }
+              : game,
+          ),
+        }));
       },
       setTokenSize: (gameId, tokenSize) => {
         set((state) => ({

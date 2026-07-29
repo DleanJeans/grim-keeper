@@ -31,6 +31,7 @@ export type GameRouteContextValue = {
   interactionMode: boolean;
   mapWidth: number;
   mapHeight: number;
+  mapScale: number;
   nominationCurves: { conversationId: string; initiatorId: string; nomineeId: string }[];
 
   // Transient state
@@ -71,6 +72,7 @@ export type GameRouteContextValue = {
   handleEditNominationVotes: (nominationId: string, voterIds: string[]) => void;
   handleToggleVoterHighlights: () => void;
   handleChangeDay: (day: number) => void;
+  handleResizeMapHeight: (sizeDelta: number) => void;
   handleRotateTokens: (angleRadians: number) => void;
   handleResizeTokens: (sizeDelta: number) => void;
   handleStartRoleAssignment: (kind: PlayerRoleAssignment['kind']) => void;
