@@ -1,6 +1,6 @@
 import { Plus, X } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { RoleReference } from '@/components/role-reference';
 import { Text, TextInput } from '@/components/text';
@@ -15,7 +15,13 @@ type ScriptRoleEditorProps = {
 };
 
 export function ScriptRoleEditor({ onChange, roleCatalog, script }: ScriptRoleEditorProps) {
+  const [scriptName, setScriptName] = useState(script.name);
   const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    setScriptName(script.name);
+  }, [script.name]);
+
   const selectedRoleIds = useMemo(
     () => new Set(script.roles.map((role) => role.id)),
     [script.roles],
@@ -34,8 +40,38 @@ export function ScriptRoleEditor({ onChange, roleCatalog, script }: ScriptRoleEd
       .slice(0, 8);
   }, [query, roleCatalog, selectedRoleIds]);
 
+  function commitScriptName() {
+    const nextName = scriptName.trim();
+
+    if (!nextName) {
+      setScriptName(script.name);
+      return;
+    }
+
+    if (nextName !== script.name) {
+      onChange({ ...script, name: nextName });
+    }
+  }
+
   return (
     <View style={{ gap: 10 }}>
+      <Text selectable style={styles.nameLabel}>
+        Script name
+      </Text>
+      <TextInput
+        autoCapitalize="words"
+        autoCorrect={false}
+        enterKeyHint="done"
+        onBlur={commitScriptName}
+        onChangeText={setScriptName}
+        onSubmitEditing={commitScriptName}
+        placeholder="Script name"
+        placeholderTextColor={colors.textSubtle}
+        returnKeyType="done"
+        submitBehavior="submit"
+        value={scriptName}
+        style={styles.nameInput}
+      />
       <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '800' }}>
         Roles in this script
       </Text>
@@ -143,3 +179,21 @@ function RoleChip({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  nameInput: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    color: colors.text,
+    minHeight: 44,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  nameLabel: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+});
