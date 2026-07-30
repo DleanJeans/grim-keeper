@@ -232,7 +232,8 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   friendPopoverHidden: {
-    display: 'none',
+    opacity: 0,
+    pointerEvents: 'none',
   },
   inputContainer: {
     flex: 1,
