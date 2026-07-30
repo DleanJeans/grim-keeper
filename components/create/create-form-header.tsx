@@ -115,7 +115,7 @@ export function CreateFormHeader({
               pointerEvents="box-none"
               style={[
                 styles.friendPopover,
-                nameFocused ? styles.friendPopoverVisible : styles.friendPopoverHidden,
+                nameFocused ? undefined : styles.friendPopoverHidden,
               ]}
             >
               <FriendSuggestions friends={friends} onSelectFriend={onSelectFriend} />
@@ -235,10 +235,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   friendPopoverHidden: {
-    opacity: 0,
-  },
-  friendPopoverVisible: {
-    opacity: 1,
+    display: 'none',
   },
   inputContainer: {
     flex: 1,
