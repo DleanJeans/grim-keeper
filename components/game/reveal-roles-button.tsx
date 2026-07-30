@@ -119,7 +119,6 @@ export function RevealRolesButton({
       {({ pressed }) => (
         <>
           <Text
-            pointerEvents="none"
             style={[styles.iconLabel, pressed ? styles.iconLabelShown : styles.iconLabelHidden]}
           >
             Reveal roles
@@ -175,6 +174,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingHorizontal: 8,
     paddingVertical: 4,
+    pointerEvents: 'none',
     textAlign: 'center',
   },
   iconLabelHidden: {

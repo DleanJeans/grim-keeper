@@ -31,7 +31,6 @@ export function InlineGameHeader({ activeGame, headerTranslateY }: InlineGameHea
   const gameScriptId = activeGame.script?.id;
   return (
     <Animated.View
-      pointerEvents="box-none"
       style={[
         styles.header,
         { paddingTop: insets.top, height: insets.top + ROW_HEIGHT },
@@ -82,6 +81,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: colors.background,
     left: 0,
+    pointerEvents: 'box-none',
     position: 'absolute',
     right: 0,
     top: 0,
