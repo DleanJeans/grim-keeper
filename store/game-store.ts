@@ -1,5 +1,6 @@
 import 'expo-sqlite/localStorage/install';
 
+import { Platform } from 'react-native';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
@@ -32,6 +33,7 @@ import {
   resolveScriptName,
 } from '@/utils/saved-note-store';
 import { restoreDuplicateScriptImages, stripDuplicateScriptImages } from '@/utils/script-storage';
+import { webStorage } from '@/utils/web-storage';
 
 export { getNotesForPlayer, migrateV2ToV3 };
 
@@ -910,7 +912,7 @@ export const useGameStore = create<GameState>()(
     {
       name: 'grim-keeper-game-store-v1',
       version: 5,
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => (Platform.OS === 'web' ? webStorage : localStorage)),
       migrate: (persistedState, version) => {
         if (!persistedState || version >= 5) {
           return persistedState as Partial<GameState> | undefined;
