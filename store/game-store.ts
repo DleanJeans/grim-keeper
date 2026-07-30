@@ -31,6 +31,7 @@ import {
   migrateV2ToV3,
   resolveScriptName,
 } from '@/utils/saved-note-store';
+import { restoreDuplicateScriptImages, stripDuplicateScriptImages } from '@/utils/script-storage';
 
 export { getNotesForPlayer, migrateV2ToV3 };
 
@@ -926,10 +927,20 @@ export const useGameStore = create<GameState>()(
         const migratedState = migrateObjectIds(v4State) as Partial<GameState>;
         return migratedState;
       },
+      merge: (persistedState, currentState) => {
+        const state = persistedState as Partial<GameState> | undefined;
+        const scripts = state?.scripts ?? currentState.scripts;
+
+        return {
+          ...currentState,
+          ...state,
+          games: restoreDuplicateScriptImages(state?.games ?? currentState.games, scripts),
+        };
+      },
       partialize: (state) => ({
         appUserName: state.appUserName,
         friends: state.friends,
-        games: state.games,
+        games: stripDuplicateScriptImages(state.games, state.scripts),
         roleCatalog: state.roleCatalog,
         savedNotes: state.savedNotes,
         scripts: state.scripts,
