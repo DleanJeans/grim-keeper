@@ -34,10 +34,7 @@ export function TitleHeader({ center, icon, right, showBack = true, title }: Tit
         ) : (
           <View style={styles.backSpacer} />
         )}
-        <View
-          style={center ? styles.titleRowWithCenter : styles.titleRow}
-          pointerEvents={center ? 'auto' : 'none'}
-        >
+        <View style={center ? styles.titleRowWithCenter : styles.titleRow}>
           {center ?? (
             <View style={styles.titleContent}>
               {icon}
@@ -109,6 +106,7 @@ const styles = StyleSheet.create({
     gap: 8,
     justifyContent: 'center',
     minWidth: 0,
+    pointerEvents: 'none',
   },
   titleRowWithCenter: {
     alignItems: 'center',
@@ -118,5 +116,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minWidth: 0,
     paddingLeft: 4,
+    pointerEvents: 'auto',
   },
 });

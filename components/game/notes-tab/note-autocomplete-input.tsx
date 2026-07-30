@@ -177,7 +177,6 @@ function NoteSuggestionDropdown({
       accessibilityElementsHidden={!visible}
       importantForAccessibility={visible ? 'auto' : 'no-hide-descendants'}
       keyboardShouldPersistTaps="always"
-      pointerEvents={visible ? 'auto' : 'none'}
       style={[styles.dropdown, visible ? styles.dropdownVisible : styles.dropdownHidden]}
     >
       {suggestions.map((suggestion) => (
@@ -231,9 +230,11 @@ const styles = StyleSheet.create({
   },
   dropdownHidden: {
     opacity: 0,
+    pointerEvents: 'none',
   },
   dropdownVisible: {
     opacity: 1,
+    pointerEvents: 'auto',
   },
   roleSuggestion: {
     alignItems: 'center',

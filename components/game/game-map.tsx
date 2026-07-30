@@ -71,7 +71,7 @@ export function GameMap() {
           },
         ]}
       >
-        <Svg height={mapHeight} pointerEvents="none" style={styles.svg} width={mapWidth}>
+        <Svg height={mapHeight} style={styles.svg} width={mapWidth}>
           {showNominationCurves &&
             nominationCurves.map(({ conversationId, initiatorId, nomineeId }) => {
               const involvesFocused =
@@ -291,6 +291,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   svg: {
+    pointerEvents: 'none',
     position: 'absolute',
   },
 });

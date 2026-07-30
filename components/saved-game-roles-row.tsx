@@ -59,7 +59,7 @@ export function SavedGameRolesRow({ game }: { game: Game }) {
               style={styles.unknownBadge}
             >
               <RoleIcon role={unknownRole} size={ROLE_ICON_SIZE} />
-              <View style={styles.unknownCount} pointerEvents="none">
+              <View style={styles.unknownCount}>
                 <Text style={styles.unknownCountText}>{entry.players.length}</Text>
               </View>
             </View>
@@ -113,6 +113,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minWidth: 18,
     paddingHorizontal: 4,
+    pointerEvents: 'none',
     position: 'absolute',
     right: -6,
     top: -6,

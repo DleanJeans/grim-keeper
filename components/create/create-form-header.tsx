@@ -112,11 +112,7 @@ export function CreateFormHeader({
             <View
               accessibilityElementsHidden={!nameFocused}
               importantForAccessibility={nameFocused ? 'auto' : 'no-hide-descendants'}
-              pointerEvents="box-none"
-              style={[
-                styles.friendPopover,
-                nameFocused ? undefined : styles.friendPopoverHidden,
-              ]}
+              style={[styles.friendPopover, nameFocused ? undefined : styles.friendPopoverHidden]}
             >
               <FriendSuggestions friends={friends} onSelectFriend={onSelectFriend} />
             </View>
@@ -229,6 +225,7 @@ const styles = StyleSheet.create({
   friendPopover: {
     left: 0,
     marginTop: 8,
+    pointerEvents: 'box-none',
     position: 'absolute',
     right: 0,
     top: '100%',

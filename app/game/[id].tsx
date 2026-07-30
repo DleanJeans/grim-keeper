@@ -852,7 +852,7 @@ export default function GameRoute() {
             </View>
           ) : null}
 
-          <View style={styles.fab} pointerEvents="box-none">
+          <View style={styles.fab}>
             <RevealRolesButton
               onRevealRolesChange={setShowRoles}
               showRoles={showRoles}
@@ -874,12 +874,10 @@ const styles = StyleSheet.create({
   fab: {
     bottom: 32,
     elevation: 4,
+    pointerEvents: 'box-none',
     position: 'absolute',
     right: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
   },
   dayAndCountsRow: {
     alignItems: 'center',
