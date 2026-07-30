@@ -1,12 +1,14 @@
 import { DarkTheme, ThemeProvider } from 'expo-router/react-navigation';
 import { Stack } from 'expo-router/stack';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AppDialogProvider } from '@/components/dialog/app-dialog-provider';
 import { GameHeader } from '@/components/game-header';
 import { PwaHead } from '@/components/pwa-head';
 import { OfficialScriptsLoader } from '@/components/scripts/official-scripts-loader';
 import { useAppFonts } from '@/hooks/use-app-fonts';
+import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 
 const grimKeeperTheme = {
@@ -43,8 +45,22 @@ const grimKeeperTheme = {
 
 export default function RootLayout() {
   const fontsReady = useAppFonts();
+  const [storeHydrated, setStoreHydrated] = useState(() => useGameStore.persist.hasHydrated());
 
-  if (!fontsReady) {
+  useEffect(() => {
+    if (storeHydrated) {
+      return;
+    }
+
+    if (useGameStore.persist.hasHydrated()) {
+      setStoreHydrated(true);
+      return;
+    }
+
+    return useGameStore.persist.onFinishHydration(() => setStoreHydrated(true));
+  }, [storeHydrated]);
+
+  if (!fontsReady || !storeHydrated) {
     return null;
   }
 
