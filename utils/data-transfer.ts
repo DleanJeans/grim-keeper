@@ -1,6 +1,10 @@
 import type { GameData } from '@/store/game-store';
 import type { Game, Role, StoredScript } from '@/types/game';
-import { addMissingFriendsForGames, mapGamePlayerIdsToFriendIds } from '@/utils/object-id';
+import {
+  addMissingFriendsForGames,
+  getRoleIds,
+  mapGamePlayerIdsToFriendIds,
+} from '@/utils/object-id';
 
 const backupFormat = 'grim-keeper-backup';
 const backupVersion = 2;
@@ -28,7 +32,7 @@ type Backup = {
 type ExportedGame = Omit<Game, 'script'> & {
   scriptId?: string;
   scriptRoleIds?: string[];
-  scriptRoleOverrides?: Role[];
+  scriptRoleOverrides?: string[];
 };
 
 type ExportedGameData = Omit<GameData, 'games' | 'scripts'> & {
@@ -116,9 +120,9 @@ function exportGame(game: Game, scriptsById: Map<string, StoredScript>): Exporte
       ? undefined
       : script.roles.map((role) => role.id);
   const scriptRoleOverrides = storedScript
-    ? script.roles.filter(
-        (role) => !storedScript.roles.some((storedRole) => storedRole.id === role.id),
-      )
+    ? script.roles
+        .filter((role) => !storedScript.roles.some((storedRole) => storedRole.id === role.id))
+        .map((role) => role.id)
     : undefined;
 
   return {
@@ -159,14 +163,16 @@ function restoreExportedData(data: ExportedGameData): GameData {
           ...gameWithoutScriptReference,
           ...(scriptId ? { scriptId } : {}),
           ...(scriptRoleIds ? { scriptRoleIds } : {}),
-          ...(scriptRoleOverrides?.length ? { scriptRoleOverrides } : {}),
+          ...(scriptRoleOverrides?.length
+            ? { scriptRoleOverrides: getRoleIds(scriptRoleOverrides) }
+            : {}),
         };
       }
 
-      const overrideRolesById = new Map((scriptRoleOverrides ?? []).map((role) => [role.id, role]));
+      const overrideRoleIds = getRoleIds(scriptRoleOverrides);
       const roles = scriptRoleIds
         ? scriptRoleIds.flatMap((roleId) => {
-            const role = overrideRolesById.get(roleId) ?? rolesById.get(roleId);
+            const role = rolesById.get(roleId);
             return role ? [role] : [];
           })
         : script.roles;
@@ -174,6 +180,8 @@ function restoreExportedData(data: ExportedGameData): GameData {
       return {
         ...gameWithoutScriptReference,
         ...(scriptId ? { scriptId } : {}),
+        ...(scriptRoleIds?.length ? { scriptRoleIds } : {}),
+        ...(overrideRoleIds.length ? { scriptRoleOverrides: overrideRoleIds } : {}),
         script: { ...script, roles: [...roles] },
       };
     }),

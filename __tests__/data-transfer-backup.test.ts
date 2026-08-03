@@ -28,6 +28,7 @@ describe('backup export integration', () => {
           players: Array<{ id: string; isAppUser?: boolean; name: string }>;
           script?: unknown;
           scriptId?: string;
+          scriptRoleOverrides?: unknown[];
         }>;
         roleCatalog: Array<{ edition?: string }>;
         scripts: Array<unknown>;
@@ -42,6 +43,11 @@ describe('backup export integration', () => {
     expect(exported.data.roleCatalog).toEqual([]);
     expect(exported.data.games.filter((game) => game.scriptId)).not.toHaveLength(0);
     expect(exported.data.games.every((game) => game.script === undefined)).toBe(true);
+    expect(
+      exported.data.games
+        .flatMap((game) => game.scriptRoleOverrides ?? [])
+        .every((roleId) => typeof roleId === 'string'),
+    ).toBe(true);
     expect(
       exported.data.games.every((game) =>
         game.players.every(

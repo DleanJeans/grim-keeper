@@ -24,6 +24,24 @@ export function createScriptId(
   return makeUniqueId(baseId, usedIds);
 }
 
+export function getRoleIds(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (typeof item === 'string') {
+      return [item];
+    }
+
+    if (item && typeof item === 'object' && typeof (item as { id?: unknown }).id === 'string') {
+      return [(item as { id: string }).id];
+    }
+
+    return [];
+  });
+}
+
 export function addMissingFriendsForGames(
   friends: Friend[],
   games: Game[],
@@ -209,6 +227,9 @@ export function migrateObjectIds(state: Partial<GameDataShape>): Partial<GameDat
             : undefined,
         script: game.script
           ? { ...game.script, id: scriptIds.get(game.script.id) ?? game.script.id }
+          : undefined,
+        scriptRoleOverrides: game.scriptRoleOverrides
+          ? getRoleIds(game.scriptRoleOverrides)
           : undefined,
       },
       friends ?? [],

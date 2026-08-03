@@ -125,7 +125,7 @@ export type Game = {
   lorics?: Role[];
   scriptId?: string;
   scriptRoleIds?: string[];
-  scriptRoleOverrides?: Role[];
+  scriptRoleOverrides?: string[];
   script?: StoredScript;
   playerDayNotes?: PlayerDayNote[];
 };

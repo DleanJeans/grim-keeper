@@ -170,13 +170,12 @@ describe('data transfer', () => {
     expect(backup.data.games[0]).toMatchObject({
       scriptId: 'script-1',
       scriptRoleIds: ['washerwoman', 'gunslinger'],
-      scriptRoleOverrides: [travelerRole],
+      scriptRoleOverrides: ['gunslinger'],
     });
     expect(backup.data.roleCatalog).toEqual([customRole]);
-    expect(restoredGame.script?.roles.map((role) => role.id)).toEqual([
-      'washerwoman',
-      'gunslinger',
-    ]);
+    expect(restoredGame.script?.roles.map((role) => role.id)).toEqual(['washerwoman']);
+    expect(restoredGame.scriptRoleIds).toEqual(['washerwoman', 'gunslinger']);
+    expect(restoredGame.scriptRoleOverrides).toEqual(['gunslinger']);
   });
 
   it('exports imported scripts fully and BotC scripts as IDs', () => {

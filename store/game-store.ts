@@ -32,6 +32,7 @@ import {
   createFriendId,
   createGameId,
   createScriptId,
+  getRoleIds,
   mapGamePlayerIdsToFriendIds,
   migrateObjectIds,
 } from '@/utils/object-id';
@@ -950,10 +951,10 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'grim-keeper-game-store-v1',
-      version: 6,
+      version: 7,
       storage: createJSONStorage(() => (Platform.OS === 'web' ? webStorage : localStorage)),
       migrate: (persistedState, version) => {
-        if (!persistedState || version >= 6) {
+        if (!persistedState || version >= 7) {
           return persistedState as Partial<GameState> | undefined;
         }
 
@@ -1068,10 +1069,19 @@ function updateGamesWithScript(games: Game[], script: StoredScript, roleCatalog:
       return game;
     }
 
-    const existingRoles = [...(game.script?.roles ?? []), ...(game.scriptRoleOverrides ?? [])];
-    const additionalRoles = existingRoles.filter(
-      (role) => !script.roles.some((scriptRole) => scriptRole.id === role.id),
+    const roleIds = [
+      ...new Set([...(game.scriptRoleIds ?? []), ...getRoleIds(game.scriptRoleOverrides)]),
+    ];
+    const existingRoles = game.script?.roles ?? [];
+    const rolesById = new Map(
+      [...script.roles, ...roleCatalog, ...existingRoles].map((role) => [role.id, role]),
     );
+    const additionalRoles = roleIds
+      .filter((roleId) => !script.roles.some((scriptRole) => scriptRole.id === roleId))
+      .flatMap((roleId) => {
+        const role = rolesById.get(roleId);
+        return role ? [role] : [];
+      });
     const roles = mergeRoleNotes(
       [...script.roles, ...additionalRoles],
       [...roleCatalog, ...existingRoles],
