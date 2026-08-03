@@ -4,6 +4,17 @@ import type { Game, Role, StoredScript } from '@/types/game';
 const backupFormat = 'grim-keeper-backup';
 const backupVersion = 2;
 const legacyBackupVersion = 1;
+const officialRoleEditions = new Set([
+  'bad moon rising',
+  'bmr',
+  'carousel',
+  'fabled',
+  'loric',
+  'sects and violets',
+  'snv',
+  'tb',
+  'trouble brewing',
+]);
 
 type Backup = {
   data: ExportedGameData;
@@ -15,6 +26,7 @@ type Backup = {
 type ExportedGame = Omit<Game, 'script'> & {
   scriptId?: string;
   scriptRoleIds?: string[];
+  scriptRoleOverrides?: Role[];
 };
 
 type ExportedGameData = Omit<GameData, 'games'> & {
@@ -57,9 +69,8 @@ export function parseBackup(value: string): GameData {
 
 function normalizeForExport(data: GameData): ExportedGameData {
   const scripts = [...data.scripts];
-  const roleCatalog = [...data.roleCatalog];
+  const roleCatalog = data.roleCatalog.filter((role) => !isOfficialRole(role));
   const scriptsById = new Map(scripts.map((script) => [script.id, script]));
-  const rolesById = new Map(roleCatalog.map((role) => [role.id, role]));
 
   for (const game of data.games) {
     const script = game.script;
@@ -70,13 +81,6 @@ function normalizeForExport(data: GameData): ExportedGameData {
     if (!scriptsById.has(script.id)) {
       scripts.push(script);
       scriptsById.set(script.id, script);
-    }
-
-    const storedScript = scriptsById.get(script.id);
-    for (const role of script.roles) {
-      if (!storedScript?.roles.some((storedRole) => storedRole.id === role.id)) {
-        addRoleIfMissing(roleCatalog, rolesById, role);
-      }
     }
   }
 
@@ -99,11 +103,17 @@ function exportGame(game: Game, scriptsById: Map<string, StoredScript>): Exporte
     storedScript && sameRoleIds(script.roles, storedScript.roles)
       ? undefined
       : script.roles.map((role) => role.id);
+  const scriptRoleOverrides = storedScript
+    ? script.roles.filter(
+        (role) => !storedScript.roles.some((storedRole) => storedRole.id === role.id),
+      )
+    : undefined;
 
   return {
     ...gameWithoutScript,
     scriptId: script.id,
     ...(scriptRoleIds ? { scriptRoleIds } : {}),
+    ...(scriptRoleOverrides?.length ? { scriptRoleOverrides } : {}),
   };
 }
 
@@ -123,16 +133,17 @@ function restoreExportedData(data: ExportedGameData): GameData {
   return {
     ...data,
     games: data.games.map((game) => {
-      const { scriptId, scriptRoleIds, ...gameWithoutScriptReference } = game;
+      const { scriptId, scriptRoleIds, scriptRoleOverrides, ...gameWithoutScriptReference } = game;
       const script = scriptId ? scriptsById.get(scriptId) : undefined;
 
       if (!script) {
         return gameWithoutScriptReference;
       }
 
+      const overrideRolesById = new Map((scriptRoleOverrides ?? []).map((role) => [role.id, role]));
       const roles = scriptRoleIds
         ? scriptRoleIds.flatMap((roleId) => {
-            const role = rolesById.get(roleId);
+            const role = overrideRolesById.get(roleId) ?? rolesById.get(roleId);
             return role ? [role] : [];
           })
         : script.roles;
@@ -145,13 +156,8 @@ function restoreExportedData(data: ExportedGameData): GameData {
   };
 }
 
-function addRoleIfMissing(roles: Role[], rolesById: Map<string, Role>, role: Role) {
-  if (rolesById.has(role.id)) {
-    return;
-  }
-
-  roles.push(role);
-  rolesById.set(role.id, role);
+function isOfficialRole(role: Role) {
+  return officialRoleEditions.has(role.edition?.trim().toLocaleLowerCase() ?? '');
 }
 
 function sameRoleIds(first: Role[], second: Role[]) {

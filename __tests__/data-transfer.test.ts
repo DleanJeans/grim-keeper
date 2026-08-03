@@ -58,8 +58,8 @@ describe('data transfer', () => {
   });
 
   it('preserves game-specific script roles with compact role references', () => {
-    const baseRole: Role = { id: 'washerwoman', name: 'Washerwoman' };
-    const travelerRole: Role = { id: 'gunslinger', name: 'Gunslinger' };
+    const baseRole: Role = { edition: 'tb', id: 'washerwoman', name: 'Washerwoman' };
+    const travelerRole: Role = { edition: 'tb', id: 'gunslinger', name: 'Gunslinger' };
     const script: StoredScript = {
       id: 'script-1',
       name: 'Trouble Brewing',
@@ -76,7 +76,13 @@ describe('data transfer', () => {
       conversations: [],
       script: { ...script, roles: [baseRole, travelerRole] },
     };
-    const gameData = { ...data, games: [game], roleCatalog: [travelerRole], scripts: [script] };
+    const customRole: Role = { edition: 'homebrew', id: 'custom', name: 'Custom' };
+    const gameData = {
+      ...data,
+      games: [game],
+      roleCatalog: [travelerRole, customRole],
+      scripts: [script],
+    };
 
     const backup = JSON.parse(createBackup(gameData));
     const restoredGame = parseBackup(JSON.stringify(backup)).games[0];
@@ -84,7 +90,9 @@ describe('data transfer', () => {
     expect(backup.data.games[0]).toMatchObject({
       scriptId: 'script-1',
       scriptRoleIds: ['washerwoman', 'gunslinger'],
+      scriptRoleOverrides: [travelerRole],
     });
+    expect(backup.data.roleCatalog).toEqual([customRole]);
     expect(restoredGame.script?.roles.map((role) => role.id)).toEqual([
       'washerwoman',
       'gunslinger',
