@@ -21,9 +21,20 @@ import type {
   StoredScript,
 } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
-import { addMissingFriends, getFriendSummaries, hasFriendName } from '@/utils/friend-utils';
+import {
+  addMissingFriends,
+  getFriendByName,
+  getFriendSummaries,
+  hasFriendName,
+} from '@/utils/friend-utils';
 import { clampMapHeight, getDefaultTokenSize, getTokenSize } from '@/utils/layout-utils';
-import { createFriendId, createGameId, createScriptId, migrateObjectIds } from '@/utils/object-id';
+import {
+  createFriendId,
+  createGameId,
+  createScriptId,
+  mapGamePlayerIdsToFriendIds,
+  migrateObjectIds,
+} from '@/utils/object-id';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 import {
   getNotesForPlayer,
@@ -232,7 +243,9 @@ export const useGameStore = create<GameState>()(
             );
             const changed = players.some((player, index) => player !== game.players[index]);
 
-            return changed ? { ...game, players, updatedAt } : game;
+            return changed
+              ? mapGamePlayerIdsToFriendIds({ ...game, players, updatedAt }, friends)
+              : game;
           });
           const savedNotes = state.savedNotes.map((note) =>
             normalizePlayerName(note.playerName).toLocaleLowerCase() === currentKey
@@ -252,12 +265,25 @@ export const useGameStore = create<GameState>()(
         const otherPlayerNames = playerNames.filter(
           (name) => normalizePlayerName(name).toLocaleLowerCase() !== appUserKey,
         );
-        const players = [appUserName, ...otherPlayerNames].map<Player>((name, index) => ({
-          id: createId('player'),
-          isAppUser: index === 0,
-          name: normalizePlayerName(name),
-          seat: index,
-        }));
+        const friends = addMissingFriends(get().friends, otherPlayerNames, now);
+        const friendIdsByName = new Map(
+          friends.map((friend) => [
+            normalizePlayerName(friend.name).toLocaleLowerCase(),
+            friend.id,
+          ]),
+        );
+        const players = [appUserName, ...otherPlayerNames].map<Player>((name, index) => {
+          const normalizedName = normalizePlayerName(name);
+
+          return {
+            id:
+              (index === 0 ? undefined : friendIdsByName.get(normalizedName.toLocaleLowerCase())) ??
+              createId('player'),
+            isAppUser: index === 0,
+            name: normalizedName,
+            seat: index,
+          };
+        });
         const normalizedMapWidth = Math.max(1, Math.round(mapWidth));
         const normalizedMapHeight = clampMapHeight(mapHeight);
         const game: Game = {
@@ -281,7 +307,6 @@ export const useGameStore = create<GameState>()(
 
         set((state) => {
           const games = [game, ...state.games];
-          const friends = addMissingFriends(state.friends, otherPlayerNames, now);
 
           return {
             games,
@@ -398,36 +423,42 @@ export const useGameStore = create<GameState>()(
           return;
         }
 
-        set((state) => ({
-          games: state.games.map((game) => {
-            if (game.id !== gameId) {
-              return game;
-            }
+        set((state) => {
+          const game = state.games.find((existingGame) => existingGame.id === gameId);
 
-            const hasDuplicate = game.players.some(
+          if (
+            !game ||
+            game.players.some(
               (player) =>
                 normalizePlayerName(player.name).toLocaleLowerCase() ===
                 normalizedName.toLocaleLowerCase(),
-            );
+            )
+          ) {
+            return state;
+          }
 
-            if (hasDuplicate) {
-              return game;
-            }
+          const updatedAt = new Date().toISOString();
+          const friends = addMissingFriends(state.friends, [normalizedName], updatedAt);
+          const friend = getFriendByName(friends, normalizedName);
+          const games = state.games.map((existingGame) =>
+            existingGame.id === gameId
+              ? {
+                  ...existingGame,
+                  updatedAt,
+                  players: [
+                    ...existingGame.players,
+                    {
+                      id: friend?.id ?? createId('player'),
+                      name: normalizedName,
+                      seat: Math.max(-1, ...existingGame.players.map((player) => player.seat)) + 1,
+                    },
+                  ],
+                }
+              : existingGame,
+          );
 
-            return {
-              ...game,
-              updatedAt: new Date().toISOString(),
-              players: [
-                ...game.players,
-                {
-                  id: createId('player'),
-                  name: normalizedName,
-                  seat: Math.max(-1, ...game.players.map((player) => player.seat)) + 1,
-                },
-              ],
-            };
-          }),
-        }));
+          return { friends, games };
+        });
       },
       deleteGame: (gameId) => {
         set((state) => ({

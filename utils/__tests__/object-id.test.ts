@@ -73,6 +73,51 @@ describe('object IDs', () => {
     });
   });
 
+  it('maps existing player IDs to friend IDs and keeps references in sync', () => {
+    const game: Game = {
+      id: 'game-old',
+      activeDay: 1,
+      createdAt: '2026-07-15T10:20:00.000Z',
+      updatedAt: '2026-07-15T10:20:00.000Z',
+      players: [
+        { id: 'player-app', isAppUser: true, name: 'Keeper', seat: 0 },
+        { id: 'player-andy', name: 'Andy', seat: 1 },
+      ],
+      conversations: [
+        {
+          id: 'conversation-1',
+          day: 1,
+          participantIds: ['player-app', 'player-andy'],
+          initiatorId: 'player-andy',
+          voterIds: ['player-andy'],
+          createdAt: '2026-07-15T10:20:00.000Z',
+        },
+      ],
+      playerDayNotes: [
+        {
+          day: 1,
+          playerId: 'player-andy',
+          notes: [],
+          updatedAt: '2026-07-15T10:20:00.000Z',
+        },
+      ],
+    };
+
+    const result = migrateObjectIds({
+      friends: [{ id: 'friend-old', name: 'Andy', createdAt: game.createdAt }],
+      games: [game],
+    });
+    const migratedGame = result.games?.[0];
+
+    expect(migratedGame?.players.map((player) => player.id)).toEqual(['player-app', 'andy']);
+    expect(migratedGame?.conversations[0]).toMatchObject({
+      initiatorId: 'andy',
+      participantIds: ['player-app', 'andy'],
+      voterIds: ['andy'],
+    });
+    expect(migratedGame?.playerDayNotes?.[0].playerId).toBe('andy');
+  });
+
   it('preserves a game ID while its script is waiting for a redownload', () => {
     const game: Game = {
       id: 'extension-cord-202607151020',

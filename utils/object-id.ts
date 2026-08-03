@@ -1,4 +1,5 @@
 import type { Friend, Game, SavedNote, StoredScript } from '@/types/game';
+import { normalizePlayerName } from '@/utils/conversation-utils';
 
 const OFFICIAL_SCRIPT_AUTHOR = 'The Pandemonium Institute';
 
@@ -21,6 +22,139 @@ export function createScriptId(
       : name;
 
   return makeUniqueId(baseId, usedIds);
+}
+
+export function addMissingFriendsForGames(
+  friends: Friend[],
+  games: Game[],
+  appUserName?: string,
+): Friend[] {
+  const nextFriends = [...friends];
+  const friendNames = new Set(
+    nextFriends.map((friend) => normalizePlayerName(friend.name).toLocaleLowerCase()),
+  );
+  const appUserKey = normalizePlayerName(appUserName ?? '').toLocaleLowerCase();
+
+  for (const game of games) {
+    for (const player of game.players) {
+      const name = normalizePlayerName(player.name);
+      const nameKey = name.toLocaleLowerCase();
+
+      if (!name || player.isAppUser || nameKey === appUserKey || friendNames.has(nameKey)) {
+        continue;
+      }
+
+      friendNames.add(nameKey);
+      nextFriends.push({
+        id: createFriendId(
+          name,
+          nextFriends.map((friend) => friend.id),
+        ),
+        name,
+        createdAt: game.createdAt,
+      });
+    }
+  }
+
+  return nextFriends;
+}
+
+export function mapGamePlayerIdsToFriendIds(
+  game: Game,
+  friends: Friend[],
+  appUserName?: string,
+): Game {
+  const friendIdsByName = new Map<string, string>();
+  const duplicateFriendNames = new Set<string>();
+
+  for (const friend of friends) {
+    const nameKey = normalizePlayerName(friend.name).toLocaleLowerCase();
+
+    if (!nameKey) {
+      continue;
+    }
+
+    if (friendIdsByName.has(nameKey)) {
+      duplicateFriendNames.add(nameKey);
+      continue;
+    }
+
+    friendIdsByName.set(nameKey, friend.id);
+  }
+
+  const playerIds = new Set(game.players.map((player) => player.id));
+  const candidateCounts = new Map<string, number>();
+  const candidates = new Map<string, string>();
+  const appUserKey = normalizePlayerName(appUserName ?? '').toLocaleLowerCase();
+
+  for (const player of game.players) {
+    if (player.isAppUser || normalizePlayerName(player.name).toLocaleLowerCase() === appUserKey) {
+      continue;
+    }
+
+    const nameKey = normalizePlayerName(player.name).toLocaleLowerCase();
+    const friendId = friendIdsByName.get(nameKey);
+
+    if (
+      !friendId ||
+      duplicateFriendNames.has(nameKey) ||
+      (friendId !== player.id && playerIds.has(friendId))
+    ) {
+      continue;
+    }
+
+    candidates.set(player.id, friendId);
+    candidateCounts.set(friendId, (candidateCounts.get(friendId) ?? 0) + 1);
+  }
+
+  const playerIdMap = new Map(
+    [...candidates].filter(([, friendId]) => candidateCounts.get(friendId) === 1),
+  );
+
+  if (playerIdMap.size === 0) {
+    return game;
+  }
+
+  const mapPlayerId = (playerId: string) => playerIdMap.get(playerId) ?? playerId;
+
+  return {
+    ...game,
+    players: game.players.map((player) => ({
+      ...player,
+      id: mapPlayerId(player.id),
+      death: player.death
+        ? {
+            ...player.death,
+            ...(player.death.killerPlayerId !== undefined
+              ? { killerPlayerId: mapPlayerId(player.death.killerPlayerId) }
+              : {}),
+            ...(player.death.killerPlayerIds
+              ? { killerPlayerIds: player.death.killerPlayerIds.map(mapPlayerId) }
+              : {}),
+          }
+        : undefined,
+      roleAssignments: player.roleAssignments?.map((assignment) => ({
+        ...assignment,
+        ...(assignment.subjectPlayerId !== undefined
+          ? { subjectPlayerId: mapPlayerId(assignment.subjectPlayerId) }
+          : {}),
+      })),
+    })),
+    conversations: game.conversations.map((conversation) => ({
+      ...conversation,
+      bigWigPlayerId:
+        conversation.bigWigPlayerId !== undefined
+          ? mapPlayerId(conversation.bigWigPlayerId)
+          : undefined,
+      initiatorId: mapPlayerId(conversation.initiatorId),
+      participantIds: conversation.participantIds.map(mapPlayerId),
+      voterIds: conversation.voterIds?.map(mapPlayerId),
+    })),
+    playerDayNotes: game.playerDayNotes?.map((entry) => ({
+      ...entry,
+      playerId: mapPlayerId(entry.playerId),
+    })),
+  };
 }
 
 export function migrateObjectIds(state: Partial<GameDataShape>): Partial<GameDataShape> {
@@ -51,27 +185,36 @@ export function migrateObjectIds(state: Partial<GameDataShape>): Partial<GameDat
   }
 
   const usedFriendIds: string[] = [];
-  const friends = state.friends?.map((friend) => {
+  const normalizedFriends = state.friends?.map((friend) => {
     const id = createFriendId(friend.name, usedFriendIds);
     usedFriendIds.push(id);
     return { ...friend, id };
   });
+  const friends = normalizedFriends
+    ? addMissingFriendsForGames(normalizedFriends, state.games ?? [], state.appUserName)
+    : undefined;
   const scripts = state.scripts?.map((script) => ({
     ...script,
     id: scriptIds.get(script.id) ?? script.id,
   }));
-  const games = state.games?.map((game) => ({
-    ...game,
-    id: gameIds.get(game.id) ?? game.id,
-    scriptId: game.scriptId
-      ? (scriptIds.get(game.scriptId) ?? game.scriptId)
-      : game.script
-        ? (scriptIds.get(game.script.id) ?? game.script.id)
-        : undefined,
-    script: game.script
-      ? { ...game.script, id: scriptIds.get(game.script.id) ?? game.script.id }
-      : undefined,
-  }));
+  const games = state.games?.map((game) =>
+    mapGamePlayerIdsToFriendIds(
+      {
+        ...game,
+        id: gameIds.get(game.id) ?? game.id,
+        scriptId: game.scriptId
+          ? (scriptIds.get(game.scriptId) ?? game.scriptId)
+          : game.script
+            ? (scriptIds.get(game.script.id) ?? game.script.id)
+            : undefined,
+        script: game.script
+          ? { ...game.script, id: scriptIds.get(game.script.id) ?? game.script.id }
+          : undefined,
+      },
+      friends ?? [],
+      state.appUserName,
+    ),
+  );
   const savedNotes = state.savedNotes?.map((note) => ({
     ...note,
     gameId: gameIds.get(note.gameId) ?? note.gameId,
@@ -82,6 +225,7 @@ export function migrateObjectIds(state: Partial<GameDataShape>): Partial<GameDat
 }
 
 type GameDataShape = {
+  appUserName?: string;
   friends: Friend[];
   games: Game[];
   savedNotes: SavedNote[];

@@ -16,6 +16,83 @@ describe('data transfer', () => {
     expect(parseBackup(createBackup(data))).toEqual(data);
   });
 
+  it('uses friend IDs for players and remaps player references', () => {
+    const friends = [
+      { id: 'alice', name: 'Alice', createdAt: '2026-08-03T00:00:00.000Z' },
+      { id: 'bob', name: 'Bob', createdAt: '2026-08-03T00:00:00.000Z' },
+    ];
+    const game: Game = {
+      id: 'game-1',
+      activeDay: 1,
+      createdAt: '2026-08-03T00:00:00.000Z',
+      updatedAt: '2026-08-03T00:00:00.000Z',
+      players: [
+        { id: 'player-app', isAppUser: true, name: 'Keeper', seat: 0 },
+        {
+          id: 'player-alice',
+          name: 'Alice',
+          seat: 1,
+          death: {
+            day: 1,
+            kind: 'night',
+            updatedAt: '2026-08-03T00:00:00.000Z',
+            killerPlayerId: 'player-bob',
+            killerPlayerIds: ['player-bob'],
+          },
+          roleAssignments: [
+            {
+              day: 1,
+              kind: 'rumor',
+              roleIds: [],
+              subjectPlayerId: 'player-bob',
+              updatedAt: '2026-08-03T00:00:00.000Z',
+            },
+          ],
+        },
+        { id: 'player-bob', name: 'Bob', seat: 2 },
+      ],
+      conversations: [
+        {
+          id: 'conversation-1',
+          day: 1,
+          participantIds: ['player-app', 'player-alice', 'player-bob'],
+          initiatorId: 'player-alice',
+          voterIds: ['player-bob'],
+          bigWigPlayerId: 'player-alice',
+          createdAt: '2026-08-03T00:00:00.000Z',
+        },
+      ],
+      playerDayNotes: [
+        {
+          day: 1,
+          playerId: 'player-alice',
+          notes: [],
+          updatedAt: '2026-08-03T00:00:00.000Z',
+        },
+      ],
+    };
+
+    const backup = JSON.parse(createBackup({ ...data, friends, games: [game] }));
+    const exportedGame = backup.data.games[0];
+
+    expect(exportedGame.players.map((player: { id: string }) => player.id)).toEqual([
+      'player-app',
+      'alice',
+      'bob',
+    ]);
+    expect(exportedGame.players[1]).toMatchObject({
+      death: { killerPlayerId: 'bob', killerPlayerIds: ['bob'] },
+      roleAssignments: [{ subjectPlayerId: 'bob' }],
+    });
+    expect(exportedGame.conversations[0]).toMatchObject({
+      bigWigPlayerId: 'alice',
+      initiatorId: 'alice',
+      participantIds: ['player-app', 'alice', 'bob'],
+      voterIds: ['bob'],
+    });
+    expect(exportedGame.playerDayNotes[0].playerId).toBe('alice');
+  });
+
   it('rejects unrelated JSON', () => {
     expect(() => parseBackup('{"games":[]}')).toThrow(
       'This is not a supported Grim Keeper backup.',

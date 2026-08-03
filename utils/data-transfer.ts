@@ -1,5 +1,6 @@
 import type { GameData } from '@/store/game-store';
 import type { Game, Role, StoredScript } from '@/types/game';
+import { addMissingFriendsForGames, mapGamePlayerIdsToFriendIds } from '@/utils/object-id';
 
 const backupFormat = 'grim-keeper-backup';
 const backupVersion = 2;
@@ -77,8 +78,12 @@ function normalizeForExport(data: GameData): ExportedGameData {
   );
   const roleCatalog = data.roleCatalog.filter((role) => !isOfficialRole(role));
   const scriptsById = new Map(data.scripts.map((script) => [script.id, script]));
+  const friends = addMissingFriendsForGames(data.friends, data.games, data.appUserName);
+  const games = data.games.map((game) =>
+    mapGamePlayerIdsToFriendIds(game, friends, data.appUserName),
+  );
 
-  for (const game of data.games) {
+  for (const game of games) {
     const script = game.script;
     if (!script) {
       continue;
@@ -92,7 +97,8 @@ function normalizeForExport(data: GameData): ExportedGameData {
 
   return {
     ...data,
-    games: data.games.map((game) => exportGame(game, scriptsById)),
+    friends,
+    games: games.map((game) => exportGame(game, scriptsById)),
     roleCatalog,
     scripts,
   };

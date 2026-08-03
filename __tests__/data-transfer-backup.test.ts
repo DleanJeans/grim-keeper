@@ -23,7 +23,12 @@ describe('backup export integration', () => {
     const compactOutput = createBackup(sourceData);
     const exported = JSON.parse(compactOutput) as {
       data: {
-        games: Array<{ script?: unknown; scriptId?: string }>;
+        appUserName: string;
+        games: Array<{
+          players: Array<{ id: string; isAppUser?: boolean; name: string }>;
+          script?: unknown;
+          scriptId?: string;
+        }>;
         roleCatalog: Array<{ edition?: string }>;
         scripts: Array<unknown>;
       };
@@ -37,6 +42,16 @@ describe('backup export integration', () => {
     expect(exported.data.roleCatalog).toEqual([]);
     expect(exported.data.games.filter((game) => game.scriptId)).not.toHaveLength(0);
     expect(exported.data.games.every((game) => game.script === undefined)).toBe(true);
+    expect(
+      exported.data.games.every((game) =>
+        game.players.every(
+          (player) =>
+            player.isAppUser ||
+            player.name === exported.data.appUserName ||
+            !player.id.startsWith('player-'),
+        ),
+      ),
+    ).toBe(true);
     expect(exported.data.scripts.some((script) => typeof script === 'string')).toBe(true);
     expect(exported.data.scripts.some((script) => typeof script === 'object')).toBe(true);
     expect(parseBackup(output).games).toHaveLength(sourceData.games.length);
