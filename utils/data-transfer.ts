@@ -4,6 +4,7 @@ import type { Game, Role, StoredScript } from '@/types/game';
 const backupFormat = 'grim-keeper-backup';
 const backupVersion = 2;
 const legacyBackupVersion = 1;
+const officialScriptAuthor = 'The Pandemonium Institute';
 const officialRoleEditions = new Set([
   'bad moon rising',
   'bmr',
@@ -29,9 +30,12 @@ type ExportedGame = Omit<Game, 'script'> & {
   scriptRoleOverrides?: Role[];
 };
 
-type ExportedGameData = Omit<GameData, 'games'> & {
+type ExportedGameData = Omit<GameData, 'games' | 'scripts'> & {
   games: ExportedGame[];
+  scripts: ExportedScript[];
 };
+
+type ExportedScript = StoredScript | string;
 
 export function createBackup(data: GameData) {
   const exportedData = normalizeForExport(data);
@@ -68,9 +72,11 @@ export function parseBackup(value: string): GameData {
 }
 
 function normalizeForExport(data: GameData): ExportedGameData {
-  const scripts = [...data.scripts];
+  const scripts: ExportedScript[] = data.scripts.map((script) =>
+    isImportedScript(script) ? script : script.id,
+  );
   const roleCatalog = data.roleCatalog.filter((role) => !isOfficialRole(role));
-  const scriptsById = new Map(scripts.map((script) => [script.id, script]));
+  const scriptsById = new Map(data.scripts.map((script) => [script.id, script]));
 
   for (const game of data.games) {
     const script = game.script;
@@ -79,7 +85,7 @@ function normalizeForExport(data: GameData): ExportedGameData {
     }
 
     if (!scriptsById.has(script.id)) {
-      scripts.push(script);
+      scripts.push(isImportedScript(script) ? script : script.id);
       scriptsById.set(script.id, script);
     }
   }
@@ -118,13 +124,18 @@ function exportGame(game: Game, scriptsById: Map<string, StoredScript>): Exporte
 }
 
 function restoreExportedData(data: ExportedGameData): GameData {
-  const scriptsById = new Map(data.scripts.map((script) => [script.id, script]));
+  const storedScripts = data.scripts.map((script) =>
+    typeof script === 'string' ? createScriptPlaceholder(script) : script,
+  );
+  const scriptsById = new Map(
+    storedScripts.filter((script) => script.roles.length > 0).map((script) => [script.id, script]),
+  );
   const rolesById = new Map<string, Role>();
 
   for (const role of data.roleCatalog) {
     rolesById.set(role.id, role);
   }
-  for (const script of data.scripts) {
+  for (const script of storedScripts) {
     for (const role of script.roles) {
       rolesById.set(role.id, role);
     }
@@ -132,12 +143,18 @@ function restoreExportedData(data: ExportedGameData): GameData {
 
   return {
     ...data,
+    scripts: storedScripts,
     games: data.games.map((game) => {
       const { scriptId, scriptRoleIds, scriptRoleOverrides, ...gameWithoutScriptReference } = game;
       const script = scriptId ? scriptsById.get(scriptId) : undefined;
 
       if (!script) {
-        return gameWithoutScriptReference;
+        return {
+          ...gameWithoutScriptReference,
+          ...(scriptId ? { scriptId } : {}),
+          ...(scriptRoleIds ? { scriptRoleIds } : {}),
+          ...(scriptRoleOverrides?.length ? { scriptRoleOverrides } : {}),
+        };
       }
 
       const overrideRolesById = new Map((scriptRoleOverrides ?? []).map((role) => [role.id, role]));
@@ -150,9 +167,33 @@ function restoreExportedData(data: ExportedGameData): GameData {
 
       return {
         ...gameWithoutScriptReference,
+        ...(scriptId ? { scriptId } : {}),
         script: { ...script, roles: [...roles] },
       };
     }),
+  };
+}
+
+function isImportedScript(script: StoredScript) {
+  return (
+    script.roles.length > 0 &&
+    script.remoteId === undefined &&
+    script.author !== officialScriptAuthor
+  );
+}
+
+function createScriptPlaceholder(id: string): StoredScript {
+  const remoteIdMatch = /^(\d+)-/.exec(id);
+  const remoteId = remoteIdMatch ? Number(remoteIdMatch[1]) : undefined;
+  const name = remoteIdMatch ? id.slice(remoteIdMatch[0].length) : id;
+
+  return {
+    id,
+    name,
+    remoteId,
+    roles: [],
+    updatedAt: '',
+    version: '',
   };
 }
 

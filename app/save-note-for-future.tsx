@@ -74,7 +74,7 @@ export default function SaveNoteForFutureScreen() {
   const playerName = player.name;
   const canRemove = !!savedNote || legacyRoleIds.length > 0;
   const noteGameId = game.id;
-  const noteScriptId = game.script?.id;
+  const noteScriptId = game.scriptId ?? game.script?.id;
 
   function handleToggleRole(roleId: string) {
     setSelectedRoleIds((currentRoleIds) =>

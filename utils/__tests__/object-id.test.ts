@@ -72,4 +72,31 @@ describe('object IDs', () => {
       scriptId: '42-extension-cord',
     });
   });
+
+  it('preserves a game ID while its script is waiting for a redownload', () => {
+    const game: Game = {
+      id: 'extension-cord-202607151020',
+      activeDay: 1,
+      createdAt: '2026-07-15T10:20:00.000Z',
+      updatedAt: '2026-07-15T10:20:00.000Z',
+      players: [],
+      conversations: [],
+      scriptId: '947-extension-cord',
+    };
+    const placeholder: StoredScript = {
+      id: '947-extension-cord',
+      name: 'Extension Cord',
+      remoteId: 947,
+      roles: [],
+      updatedAt: '',
+      version: '',
+    };
+
+    const result = migrateObjectIds({ games: [game], scripts: [placeholder] });
+
+    expect(result.games?.[0]).toMatchObject({
+      id: game.id,
+      scriptId: placeholder.id,
+    });
+  });
 });

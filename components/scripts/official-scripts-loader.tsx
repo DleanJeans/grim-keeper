@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { useGameStore } from '@/store/game-store';
 import {
@@ -10,22 +10,35 @@ import {
   OFFICIAL_CAROUSEL_SCRIPT_ID,
 } from '@/utils/script-service';
 
+const OFFICIAL_SCRIPT_IDS = [
+  'trouble-brewing',
+  'sects-and-violets',
+  'bad-moon-rising',
+  OFFICIAL_CAROUSEL_SCRIPT_ID,
+];
+
 export function OfficialScriptsLoader() {
-  const startedRef = useRef(false);
+  const scripts = useGameStore((state) => state.scripts);
+  const loadingRef = useRef(false);
+  const activeRef = useRef(true);
+
+  const startLoading = useCallback(() => {
+    if (loadingRef.current || !needsOfficialScripts(useGameStore.getState().scripts)) {
+      return;
+    }
+
+    loadingRef.current = true;
+    void loadOfficialScripts(() => activeRef.current)
+      .catch(() => {
+        // Startup seeding is best effort; the Scripts screen can retry manually.
+      })
+      .finally(() => {
+        loadingRef.current = false;
+      });
+  }, []);
 
   useEffect(() => {
-    let active = true;
-
-    function startLoading() {
-      if (startedRef.current) {
-        return;
-      }
-
-      startedRef.current = true;
-      void loadOfficialScripts(() => active).catch(() => {
-        // Startup seeding is best effort; the Scripts screen can retry manually.
-      });
-    }
+    activeRef.current = true;
 
     if (useGameStore.persist.hasHydrated()) {
       startLoading();
@@ -33,19 +46,29 @@ export function OfficialScriptsLoader() {
       const unsubscribe = useGameStore.persist.onFinishHydration(startLoading);
 
       return () => {
-        active = false;
-        startedRef.current = false;
+        activeRef.current = false;
         unsubscribe();
       };
     }
 
     return () => {
-      active = false;
-      startedRef.current = false;
+      activeRef.current = false;
     };
-  }, []);
+  }, [startLoading]);
+
+  useEffect(() => {
+    if (useGameStore.persist.hasHydrated() && needsOfficialScripts(scripts)) {
+      startLoading();
+    }
+  }, [scripts, startLoading]);
 
   return null;
+}
+
+function needsOfficialScripts(scripts: ReturnType<typeof useGameStore.getState>['scripts']) {
+  return OFFICIAL_SCRIPT_IDS.some(
+    (scriptId) => !scripts.some((script) => script.id === scriptId && script.roles.length > 0),
+  );
 }
 
 async function loadOfficialScripts(isActive: () => boolean) {
@@ -100,9 +123,13 @@ async function loadOfficialScripts(isActive: () => boolean) {
 }
 
 function hasStoredRemoteScript(remoteId: number) {
-  return useGameStore.getState().scripts.some((script) => script.remoteId === remoteId);
+  return useGameStore
+    .getState()
+    .scripts.some((script) => script.remoteId === remoteId && script.roles.length > 0);
 }
 
 function hasStoredScript(scriptId: string) {
-  return useGameStore.getState().scripts.some((script) => script.id === scriptId);
+  return useGameStore
+    .getState()
+    .scripts.some((script) => script.id === scriptId && script.roles.length > 0);
 }

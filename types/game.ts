@@ -123,6 +123,9 @@ export type Game = {
   players: Player[];
   conversations: Conversation[];
   lorics?: Role[];
+  scriptId?: string;
+  scriptRoleIds?: string[];
+  scriptRoleOverrides?: Role[];
   script?: StoredScript;
   playerDayNotes?: PlayerDayNote[];
 };

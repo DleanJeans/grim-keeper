@@ -42,7 +42,10 @@ export function migrateObjectIds(state: Partial<GameDataShape>): Partial<GameDat
   const gameIds = new Map<string, string>();
   const usedGameIds: string[] = [];
   for (const game of state.games ?? []) {
-    const nextId = createGameId(game.script?.name, game.createdAt, usedGameIds);
+    const nextId =
+      !game.script && game.scriptId !== undefined
+        ? game.id
+        : createGameId(game.script?.name, game.createdAt, usedGameIds);
     gameIds.set(game.id, nextId);
     usedGameIds.push(nextId);
   }
@@ -60,6 +63,11 @@ export function migrateObjectIds(state: Partial<GameDataShape>): Partial<GameDat
   const games = state.games?.map((game) => ({
     ...game,
     id: gameIds.get(game.id) ?? game.id,
+    scriptId: game.scriptId
+      ? (scriptIds.get(game.scriptId) ?? game.scriptId)
+      : game.script
+        ? (scriptIds.get(game.script.id) ?? game.script.id)
+        : undefined,
     script: game.script
       ? { ...game.script, id: scriptIds.get(game.script.id) ?? game.script.id }
       : undefined,

@@ -61,7 +61,8 @@ export function resolveScriptName(
   gameId: string | undefined,
 ): string {
   if (scriptId) {
-    const fromGame = state.games?.find((game) => game.script?.id === scriptId)?.script?.name;
+    const fromGame = state.games?.find((game) => (game.scriptId ?? game.script?.id) === scriptId)
+      ?.script?.name;
     if (fromGame) {
       return fromGame;
     }

@@ -275,6 +275,7 @@ export const useGameStore = create<GameState>()(
           players,
           conversations: [],
           lorics: lorics?.map((role) => ({ ...role })),
+          scriptId: script?.id,
           script: script ? { ...script, roles: [...script.roles] } : undefined,
         };
 
@@ -310,6 +311,7 @@ export const useGameStore = create<GameState>()(
 
           if (existingIndex < 0) {
             return {
+              games: updateGamesWithScript(state.games, normalizedScript, state.roleCatalog),
               scripts: [
                 ...state.scripts,
                 {
@@ -329,7 +331,10 @@ export const useGameStore = create<GameState>()(
               ...state.scripts[existingIndex].roles,
             ]),
           };
-          return { scripts };
+          return {
+            games: updateGamesWithScript(state.games, scripts[existingIndex], state.roleCatalog),
+            scripts,
+          };
         });
       },
       updateScript: (script) => {
@@ -350,6 +355,9 @@ export const useGameStore = create<GameState>()(
             game.id === gameId
               ? {
                   ...game,
+                  scriptId: script?.id,
+                  scriptRoleIds: undefined,
+                  scriptRoleOverrides: undefined,
                   script: script
                     ? {
                         ...script,
@@ -911,10 +919,10 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'grim-keeper-game-store-v1',
-      version: 5,
+      version: 6,
       storage: createJSONStorage(() => (Platform.OS === 'web' ? webStorage : localStorage)),
       migrate: (persistedState, version) => {
-        if (!persistedState || version >= 5) {
+        if (!persistedState || version >= 6) {
           return persistedState as Partial<GameState> | undefined;
         }
 
@@ -1020,6 +1028,32 @@ function migratePlayerDayNotes(state: Partial<GameState>): Partial<GameState> {
 
 function dedupeRoles(roles: Role[]) {
   return [...new Map(roles.map((role) => [role.id, role])).values()];
+}
+
+function updateGamesWithScript(games: Game[], script: StoredScript, roleCatalog: Role[]) {
+  return games.map((game) => {
+    const gameScriptId = game.scriptId ?? game.script?.id;
+    if (gameScriptId !== script.id) {
+      return game;
+    }
+
+    const existingRoles = [...(game.script?.roles ?? []), ...(game.scriptRoleOverrides ?? [])];
+    const additionalRoles = existingRoles.filter(
+      (role) => !script.roles.some((scriptRole) => scriptRole.id === role.id),
+    );
+    const roles = mergeRoleNotes(
+      [...script.roles, ...additionalRoles],
+      [...roleCatalog, ...existingRoles],
+    );
+
+    return {
+      ...game,
+      scriptId: script.id,
+      scriptRoleIds: undefined,
+      scriptRoleOverrides: undefined,
+      script: { ...script, roles },
+    };
+  });
 }
 
 function mergeRoleNotes(roles: Role[], sources: Role[]) {

@@ -17,7 +17,7 @@ export default function RoleNotesScreen() {
   const games = useGameStore((state) => state.games);
   const scripts = useGameStore((state) => state.scripts);
   const script = scripts.find((item) => item.id === scriptId);
-  const game = games.find((item) => item.script?.id === scriptId);
+  const game = games.find((item) => (item.scriptId ?? item.script?.id) === scriptId);
   const scriptRole = script?.roles.find((role) => role.id === roleId);
   const catalogRole = roleCatalog.find((role) => role.id === roleId);
   const genericRole = [...GENERIC_CHARACTER_TYPE_ROLE_REFERENCES, ...GENERIC_KILLER_ROLES].find(

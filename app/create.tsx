@@ -98,9 +98,9 @@ export default function CreateRoute() {
     if (scriptIdParam) {
       setDraftSelectedScriptId(scriptIdParam);
     } else if (isEditing) {
-      setDraftSelectedScriptId(editingGame?.script?.id ?? null);
+      setDraftSelectedScriptId(editingGame?.scriptId ?? editingGame?.script?.id ?? null);
     }
-  }, [editingGame?.script?.id, isEditing, scriptIdParam]);
+  }, [editingGame?.script?.id, editingGame?.scriptId, isEditing, scriptIdParam]);
 
   useEffect(() => {
     if (isEditing) {
