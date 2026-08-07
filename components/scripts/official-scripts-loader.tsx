@@ -8,6 +8,7 @@ import {
   fetchRemoteScriptContent,
   fetchRoleCatalog,
   OFFICIAL_CAROUSEL_SCRIPT_ID,
+  restoreRemoteScript,
 } from '@/utils/script-service';
 
 const OFFICIAL_SCRIPT_IDS = [
@@ -23,7 +24,7 @@ export function OfficialScriptsLoader() {
   const activeRef = useRef(true);
 
   const startLoading = useCallback(() => {
-    if (loadingRef.current || !needsOfficialScripts(useGameStore.getState().scripts)) {
+    if (loadingRef.current || !needsScriptRecovery(useGameStore.getState().scripts)) {
       return;
     }
 
@@ -57,7 +58,7 @@ export function OfficialScriptsLoader() {
   }, [startLoading]);
 
   useEffect(() => {
-    if (useGameStore.persist.hasHydrated() && needsOfficialScripts(scripts)) {
+    if (useGameStore.persist.hasHydrated() && needsScriptRecovery(scripts)) {
       startLoading();
     }
   }, [scripts, startLoading]);
@@ -68,6 +69,13 @@ export function OfficialScriptsLoader() {
 function needsOfficialScripts(scripts: ReturnType<typeof useGameStore.getState>['scripts']) {
   return OFFICIAL_SCRIPT_IDS.some(
     (scriptId) => !scripts.some((script) => script.id === scriptId && script.roles.length > 0),
+  );
+}
+
+function needsScriptRecovery(scripts: ReturnType<typeof useGameStore.getState>['scripts']) {
+  return (
+    needsOfficialScripts(scripts) ||
+    scripts.some((script) => script.remoteId !== undefined && script.roles.length === 0)
   );
 }
 
@@ -86,6 +94,10 @@ async function loadOfficialScripts(isActive: () => boolean) {
 
   const catalog =
     catalogResult.status === 'fulfilled' ? catalogResult.value : initialState.roleCatalog;
+
+  const downloadedScripts = initialState.scripts.filter(
+    (script) => script.remoteId !== undefined && script.roles.length === 0,
+  );
 
   if (initialState.roleCatalog.length === 0 && catalog.length > 0) {
     useGameStore.getState().setRoleCatalog(catalog);
@@ -109,6 +121,22 @@ async function loadOfficialScripts(isActive: () => boolean) {
       }
 
       useGameStore.getState().saveScript(createStoredScript(remoteScript, content, catalog));
+    }
+  }
+
+  for (const script of downloadedScripts) {
+    if (!isActive() || script.remoteId === undefined || hasStoredRemoteScript(script.remoteId)) {
+      continue;
+    }
+
+    try {
+      const restoredScript = await restoreRemoteScript(script, catalog);
+
+      if (isActive()) {
+        useGameStore.getState().saveScript(restoredScript);
+      }
+    } catch {
+      // A failed recovery can be retried when the Scripts screen or app restarts.
     }
   }
 

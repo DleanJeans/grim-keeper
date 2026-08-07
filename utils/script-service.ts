@@ -51,6 +51,27 @@ export async function fetchRemoteScriptContent(remoteId: number) {
   return response.json();
 }
 
+export async function restoreRemoteScript(
+  script: StoredScript,
+  catalog: Role[],
+): Promise<StoredScript> {
+  if (script.remoteId === undefined) {
+    throw new Error('The script does not have a remote ID.');
+  }
+
+  const content = await fetchRemoteScriptContent(script.remoteId);
+  const serializedContent = JSON.stringify(content);
+
+  if (serializedContent === undefined) {
+    throw new Error('The downloaded script content is invalid.');
+  }
+
+  return {
+    ...createHomebrewScript(serializedContent, catalog, script.id),
+    remoteId: script.remoteId,
+  };
+}
+
 export function createHomebrewScript(
   value: string,
   catalog: Role[],
