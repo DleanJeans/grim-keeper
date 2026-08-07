@@ -9,6 +9,7 @@ import {
   mapGamePlayerIdsToFriendIds,
   mapSavedNoteIds,
 } from '@/utils/object-id';
+import { restoreRedundantRoleImageUrl, stripRedundantRoleImageUrl } from '@/utils/script-storage';
 
 const backupFormat = 'grim-keeper-backup';
 const backupVersion = 2;
@@ -91,9 +92,13 @@ export function parseBackup(value: string): GameData {
 
 function normalizeForExport(data: GameData): ExportedGameData {
   const scripts: ExportedScript[] = data.scripts.map((script) =>
-    isImportedScript(script) ? script : script.id,
+    isImportedScript(script)
+      ? { ...script, roles: script.roles.map(stripRedundantRoleImageUrl) }
+      : script.id,
   );
-  const roleCatalog = data.roleCatalog.filter((role) => !isOfficialRole(role));
+  const roleCatalog = data.roleCatalog
+    .filter((role) => !isOfficialRole(role))
+    .map(stripRedundantRoleImageUrl);
   const scriptsById = new Map(data.scripts.map((script) => [script.id, script]));
   const friends = addMissingFriendsForGames(data.friends, data.games, data.appUserName);
   const usedNoteIds: string[] = [];
@@ -127,7 +132,11 @@ function normalizeForExport(data: GameData): ExportedGameData {
     }
 
     if (!scriptsById.has(script.id)) {
-      scripts.push(isImportedScript(script) ? script : script.id);
+      scripts.push(
+        isImportedScript(script)
+          ? { ...script, roles: script.roles.map(stripRedundantRoleImageUrl) }
+          : script.id,
+      );
       scriptsById.set(script.id, script);
     }
   }
@@ -181,15 +190,18 @@ function exportGame(game: Game, scriptsById: Map<string, StoredScript>): Exporte
 
 function restoreExportedData(data: ExportedGameData): GameData {
   const storedScripts = data.scripts.map((script) =>
-    typeof script === 'string' ? createScriptPlaceholder(script) : script,
+    typeof script === 'string'
+      ? createScriptPlaceholder(script)
+      : { ...script, roles: script.roles.map(restoreRedundantRoleImageUrl) },
   );
+  const roleCatalog = data.roleCatalog.map(restoreRedundantRoleImageUrl);
   const scriptsById = new Map(
     storedScripts.filter((script) => script.roles.length > 0).map((script) => [script.id, script]),
   );
   const rolesById = new Map<string, Role>();
   const friendNamesById = new Map(data.friends.map((friend) => [friend.id, friend.name]));
 
-  for (const role of data.roleCatalog) {
+  for (const role of roleCatalog) {
     rolesById.set(role.id, role);
   }
   for (const script of storedScripts) {
@@ -200,6 +212,7 @@ function restoreExportedData(data: ExportedGameData): GameData {
 
   return {
     ...data,
+    roleCatalog,
     scripts: storedScripts,
     games: data.games.map((game) => {
       const { lorics, scriptId, scriptRoleIds, scriptRoleOverrides, ...gameWithoutScript } = game;

@@ -46,6 +46,23 @@ export function restoreDuplicateScriptImages(games: Game[], scripts: StoredScrip
   });
 }
 
+export function stripRedundantRoleImageUrl(role: Role): Role {
+  if (role.imageUrls?.length === 1 && role.imageUrls[0] === role.imageUrl) {
+    const { imageUrl: _imageUrl, ...roleWithoutImageUrl } = role;
+    return roleWithoutImageUrl;
+  }
+
+  return role;
+}
+
+export function restoreRedundantRoleImageUrl(role: Role): Role {
+  if (role.imageUrl === undefined && role.imageUrls?.length === 1) {
+    return { ...role, imageUrl: role.imageUrls[0] };
+  }
+
+  return role;
+}
+
 function stripRoleImages(role: Role): Role {
   const { imageUrl, imageUrls, ...roleWithoutImages } = role;
   const remainingImageUrl = isDataImageUrl(imageUrl) ? undefined : imageUrl;

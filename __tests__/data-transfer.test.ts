@@ -241,7 +241,12 @@ describe('data transfer', () => {
   });
 
   it('exports imported scripts fully and BotC scripts as IDs', () => {
-    const role: Role = { id: 'imp', name: 'Imp' };
+    const role: Role = {
+      id: 'imp',
+      imageUrl: 'https://example.com/imp.webp',
+      imageUrls: ['https://example.com/imp.webp'],
+      name: 'Imp',
+    };
     const importedScript: StoredScript = {
       author: 'Homebrew Author',
       id: 'custom-script',
@@ -286,7 +291,14 @@ describe('data transfer', () => {
       }),
     );
 
-    expect(backup.data.scripts).toEqual([importedScript, downloadedScript.id, officialScript.id]);
+    expect(backup.data.scripts).toEqual([
+      {
+        ...importedScript,
+        roles: [{ ...role, imageUrl: undefined }],
+      },
+      downloadedScript.id,
+      officialScript.id,
+    ]);
     expect(backup.data.games[0]).toMatchObject({ scriptId: downloadedScript.id });
     expect(backup.data.games[0].script).toBeUndefined();
 
