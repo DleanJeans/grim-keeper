@@ -41,6 +41,11 @@ export function DayNoteRow({
     : undefined;
   const roles =
     roleAssignment && game.script ? getRolesByIds(roleAssignment.roleIds, game.script.roles) : [];
+  const guessAssignment = showRoles
+    ? getRoleAssignmentForDay(player.roleAssignments, day, 'guess')
+    : undefined;
+  const guessedRoles =
+    guessAssignment && game.script ? getRolesByIds(guessAssignment.roleIds, game.script.roles) : [];
   const rumorAboutThisPlayer =
     showRoles && game.script
       ? getRumorAboutPlayerForDay(game.players, player.id, day, game.script.roles)
@@ -76,6 +81,10 @@ export function DayNoteRow({
             roles={roles}
             scriptId={game.script?.id}
           />
+        ) : null}
+
+        {guessedRoles.length > 0 ? (
+          <PlayerNoteRoleAssignment kind="guess" roles={guessedRoles} scriptId={game.script?.id} />
         ) : null}
 
         {ownRumor.map((rumor) => {

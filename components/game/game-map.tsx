@@ -6,15 +6,20 @@ import {
 } from '@/components/game/connection-curve';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { PlayerToken } from '@/components/game/player-token';
-import type { Player, PlayerPosition, Role } from '@/types/game';
+import { colors } from '@/theme/colors';
+import type { Player, PlayerPosition, Role, RoleDisplayMode } from '@/types/game';
 import { buildConversationGroupRepeats, getConversationGroupKey } from '@/utils/conversation-utils';
 import { getPlayerMapPosition } from '@/utils/layout-utils';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
-import { getRoleDisplayForDayOrPrevious } from '@/utils/role-utils';
+import {
+  getLatestRumorMapDisplaysForDayOrPrevious,
+  getRoleDisplayForMode,
+} from '@/utils/role-utils';
 
 export function GameMap() {
   const {
     activeDay,
+    activeRoleDisplayMode,
     activeTab,
     conversations,
     disabledPlayerIds,
@@ -47,6 +52,10 @@ export function GameMap() {
   const selectedPlayerIdSet = new Set(highlightedPlayerIds);
   const showNominationCurves = activeTab === 'nominations';
   const showInteractionCurves = activeTab === 'interactions';
+  const showRumorCurves = activeTab === 'notes' && activeRoleDisplayMode === 'rumor' && showRoles;
+  const rumorMapDisplays = showRumorCurves
+    ? getLatestRumorMapDisplaysForDayOrPrevious(players, activeDay, game.script?.roles ?? [])
+    : [];
   const groupRepeats = buildConversationGroupRepeats(conversations, activeDay);
   const disabledPlayerIdSet = new Set(disabledPlayerIds);
   const activeDayNominations = conversations.filter(
@@ -146,6 +155,38 @@ export function GameMap() {
                   ];
                 });
               })}
+          {rumorMapDisplays.map(({ sourcePlayer, subjectPlayer }) => {
+            const fromPosition = positions.get(sourcePlayer.id);
+            const toPosition = positions.get(subjectPlayer.id);
+            if (!fromPosition || !toPosition) {
+              return null;
+            }
+
+            const involvesFocused =
+              focusedPlayerId !== null &&
+              (focusedPlayerId === sourcePlayer.id || focusedPlayerId === subjectPlayer.id);
+            const connectedToFocused = focusedPlayerId === null || involvesFocused;
+
+            return (
+              <ConnectionCurve
+                key={`rumor-${sourcePlayer.id}-${subjectPlayer.id}`}
+                blockers={players
+                  .filter(
+                    (player) => player.id !== sourcePlayer.id && player.id !== subjectPlayer.id,
+                  )
+                  .map((player) => positions.get(player.id))
+                  .filter((position): position is PlayerPosition => !!position)}
+                from={fromPosition}
+                mapHeight={mapHeight}
+                mapWidth={mapWidth}
+                opacity={connectedToFocused ? 0.82 : 0.18}
+                stroke={colors.roleRumor}
+                strokeWidth={4}
+                to={toPosition}
+                tokenSize={activeTokenSize}
+              />
+            );
+          })}
         </Svg>
 
         {players.map((player) => {
@@ -166,6 +207,7 @@ export function GameMap() {
             <PlayerTokenForMap
               key={player.id}
               activeDay={activeDay}
+              activeRoleDisplayMode={activeRoleDisplayMode}
               activeTokenSize={activeTokenSize}
               disabled={disabledPlayerIdSet.has(player.id)}
               gameRoles={game.script?.roles ?? []}
@@ -181,6 +223,7 @@ export function GameMap() {
               mapWidth={mapWidth}
               otherTokenPositions={otherTokenPositions}
               player={stripFutureAndRevivedDeath(player, activeDay)}
+              players={players}
               position={ownPosition}
               showRoles={showRoles}
             />
@@ -193,6 +236,7 @@ export function GameMap() {
 
 function PlayerTokenForMap({
   activeDay,
+  activeRoleDisplayMode,
   activeTokenSize,
   disabled,
   gameRoles,
@@ -208,10 +252,12 @@ function PlayerTokenForMap({
   mapWidth,
   otherTokenPositions,
   player,
+  players,
   position,
   showRoles,
 }: {
   activeDay: number;
+  activeRoleDisplayMode: RoleDisplayMode;
   activeTokenSize: number;
   disabled: boolean;
   gameRoles: Role[];
@@ -227,10 +273,17 @@ function PlayerTokenForMap({
   mapWidth: number;
   otherTokenPositions: { x: number; y: number }[];
   player: Player;
+  players: Player[];
   position: PlayerPosition;
   showRoles: boolean;
 }) {
-  const roleDisplay = getRoleDisplayForDayOrPrevious(player.roleAssignments, activeDay, gameRoles);
+  const roleDisplay = getRoleDisplayForMode(
+    player,
+    players,
+    activeDay,
+    gameRoles,
+    activeRoleDisplayMode,
+  );
 
   return (
     <PlayerToken

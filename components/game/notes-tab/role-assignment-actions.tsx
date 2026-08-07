@@ -1,15 +1,16 @@
-import { Megaphone, ShieldCheck, Tag } from 'lucide-react-native';
-import { Pressable, View } from 'react-native';
+import { CircleHelp, Megaphone, ShieldCheck, Tag } from 'lucide-react-native';
+import { View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { RolePicker } from '@/components/game/notes-tab/role-picker';
 import { TravelerRolePicker } from '@/components/game/notes-tab/traveler-role-picker';
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
+import { RoleAssignmentButton } from '@/components/game/role-assignment-button';
 import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import type { Player, Role } from '@/types/game';
+import type { Player, PlayerRoleAssignment, Role } from '@/types/game';
 import {
   GENERIC_CHARACTER_TYPE_ROLE_REFERENCES,
   getRoleDisplayForDayOrPrevious,
@@ -95,6 +96,12 @@ export function RoleAssignmentActions() {
           onPress={() => handleStartRoleAssignment('rumor')}
           selected={roleAssignmentKind === 'rumor'}
         />
+        <RoleAssignmentButton
+          icon={CircleHelp}
+          label="Guess"
+          onPress={() => handleStartRoleAssignment('guess')}
+          selected={roleAssignmentKind === 'guess'}
+        />
       </View>
       {roleAssignmentKind ? (
         <View
@@ -125,7 +132,7 @@ export function RoleAssignmentActions() {
                 style={{ alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}
               >
                 <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
-                  {roleAssignmentKind === 'confirm' ? 'Confirm' : 'Claim'} roles for
+                  {getRoleAssignmentLabel(roleAssignmentKind)} roles for
                 </Text>
                 <PlayerNameWithRole
                   player={focusedPlayer}
@@ -159,7 +166,7 @@ export function RoleAssignmentActions() {
             />
           ) : (
             <RolePicker
-              description="Tap a role to claim or confirm it. Tap the selected role again to clear it."
+              description={`Tap a role to ${getRoleAssignmentLabel(roleAssignmentKind).toLocaleLowerCase()} or clear it.`}
               onToggleRole={handleToggleRoleAssignment}
               roles={regularRoles}
               roleOwnerNames={roleOwnerNames}
@@ -168,9 +175,9 @@ export function RoleAssignmentActions() {
               scriptId={game.script.id}
             />
           )}
-          {roleAssignmentKind === 'confirm' ? (
+          {roleAssignmentKind === 'confirm' || roleAssignmentKind === 'guess' ? (
             <TravelerRolePicker
-              description="Choose one traveler role to confirm for this player."
+              description={`Choose one traveler role to ${getRoleAssignmentLabel(roleAssignmentKind).toLocaleLowerCase()} for this player.`}
               onToggleRole={handleToggleRoleAssignment}
               roles={assignmentRoles.filter(isTravelerRole)}
               selectedRoleIds={roleAssignmentRoleIds}
@@ -239,53 +246,15 @@ function mergeRoleLists(scriptRoles: Role[], travelerRoles: Role[]) {
   return [...scriptRoles, ...travelerRoles.filter((role) => !scriptRoleIds.has(role.id))];
 }
 
-function RoleAssignmentButton({
-  icon: Icon,
-  label,
-  onPress,
-  selected,
-  compact = false,
-}: {
-  compact?: boolean;
-  icon?: typeof ShieldCheck;
-  label: string;
-  onPress: () => void;
-  selected: boolean;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => ({
-        alignItems: 'center',
-        backgroundColor: pressed
-          ? colors.surfacePressed
-          : selected
-            ? colors.primary
-            : colors.surfaceRaised,
-        borderColor: selected ? colors.primary : colors.borderStrong,
-        borderRadius: 8,
-        borderWidth: 1,
-        alignSelf: compact ? 'flex-start' : undefined,
-        flex: compact ? undefined : 1,
-        flexDirection: 'row',
-        gap: 6,
-        justifyContent: 'center',
-        minWidth: 0,
-        paddingHorizontal: compact ? 9 : undefined,
-        paddingVertical: compact ? 5 : 12,
-      })}
-    >
-      {Icon ? <Icon color={selected ? colors.onPrimary : colors.textMuted} size={16} /> : null}
-      <Text
-        style={{
-          color: selected ? colors.onPrimary : colors.text,
-          fontSize: compact ? 12 : undefined,
-          fontWeight: '900',
-        }}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
+function getRoleAssignmentLabel(kind: PlayerRoleAssignment['kind']) {
+  switch (kind) {
+    case 'confirm':
+      return 'Confirm';
+    case 'guess':
+      return 'Guess';
+    case 'rumor':
+      return 'Rumor';
+    case 'claim':
+      return 'Claim';
+  }
 }

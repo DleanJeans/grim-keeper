@@ -23,9 +23,15 @@ import { MapModeActions } from '@/components/game/map-mode-actions';
 import { PlayerCountStatus } from '@/components/game/player-count-status';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
 import { RevealRolesButton } from '@/components/game/reveal-roles-button';
+import { RoleDisplayModes } from '@/components/game/role-display-modes';
 import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
-import type { KillAttribution, PlayerPosition, PlayerRoleAssignment } from '@/types/game';
+import type {
+  KillAttribution,
+  PlayerPosition,
+  PlayerRoleAssignment,
+  RoleDisplayMode,
+} from '@/types/game';
 import { getLastDayWithData } from '@/utils/game-utils';
 import {
   clampMapHeight,
@@ -95,6 +101,7 @@ export default function GameRoute() {
   );
   const [roleAssignmentRoleIds, setRoleAssignmentRoleIds] = useState<string[]>([]);
   const [rumorSubjectPlayerId, setRumorSubjectPlayerId] = useState<string | null>(null);
+  const [activeRoleDisplayMode, setActiveRoleDisplayMode] = useState<RoleDisplayMode>('confirm');
   const [showRoles, setShowRoles] = useState(false);
   const game = getGameById(games, id);
   const viewportMapWidth = getDefaultMapWidth(width);
@@ -753,6 +760,7 @@ export default function GameRoute() {
     roleAssignmentKind,
     roleAssignmentRoleIds,
     rumorSubjectPlayerId,
+    activeRoleDisplayMode,
     showRoles,
     setActiveTab,
     setNoteDraft,
@@ -776,6 +784,7 @@ export default function GameRoute() {
     handleToggleRoleAssignment,
     handleSaveRoleAssignment,
     handleConfirmRumorSubject,
+    setActiveRoleDisplayMode,
     setShowRoles,
     handleSetFocusedPlayerDeath,
     handleReviveFocusedPlayer,
@@ -836,6 +845,10 @@ export default function GameRoute() {
                 <MapModeActions activeDay={activeGame.activeDay} onChangeDay={handleChangeDay} />
               </View>
             )}
+
+            <View key="role-display-modes">
+              <RoleDisplayModes />
+            </View>
 
             <View key="tab-bar">
               <GameTabs />

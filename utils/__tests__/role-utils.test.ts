@@ -6,9 +6,11 @@ import {
   getAssignedRoleIdsForDayOrPrevious,
   getEffectiveRoleForPlayer,
   getKillerRoleOptions,
+  getLatestRumorMapDisplaysForDayOrPrevious,
   getPlayerRoleBucket,
   getRoleAssignmentForDay,
   getRoleDisplayForDayOrPrevious,
+  getRoleDisplayForMode,
   getRoleIconUrl,
   getRoleIconUrlForAlignment,
   getRoleNames,
@@ -26,6 +28,107 @@ import {
 } from '@/utils/role-utils';
 
 describe('role utilities', () => {
+  it('lets confirmed roles override every map display mode', () => {
+    const roles = [
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+      { id: 'soldier', name: 'Soldier', team: 'townsfolk' },
+    ];
+    const player = {
+      id: 'subject',
+      name: 'Subject',
+      seat: 0,
+      roleAssignments: [
+        {
+          day: 1,
+          kind: 'claim' as const,
+          roleIds: ['empath'],
+          updatedAt: '2026-07-14T00:00:00.000Z',
+        },
+        {
+          day: 1,
+          kind: 'guess' as const,
+          roleIds: ['soldier'],
+          updatedAt: '2026-07-14T00:01:00.000Z',
+        },
+        {
+          day: 1,
+          kind: 'confirm' as const,
+          roleIds: ['imp'],
+          updatedAt: '2026-07-14T00:02:00.000Z',
+        },
+      ],
+    };
+    const rumorSource = {
+      id: 'source',
+      name: 'Source',
+      seat: 1,
+      roleAssignments: [
+        {
+          day: 1,
+          kind: 'rumor' as const,
+          roleIds: ['empath'],
+          subjectPlayerId: 'subject',
+          updatedAt: '2026-07-14T00:03:00.000Z',
+        },
+      ],
+    };
+
+    for (const mode of ['claim', 'confirm', 'guess', 'rumor'] as const) {
+      expect(getRoleDisplayForMode(player, [player, rumorSource], 1, roles, mode)).toMatchObject({
+        kind: 'confirm',
+        roleIds: ['imp'],
+      });
+    }
+  });
+
+  it('uses the newest rumor per subject for map display', () => {
+    const source = {
+      id: 'source',
+      name: 'Source',
+      seat: 0,
+      roleAssignments: [
+        {
+          day: 1,
+          kind: 'rumor' as const,
+          roleIds: ['empath'],
+          subjectPlayerId: 'subject',
+          updatedAt: '2026-07-14T00:00:00.000Z',
+        },
+      ],
+    };
+    const newerSource = {
+      id: 'newer-source',
+      name: 'Newer Source',
+      seat: 1,
+      roleAssignments: [
+        {
+          day: 2,
+          kind: 'rumor' as const,
+          roleIds: ['imp'],
+          subjectPlayerId: 'subject',
+          updatedAt: '2026-07-14T00:01:00.000Z',
+        },
+      ],
+    };
+    const subject = { id: 'subject', name: 'Subject', seat: 2 };
+    const roles = [
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+    ];
+
+    expect(
+      getLatestRumorMapDisplaysForDayOrPrevious([source, newerSource, subject], 2, roles),
+    ).toEqual([
+      {
+        assignment: newerSource.roleAssignments?.[0],
+        roles: [roles[1]],
+        sourcePlayer: newerSource,
+        subjectPlayer: subject,
+      },
+    ]);
+  });
+
   it('provides generic character type role references with lowercase icon URLs', () => {
     expect(GENERIC_CHARACTER_TYPE_ROLES.map(({ imageUrl, name }) => ({ imageUrl, name }))).toEqual(
       ['Demon', 'Evil', 'Good', 'Minion', 'Outsider', 'Townsfolk', 'Traveller'].map((name) => ({

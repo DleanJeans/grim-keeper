@@ -1,5 +1,11 @@
 import unknownRoleIcon from '@/assets/role-icons/unknown.webp';
-import type { Player, PlayerRoleAssignment, Role, StoredScript } from '@/types/game';
+import type {
+  Player,
+  PlayerRoleAssignment,
+  Role,
+  RoleDisplayMode,
+  StoredScript,
+} from '@/types/game';
 import { APP_USER_ID } from '@/utils/object-id';
 
 export const BOTC_ROLE_CATALOG_URL = 'https://release.botc.app/resources/data/roles.json';
@@ -74,6 +80,12 @@ export const GENERIC_CHARACTER_TYPE_ROLE_REFERENCES: Role[] = GENERIC_CHARACTER_
     return [role, ...aliases.map((name) => ({ ...role, name }))];
   },
 );
+
+const EMPTY_ROLE_DISPLAY: RoleDisplay = {
+  kind: undefined,
+  roleIds: [],
+  roles: [],
+};
 
 export const GENERIC_KILLER_ROLES: Role[] = [
   {
@@ -279,6 +291,16 @@ export type RumorAboutPlayer = {
   roles: Role[];
 };
 
+export type RumorMapDisplay = RumorAboutPlayer & {
+  subjectPlayer: Player;
+};
+
+export type RoleDisplay = {
+  kind: PlayerRoleAssignment['kind'] | undefined;
+  roleIds: string[];
+  roles: Role[];
+};
+
 /**
  * Returns all rumor assignments for the given day where the target player is
  * the subject (i.e. someone reported that this player is one of the roles).
@@ -306,6 +328,81 @@ export function getRumorAboutPlayerForDay(
   }
 
   return results;
+}
+
+export function getLatestRumorAboutPlayerForDayOrPrevious(
+  players: Player[],
+  subjectPlayerId: string,
+  day: number,
+  roles: Role[],
+): RumorAboutPlayer | undefined {
+  let latest: { assignment: PlayerRoleAssignment; sourcePlayer: Player } | undefined;
+
+  for (const sourcePlayer of players) {
+    if (sourcePlayer.id === subjectPlayerId) {
+      continue;
+    }
+
+    for (const assignment of sourcePlayer.roleAssignments ?? []) {
+      if (
+        assignment.kind !== 'rumor' ||
+        assignment.subjectPlayerId !== subjectPlayerId ||
+        assignment.day > day
+      ) {
+        continue;
+      }
+
+      if (!latest || isLaterAssignment(assignment, latest.assignment)) {
+        latest = { assignment, sourcePlayer };
+      }
+    }
+  }
+
+  if (!latest || latest.assignment.roleIds.length === 0) {
+    return undefined;
+  }
+
+  return {
+    assignment: latest.assignment,
+    roles: getRolesByIds(latest.assignment.roleIds, roles),
+    sourcePlayer: latest.sourcePlayer,
+  };
+}
+
+export function getLatestRumorMapDisplaysForDayOrPrevious(
+  players: Player[],
+  day: number,
+  roles: Role[],
+): RumorMapDisplay[] {
+  return players.flatMap((subjectPlayer) => {
+    const rumor = getLatestRumorAboutPlayerForDayOrPrevious(players, subjectPlayer.id, day, roles);
+    return rumor ? [{ ...rumor, subjectPlayer }] : [];
+  });
+}
+
+export function getRoleDisplayForMode(
+  player: Player,
+  players: Player[],
+  day: number,
+  roles: Role[],
+  mode: RoleDisplayMode,
+): RoleDisplay {
+  const confirmedAssignment = getRoleAssignmentForDayOrPrevious(
+    player.roleAssignments,
+    day,
+    'confirm',
+  );
+  if (confirmedAssignment?.roleIds.length) {
+    return getRoleDisplayFromAssignment(confirmedAssignment, roles);
+  }
+
+  if (mode === 'rumor') {
+    const rumor = getLatestRumorAboutPlayerForDayOrPrevious(players, player.id, day, roles);
+    return rumor ? getRoleDisplayFromAssignment(rumor.assignment, roles) : EMPTY_ROLE_DISPLAY;
+  }
+
+  const assignment = getRoleAssignmentForDayOrPrevious(player.roleAssignments, day, mode);
+  return assignment ? getRoleDisplayFromAssignment(assignment, roles) : EMPTY_ROLE_DISPLAY;
 }
 
 export function getRolesByIds(roleIds: string[], roles: Role[]) {
@@ -412,6 +509,17 @@ export function getRoleDisplayForDayOrPrevious(
     kind: assignment?.kind,
     roleIds: assignment?.roleIds ?? [],
     roles: getRolesForAssignment(assignment, roles),
+  };
+}
+
+function getRoleDisplayFromAssignment(
+  assignment: PlayerRoleAssignment,
+  roles: Role[],
+): RoleDisplay {
+  return {
+    kind: assignment.kind,
+    roleIds: assignment.roleIds,
+    roles: getRolesByIds(assignment.roleIds, roles),
   };
 }
 
@@ -570,6 +678,13 @@ function getLatestAssignment(
         latest && latest.updatedAt > assignment.updatedAt ? latest : assignment,
       undefined,
     );
+}
+
+function isLaterAssignment(assignment: PlayerRoleAssignment, current: PlayerRoleAssignment) {
+  return (
+    assignment.day > current.day ||
+    (assignment.day === current.day && assignment.updatedAt > current.updatedAt)
+  );
 }
 
 function getLatestRumor(
