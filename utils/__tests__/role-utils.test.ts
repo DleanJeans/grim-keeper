@@ -20,7 +20,9 @@ import {
   getTravelerClaimRoles,
   isFlowerGirlRole,
   isTravelerRole,
+  mergeRoleCatalogMetadata,
   mergeScriptRoles,
+  parseRoleIconCatalog,
 } from '@/utils/role-utils';
 
 describe('role utilities', () => {
@@ -54,8 +56,8 @@ describe('role utilities', () => {
         ({ imageUrl }) => imageUrl,
       ),
     ).toEqual([
-      'https://release.botc.app/resources/characters/generic/traveler.webp',
-      'https://release.botc.app/resources/characters/generic/traveler.webp',
+      'https://release.botc.app/resources/characters/generic/traveller.webp',
+      'https://release.botc.app/resources/characters/generic/traveller.webp',
     ]);
   });
 
@@ -152,6 +154,15 @@ describe('role utilities', () => {
     ).toBe('https://release.botc.app/resources/characters/tb/imp_e.webp');
   });
 
+  it('uses official role metadata when an imported role is missing edition data', () => {
+    expect(getRoleIconUrl({ id: 'fanggu', name: 'Fang Gu' })).toBe(
+      'https://release.botc.app/resources/characters/snv/fanggu_e.webp',
+    );
+    expect(getRoleIconUrl({ id: 'gunslinger', name: 'Gunslinger' })).toBe(
+      'https://release.botc.app/resources/characters/tb/gunslinger.webp',
+    );
+  });
+
   it('uses custom role image URLs instead of generated role paths', () => {
     const [townsfolk] = mergeScriptRoles(
       [
@@ -195,6 +206,42 @@ describe('role utilities', () => {
     expect(getRoleIconUrl(officialRole)).toBe(
       'https://release.botc.app/resources/characters/tb/imp_e.webp',
     );
+  });
+
+  it('fills missing official role metadata from the catalog', () => {
+    const [role] = mergeRoleCatalogMetadata(
+      [{ id: 'fanggu', name: 'Fang Gu', team: 'demon' }],
+      [
+        {
+          edition: 'snv',
+          id: 'fanggu',
+          imageUrl: 'https://release.botc.app/resources/characters/snv/fanggu_g.webp',
+          name: 'Fang Gu',
+          team: 'demon',
+        },
+      ],
+    );
+
+    expect(role.edition).toBe('snv');
+    expect(getRoleIconUrl(role)).toBe(
+      'https://release.botc.app/resources/characters/snv/fanggu_g.webp',
+    );
+  });
+
+  it('builds role metadata from the resources icon index', () => {
+    const [role] = parseRoleIconCatalog(
+      '<a href="/resources/characters/snv/fanggu_g.webp"></a>' +
+        '<a href="/resources/characters/snv/fanggu_e.webp"></a>',
+    );
+
+    expect(role).toMatchObject({
+      edition: 'snv',
+      id: 'fanggu',
+      imageUrls: [
+        'https://release.botc.app/resources/characters/snv/fanggu_g.webp',
+        'https://release.botc.app/resources/characters/snv/fanggu_e.webp',
+      ],
+    });
   });
 
   it('builds aligned traveler claim role variants', () => {

@@ -41,6 +41,7 @@ import {
   migrateObjectIds,
 } from '@/utils/object-id';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
+import { mergeRoleCatalogMetadata } from '@/utils/role-utils';
 import {
   getNotesForPlayer,
   type LegacyFriendNote,
@@ -326,6 +327,7 @@ export const useGameStore = create<GameState>()(
         set((state) => {
           const normalizedScript = {
             ...script,
+            roles: mergeRoleCatalogMetadata(script.roles, state.roleCatalog),
             id: createScriptId(
               script,
               state.scripts
@@ -357,10 +359,13 @@ export const useGameStore = create<GameState>()(
           scripts[existingIndex] = {
             ...normalizedScript,
             id: state.scripts[existingIndex].id,
-            roles: mergeRoleNotes(normalizedScript.roles, [
-              ...state.roleCatalog,
-              ...state.scripts[existingIndex].roles,
-            ]),
+            roles: mergeRoleNotes(
+              mergeRoleCatalogMetadata(normalizedScript.roles, [
+                ...state.roleCatalog,
+                ...state.scripts[existingIndex].roles,
+              ]),
+              [...state.roleCatalog, ...state.scripts[existingIndex].roles],
+            ),
           };
           return {
             games: updateGamesWithScript(state.games, scripts[existingIndex], state.roleCatalog),
@@ -392,10 +397,13 @@ export const useGameStore = create<GameState>()(
                   script: script
                     ? {
                         ...script,
-                        roles: mergeRoleNotes(script.roles, [
-                          ...state.roleCatalog,
-                          ...(game.script?.roles ?? []),
-                        ]),
+                        roles: mergeRoleNotes(
+                          mergeRoleCatalogMetadata(script.roles, [
+                            ...state.roleCatalog,
+                            ...(game.script?.roles ?? []),
+                          ]),
+                          [...state.roleCatalog, ...(game.script?.roles ?? [])],
+                        ),
                       }
                     : undefined,
                   updatedAt: new Date().toISOString(),
@@ -418,9 +426,26 @@ export const useGameStore = create<GameState>()(
         }));
       },
       setRoleCatalog: (roles) => {
-        set((state) => ({
-          roleCatalog: mergeRoleNotes(dedupeRoles(roles), state.roleCatalog),
-        }));
+        set((state) => {
+          const roleCatalog = mergeRoleNotes(dedupeRoles(roles), state.roleCatalog);
+          const scripts = state.scripts.map((script) => ({
+            ...script,
+            roles: mergeRoleCatalogMetadata(script.roles, roleCatalog),
+          }));
+          const games = state.games.map((game) =>
+            game.script
+              ? {
+                  ...game,
+                  script: {
+                    ...game.script,
+                    roles: mergeRoleCatalogMetadata(game.script.roles, roleCatalog),
+                  },
+                }
+              : game,
+          );
+
+          return { games, roleCatalog, scripts };
+        });
       },
       addPlayer: (gameId, name) => {
         const normalizedName = normalizePlayerName(name);
@@ -1004,12 +1029,29 @@ export const useGameStore = create<GameState>()(
       },
       merge: (persistedState, currentState) => {
         const state = persistedState as Partial<GameState> | undefined;
-        const scripts = state?.scripts ?? currentState.scripts;
+        const roleCatalog = state?.roleCatalog ?? currentState.roleCatalog;
+        const scripts = (state?.scripts ?? currentState.scripts).map((script) => ({
+          ...script,
+          roles: mergeRoleCatalogMetadata(script.roles, roleCatalog),
+        }));
+        const games = (state?.games ?? currentState.games).map((game) =>
+          game.script
+            ? {
+                ...game,
+                script: {
+                  ...game.script,
+                  roles: mergeRoleCatalogMetadata(game.script.roles, roleCatalog),
+                },
+              }
+            : game,
+        );
 
         return {
           ...currentState,
           ...state,
-          games: restoreDuplicateScriptImages(state?.games ?? currentState.games, scripts),
+          games: restoreDuplicateScriptImages(games, scripts),
+          roleCatalog,
+          scripts,
         };
       },
       partialize: (state) => ({
@@ -1102,21 +1144,22 @@ function updateGamesWithScript(games: Game[], script: StoredScript, roleCatalog:
       return game;
     }
 
+    const scriptRoles = mergeRoleCatalogMetadata(script.roles, roleCatalog);
     const roleIds = [
       ...new Set([...(game.scriptRoleIds ?? []), ...getRoleIds(game.scriptRoleOverrides)]),
     ];
     const existingRoles = game.script?.roles ?? [];
     const rolesById = new Map(
-      [...script.roles, ...roleCatalog, ...existingRoles].map((role) => [role.id, role]),
+      [...scriptRoles, ...roleCatalog, ...existingRoles].map((role) => [role.id, role]),
     );
     const additionalRoles = roleIds
-      .filter((roleId) => !script.roles.some((scriptRole) => scriptRole.id === roleId))
+      .filter((roleId) => !scriptRoles.some((scriptRole) => scriptRole.id === roleId))
       .flatMap((roleId) => {
         const role = rolesById.get(roleId);
         return role ? [role] : [];
       });
     const roles = mergeRoleNotes(
-      [...script.roles, ...additionalRoles],
+      [...scriptRoles, ...additionalRoles],
       [...roleCatalog, ...existingRoles],
     );
 

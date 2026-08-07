@@ -17,8 +17,27 @@ const roleEditionDirectories: Record<string, string> = {
   'trouble brewing': 'tb',
 };
 
+const officialRoleMetadataById: Record<string, Pick<Role, 'edition' | 'team'>> = {
+  beggar: { edition: 'tb', team: 'traveller' },
+  fanggu: { edition: 'snv', team: 'demon' },
+  godfather: { edition: 'bmr', team: 'minion' },
+  gunslinger: { edition: 'tb', team: 'traveller' },
+  harlot: { edition: 'snv', team: 'traveller' },
+  mutant: { edition: 'snv', team: 'outsider' },
+  scapegoat: { edition: 'tb', team: 'townsfolk' },
+  thief: { edition: 'tb', team: 'traveller' },
+};
+
 const alignedGoodTeams = new Set(['outsider', 'townsfolk']);
 const alignedEvilTeams = new Set(['demon', 'minion']);
+
+function getRoleEdition(role: Role) {
+  return role.edition ?? officialRoleMetadataById[role.id]?.edition;
+}
+
+function getRoleTeam(role: Role) {
+  return (role.team ?? officialRoleMetadataById[role.id]?.team)?.toLocaleLowerCase() ?? '';
+}
 
 const GENERIC_CHARACTER_TYPES = [
   'Demon',
@@ -46,7 +65,7 @@ const GENERIC_CHARACTER_TYPE_ALIASES: Record<string, string[]> = {
   Minion: ['Minions'],
   Outsider: ['Outsiders'],
   Townsfolk: ['Townsfolks'],
-  Traveller: ['Travellers'],
+  Traveller: ['Travellers', 'Traveler', 'Travelers'],
 };
 
 export const GENERIC_CHARACTER_TYPE_ROLE_REFERENCES: Role[] = GENERIC_CHARACTER_TYPE_ROLES.flatMap(
@@ -54,20 +73,7 @@ export const GENERIC_CHARACTER_TYPE_ROLE_REFERENCES: Role[] = GENERIC_CHARACTER_
     const aliases = GENERIC_CHARACTER_TYPE_ALIASES[role.name] ?? [];
     return [role, ...aliases.map((name) => ({ ...role, name }))];
   },
-).concat([
-  {
-    id: 'generic_traveler',
-    imageUrl: `${BOTC_ROLE_ICON_BASE_URL}/generic/traveler.webp`,
-    name: 'Traveler',
-    team: 'traveler',
-  },
-  {
-    id: 'generic_traveler',
-    imageUrl: `${BOTC_ROLE_ICON_BASE_URL}/generic/traveler.webp`,
-    name: 'Travelers',
-    team: 'traveler',
-  },
-]);
+);
 
 export const GENERIC_KILLER_ROLES: Role[] = [
   {
@@ -84,6 +90,10 @@ export function getRoleIconUrl(role: Role) {
     return imageUrl;
   }
 
+  if (!getRoleEdition(role) && !role.imageUrls?.length) {
+    return undefined;
+  }
+
   const directory = getRoleEditionDirectory(role);
   const alignment = getRoleAlignment(role);
   const filename = `${role.id}${alignment ? `_${alignment}` : ''}.webp`;
@@ -97,17 +107,23 @@ export function getRoleIconUrlForAlignment(role: Role, alignment: 'g' | 'e') {
     return imageUrl;
   }
 
+  if (!getRoleEdition(role) && !role.imageUrls?.length) {
+    return undefined;
+  }
+
   const directory = getRoleEditionDirectory(role);
 
   return `${BOTC_ROLE_ICON_BASE_URL}/${directory}/${role.id}_${alignment}.webp`;
 }
 
 export function getRoleAlignment(role: Role): 'g' | 'e' | undefined {
-  if (alignedGoodTeams.has(role.team ?? '')) {
+  const team = getRoleTeam(role);
+
+  if (alignedGoodTeams.has(team)) {
     return 'g';
   }
 
-  if (alignedEvilTeams.has(role.team ?? '')) {
+  if (alignedEvilTeams.has(team)) {
     return 'e';
   }
 
@@ -115,7 +131,7 @@ export function getRoleAlignment(role: Role): 'g' | 'e' | undefined {
 }
 
 export function isTravelerRole(role: Role) {
-  return role.team?.toLocaleLowerCase() === 'traveller';
+  return getRoleTeam(role) === 'traveller';
 }
 
 export function isFlowerGirlRole(role: Role) {
@@ -441,8 +457,86 @@ export function mergeScriptRoles(content: unknown, catalog: Role[]): Role[] {
   return [...rolesById.values()];
 }
 
+export function mergeRoleCatalogMetadata(roles: Role[], catalog: Role[]): Role[] {
+  const catalogById = new Map<string, Role>();
+
+  for (const role of catalog) {
+    if (!catalogById.has(role.id)) {
+      catalogById.set(role.id, role);
+    }
+  }
+
+  return roles.map((role) => {
+    const catalogRole = catalogById.get(role.id);
+    if (!catalogRole) {
+      return role;
+    }
+
+    return {
+      ...catalogRole,
+      ...role,
+      ability: role.ability ?? catalogRole.ability,
+      edition: role.edition ?? catalogRole.edition,
+      imageSource: role.imageSource ?? catalogRole.imageSource,
+      imageUrl: catalogRole.imageUrl ?? role.imageUrl,
+      imageUrls: catalogRole.imageUrls ?? role.imageUrls,
+      name: role.name || catalogRole.name,
+      notes: role.notes ?? catalogRole.notes,
+      team: role.team ?? catalogRole.team,
+    };
+  });
+}
+
 export function normalizeRoleCatalog(content: unknown) {
   return mergeScriptRoles(content, []);
+}
+
+export function parseRoleIconCatalog(content: string): Role[] {
+  const rolesById = new Map<
+    string,
+    { base?: string; edition: string; evil?: string; good?: string }
+  >();
+  const iconPattern =
+    /(?:href|src)=["'](?:https?:\/\/[^"']+)?\/resources\/characters\/([^/"']+)\/([^/"']+)\.webp["']/g;
+
+  for (const match of content.matchAll(iconPattern)) {
+    const [, edition, filename] = match;
+    const alignmentMatch = /^(.*?)(?:_([ge]))?$/.exec(filename);
+    const roleId = alignmentMatch?.[1];
+    const alignment = alignmentMatch?.[2];
+
+    if (!roleId) {
+      continue;
+    }
+
+    const iconUrl = `${BOTC_ROLE_ICON_BASE_URL}/${edition}/${filename}.webp`;
+    const current = rolesById.get(roleId) ?? { edition };
+    if (current.edition === 'generic' && edition !== 'generic') {
+      current.edition = edition;
+    }
+
+    if (alignment === 'e') {
+      current.evil = iconUrl;
+    } else if (alignment === 'g') {
+      current.good = iconUrl;
+    } else {
+      current.base = iconUrl;
+    }
+
+    rolesById.set(roleId, current);
+  }
+
+  return [...rolesById].map(([id, { base, edition, evil, good }]) => {
+    const imageUrls = [base, good, evil].filter((url): url is string => !!url);
+
+    return {
+      edition,
+      id,
+      imageUrl: imageUrls.length === 1 ? imageUrls[0] : undefined,
+      imageUrls: imageUrls.length > 1 ? imageUrls : undefined,
+      name: formatRoleId(id),
+    };
+  });
 }
 
 export function addRoleToScript(script: StoredScript, role: Role): StoredScript {
@@ -498,12 +592,12 @@ function getLatestRumor(
 }
 
 function getRoleEditionDirectory(role: Role) {
-  const edition = roleEditionDirectories[(role.edition ?? '').toLocaleLowerCase()];
+  const edition = roleEditionDirectories[getRoleEdition(role)?.toLocaleLowerCase() ?? ''];
   if (edition) {
     return edition;
   }
 
-  const team = role.team?.toLocaleLowerCase();
+  const team = getRoleTeam(role);
   if (
     team &&
     ['demon', 'fabled', 'loric', 'minion', 'outsider', 'townsfolk', 'traveller'].includes(team)

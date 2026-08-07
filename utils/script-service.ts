@@ -1,10 +1,17 @@
 import type { Role, StoredScript } from '@/types/game';
 import { createScriptId } from '@/utils/object-id';
-import { BOTC_ROLE_CATALOG_URL, mergeScriptRoles, normalizeRoleCatalog } from '@/utils/role-utils';
+import {
+  BOTC_ROLE_CATALOG_URL,
+  BOTC_ROLE_ICON_BASE_URL,
+  mergeScriptRoles,
+  normalizeRoleCatalog,
+  parseRoleIconCatalog,
+} from '@/utils/role-utils';
 
 export const BOTC_SCRIPTS_API_URL = 'https://www.botcscripts.com/api/scripts';
 export const OFFICIAL_SCRIPT_AUTHOR = 'The Pandemonium Institute';
 export const OFFICIAL_CAROUSEL_SCRIPT_ID = 'carousel';
+const BOTC_RESOURCES_URL = `${BOTC_ROLE_ICON_BASE_URL.replace('/characters', '')}/`;
 
 const officialScriptNames = new Set(['Trouble Brewing', 'Sects and Violets', 'Bad Moon Rising']);
 
@@ -19,12 +26,31 @@ export type RemoteScript = {
 };
 
 export async function fetchRoleCatalog(): Promise<Role[]> {
-  const response = await fetch(BOTC_ROLE_CATALOG_URL);
-  if (!response.ok) {
-    throw new Error(`Role catalog request failed with ${response.status}`);
+  try {
+    const response = await fetch(BOTC_ROLE_CATALOG_URL);
+    if (!response.ok) {
+      throw new Error(`Role catalog request failed with ${response.status}`);
+    }
+
+    const roles = normalizeRoleCatalog(await response.json());
+    if (roles.length > 0) {
+      return roles;
+    }
+  } catch {
+    // The resources page remains available when the raw JSON catalog is blocked.
   }
 
-  return normalizeRoleCatalog(await response.json());
+  const fallbackResponse = await fetch(BOTC_RESOURCES_URL);
+  if (!fallbackResponse.ok) {
+    throw new Error(`Role catalog request failed with ${fallbackResponse.status}`);
+  }
+
+  const roles = parseRoleIconCatalog(await fallbackResponse.text());
+  if (roles.length === 0) {
+    throw new Error('The role catalog does not contain any role icons.');
+  }
+
+  return roles;
 }
 
 export async function fetchRemoteScripts(search = ''): Promise<RemoteScript[]> {

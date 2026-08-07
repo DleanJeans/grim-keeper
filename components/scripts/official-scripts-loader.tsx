@@ -18,13 +18,27 @@ const OFFICIAL_SCRIPT_IDS = [
   OFFICIAL_CAROUSEL_SCRIPT_ID,
 ];
 
+const OFFICIAL_ROLE_EDITIONS = new Set([
+  'bad moon rising',
+  'bmr',
+  'carousel',
+  'fabled',
+  'loric',
+  'sects and violets',
+  'snv',
+  'tb',
+  'trouble brewing',
+]);
+
 export function OfficialScriptsLoader() {
   const scripts = useGameStore((state) => state.scripts);
+  const roleCatalog = useGameStore((state) => state.roleCatalog);
   const loadingRef = useRef(false);
   const activeRef = useRef(true);
 
   const startLoading = useCallback(() => {
-    if (loadingRef.current || !needsScriptRecovery(useGameStore.getState().scripts)) {
+    const state = useGameStore.getState();
+    if (loadingRef.current || !needsScriptRecovery(state.scripts, state.roleCatalog)) {
       return;
     }
 
@@ -58,10 +72,10 @@ export function OfficialScriptsLoader() {
   }, [startLoading]);
 
   useEffect(() => {
-    if (useGameStore.persist.hasHydrated() && needsScriptRecovery(scripts)) {
+    if (useGameStore.persist.hasHydrated() && needsScriptRecovery(scripts, roleCatalog)) {
       startLoading();
     }
-  }, [scripts, startLoading]);
+  }, [roleCatalog, scripts, startLoading]);
 
   return null;
 }
@@ -72,8 +86,12 @@ function needsOfficialScripts(scripts: ReturnType<typeof useGameStore.getState>[
   );
 }
 
-function needsScriptRecovery(scripts: ReturnType<typeof useGameStore.getState>['scripts']) {
+function needsScriptRecovery(
+  scripts: ReturnType<typeof useGameStore.getState>['scripts'],
+  roleCatalog: ReturnType<typeof useGameStore.getState>['roleCatalog'],
+) {
   return (
+    !hasOfficialRoleCatalog(roleCatalog) ||
     needsOfficialScripts(scripts) ||
     scripts.some((script) => script.remoteId !== undefined && script.roles.length === 0)
   );
@@ -81,10 +99,9 @@ function needsScriptRecovery(scripts: ReturnType<typeof useGameStore.getState>['
 
 async function loadOfficialScripts(isActive: () => boolean) {
   const initialState = useGameStore.getState();
-  const catalogRequest =
-    initialState.roleCatalog.length > 0
-      ? Promise.resolve(initialState.roleCatalog)
-      : fetchRoleCatalog();
+  const catalogRequest = hasOfficialRoleCatalog(initialState.roleCatalog)
+    ? Promise.resolve(initialState.roleCatalog)
+    : fetchRoleCatalog();
   const scriptsRequest = fetchOfficialRemoteScripts();
   const [catalogResult, scriptsResult] = await Promise.allSettled([catalogRequest, scriptsRequest]);
 
@@ -99,8 +116,8 @@ async function loadOfficialScripts(isActive: () => boolean) {
     (script) => script.remoteId !== undefined && script.roles.length === 0,
   );
 
-  if (initialState.roleCatalog.length === 0 && catalog.length > 0) {
-    useGameStore.getState().setRoleCatalog(catalog);
+  if (!hasOfficialRoleCatalog(initialState.roleCatalog) && catalog.length > 0) {
+    useGameStore.getState().setRoleCatalog([...catalog, ...initialState.roleCatalog]);
   }
 
   if (scriptsResult.status === 'fulfilled') {
@@ -160,4 +177,10 @@ function hasStoredScript(scriptId: string) {
   return useGameStore
     .getState()
     .scripts.some((script) => script.id === scriptId && script.roles.length > 0);
+}
+
+function hasOfficialRoleCatalog(roles: ReturnType<typeof useGameStore.getState>['roleCatalog']) {
+  return roles.some((role) =>
+    OFFICIAL_ROLE_EDITIONS.has(role.edition?.trim().toLocaleLowerCase() ?? ''),
+  );
 }
