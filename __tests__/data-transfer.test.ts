@@ -69,7 +69,14 @@ describe('data transfer', () => {
         {
           day: 1,
           playerId: 'player-alice',
-          notes: [],
+          notes: [
+            {
+              createdAt: '2026-08-03T00:00:00.000Z',
+              id: 'note-old',
+              text: 'Night note',
+              updatedAt: '2026-08-03T00:00:00.000Z',
+            },
+          ],
           updatedAt: '2026-08-03T00:00:00.000Z',
         },
       ],
@@ -105,6 +112,7 @@ describe('data transfer', () => {
       exportedGame.players.every((player: { name?: string }) => player.name === undefined),
     ).toBe(true);
     expect(exportedGame.playerDayNotes[0].playerId).toBe('alice');
+    expect(exportedGame.playerDayNotes[0].notes[0].id).toBe('note-20260803000000');
 
     expect(
       parseBackup(JSON.stringify(backup)).games[0].players.map((player) => player.name),

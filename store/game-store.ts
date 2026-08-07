@@ -33,6 +33,8 @@ import {
   createConversationId,
   createFriendId,
   createGameId,
+  createNoteId,
+  createSavedNoteId,
   createScriptId,
   getRoleIds,
   mapGamePlayerIdsToFriendIds,
@@ -584,18 +586,25 @@ export const useGameStore = create<GameState>()(
           return undefined;
         }
         const updatedAt = new Date().toISOString();
-        const newNote: PlayerDayNoteEntry = {
-          createdAt: updatedAt,
-          id: createId('note'),
-          text: nextText,
-          updatedAt,
-        };
+        let noteId: string | undefined;
 
         set((state) => ({
           games: state.games.map((game) => {
             if (game.id !== gameId) {
               return game;
             }
+            const usedNoteIds = state.games.flatMap(
+              (candidate) =>
+                candidate.playerDayNotes?.flatMap((entry) => entry.notes.map((note) => note.id)) ??
+                [],
+            );
+            const newNote: PlayerDayNoteEntry = {
+              createdAt: updatedAt,
+              id: createNoteId(updatedAt, usedNoteIds),
+              text: nextText,
+              updatedAt,
+            };
+            noteId = newNote.id;
             return {
               ...game,
               updatedAt,
@@ -607,7 +616,7 @@ export const useGameStore = create<GameState>()(
           }),
         }));
 
-        return newNote.id;
+        return noteId;
       },
       editPlayerDayNote: (gameId, playerId, day, noteId, text) => {
         const nextText = text.trim();
@@ -680,7 +689,12 @@ export const useGameStore = create<GameState>()(
           );
           const existing = savedNoteIndex >= 0 ? state.savedNotes[savedNoteIndex] : undefined;
           const savedNote: SavedNote = {
-            id: existing?.id ?? createId('saved-note'),
+            id:
+              existing?.id ??
+              createSavedNoteId(
+                updatedAt,
+                state.savedNotes.map((note) => note.id),
+              ),
             playerName: normalizedPlayerName,
             roleIds: [...uniqueRoleIds],
             text: nextText,
@@ -959,10 +973,10 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'grim-keeper-game-store-v1',
-      version: 10,
+      version: 11,
       storage: createJSONStorage(() => (Platform.OS === 'web' ? webStorage : localStorage)),
       migrate: (persistedState, version) => {
-        if (!persistedState || version >= 10) {
+        if (!persistedState || version >= 11) {
           return persistedState as Partial<GameState> | undefined;
         }
 

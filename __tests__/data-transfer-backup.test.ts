@@ -39,6 +39,7 @@ describe('backup export integration', () => {
             initiatorId?: string;
             kind?: 'interaction' | 'nomination';
           }>;
+          playerDayNotes?: Array<{ notes: Array<{ id: string; createdAt: string }> }>;
           lorics?: unknown[];
           script?: unknown;
           scriptId?: string;
@@ -46,6 +47,7 @@ describe('backup export integration', () => {
         }>;
         roleCatalog: Array<{ edition?: string }>;
         scripts: Array<unknown>;
+        savedNotes: Array<{ id: string; createdAt: string }>;
       };
       version: number;
     };
@@ -88,6 +90,14 @@ describe('backup export integration', () => {
       exported.data.games.every((game) =>
         game.conversations.every((conversation) => !('initiatorId' in conversation)),
       ),
+    ).toBe(true);
+    expect(
+      exported.data.games
+        .flatMap((game) => game.playerDayNotes?.flatMap((entry) => entry.notes) ?? [])
+        .every((note) => /^note-\d{14}(?:-\d+)?$/.test(note.id)),
+    ).toBe(true);
+    expect(
+      exported.data.savedNotes.every((note) => /^saved-note-\d{14}(?:-\d+)?$/.test(note.id)),
     ).toBe(true);
     expect(
       exported.data.games.every((game) =>

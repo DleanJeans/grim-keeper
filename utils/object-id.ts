@@ -12,6 +12,14 @@ export function createConversationId(createdAt: string, usedIds: string[]) {
   return makeUniqueId(`conversation-${formatIdDate(createdAt, 14)}`, usedIds);
 }
 
+export function createNoteId(createdAt: string, usedIds: string[]) {
+  return makeUniqueId(`note-${formatIdDate(createdAt, 14)}`, usedIds);
+}
+
+export function createSavedNoteId(createdAt: string, usedIds: string[]) {
+  return makeUniqueId(`saved-note-${formatIdDate(createdAt, 14)}`, usedIds);
+}
+
 export function mapGameConversationIds(game: Game): Game {
   const usedIds: string[] = [];
   const conversations = game.conversations.map((conversation) => {
@@ -21,6 +29,28 @@ export function mapGameConversationIds(game: Game): Game {
   });
 
   return { ...game, conversations };
+}
+
+export function mapGamePlayerDayNoteIds(game: Game, usedIds: string[]): Game {
+  return {
+    ...game,
+    playerDayNotes: game.playerDayNotes?.map((entry) => ({
+      ...entry,
+      notes: entry.notes.map((note) => {
+        const id = createNoteId(note.createdAt, usedIds);
+        usedIds.push(id);
+        return { ...note, id };
+      }),
+    })),
+  };
+}
+
+export function mapSavedNoteIds(savedNotes: SavedNote[], usedIds: string[]): SavedNote[] {
+  return savedNotes.map((note) => {
+    const id = createSavedNoteId(note.createdAt, usedIds);
+    usedIds.push(id);
+    return { ...note, id };
+  });
 }
 
 export function createFriendId(name: string, usedIds: string[]) {
@@ -236,35 +266,44 @@ export function migrateObjectIds(state: Partial<GameDataShape>): Partial<GameDat
     ...script,
     id: scriptIds.get(script.id) ?? script.id,
   }));
+  const usedNoteIds: string[] = [];
   const games = state.games?.map((game) =>
-    mapGameConversationIds(
-      mapGamePlayerIdsToFriendIds(
-        {
-          ...game,
-          id: gameIds.get(game.id) ?? game.id,
-          scriptId: game.scriptId
-            ? (scriptIds.get(game.scriptId) ?? game.scriptId)
-            : game.script
-              ? (scriptIds.get(game.script.id) ?? game.script.id)
+    mapGamePlayerDayNoteIds(
+      mapGameConversationIds(
+        mapGamePlayerIdsToFriendIds(
+          {
+            ...game,
+            id: gameIds.get(game.id) ?? game.id,
+            scriptId: game.scriptId
+              ? (scriptIds.get(game.scriptId) ?? game.scriptId)
+              : game.script
+                ? (scriptIds.get(game.script.id) ?? game.script.id)
+                : undefined,
+            script: game.script
+              ? { ...game.script, id: scriptIds.get(game.script.id) ?? game.script.id }
               : undefined,
-          script: game.script
-            ? { ...game.script, id: scriptIds.get(game.script.id) ?? game.script.id }
-            : undefined,
-          lorics: game.lorics ? getRoleIds(game.lorics) : undefined,
-          scriptRoleOverrides: game.scriptRoleOverrides
-            ? getRoleIds(game.scriptRoleOverrides)
-            : undefined,
-        },
-        friends ?? [],
-        state.appUserName,
+            lorics: game.lorics ? getRoleIds(game.lorics) : undefined,
+            scriptRoleOverrides: game.scriptRoleOverrides
+              ? getRoleIds(game.scriptRoleOverrides)
+              : undefined,
+          },
+          friends ?? [],
+          state.appUserName,
+        ),
       ),
+      usedNoteIds,
     ),
   );
-  const savedNotes = state.savedNotes?.map((note) => ({
-    ...note,
-    gameId: gameIds.get(note.gameId) ?? note.gameId,
-    scriptId: note.scriptId ? (scriptIds.get(note.scriptId) ?? note.scriptId) : undefined,
-  }));
+  const savedNotes = state.savedNotes
+    ? mapSavedNoteIds(
+        state.savedNotes.map((note) => ({
+          ...note,
+          gameId: gameIds.get(note.gameId) ?? note.gameId,
+          scriptId: note.scriptId ? (scriptIds.get(note.scriptId) ?? note.scriptId) : undefined,
+        })),
+        [],
+      )
+    : undefined;
 
   return { ...state, friends, games, savedNotes, scripts };
 }

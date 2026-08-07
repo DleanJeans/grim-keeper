@@ -5,7 +5,9 @@ import {
   addMissingFriendsForGames,
   getRoleIds,
   mapGameConversationIds,
+  mapGamePlayerDayNoteIds,
   mapGamePlayerIdsToFriendIds,
+  mapSavedNoteIds,
 } from '@/utils/object-id';
 
 const backupFormat = 'grim-keeper-backup';
@@ -94,9 +96,11 @@ function normalizeForExport(data: GameData): ExportedGameData {
   const roleCatalog = data.roleCatalog.filter((role) => !isOfficialRole(role));
   const scriptsById = new Map(data.scripts.map((script) => [script.id, script]));
   const friends = addMissingFriendsForGames(data.friends, data.games, data.appUserName);
+  const usedNoteIds: string[] = [];
   const games = data.games.map((game) => {
-    const normalizedGame = mapGameConversationIds(
-      mapGamePlayerIdsToFriendIds(game, friends, data.appUserName),
+    const normalizedGame = mapGamePlayerDayNoteIds(
+      mapGameConversationIds(mapGamePlayerIdsToFriendIds(game, friends, data.appUserName)),
+      usedNoteIds,
     );
 
     return {
@@ -114,6 +118,7 @@ function normalizeForExport(data: GameData): ExportedGameData {
       })),
     };
   });
+  const savedNotes = mapSavedNoteIds(data.savedNotes, []);
 
   for (const game of games) {
     const script = game.script;
@@ -132,6 +137,7 @@ function normalizeForExport(data: GameData): ExportedGameData {
     friends,
     games: games.map((game) => exportGame(game, scriptsById)),
     roleCatalog,
+    savedNotes,
     scripts,
   };
 }

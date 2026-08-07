@@ -3,6 +3,8 @@ import {
   createConversationId,
   createFriendId,
   createGameId,
+  createNoteId,
+  createSavedNoteId,
   createScriptId,
   migrateObjectIds,
 } from '@/utils/object-id';
@@ -15,6 +17,8 @@ describe('object IDs', () => {
     expect(createConversationId('2026-07-15T10:20:30.000Z', [])).toBe(
       'conversation-20260715102030',
     );
+    expect(createNoteId('2026-07-15T10:20:30.000Z', [])).toBe('note-20260715102030');
+    expect(createSavedNoteId('2026-07-15T10:20:30.000Z', [])).toBe('saved-note-20260715102030');
     expect(createFriendId('Andy O’Brien', [])).toBe('andy-o-brien');
     expect(createFriendId('App User', [])).toBe('app-user-2');
     expect(
@@ -36,6 +40,9 @@ describe('object IDs', () => {
     expect(createConversationId('2026-07-15T10:20:30.000Z', ['conversation-20260715102030'])).toBe(
       'conversation-20260715102030-2',
     );
+    expect(createNoteId('2026-07-15T10:20:30.000Z', ['note-20260715102030'])).toBe(
+      'note-20260715102030-2',
+    );
   });
 
   it('migrates IDs and every saved game and script reference', () => {
@@ -54,6 +61,21 @@ describe('object IDs', () => {
       updatedAt: '2026-07-15T10:20:00.000Z',
       players: [],
       conversations: [],
+      playerDayNotes: [
+        {
+          day: 1,
+          playerId: 'andy',
+          notes: [
+            {
+              id: 'note-old',
+              text: 'Note',
+              createdAt: '2026-07-15T10:20:00.000Z',
+              updatedAt: '2026-07-15T10:20:00.000Z',
+            },
+          ],
+          updatedAt: '2026-07-15T10:20:00.000Z',
+        },
+      ],
       script,
     };
     const note: SavedNote = {
@@ -81,9 +103,11 @@ describe('object IDs', () => {
     expect(result.games?.[0].script?.id).toBe('42-extension-cord');
     expect(result.scripts?.[0].id).toBe('42-extension-cord');
     expect(result.savedNotes?.[0]).toMatchObject({
+      id: 'saved-note-20260715102000',
       gameId: 'extension-cord-202607151020',
       scriptId: '42-extension-cord',
     });
+    expect(result.games?.[0].playerDayNotes?.[0].notes[0].id).toBe('note-20260715102000');
   });
 
   it('maps existing player IDs to friend IDs and keeps references in sync', () => {
