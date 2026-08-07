@@ -553,8 +553,7 @@ describe('role utilities', () => {
 
   it('returns the confirmed role for a player when both claim and confirm exist', () => {
     const player = {
-      id: 'p1',
-      isAppUser: true,
+      id: 'app-user',
       name: 'Alice',
       seat: 0,
       roleAssignments: [
@@ -636,8 +635,7 @@ describe('role utilities', () => {
       { id: 'imp', name: 'Imp', team: 'demon' },
     ];
     const appUser = {
-      id: 'app',
-      isAppUser: true,
+      id: 'app-user',
       name: 'App',
       seat: 0,
       roleAssignments: [
@@ -721,7 +719,7 @@ describe('role utilities', () => {
     });
     const players = [
       { id: 'p2', name: 'Townsfolk-B', seat: 4, roleAssignments: [claim('empath')] },
-      { id: 'p1', isAppUser: true, name: 'App', seat: 0, roleAssignments: [claim('empath')] },
+      { id: 'app-user', name: 'App', seat: 0, roleAssignments: [claim('empath')] },
       { id: 'p3', name: 'Demon', seat: 6, roleAssignments: [claim('imp')] },
       { id: 'p4', name: 'Townsfolk-A', seat: 2, roleAssignments: [claim('empath')] },
       { id: 'p5', name: 'Outsider', seat: 3, roleAssignments: [claim('drunk')] },
@@ -736,7 +734,7 @@ describe('role utilities', () => {
     );
 
     expect(sorted.map((player) => player.id)).toEqual([
-      'p1', // app user
+      'app-user', // app user
       'p4', // townsfolk, seat 2
       'p2', // townsfolk, seat 4
       'p5', // outsider, seat 3

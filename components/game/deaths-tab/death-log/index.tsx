@@ -21,6 +21,7 @@ type DeathLogProps = {
 export function DeathLog({ activeDay, players, script }: DeathLogProps) {
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const { game } = useGameRouteContext();
+  const roleCatalog = useGameStore((state) => state.roleCatalog);
   const setPlayerDeath = useGameStore((state) => state.setPlayerDeath);
   const entries = collectLogEntries(players, activeDay);
   const playerById = new Map(players.map((player) => [player.id, player]));
@@ -42,7 +43,7 @@ export function DeathLog({ activeDay, players, script }: DeathLogProps) {
         entries.map((entry) => {
           const killerDescription = getKillerDescription(entry, playerById, [
             ...(script?.roles ?? []),
-            ...(game.lorics ?? []),
+            ...getRolesByIds(game.lorics ?? [], roleCatalog),
           ]);
           const isEditing = 'death' in entry && editingPlayerId === entry.player.id;
 

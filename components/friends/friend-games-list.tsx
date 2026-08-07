@@ -7,6 +7,7 @@ import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Game, Player, Role, StoredScript } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
+import { APP_USER_ID } from '@/utils/object-id';
 import {
   getRoleAssignmentForDay,
   getRoleAssignmentForDayOrPrevious,
@@ -141,7 +142,7 @@ function collectEntries(
   for (const game of games) {
     const player = game.players.find(
       (candidate) =>
-        !candidate.isAppUser &&
+        candidate.id !== APP_USER_ID &&
         normalizePlayerName(candidate.name).toLocaleLowerCase() === targetKey,
     );
 
@@ -154,7 +155,7 @@ function collectEntries(
       game,
       playerId: player.id,
       claimedRoleIds: collectClaimedRoleIds(player, roles),
-      playedRoleIds: collectPlayedRoleIds(player, roles),
+      playedRoleIds: collectPlayedRoleIds(player),
     });
   }
 
@@ -169,8 +170,9 @@ function resolveGameRoles(game: Game, roleCatalog: Role[], scripts: StoredScript
     return game.script.roles;
   }
 
-  if (game.script?.id) {
-    const script = scripts.find((candidate) => candidate.id === game.script?.id);
+  const scriptId = game.scriptId ?? game.script?.id;
+  if (scriptId) {
+    const script = scripts.find((candidate) => candidate.id === scriptId);
     if (script?.roles?.length) {
       return script.roles;
     }
@@ -194,7 +196,7 @@ function collectClaimedRoleIds(player: Player, roles: Role[]): string[] {
   return [...ids];
 }
 
-function collectPlayedRoleIds(player: Player, roles: Role[]): string[] {
+function collectPlayedRoleIds(player: Player): string[] {
   const confirms = (player.roleAssignments ?? [])
     .filter((assignment) => assignment.kind === 'confirm')
     .sort((first, second) => first.day - second.day);
@@ -206,14 +208,14 @@ function collectPlayedRoleIds(player: Player, roles: Role[]): string[] {
   const lastDay = confirms[confirms.length - 1].day;
   const finalConfirm = getRoleAssignmentForDay(player.roleAssignments, lastDay, 'confirm');
   if (finalConfirm) {
-    return dedupe(finalConfirm.roleIds, roles);
+    return dedupe(finalConfirm.roleIds);
   }
 
   const fallback = getRoleAssignmentForDayOrPrevious(player.roleAssignments, lastDay, 'confirm');
-  return fallback ? dedupe(fallback.roleIds, roles) : [];
+  return fallback ? dedupe(fallback.roleIds) : [];
 }
 
-function dedupe(roleIds: string[], roles: Role[]): string[] {
+function dedupe(roleIds: string[]): string[] {
   const seen = new Set<string>();
   const output: string[] = [];
 

@@ -1,13 +1,60 @@
-import type { Friend, Game, SavedNote, StoredScript } from '@/types/game';
+import type { Friend, Game, Player, SavedNote, StoredScript } from '@/types/game';
+import { normalizePlayerName } from '@/utils/conversation-utils';
 
 const OFFICIAL_SCRIPT_AUTHOR = 'The Pandemonium Institute';
+export const APP_USER_ID = 'app-user';
 
 export function createGameId(scriptName: string | undefined, createdAt: string, usedIds: string[]) {
   return makeUniqueId(`${slugify(scriptName || 'game')}-${formatIdDate(createdAt)}`, usedIds);
 }
 
+export function createConversationId(createdAt: string, usedIds: string[]) {
+  return makeUniqueId(`conversation-${formatIdDate(createdAt, 14)}`, usedIds);
+}
+
+export function createNoteId(createdAt: string, usedIds: string[]) {
+  return makeUniqueId(`note-${formatIdDate(createdAt, 14)}`, usedIds);
+}
+
+export function createSavedNoteId(createdAt: string, usedIds: string[]) {
+  return makeUniqueId(`saved-note-${formatIdDate(createdAt, 14)}`, usedIds);
+}
+
+export function mapGameConversationIds(game: Game): Game {
+  const usedIds: string[] = [];
+  const conversations = game.conversations.map((conversation) => {
+    const id = createConversationId(conversation.createdAt, usedIds);
+    usedIds.push(id);
+    return { ...conversation, id };
+  });
+
+  return { ...game, conversations };
+}
+
+export function mapGamePlayerDayNoteIds(game: Game, usedIds: string[]): Game {
+  return {
+    ...game,
+    playerDayNotes: game.playerDayNotes?.map((entry) => ({
+      ...entry,
+      notes: entry.notes.map((note) => {
+        const id = createNoteId(note.createdAt, usedIds);
+        usedIds.push(id);
+        return { ...note, id };
+      }),
+    })),
+  };
+}
+
+export function mapSavedNoteIds(savedNotes: SavedNote[], usedIds: string[]): SavedNote[] {
+  return savedNotes.map((note) => {
+    const id = createSavedNoteId(note.createdAt, usedIds);
+    usedIds.push(id);
+    return { ...note, id };
+  });
+}
+
 export function createFriendId(name: string, usedIds: string[]) {
-  return makeUniqueId(slugify(name) || 'friend', usedIds);
+  return makeUniqueId(slugify(name) || 'friend', [APP_USER_ID, ...usedIds]);
 }
 
 export function createScriptId(
@@ -21,6 +68,162 @@ export function createScriptId(
       : name;
 
   return makeUniqueId(baseId, usedIds);
+}
+
+export function getRoleIds(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (typeof item === 'string') {
+      return [item];
+    }
+
+    if (item && typeof item === 'object' && typeof (item as { id?: unknown }).id === 'string') {
+      return [(item as { id: string }).id];
+    }
+
+    return [];
+  });
+}
+
+export function addMissingFriendsForGames(
+  friends: Friend[],
+  games: Game[],
+  appUserName?: string,
+): Friend[] {
+  const nextFriends = [...friends];
+  const friendNames = new Set(
+    nextFriends.map((friend) => normalizePlayerName(friend.name).toLocaleLowerCase()),
+  );
+  const appUserKey = normalizePlayerName(appUserName ?? '').toLocaleLowerCase();
+
+  for (const game of games) {
+    for (const player of game.players) {
+      const name = normalizePlayerName(player.name);
+      const nameKey = name.toLocaleLowerCase();
+
+      if (!name || isAppUserPlayer(player, appUserKey) || friendNames.has(nameKey)) {
+        continue;
+      }
+
+      friendNames.add(nameKey);
+      nextFriends.push({
+        id: createFriendId(
+          name,
+          nextFriends.map((friend) => friend.id),
+        ),
+        name,
+        createdAt: game.createdAt,
+      });
+    }
+  }
+
+  return nextFriends;
+}
+
+export function mapGamePlayerIdsToFriendIds(
+  game: Game,
+  friends: Friend[],
+  appUserName?: string,
+): Game {
+  const friendIdsByName = new Map<string, string>();
+  const duplicateFriendNames = new Set<string>();
+
+  for (const friend of friends) {
+    const nameKey = normalizePlayerName(friend.name).toLocaleLowerCase();
+
+    if (!nameKey) {
+      continue;
+    }
+
+    if (friendIdsByName.has(nameKey)) {
+      duplicateFriendNames.add(nameKey);
+      continue;
+    }
+
+    friendIdsByName.set(nameKey, friend.id);
+  }
+
+  const playerIds = new Set(game.players.map((player) => player.id));
+  const candidateCounts = new Map<string, number>();
+  const candidates = new Map<string, string>();
+  const appUserKey = normalizePlayerName(appUserName ?? '').toLocaleLowerCase();
+
+  for (const player of game.players) {
+    if (isAppUserPlayer(player, appUserKey)) {
+      continue;
+    }
+
+    const nameKey = normalizePlayerName(player.name).toLocaleLowerCase();
+    const friendId = friendIdsByName.get(nameKey);
+
+    if (
+      !friendId ||
+      duplicateFriendNames.has(nameKey) ||
+      (friendId !== player.id && playerIds.has(friendId))
+    ) {
+      continue;
+    }
+
+    candidates.set(player.id, friendId);
+    candidateCounts.set(friendId, (candidateCounts.get(friendId) ?? 0) + 1);
+  }
+
+  const playerIdMap = new Map(
+    [...candidates].filter(([, friendId]) => candidateCounts.get(friendId) === 1),
+  );
+  for (const player of game.players) {
+    if (isAppUserPlayer(player, appUserKey)) {
+      playerIdMap.set(player.id, APP_USER_ID);
+    }
+  }
+
+  const mapPlayerId = (playerId: string) => playerIdMap.get(playerId) ?? playerId;
+
+  return {
+    ...game,
+    players: game.players.map((player) => {
+      const { isAppUser: _isAppUser, ...normalizedPlayer } = player as LegacyPlayer;
+
+      return {
+        ...normalizedPlayer,
+        id: mapPlayerId(player.id),
+        death: player.death
+          ? {
+              ...player.death,
+              ...(player.death.killerPlayerId !== undefined
+                ? { killerPlayerId: mapPlayerId(player.death.killerPlayerId) }
+                : {}),
+              ...(player.death.killerPlayerIds
+                ? { killerPlayerIds: player.death.killerPlayerIds.map(mapPlayerId) }
+                : {}),
+            }
+          : undefined,
+        roleAssignments: player.roleAssignments?.map((assignment) => ({
+          ...assignment,
+          ...(assignment.subjectPlayerId !== undefined
+            ? { subjectPlayerId: mapPlayerId(assignment.subjectPlayerId) }
+            : {}),
+        })),
+      };
+    }),
+    conversations: game.conversations.map((conversation) => ({
+      ...conversation,
+      bigWigPlayerId:
+        conversation.bigWigPlayerId !== undefined
+          ? mapPlayerId(conversation.bigWigPlayerId)
+          : undefined,
+      initiatorId: mapPlayerId(conversation.initiatorId),
+      participantIds: conversation.participantIds.map(mapPlayerId),
+      voterIds: conversation.voterIds?.map(mapPlayerId),
+    })),
+    playerDayNotes: game.playerDayNotes?.map((entry) => ({
+      ...entry,
+      playerId: mapPlayerId(entry.playerId),
+    })),
+  };
 }
 
 export function migrateObjectIds(state: Partial<GameDataShape>): Partial<GameDataShape> {
@@ -42,43 +245,86 @@ export function migrateObjectIds(state: Partial<GameDataShape>): Partial<GameDat
   const gameIds = new Map<string, string>();
   const usedGameIds: string[] = [];
   for (const game of state.games ?? []) {
-    const nextId = createGameId(game.script?.name, game.createdAt, usedGameIds);
+    const nextId =
+      !game.script && game.scriptId !== undefined
+        ? game.id
+        : createGameId(game.script?.name, game.createdAt, usedGameIds);
     gameIds.set(game.id, nextId);
     usedGameIds.push(nextId);
   }
 
   const usedFriendIds: string[] = [];
-  const friends = state.friends?.map((friend) => {
+  const normalizedFriends = state.friends?.map((friend) => {
     const id = createFriendId(friend.name, usedFriendIds);
     usedFriendIds.push(id);
     return { ...friend, id };
   });
+  const friends = normalizedFriends
+    ? addMissingFriendsForGames(normalizedFriends, state.games ?? [], state.appUserName)
+    : undefined;
   const scripts = state.scripts?.map((script) => ({
     ...script,
     id: scriptIds.get(script.id) ?? script.id,
   }));
-  const games = state.games?.map((game) => ({
-    ...game,
-    id: gameIds.get(game.id) ?? game.id,
-    script: game.script
-      ? { ...game.script, id: scriptIds.get(game.script.id) ?? game.script.id }
-      : undefined,
-  }));
-  const savedNotes = state.savedNotes?.map((note) => ({
-    ...note,
-    gameId: gameIds.get(note.gameId) ?? note.gameId,
-    scriptId: note.scriptId ? (scriptIds.get(note.scriptId) ?? note.scriptId) : undefined,
-  }));
+  const usedNoteIds: string[] = [];
+  const games = state.games?.map((game) =>
+    mapGamePlayerDayNoteIds(
+      mapGameConversationIds(
+        mapGamePlayerIdsToFriendIds(
+          {
+            ...game,
+            id: gameIds.get(game.id) ?? game.id,
+            scriptId: game.scriptId
+              ? (scriptIds.get(game.scriptId) ?? game.scriptId)
+              : game.script
+                ? (scriptIds.get(game.script.id) ?? game.script.id)
+                : undefined,
+            script: game.script
+              ? { ...game.script, id: scriptIds.get(game.script.id) ?? game.script.id }
+              : undefined,
+            lorics: game.lorics ? getRoleIds(game.lorics) : undefined,
+            scriptRoleOverrides: game.scriptRoleOverrides
+              ? getRoleIds(game.scriptRoleOverrides)
+              : undefined,
+          },
+          friends ?? [],
+          state.appUserName,
+        ),
+      ),
+      usedNoteIds,
+    ),
+  );
+  const savedNotes = state.savedNotes
+    ? mapSavedNoteIds(
+        state.savedNotes.map((note) => ({
+          ...note,
+          gameId: gameIds.get(note.gameId) ?? note.gameId,
+          scriptId: note.scriptId ? (scriptIds.get(note.scriptId) ?? note.scriptId) : undefined,
+        })),
+        [],
+      )
+    : undefined;
 
   return { ...state, friends, games, savedNotes, scripts };
 }
 
 type GameDataShape = {
+  appUserName?: string;
   friends: Friend[];
   games: Game[];
   savedNotes: SavedNote[];
   scripts: StoredScript[];
 };
+
+type LegacyPlayer = Player & { isAppUser?: boolean };
+
+function isAppUserPlayer(player: Player, appUserKey: string) {
+  return (
+    player.id === APP_USER_ID ||
+    (player as LegacyPlayer).isAppUser === true ||
+    (!!appUserKey && normalizePlayerName(player.name).toLocaleLowerCase() === appUserKey)
+  );
+}
 
 function slugify(value: string) {
   return value
@@ -89,13 +335,13 @@ function slugify(value: string) {
     .replace(/^-|-$/g, '');
 }
 
-function formatIdDate(value: string) {
+function formatIdDate(value: string, length = 12) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return value.replace(/\D/g, '').slice(0, 12) || 'unknown-date';
+    return value.replace(/\D/g, '').slice(0, length) || 'unknown-date';
   }
 
-  return date.toISOString().replace(/[-:T]/g, '').slice(0, 12);
+  return date.toISOString().replace(/[-:T]/g, '').slice(0, length);
 }
 
 function makeUniqueId(baseId: string, usedIds: string[]) {

@@ -1,6 +1,6 @@
 import type { Friend, FriendSummary, Game } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
-import { createFriendId } from '@/utils/object-id';
+import { APP_USER_ID, createFriendId } from '@/utils/object-id';
 
 export function getFriendSummaries(
   games: Game[],
@@ -31,7 +31,7 @@ export function getFriendSummaries(
 
       const key = name.toLocaleLowerCase();
 
-      if (player.isAppUser || key === excludedKey) {
+      if (player.id === APP_USER_ID || key === excludedKey) {
         continue;
       }
 

@@ -28,7 +28,7 @@ export function InlineGameHeader({ activeGame, headerTranslateY }: InlineGameHea
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: headerTranslateY.value }],
   }));
-  const gameScriptId = activeGame.script?.id;
+  const gameScriptId = activeGame.scriptId ?? activeGame.script?.id;
   return (
     <Animated.View
       style={[

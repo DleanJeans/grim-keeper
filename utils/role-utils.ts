@@ -1,5 +1,6 @@
 import unknownRoleIcon from '@/assets/role-icons/unknown.webp';
 import type { Player, PlayerRoleAssignment, Role, StoredScript } from '@/types/game';
+import { APP_USER_ID } from '@/utils/object-id';
 
 export const BOTC_ROLE_CATALOG_URL = 'https://release.botc.app/resources/data/roles.json';
 export const BOTC_ROLE_ICON_BASE_URL = 'https://release.botc.app/resources/characters';
@@ -363,7 +364,7 @@ export function getEffectiveRoleForPlayer(
  * row: app user, then townsfolk, outsiders, minions, demons, then unknown.
  */
 export function getPlayerRoleBucket(player: Player, roles: Role[], activeDay: number): number {
-  if (player.isAppUser) {
+  if (player.id === APP_USER_ID) {
     return 0;
   }
 

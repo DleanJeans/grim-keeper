@@ -1,5 +1,10 @@
 import type { Game, StoredScript } from '@/types/game';
-import { restoreDuplicateScriptImages, stripDuplicateScriptImages } from '@/utils/script-storage';
+import {
+  restoreDuplicateScriptImages,
+  restoreRedundantRoleImageUrl,
+  stripDuplicateScriptImages,
+  stripRedundantRoleImageUrl,
+} from '@/utils/script-storage';
 
 const dataImage = 'data:image/png;base64,encoded-image';
 
@@ -29,6 +34,22 @@ const game: Game = {
 };
 
 describe('script persistence image handling', () => {
+  it('strips and restores a redundant single role image URL', () => {
+    const role = {
+      id: 'custom_role',
+      imageUrl: dataImage,
+      imageUrls: [dataImage],
+      name: 'Custom Role',
+    };
+
+    expect(stripRedundantRoleImageUrl(role)).toEqual({
+      id: 'custom_role',
+      imageUrls: [dataImage],
+      name: 'Custom Role',
+    });
+    expect(restoreRedundantRoleImageUrl(stripRedundantRoleImageUrl(role))).toEqual(role);
+  });
+
   it('strips duplicate data images from games but keeps external URLs', () => {
     const [storedGame] = stripDuplicateScriptImages([game], [script]);
     const [role] = storedGame.script?.roles ?? [];

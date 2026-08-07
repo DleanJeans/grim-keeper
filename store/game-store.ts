@@ -21,9 +21,25 @@ import type {
   StoredScript,
 } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
-import { addMissingFriends, getFriendSummaries, hasFriendName } from '@/utils/friend-utils';
+import {
+  addMissingFriends,
+  getFriendByName,
+  getFriendSummaries,
+  hasFriendName,
+} from '@/utils/friend-utils';
 import { clampMapHeight, getDefaultTokenSize, getTokenSize } from '@/utils/layout-utils';
-import { createFriendId, createGameId, createScriptId, migrateObjectIds } from '@/utils/object-id';
+import {
+  APP_USER_ID,
+  createConversationId,
+  createFriendId,
+  createGameId,
+  createNoteId,
+  createSavedNoteId,
+  createScriptId,
+  getRoleIds,
+  mapGamePlayerIdsToFriendIds,
+  migrateObjectIds,
+} from '@/utils/object-id';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 import {
   getNotesForPlayer,
@@ -225,14 +241,16 @@ export const useGameStore = create<GameState>()(
                 ];
           const games = state.games.map((game) => {
             const players = game.players.map((player) =>
-              !player.isAppUser &&
+              player.id !== APP_USER_ID &&
               normalizePlayerName(player.name).toLocaleLowerCase() === currentKey
                 ? { ...player, name: normalizedNextName }
                 : player,
             );
             const changed = players.some((player, index) => player !== game.players[index]);
 
-            return changed ? { ...game, players, updatedAt } : game;
+            return changed
+              ? mapGamePlayerIdsToFriendIds({ ...game, players, updatedAt }, friends)
+              : game;
           });
           const savedNotes = state.savedNotes.map((note) =>
             normalizePlayerName(note.playerName).toLocaleLowerCase() === currentKey
@@ -252,12 +270,25 @@ export const useGameStore = create<GameState>()(
         const otherPlayerNames = playerNames.filter(
           (name) => normalizePlayerName(name).toLocaleLowerCase() !== appUserKey,
         );
-        const players = [appUserName, ...otherPlayerNames].map<Player>((name, index) => ({
-          id: createId('player'),
-          isAppUser: index === 0,
-          name: normalizePlayerName(name),
-          seat: index,
-        }));
+        const friends = addMissingFriends(get().friends, otherPlayerNames, now);
+        const friendIdsByName = new Map(
+          friends.map((friend) => [
+            normalizePlayerName(friend.name).toLocaleLowerCase(),
+            friend.id,
+          ]),
+        );
+        const players = [appUserName, ...otherPlayerNames].map<Player>((name, index) => {
+          const normalizedName = normalizePlayerName(name);
+
+          return {
+            id:
+              (index === 0
+                ? APP_USER_ID
+                : friendIdsByName.get(normalizedName.toLocaleLowerCase())) ?? createId('player'),
+            name: normalizedName,
+            seat: index,
+          };
+        });
         const normalizedMapWidth = Math.max(1, Math.round(mapWidth));
         const normalizedMapHeight = clampMapHeight(mapHeight);
         const game: Game = {
@@ -274,13 +305,13 @@ export const useGameStore = create<GameState>()(
           tokenSize: getDefaultTokenSize(players.length, normalizedMapWidth, normalizedMapHeight),
           players,
           conversations: [],
-          lorics: lorics?.map((role) => ({ ...role })),
+          lorics: lorics?.map((role) => role.id),
+          scriptId: script?.id,
           script: script ? { ...script, roles: [...script.roles] } : undefined,
         };
 
         set((state) => {
           const games = [game, ...state.games];
-          const friends = addMissingFriends(state.friends, otherPlayerNames, now);
 
           return {
             games,
@@ -310,6 +341,7 @@ export const useGameStore = create<GameState>()(
 
           if (existingIndex < 0) {
             return {
+              games: updateGamesWithScript(state.games, normalizedScript, state.roleCatalog),
               scripts: [
                 ...state.scripts,
                 {
@@ -329,7 +361,10 @@ export const useGameStore = create<GameState>()(
               ...state.scripts[existingIndex].roles,
             ]),
           };
-          return { scripts };
+          return {
+            games: updateGamesWithScript(state.games, scripts[existingIndex], state.roleCatalog),
+            scripts,
+          };
         });
       },
       updateScript: (script) => {
@@ -350,6 +385,9 @@ export const useGameStore = create<GameState>()(
             game.id === gameId
               ? {
                   ...game,
+                  scriptId: script?.id,
+                  scriptRoleIds: undefined,
+                  scriptRoleOverrides: undefined,
                   script: script
                     ? {
                         ...script,
@@ -371,7 +409,7 @@ export const useGameStore = create<GameState>()(
             game.id === gameId
               ? {
                   ...game,
-                  lorics: lorics.map((role) => ({ ...role })),
+                  lorics: lorics.map((role) => role.id),
                   updatedAt: new Date().toISOString(),
                 }
               : game,
@@ -390,36 +428,42 @@ export const useGameStore = create<GameState>()(
           return;
         }
 
-        set((state) => ({
-          games: state.games.map((game) => {
-            if (game.id !== gameId) {
-              return game;
-            }
+        set((state) => {
+          const game = state.games.find((existingGame) => existingGame.id === gameId);
 
-            const hasDuplicate = game.players.some(
+          if (
+            !game ||
+            game.players.some(
               (player) =>
                 normalizePlayerName(player.name).toLocaleLowerCase() ===
                 normalizedName.toLocaleLowerCase(),
-            );
+            )
+          ) {
+            return state;
+          }
 
-            if (hasDuplicate) {
-              return game;
-            }
+          const updatedAt = new Date().toISOString();
+          const friends = addMissingFriends(state.friends, [normalizedName], updatedAt);
+          const friend = getFriendByName(friends, normalizedName);
+          const games = state.games.map((existingGame) =>
+            existingGame.id === gameId
+              ? {
+                  ...existingGame,
+                  updatedAt,
+                  players: [
+                    ...existingGame.players,
+                    {
+                      id: friend?.id ?? createId('player'),
+                      name: normalizedName,
+                      seat: Math.max(-1, ...existingGame.players.map((player) => player.seat)) + 1,
+                    },
+                  ],
+                }
+              : existingGame,
+          );
 
-            return {
-              ...game,
-              updatedAt: new Date().toISOString(),
-              players: [
-                ...game.players,
-                {
-                  id: createId('player'),
-                  name: normalizedName,
-                  seat: Math.max(-1, ...game.players.map((player) => player.seat)) + 1,
-                },
-              ],
-            };
-          }),
-        }));
+          return { friends, games };
+        });
       },
       deleteGame: (gameId) => {
         set((state) => ({
@@ -433,7 +477,7 @@ export const useGameStore = create<GameState>()(
               return game;
             }
 
-            if (game.players.find((player) => player.id === playerId)?.isAppUser) {
+            if (game.players.find((player) => player.id === playerId)?.id === APP_USER_ID) {
               return game;
             }
 
@@ -542,18 +586,25 @@ export const useGameStore = create<GameState>()(
           return undefined;
         }
         const updatedAt = new Date().toISOString();
-        const newNote: PlayerDayNoteEntry = {
-          createdAt: updatedAt,
-          id: createId('note'),
-          text: nextText,
-          updatedAt,
-        };
+        let noteId: string | undefined;
 
         set((state) => ({
           games: state.games.map((game) => {
             if (game.id !== gameId) {
               return game;
             }
+            const usedNoteIds = state.games.flatMap(
+              (candidate) =>
+                candidate.playerDayNotes?.flatMap((entry) => entry.notes.map((note) => note.id)) ??
+                [],
+            );
+            const newNote: PlayerDayNoteEntry = {
+              createdAt: updatedAt,
+              id: createNoteId(updatedAt, usedNoteIds),
+              text: nextText,
+              updatedAt,
+            };
+            noteId = newNote.id;
             return {
               ...game,
               updatedAt,
@@ -565,7 +616,7 @@ export const useGameStore = create<GameState>()(
           }),
         }));
 
-        return newNote.id;
+        return noteId;
       },
       editPlayerDayNote: (gameId, playerId, day, noteId, text) => {
         const nextText = text.trim();
@@ -638,7 +689,12 @@ export const useGameStore = create<GameState>()(
           );
           const existing = savedNoteIndex >= 0 ? state.savedNotes[savedNoteIndex] : undefined;
           const savedNote: SavedNote = {
-            id: existing?.id ?? createId('saved-note'),
+            id:
+              existing?.id ??
+              createSavedNoteId(
+                updatedAt,
+                state.savedNotes.map((note) => note.id),
+              ),
             playerName: normalizedPlayerName,
             roleIds: [...uniqueRoleIds],
             text: nextText,
@@ -818,13 +874,19 @@ export const useGameStore = create<GameState>()(
           return undefined;
         }
 
+        const createdAt = new Date().toISOString();
         const conversation: Conversation = {
-          id: createId('conversation'),
+          id: createConversationId(
+            createdAt,
+            get()
+              .games.find((game) => game.id === gameId)
+              ?.conversations.map(({ id }) => id) ?? [],
+          ),
           day,
           kind,
           participantIds: uniqueParticipantIds,
           initiatorId: uniqueParticipantIds[0],
-          createdAt: new Date().toISOString(),
+          createdAt,
         };
 
         set((state) => ({
@@ -911,10 +973,10 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'grim-keeper-game-store-v1',
-      version: 5,
+      version: 11,
       storage: createJSONStorage(() => (Platform.OS === 'web' ? webStorage : localStorage)),
       migrate: (persistedState, version) => {
-        if (!persistedState || version >= 5) {
+        if (!persistedState || version >= 11) {
           return persistedState as Partial<GameState> | undefined;
         }
 
@@ -1020,6 +1082,41 @@ function migratePlayerDayNotes(state: Partial<GameState>): Partial<GameState> {
 
 function dedupeRoles(roles: Role[]) {
   return [...new Map(roles.map((role) => [role.id, role])).values()];
+}
+
+function updateGamesWithScript(games: Game[], script: StoredScript, roleCatalog: Role[]) {
+  return games.map((game) => {
+    const gameScriptId = game.scriptId ?? game.script?.id;
+    if (gameScriptId !== script.id) {
+      return game;
+    }
+
+    const roleIds = [
+      ...new Set([...(game.scriptRoleIds ?? []), ...getRoleIds(game.scriptRoleOverrides)]),
+    ];
+    const existingRoles = game.script?.roles ?? [];
+    const rolesById = new Map(
+      [...script.roles, ...roleCatalog, ...existingRoles].map((role) => [role.id, role]),
+    );
+    const additionalRoles = roleIds
+      .filter((roleId) => !script.roles.some((scriptRole) => scriptRole.id === roleId))
+      .flatMap((roleId) => {
+        const role = rolesById.get(roleId);
+        return role ? [role] : [];
+      });
+    const roles = mergeRoleNotes(
+      [...script.roles, ...additionalRoles],
+      [...roleCatalog, ...existingRoles],
+    );
+
+    return {
+      ...game,
+      scriptId: script.id,
+      scriptRoleIds: undefined,
+      scriptRoleOverrides: undefined,
+      script: { ...script, roles },
+    };
+  });
 }
 
 function mergeRoleNotes(roles: Role[], sources: Role[]) {

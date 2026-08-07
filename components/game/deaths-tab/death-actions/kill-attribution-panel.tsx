@@ -10,7 +10,7 @@ import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { KillAttribution, Player, Role } from '@/types/game';
-import { getKillerRoleOptions, getRoleOwnerNamesForDay } from '@/utils/role-utils';
+import { getKillerRoleOptions, getRoleOwnerNamesForDay, getRolesByIds } from '@/utils/role-utils';
 
 type KillAttributionPanelProps = {
   confirmLabel?: string;
@@ -35,7 +35,7 @@ export function KillAttributionPanel({
     initialAttribution?.killerRoleIds ?? [],
   );
   const killerRoles = getKillerRoleOptions(
-    [...(game.script?.roles ?? []), ...(game.lorics ?? [])],
+    [...(game.script?.roles ?? []), ...getRolesByIds(game.lorics ?? [], roleCatalog)],
     roleCatalog,
   );
   const killerRoleSections = getKillerRoleSections(killerRoles);

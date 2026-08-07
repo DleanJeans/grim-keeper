@@ -7,11 +7,12 @@ import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import { isFlowerGirlRole } from '@/utils/role-utils';
+import { getRolesByIds, isFlowerGirlRole } from '@/utils/role-utils';
 
 export function NominationList() {
   const setPlayerDeath = useGameStore((state) => state.setPlayerDeath);
   const setNominationBigWig = useGameStore((state) => state.setNominationBigWig);
+  const roleCatalog = useGameStore((state) => state.roleCatalog);
   const {
     activeDay,
     conversations,
@@ -34,7 +35,7 @@ export function NominationList() {
   );
   const voterIds = [...new Set(nominations.flatMap((nomination) => nomination.voterIds ?? []))];
   const hasFlowerGirl = game.script?.roles.some(isFlowerGirlRole) ?? false;
-  const bigWig = game.lorics?.find((role) => role.id === 'bigwig');
+  const bigWig = getRolesByIds(game.lorics ?? [], roleCatalog).find((role) => role.id === 'bigwig');
   const focusedPlayerNomination = focusedPlayer
     ? nominations.find((nomination) => nomination.initiatorId === focusedPlayer.id)
     : undefined;

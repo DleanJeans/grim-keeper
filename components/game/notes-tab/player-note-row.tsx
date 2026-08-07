@@ -9,6 +9,7 @@ import { PlayerDayNoteEditor } from '@/components/game/notes-tab/player-day-note
 import { PlayerNoteRoleAssignment } from '@/components/game/notes-tab/player-notes';
 import { RoleReferenceNoteLine } from '@/components/role-reference-note-line';
 import { Text } from '@/components/text';
+import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Conversation, Player, PlayerDayNoteEntry, Role } from '@/types/game';
 import {
@@ -37,6 +38,7 @@ export function PlayerNoteRow({
     handleStartAddNote: onAddNote,
     handleStartEditNote: onEditNote,
   } = useGameRouteContext();
+  const roleCatalog = useGameStore((state) => state.roleCatalog);
 
   const isEditingRow = noteEditorDay === day && noteEditorPlayerId === player.id;
   const isActiveDay = day === activeDay;
@@ -62,7 +64,7 @@ export function PlayerNoteRow({
     day,
     game.players,
     game.conversations,
-    game.lorics ?? [],
+    getRolesByIds(game.lorics ?? [], roleCatalog),
   );
 
   return (
