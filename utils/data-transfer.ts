@@ -33,7 +33,10 @@ type Backup = {
 
 type ExportedPlayer = Omit<Player, 'name'> & { name?: string };
 
-type ExportedConversation = Omit<Conversation, 'initiatorId'> & { initiatorId?: string };
+type ExportedConversation = Omit<Conversation, 'initiatorId' | 'kind'> & {
+  initiatorId?: string;
+  kind?: Conversation['kind'];
+};
 
 type ExportedGame = Omit<Game, 'conversations' | 'players' | 'script'> & {
   conversations: ExportedConversation[];
@@ -138,7 +141,10 @@ function exportGame(game: Game, scriptsById: Map<string, StoredScript>): Exporte
   const gameWithoutScriptReference = {
     ...gameWithoutScript,
     conversations: game.conversations.map(
-      ({ initiatorId: _initiatorId, ...conversation }) => conversation,
+      ({ initiatorId: _initiatorId, kind, ...conversation }) => ({
+        ...conversation,
+        ...(kind && kind !== 'interaction' ? { kind } : {}),
+      }),
     ),
     players: game.players.map(({ name: _name, ...player }) => player),
     ...(lorics !== undefined ? { lorics: getRoleIds(lorics) } : {}),
@@ -195,6 +201,7 @@ function restoreExportedData(data: ExportedGameData): GameData {
         ...gameWithoutScript,
         conversations: gameWithoutScript.conversations.map((conversation) => ({
           ...conversation,
+          kind: conversation.kind ?? 'interaction',
           initiatorId: conversation.initiatorId ?? conversation.participantIds[0] ?? '',
         })),
         players: gameWithoutScript.players.map((player) => ({

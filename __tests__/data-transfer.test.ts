@@ -57,6 +57,7 @@ describe('data transfer', () => {
         {
           id: 'conversation-1',
           day: 1,
+          kind: 'interaction',
           participantIds: [APP_USER_ID, 'player-alice', 'player-bob'],
           initiatorId: APP_USER_ID,
           voterIds: ['player-bob'],
@@ -98,6 +99,7 @@ describe('data transfer', () => {
       voterIds: ['bob'],
     });
     expect(exportedGame.conversations[0]).not.toHaveProperty('initiatorId');
+    expect(exportedGame.conversations[0]).not.toHaveProperty('kind');
     expect(exportedGame.players[0]).not.toHaveProperty('isAppUser');
     expect(
       exportedGame.players.every((player: { name?: string }) => player.name === undefined),
@@ -110,6 +112,7 @@ describe('data transfer', () => {
     expect(parseBackup(JSON.stringify(backup)).games[0].conversations[0].initiatorId).toBe(
       APP_USER_ID,
     );
+    expect(parseBackup(JSON.stringify(backup)).games[0].conversations[0].kind).toBe('interaction');
   });
 
   it('exports lorics as IDs and imports legacy loric objects', () => {

@@ -37,6 +37,7 @@ describe('backup export integration', () => {
             createdAt: string;
             participantIds: string[];
             initiatorId?: string;
+            kind?: 'interaction' | 'nomination';
           }>;
           lorics?: unknown[];
           script?: unknown;
@@ -89,6 +90,11 @@ describe('backup export integration', () => {
       ),
     ).toBe(true);
     expect(
+      exported.data.games.every((game) =>
+        game.conversations.every((conversation) => conversation.kind !== 'interaction'),
+      ),
+    ).toBe(true);
+    expect(
       exported.data.games.every(
         (game) =>
           new Set(game.conversations.map((conversation) => conversation.id)).size ===
@@ -121,6 +127,14 @@ describe('backup export integration', () => {
       restored.games.every((game) =>
         game.conversations.every(
           (conversation) => conversation.initiatorId === conversation.participantIds[0],
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      restored.games.every((game) =>
+        game.conversations.every(
+          (conversation) =>
+            conversation.kind === 'interaction' || conversation.kind === 'nomination',
         ),
       ),
     ).toBe(true);
