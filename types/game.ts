@@ -122,7 +122,7 @@ export type Game = {
   characterTypeCounts?: CharacterTypeCounts;
   players: Player[];
   conversations: Conversation[];
-  lorics?: Role[];
+  lorics?: string[];
   scriptId?: string;
   scriptRoleIds?: string[];
   scriptRoleOverrides?: string[];

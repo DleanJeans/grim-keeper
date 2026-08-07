@@ -109,9 +109,14 @@ function normalizeForExport(data: GameData): ExportedGameData {
 }
 
 function exportGame(game: Game, scriptsById: Map<string, StoredScript>): ExportedGame {
-  const { script, ...gameWithoutScript } = game;
+  const { lorics, script, ...gameWithoutScript } = game;
+  const gameWithoutScriptReference = {
+    ...gameWithoutScript,
+    ...(lorics !== undefined ? { lorics: getRoleIds(lorics) } : {}),
+  };
+
   if (!script) {
-    return gameWithoutScript;
+    return gameWithoutScriptReference;
   }
 
   const storedScript = scriptsById.get(script.id);
@@ -126,7 +131,7 @@ function exportGame(game: Game, scriptsById: Map<string, StoredScript>): Exporte
     : undefined;
 
   return {
-    ...gameWithoutScript,
+    ...gameWithoutScriptReference,
     scriptId: script.id,
     ...(scriptRoleIds ? { scriptRoleIds } : {}),
     ...(scriptRoleOverrides?.length ? { scriptRoleOverrides } : {}),
@@ -155,7 +160,11 @@ function restoreExportedData(data: ExportedGameData): GameData {
     ...data,
     scripts: storedScripts,
     games: data.games.map((game) => {
-      const { scriptId, scriptRoleIds, scriptRoleOverrides, ...gameWithoutScriptReference } = game;
+      const { lorics, scriptId, scriptRoleIds, scriptRoleOverrides, ...gameWithoutScript } = game;
+      const gameWithoutScriptReference = {
+        ...gameWithoutScript,
+        ...(lorics !== undefined ? { lorics: getRoleIds(lorics) } : {}),
+      };
       const script = scriptId ? scriptsById.get(scriptId) : undefined;
 
       if (!script) {

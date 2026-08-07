@@ -301,7 +301,7 @@ export const useGameStore = create<GameState>()(
           tokenSize: getDefaultTokenSize(players.length, normalizedMapWidth, normalizedMapHeight),
           players,
           conversations: [],
-          lorics: lorics?.map((role) => ({ ...role })),
+          lorics: lorics?.map((role) => role.id),
           scriptId: script?.id,
           script: script ? { ...script, roles: [...script.roles] } : undefined,
         };
@@ -405,7 +405,7 @@ export const useGameStore = create<GameState>()(
             game.id === gameId
               ? {
                   ...game,
-                  lorics: lorics.map((role) => ({ ...role })),
+                  lorics: lorics.map((role) => role.id),
                   updatedAt: new Date().toISOString(),
                 }
               : game,
@@ -951,10 +951,10 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'grim-keeper-game-store-v1',
-      version: 7,
+      version: 8,
       storage: createJSONStorage(() => (Platform.OS === 'web' ? webStorage : localStorage)),
       migrate: (persistedState, version) => {
-        if (!persistedState || version >= 7) {
+        if (!persistedState || version >= 8) {
           return persistedState as Partial<GameState> | undefined;
         }
 

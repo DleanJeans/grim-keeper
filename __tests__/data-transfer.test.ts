@@ -93,6 +93,38 @@ describe('data transfer', () => {
     expect(exportedGame.playerDayNotes[0].playerId).toBe('alice');
   });
 
+  it('exports lorics as IDs and imports legacy loric objects', () => {
+    const loric: Role = {
+      edition: 'tb',
+      id: 'bureaucrat',
+      name: 'Bureaucrat',
+      team: 'loric',
+    };
+    const game: Game = {
+      id: 'game-1',
+      activeDay: 1,
+      createdAt: '2026-08-03T00:00:00.000Z',
+      updatedAt: '2026-08-03T00:00:00.000Z',
+      players: [],
+      conversations: [],
+      lorics: [loric.id],
+    };
+    const backup = JSON.parse(createBackup({ ...data, games: [game] }));
+
+    expect(backup.data.games[0].lorics).toEqual(['bureaucrat']);
+    expect(parseBackup(JSON.stringify(backup)).games[0].lorics).toEqual(['bureaucrat']);
+
+    const legacyBackup = {
+      ...backup,
+      data: {
+        ...backup.data,
+        games: [{ ...backup.data.games[0], lorics: [loric] }],
+      },
+    };
+
+    expect(parseBackup(JSON.stringify(legacyBackup)).games[0].lorics).toEqual(['bureaucrat']);
+  });
+
   it('rejects unrelated JSON', () => {
     expect(() => parseBackup('{"games":[]}')).toThrow(
       'This is not a supported Grim Keeper backup.',

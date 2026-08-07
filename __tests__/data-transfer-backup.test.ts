@@ -26,6 +26,7 @@ describe('backup export integration', () => {
         appUserName: string;
         games: Array<{
           players: Array<{ id: string; isAppUser?: boolean; name: string }>;
+          lorics?: unknown[];
           script?: unknown;
           scriptId?: string;
           scriptRoleOverrides?: unknown[];
@@ -46,6 +47,11 @@ describe('backup export integration', () => {
     expect(
       exported.data.games
         .flatMap((game) => game.scriptRoleOverrides ?? [])
+        .every((roleId) => typeof roleId === 'string'),
+    ).toBe(true);
+    expect(
+      exported.data.games
+        .flatMap((game) => game.lorics ?? [])
         .every((roleId) => typeof roleId === 'string'),
     ).toBe(true);
     expect(

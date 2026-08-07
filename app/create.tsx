@@ -104,7 +104,7 @@ export default function CreateRoute() {
 
   useEffect(() => {
     if (isEditing) {
-      setSelectedLoricIds(editingGame?.lorics?.map((role) => role.id) ?? []);
+      setSelectedLoricIds(editingGame?.lorics ?? []);
     }
   }, [editingGame?.lorics, isEditing]);
 

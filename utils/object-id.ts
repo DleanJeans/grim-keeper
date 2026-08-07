@@ -228,6 +228,7 @@ export function migrateObjectIds(state: Partial<GameDataShape>): Partial<GameDat
         script: game.script
           ? { ...game.script, id: scriptIds.get(game.script.id) ?? game.script.id }
           : undefined,
+        lorics: game.lorics ? getRoleIds(game.lorics) : undefined,
         scriptRoleOverrides: game.scriptRoleOverrides
           ? getRoleIds(game.scriptRoleOverrides)
           : undefined,
