@@ -33,6 +33,7 @@ describe('data transfer', () => {
           id: 'player-alice',
           name: 'Alice',
           seat: 1,
+          position: { x: 90.54666169143498, y: 465.6000061035156 },
           death: {
             day: 1,
             kind: 'night',
@@ -82,8 +83,13 @@ describe('data transfer', () => {
       'bob',
     ]);
     expect(exportedGame.players[1]).toMatchObject({
+      position: { x: 90.55, y: 465.6 },
       death: { killerPlayerId: 'bob', killerPlayerIds: ['bob'] },
       roleAssignments: [{ subjectPlayerId: 'bob' }],
+    });
+    expect(game.players[1].position).toEqual({
+      x: 90.54666169143498,
+      y: 465.6000061035156,
     });
     expect(exportedGame.conversations[0]).toMatchObject({
       id: 'conversation-20260803000000',

@@ -84,9 +84,26 @@ function normalizeForExport(data: GameData): ExportedGameData {
   const roleCatalog = data.roleCatalog.filter((role) => !isOfficialRole(role));
   const scriptsById = new Map(data.scripts.map((script) => [script.id, script]));
   const friends = addMissingFriendsForGames(data.friends, data.games, data.appUserName);
-  const games = data.games.map((game) =>
-    mapGameConversationIds(mapGamePlayerIdsToFriendIds(game, friends, data.appUserName)),
-  );
+  const games = data.games.map((game) => {
+    const normalizedGame = mapGameConversationIds(
+      mapGamePlayerIdsToFriendIds(game, friends, data.appUserName),
+    );
+
+    return {
+      ...normalizedGame,
+      players: normalizedGame.players.map((player) => ({
+        ...player,
+        ...(player.position
+          ? {
+              position: {
+                x: roundToTwoDecimals(player.position.x),
+                y: roundToTwoDecimals(player.position.y),
+              },
+            }
+          : {}),
+      })),
+    };
+  });
 
   for (const game of games) {
     const script = game.script;
@@ -229,6 +246,10 @@ function sameRoleIds(first: Role[], second: Role[]) {
   return (
     first.length === second.length && first.every((role, index) => role.id === second[index]?.id)
   );
+}
+
+function roundToTwoDecimals(value: number) {
+  return Number(value.toFixed(2));
 }
 
 function isGameData(value: unknown): value is GameData {

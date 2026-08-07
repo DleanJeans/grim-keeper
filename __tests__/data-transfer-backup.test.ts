@@ -26,7 +26,12 @@ describe('backup export integration', () => {
       data: {
         appUserName: string;
         games: Array<{
-          players: Array<{ id: string; name: string; [key: string]: unknown }>;
+          players: Array<{
+            id: string;
+            name: string;
+            position?: { x: number; y: number };
+            [key: string]: unknown;
+          }>;
           conversations: Array<{ id: string; createdAt: string }>;
           lorics?: unknown[];
           script?: unknown;
@@ -51,6 +56,17 @@ describe('backup export integration', () => {
     ).toBe(true);
     expect(
       exported.data.games.every((game) => game.players.every((player) => !('isAppUser' in player))),
+    ).toBe(true);
+    expect(
+      exported.data.games.every((game) =>
+        game.players.every(
+          (player) =>
+            !player.position ||
+            [player.position.x, player.position.y].every(
+              (value) => value === Number(value.toFixed(2)),
+            ),
+        ),
+      ),
     ).toBe(true);
     expect(
       exported.data.games.every((game) =>
