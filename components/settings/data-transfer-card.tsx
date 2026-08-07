@@ -6,14 +6,23 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { Text } from '@/components/text';
+import type { GameData } from '@/store/game-store';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { createBackup, parseBackup } from '@/utils/data-transfer';
+import { getBackupStats } from '@/utils/data-transfer-stats';
+
+type SelectedBackup = {
+  data: GameData;
+  name: string;
+  size: number;
+};
 
 export function DataTransferCard() {
   const showDialog = useAppDialog();
   const [backupText, setBackupText] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  const [selectedBackup, setSelectedBackup] = useState<SelectedBackup | null>(null);
   const importData = useGameStore((state) => state.importData);
 
   async function exportData() {
@@ -44,7 +53,7 @@ export function DataTransferCard() {
 
   function confirmImport() {
     try {
-      const data = parseBackup(backupText);
+      const data = selectedBackup?.data ?? parseBackup(backupText);
 
       showDialog(
         'Replace all app data?',
@@ -66,6 +75,7 @@ export function DataTransferCard() {
   function completeImport(data: Parameters<typeof importData>[0]) {
     importData(data);
     setBackupText('');
+    setSelectedBackup(null);
 
     showDialog('Import complete', 'Your Grim Keeper data has been restored.');
   }
@@ -78,10 +88,26 @@ export function DataTransferCard() {
       const file = input.files?.[0];
 
       if (file) {
-        setBackupText(await file.text());
+        void selectBackupFile(file);
       }
     });
     input.click();
+  }
+
+  async function selectBackupFile(file: globalThis.File) {
+    try {
+      const data = parseBackup(await file.text());
+      setBackupText('');
+      setSelectedBackup({ data, name: file.name, size: file.size });
+    } catch (error) {
+      setSelectedBackup(null);
+      showDialog('Could not import backup', getErrorMessage(error));
+    }
+  }
+
+  function clearSelectedBackup() {
+    setSelectedBackup(null);
+    setBackupText('');
   }
 
   return (
@@ -102,25 +128,29 @@ export function DataTransferCard() {
         onPress={exportData}
       />
 
-      <TextInput
-        accessibilityLabel="Backup JSON"
-        autoCapitalize="none"
-        autoCorrect={false}
-        multiline
-        onChangeText={setBackupText}
-        placeholder="Paste Grim Keeper backup JSON"
-        placeholderTextColor={colors.inputPlaceholder}
-        style={styles.input}
-        textAlignVertical="top"
-        value={backupText}
-      />
+      {selectedBackup ? (
+        <SelectedBackupSummary backup={selectedBackup} onClear={clearSelectedBackup} />
+      ) : (
+        <TextInput
+          accessibilityLabel="Backup JSON"
+          autoCapitalize="none"
+          autoCorrect={false}
+          multiline
+          onChangeText={setBackupText}
+          placeholder="Paste Grim Keeper backup JSON"
+          placeholderTextColor={colors.inputPlaceholder}
+          style={styles.input}
+          textAlignVertical="top"
+          value={backupText}
+        />
+      )}
 
       {process.env.EXPO_OS === 'web' ? (
         <ActionButton icon="file" label="Choose backup file" onPress={chooseBackupFile} secondary />
       ) : null}
 
       <ActionButton
-        disabled={!backupText.trim()}
+        disabled={!selectedBackup && !backupText.trim()}
         icon="upload"
         label="Import data"
         onPress={confirmImport}
@@ -192,6 +222,30 @@ const styles = StyleSheet.create({
     minHeight: 140,
     padding: 12,
   },
+  selectedBackup: {
+    backgroundColor: colors.inputBackground,
+    borderColor: colors.inputBorder,
+    borderCurve: 'continuous',
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 12,
+    padding: 12,
+  },
+  selectedBackupFile: {
+    color: colors.inputText,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  selectedBackupMeta: {
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  selectedBackupStats: {
+    color: colors.text,
+    fontSize: 14,
+    lineHeight: 21,
+  },
   title: {
     color: colors.text,
     fontSize: 20,
@@ -237,6 +291,32 @@ function ActionButton({ disabled, icon, label, onPress, secondary }: ActionButto
   );
 }
 
+function SelectedBackupSummary({
+  backup,
+  onClear,
+}: {
+  backup: SelectedBackup;
+  onClear: () => void;
+}) {
+  const stats = getBackupStats(backup.data);
+
+  return (
+    <View accessibilityLabel="Selected backup" style={styles.selectedBackup}>
+      <Text selectable style={styles.selectedBackupFile}>
+        {backup.name}
+      </Text>
+      <Text selectable style={styles.selectedBackupMeta}>
+        {formatFileSize(backup.size)} ·{' '}
+        <Text style={styles.selectedBackupStats}>
+          {stats.games} games · {stats.players} players · {stats.friends} friends · {stats.scripts}{' '}
+          scripts · {stats.notes} notes
+        </Text>
+      </Text>
+      <ActionButton icon="upload" label="Paste backup instead" onPress={onClear} secondary />
+    </View>
+  );
+}
+
 function downloadBackup(json: string) {
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -268,6 +348,18 @@ async function shareBackupFile(json: string) {
 
 function getBackupFilename() {
   return `grim-keeper-backup-${new Date().toISOString().replaceAll(':', '-')}.json`;
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function getErrorMessage(error: unknown) {
