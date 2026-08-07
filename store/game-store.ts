@@ -29,6 +29,7 @@ import {
 } from '@/utils/friend-utils';
 import { clampMapHeight, getDefaultTokenSize, getTokenSize } from '@/utils/layout-utils';
 import {
+  createConversationId,
   createFriendId,
   createGameId,
   createScriptId,
@@ -858,13 +859,19 @@ export const useGameStore = create<GameState>()(
           return undefined;
         }
 
+        const createdAt = new Date().toISOString();
         const conversation: Conversation = {
-          id: createId('conversation'),
+          id: createConversationId(
+            createdAt,
+            get()
+              .games.find((game) => game.id === gameId)
+              ?.conversations.map(({ id }) => id) ?? [],
+          ),
           day,
           kind,
           participantIds: uniqueParticipantIds,
           initiatorId: uniqueParticipantIds[0],
-          createdAt: new Date().toISOString(),
+          createdAt,
         };
 
         set((state) => ({
@@ -951,10 +958,10 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'grim-keeper-game-store-v1',
-      version: 8,
+      version: 9,
       storage: createJSONStorage(() => (Platform.OS === 'web' ? webStorage : localStorage)),
       migrate: (persistedState, version) => {
-        if (!persistedState || version >= 8) {
+        if (!persistedState || version >= 9) {
           return persistedState as Partial<GameState> | undefined;
         }
 

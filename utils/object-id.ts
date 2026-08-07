@@ -7,6 +7,21 @@ export function createGameId(scriptName: string | undefined, createdAt: string, 
   return makeUniqueId(`${slugify(scriptName || 'game')}-${formatIdDate(createdAt)}`, usedIds);
 }
 
+export function createConversationId(createdAt: string, usedIds: string[]) {
+  return makeUniqueId(`conversation-${formatIdDate(createdAt, 14)}`, usedIds);
+}
+
+export function mapGameConversationIds(game: Game): Game {
+  const usedIds: string[] = [];
+  const conversations = game.conversations.map((conversation) => {
+    const id = createConversationId(conversation.createdAt, usedIds);
+    usedIds.push(id);
+    return { ...conversation, id };
+  });
+
+  return { ...game, conversations };
+}
+
 export function createFriendId(name: string, usedIds: string[]) {
   return makeUniqueId(slugify(name) || 'friend', usedIds);
 }
@@ -216,25 +231,27 @@ export function migrateObjectIds(state: Partial<GameDataShape>): Partial<GameDat
     id: scriptIds.get(script.id) ?? script.id,
   }));
   const games = state.games?.map((game) =>
-    mapGamePlayerIdsToFriendIds(
-      {
-        ...game,
-        id: gameIds.get(game.id) ?? game.id,
-        scriptId: game.scriptId
-          ? (scriptIds.get(game.scriptId) ?? game.scriptId)
-          : game.script
-            ? (scriptIds.get(game.script.id) ?? game.script.id)
+    mapGameConversationIds(
+      mapGamePlayerIdsToFriendIds(
+        {
+          ...game,
+          id: gameIds.get(game.id) ?? game.id,
+          scriptId: game.scriptId
+            ? (scriptIds.get(game.scriptId) ?? game.scriptId)
+            : game.script
+              ? (scriptIds.get(game.script.id) ?? game.script.id)
+              : undefined,
+          script: game.script
+            ? { ...game.script, id: scriptIds.get(game.script.id) ?? game.script.id }
             : undefined,
-        script: game.script
-          ? { ...game.script, id: scriptIds.get(game.script.id) ?? game.script.id }
-          : undefined,
-        lorics: game.lorics ? getRoleIds(game.lorics) : undefined,
-        scriptRoleOverrides: game.scriptRoleOverrides
-          ? getRoleIds(game.scriptRoleOverrides)
-          : undefined,
-      },
-      friends ?? [],
-      state.appUserName,
+          lorics: game.lorics ? getRoleIds(game.lorics) : undefined,
+          scriptRoleOverrides: game.scriptRoleOverrides
+            ? getRoleIds(game.scriptRoleOverrides)
+            : undefined,
+        },
+        friends ?? [],
+        state.appUserName,
+      ),
     ),
   );
   const savedNotes = state.savedNotes?.map((note) => ({
@@ -263,13 +280,13 @@ function slugify(value: string) {
     .replace(/^-|-$/g, '');
 }
 
-function formatIdDate(value: string) {
+function formatIdDate(value: string, length = 12) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return value.replace(/\D/g, '').slice(0, 12) || 'unknown-date';
+    return value.replace(/\D/g, '').slice(0, length) || 'unknown-date';
   }
 
-  return date.toISOString().replace(/[-:T]/g, '').slice(0, 12);
+  return date.toISOString().replace(/[-:T]/g, '').slice(0, length);
 }
 
 function makeUniqueId(baseId: string, usedIds: string[]) {

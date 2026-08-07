@@ -3,6 +3,7 @@ import type { Game, Role, StoredScript } from '@/types/game';
 import {
   addMissingFriendsForGames,
   getRoleIds,
+  mapGameConversationIds,
   mapGamePlayerIdsToFriendIds,
 } from '@/utils/object-id';
 
@@ -84,7 +85,7 @@ function normalizeForExport(data: GameData): ExportedGameData {
   const scriptsById = new Map(data.scripts.map((script) => [script.id, script]));
   const friends = addMissingFriendsForGames(data.friends, data.games, data.appUserName);
   const games = data.games.map((game) =>
-    mapGamePlayerIdsToFriendIds(game, friends, data.appUserName),
+    mapGameConversationIds(mapGamePlayerIdsToFriendIds(game, friends, data.appUserName)),
   );
 
   for (const game of games) {

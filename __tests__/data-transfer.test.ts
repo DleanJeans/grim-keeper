@@ -85,6 +85,7 @@ describe('data transfer', () => {
       roleAssignments: [{ subjectPlayerId: 'bob' }],
     });
     expect(exportedGame.conversations[0]).toMatchObject({
+      id: 'conversation-20260803000000',
       bigWigPlayerId: 'alice',
       initiatorId: 'alice',
       participantIds: ['player-app', 'alice', 'bob'],

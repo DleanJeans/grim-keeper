@@ -26,6 +26,7 @@ describe('backup export integration', () => {
         appUserName: string;
         games: Array<{
           players: Array<{ id: string; isAppUser?: boolean; name: string }>;
+          conversations: Array<{ id: string; createdAt: string }>;
           lorics?: unknown[];
           script?: unknown;
           scriptId?: string;
@@ -44,6 +45,20 @@ describe('backup export integration', () => {
     expect(exported.data.roleCatalog).toEqual([]);
     expect(exported.data.games.filter((game) => game.scriptId)).not.toHaveLength(0);
     expect(exported.data.games.every((game) => game.script === undefined)).toBe(true);
+    expect(
+      exported.data.games.every((game) =>
+        game.conversations.every((conversation) =>
+          /^conversation-\d{14}(?:-\d+)?$/.test(conversation.id),
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      exported.data.games.every(
+        (game) =>
+          new Set(game.conversations.map((conversation) => conversation.id)).size ===
+          game.conversations.length,
+      ),
+    ).toBe(true);
     expect(
       exported.data.games
         .flatMap((game) => game.scriptRoleOverrides ?? [])

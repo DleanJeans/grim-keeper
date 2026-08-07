@@ -1,10 +1,19 @@
 import type { Game, SavedNote, StoredScript } from '@/types/game';
-import { createFriendId, createGameId, createScriptId, migrateObjectIds } from '@/utils/object-id';
+import {
+  createConversationId,
+  createFriendId,
+  createGameId,
+  createScriptId,
+  migrateObjectIds,
+} from '@/utils/object-id';
 
 describe('object IDs', () => {
   it('creates URL-friendly IDs for new objects', () => {
     expect(createGameId('Trouble Brewing', '2026-07-15T10:20:00.000Z', [])).toBe(
       'trouble-brewing-202607151020',
+    );
+    expect(createConversationId('2026-07-15T10:20:30.000Z', [])).toBe(
+      'conversation-20260715102030',
     );
     expect(createFriendId('Andy O’Brien', [])).toBe('andy-o-brien');
     expect(
@@ -23,6 +32,9 @@ describe('object IDs', () => {
     expect(
       createGameId('Trouble Brewing', '2026-07-15T10:20:00.000Z', ['trouble-brewing-202607151020']),
     ).toBe('trouble-brewing-202607151020-2');
+    expect(createConversationId('2026-07-15T10:20:30.000Z', ['conversation-20260715102030'])).toBe(
+      'conversation-20260715102030-2',
+    );
   });
 
   it('migrates IDs and every saved game and script reference', () => {
@@ -116,6 +128,54 @@ describe('object IDs', () => {
       voterIds: ['andy'],
     });
     expect(migratedGame?.playerDayNotes?.[0].playerId).toBe('andy');
+  });
+
+  it('migrates conversations to timestamp IDs and preserves their order and fields', () => {
+    const createdAt = '2026-07-15T10:20:30.123Z';
+    const game: Game = {
+      id: 'game-old',
+      activeDay: 1,
+      createdAt,
+      updatedAt: createdAt,
+      players: [],
+      conversations: [
+        {
+          id: 'conversation-old-1',
+          day: 1,
+          kind: 'interaction',
+          participantIds: ['player-a', 'player-b'],
+          initiatorId: 'player-a',
+          createdAt,
+        },
+        {
+          id: 'conversation-old-2',
+          day: 2,
+          kind: 'nomination',
+          participantIds: ['player-c', 'player-d'],
+          initiatorId: 'player-c',
+          voterIds: ['player-d'],
+          createdAt,
+        },
+      ],
+    };
+
+    const result = migrateObjectIds({ games: [game] });
+
+    expect(result.games?.[0].conversations).toEqual([
+      expect.objectContaining({
+        id: 'conversation-20260715102030',
+        day: 1,
+        kind: 'interaction',
+        createdAt,
+      }),
+      expect.objectContaining({
+        id: 'conversation-20260715102030-2',
+        day: 2,
+        kind: 'nomination',
+        voterIds: ['player-d'],
+        createdAt,
+      }),
+    ]);
   });
 
   it('preserves a game ID while its script is waiting for a redownload', () => {
