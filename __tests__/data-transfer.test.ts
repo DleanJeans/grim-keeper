@@ -1,6 +1,7 @@
 import type { GameData } from '@/store/game-store';
 import type { Game, Role, StoredScript } from '@/types/game';
 import { createBackup, parseBackup } from '@/utils/data-transfer';
+import { APP_USER_ID } from '@/utils/object-id';
 
 const data: GameData = {
   appUserName: 'Keeper',
@@ -27,7 +28,7 @@ describe('data transfer', () => {
       createdAt: '2026-08-03T00:00:00.000Z',
       updatedAt: '2026-08-03T00:00:00.000Z',
       players: [
-        { id: 'player-app', isAppUser: true, name: 'Keeper', seat: 0 },
+        { id: APP_USER_ID, name: 'Keeper', seat: 0 },
         {
           id: 'player-alice',
           name: 'Alice',
@@ -55,7 +56,7 @@ describe('data transfer', () => {
         {
           id: 'conversation-1',
           day: 1,
-          participantIds: ['player-app', 'player-alice', 'player-bob'],
+          participantIds: [APP_USER_ID, 'player-alice', 'player-bob'],
           initiatorId: 'player-alice',
           voterIds: ['player-bob'],
           bigWigPlayerId: 'player-alice',
@@ -76,7 +77,7 @@ describe('data transfer', () => {
     const exportedGame = backup.data.games[0];
 
     expect(exportedGame.players.map((player: { id: string }) => player.id)).toEqual([
-      'player-app',
+      APP_USER_ID,
       'alice',
       'bob',
     ]);
@@ -88,9 +89,10 @@ describe('data transfer', () => {
       id: 'conversation-20260803000000',
       bigWigPlayerId: 'alice',
       initiatorId: 'alice',
-      participantIds: ['player-app', 'alice', 'bob'],
+      participantIds: [APP_USER_ID, 'alice', 'bob'],
       voterIds: ['bob'],
     });
+    expect(exportedGame.players[0]).not.toHaveProperty('isAppUser');
     expect(exportedGame.playerDayNotes[0].playerId).toBe('alice');
   });
 

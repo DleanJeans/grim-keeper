@@ -29,6 +29,7 @@ import {
 } from '@/utils/friend-utils';
 import { clampMapHeight, getDefaultTokenSize, getTokenSize } from '@/utils/layout-utils';
 import {
+  APP_USER_ID,
   createConversationId,
   createFriendId,
   createGameId,
@@ -238,7 +239,7 @@ export const useGameStore = create<GameState>()(
                 ];
           const games = state.games.map((game) => {
             const players = game.players.map((player) =>
-              !player.isAppUser &&
+              player.id !== APP_USER_ID &&
               normalizePlayerName(player.name).toLocaleLowerCase() === currentKey
                 ? { ...player, name: normalizedNextName }
                 : player,
@@ -279,9 +280,9 @@ export const useGameStore = create<GameState>()(
 
           return {
             id:
-              (index === 0 ? undefined : friendIdsByName.get(normalizedName.toLocaleLowerCase())) ??
-              createId('player'),
-            isAppUser: index === 0,
+              (index === 0
+                ? APP_USER_ID
+                : friendIdsByName.get(normalizedName.toLocaleLowerCase())) ?? createId('player'),
             name: normalizedName,
             seat: index,
           };
@@ -474,7 +475,7 @@ export const useGameStore = create<GameState>()(
               return game;
             }
 
-            if (game.players.find((player) => player.id === playerId)?.isAppUser) {
+            if (game.players.find((player) => player.id === playerId)?.id === APP_USER_ID) {
               return game;
             }
 
@@ -958,10 +959,10 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'grim-keeper-game-store-v1',
-      version: 9,
+      version: 10,
       storage: createJSONStorage(() => (Platform.OS === 'web' ? webStorage : localStorage)),
       migrate: (persistedState, version) => {
-        if (!persistedState || version >= 9) {
+        if (!persistedState || version >= 10) {
           return persistedState as Partial<GameState> | undefined;
         }
 

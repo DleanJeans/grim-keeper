@@ -1,4 +1,5 @@
 import { createBackup, parseBackup } from '@/utils/data-transfer';
+import { APP_USER_ID } from '@/utils/object-id';
 
 declare const require: (moduleName: string) => {
   readFileSync: (path: string, encoding: 'utf8') => string;
@@ -25,7 +26,7 @@ describe('backup export integration', () => {
       data: {
         appUserName: string;
         games: Array<{
-          players: Array<{ id: string; isAppUser?: boolean; name: string }>;
+          players: Array<{ id: string; name: string; [key: string]: unknown }>;
           conversations: Array<{ id: string; createdAt: string }>;
           lorics?: unknown[];
           script?: unknown;
@@ -45,6 +46,12 @@ describe('backup export integration', () => {
     expect(exported.data.roleCatalog).toEqual([]);
     expect(exported.data.games.filter((game) => game.scriptId)).not.toHaveLength(0);
     expect(exported.data.games.every((game) => game.script === undefined)).toBe(true);
+    expect(
+      exported.data.games.every((game) => game.players.some((player) => player.id === APP_USER_ID)),
+    ).toBe(true);
+    expect(
+      exported.data.games.every((game) => game.players.every((player) => !('isAppUser' in player))),
+    ).toBe(true);
     expect(
       exported.data.games.every((game) =>
         game.conversations.every((conversation) =>
@@ -72,10 +79,7 @@ describe('backup export integration', () => {
     expect(
       exported.data.games.every((game) =>
         game.players.every(
-          (player) =>
-            player.isAppUser ||
-            player.name === exported.data.appUserName ||
-            !player.id.startsWith('player-'),
+          (player) => player.id === APP_USER_ID || !player.id.startsWith('player-'),
         ),
       ),
     ).toBe(true);

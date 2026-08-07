@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { RoleIcon } from '@/components/role-icon';
 import { colors } from '@/theme/colors';
 import type { Game, Role } from '@/types/game';
+import { APP_USER_ID } from '@/utils/object-id';
 import {
   GENERIC_KILLER_ROLES,
   getEffectiveRoleForPlayer,
@@ -69,7 +70,7 @@ export function SavedGameRolesRow({ game }: { game: Game }) {
         return (
           <View
             key={entry.player.id}
-            style={entry.player.isAppUser ? styles.appUserRing : undefined}
+            style={entry.player.id === APP_USER_ID ? styles.appUserRing : undefined}
           >
             <RoleIcon role={entry.role} size={ROLE_ICON_SIZE} />
           </View>

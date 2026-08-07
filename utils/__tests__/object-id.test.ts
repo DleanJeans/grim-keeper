@@ -16,6 +16,7 @@ describe('object IDs', () => {
       'conversation-20260715102030',
     );
     expect(createFriendId('Andy O’Brien', [])).toBe('andy-o-brien');
+    expect(createFriendId('App User', [])).toBe('app-user-2');
     expect(
       createScriptId({ name: 'Extension Cord', remoteId: 42, author: 'Homebrew Author' }, []),
     ).toBe('42-extension-cord');
@@ -92,14 +93,14 @@ describe('object IDs', () => {
       createdAt: '2026-07-15T10:20:00.000Z',
       updatedAt: '2026-07-15T10:20:00.000Z',
       players: [
-        { id: 'player-app', isAppUser: true, name: 'Keeper', seat: 0 },
+        { id: 'app-user', name: 'Keeper', seat: 0 },
         { id: 'player-andy', name: 'Andy', seat: 1 },
       ],
       conversations: [
         {
           id: 'conversation-1',
           day: 1,
-          participantIds: ['player-app', 'player-andy'],
+          participantIds: ['app-user', 'player-andy'],
           initiatorId: 'player-andy',
           voterIds: ['player-andy'],
           createdAt: '2026-07-15T10:20:00.000Z',
@@ -121,13 +122,89 @@ describe('object IDs', () => {
     });
     const migratedGame = result.games?.[0];
 
-    expect(migratedGame?.players.map((player) => player.id)).toEqual(['player-app', 'andy']);
+    expect(migratedGame?.players.map((player) => player.id)).toEqual(['app-user', 'andy']);
     expect(migratedGame?.conversations[0]).toMatchObject({
       initiatorId: 'andy',
-      participantIds: ['player-app', 'andy'],
+      participantIds: ['app-user', 'andy'],
       voterIds: ['andy'],
     });
     expect(migratedGame?.playerDayNotes?.[0].playerId).toBe('andy');
+  });
+
+  it('migrates legacy app-user markers and references without retaining the boolean', () => {
+    const createdAt = '2026-07-15T10:20:30.000Z';
+    const legacyGame = {
+      id: 'game-old',
+      activeDay: 1,
+      createdAt,
+      updatedAt: createdAt,
+      players: [
+        {
+          id: 'player-legacy-app',
+          isAppUser: true,
+          name: 'Keeper',
+          seat: 0,
+          death: { day: 1, kind: 'night', updatedAt: createdAt, killerPlayerId: 'player-andy' },
+        },
+        {
+          id: 'player-andy',
+          name: 'Andy',
+          seat: 1,
+          roleAssignments: [
+            {
+              day: 1,
+              kind: 'rumor',
+              roleIds: [],
+              subjectPlayerId: 'player-legacy-app',
+              updatedAt: createdAt,
+            },
+          ],
+        },
+      ],
+      conversations: [
+        {
+          id: 'conversation-old',
+          day: 1,
+          participantIds: ['player-legacy-app', 'player-andy'],
+          initiatorId: 'player-legacy-app',
+          voterIds: ['player-andy'],
+          createdAt,
+        },
+      ],
+      playerDayNotes: [
+        {
+          day: 1,
+          playerId: 'player-legacy-app',
+          notes: [],
+          updatedAt: createdAt,
+        },
+      ],
+    } as unknown as Game;
+    const nameMatchedGame = {
+      ...legacyGame,
+      id: 'game-name-match',
+      players: [{ id: 'player-name-app', name: 'Keeper', seat: 0 }],
+      conversations: [],
+      playerDayNotes: [],
+    } as unknown as Game;
+
+    const result = migrateObjectIds({
+      appUserName: 'Keeper',
+      games: [legacyGame, nameMatchedGame],
+    });
+    const migratedGame = result.games?.[0];
+
+    expect(migratedGame?.players.map((player) => player.id)).toEqual(['app-user', 'player-andy']);
+    expect(migratedGame?.players.every((player) => !('isAppUser' in player))).toBe(true);
+    expect(migratedGame?.conversations[0]).toMatchObject({
+      initiatorId: 'app-user',
+      participantIds: ['app-user', 'player-andy'],
+      voterIds: ['player-andy'],
+    });
+    expect(migratedGame?.players[0].death?.killerPlayerId).toBe('player-andy');
+    expect(migratedGame?.players[1].roleAssignments?.[0].subjectPlayerId).toBe('app-user');
+    expect(migratedGame?.playerDayNotes?.[0].playerId).toBe('app-user');
+    expect(result.games?.[1].players[0].id).toBe('app-user');
   });
 
   it('migrates conversations to timestamp IDs and preserves their order and fields', () => {

@@ -7,6 +7,7 @@ import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Game, Player, Role, StoredScript } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
+import { APP_USER_ID } from '@/utils/object-id';
 import {
   getRoleAssignmentForDay,
   getRoleAssignmentForDayOrPrevious,
@@ -141,7 +142,7 @@ function collectEntries(
   for (const game of games) {
     const player = game.players.find(
       (candidate) =>
-        !candidate.isAppUser &&
+        candidate.id !== APP_USER_ID &&
         normalizePlayerName(candidate.name).toLocaleLowerCase() === targetKey,
     );
 

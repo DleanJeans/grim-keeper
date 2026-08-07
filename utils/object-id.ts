@@ -1,7 +1,8 @@
-import type { Friend, Game, SavedNote, StoredScript } from '@/types/game';
+import type { Friend, Game, Player, SavedNote, StoredScript } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
 
 const OFFICIAL_SCRIPT_AUTHOR = 'The Pandemonium Institute';
+export const APP_USER_ID = 'app-user';
 
 export function createGameId(scriptName: string | undefined, createdAt: string, usedIds: string[]) {
   return makeUniqueId(`${slugify(scriptName || 'game')}-${formatIdDate(createdAt)}`, usedIds);
@@ -23,7 +24,7 @@ export function mapGameConversationIds(game: Game): Game {
 }
 
 export function createFriendId(name: string, usedIds: string[]) {
-  return makeUniqueId(slugify(name) || 'friend', usedIds);
+  return makeUniqueId(slugify(name) || 'friend', [APP_USER_ID, ...usedIds]);
 }
 
 export function createScriptId(
@@ -73,7 +74,7 @@ export function addMissingFriendsForGames(
       const name = normalizePlayerName(player.name);
       const nameKey = name.toLocaleLowerCase();
 
-      if (!name || player.isAppUser || nameKey === appUserKey || friendNames.has(nameKey)) {
+      if (!name || isAppUserPlayer(player, appUserKey) || friendNames.has(nameKey)) {
         continue;
       }
 
@@ -121,7 +122,7 @@ export function mapGamePlayerIdsToFriendIds(
   const appUserKey = normalizePlayerName(appUserName ?? '').toLocaleLowerCase();
 
   for (const player of game.players) {
-    if (player.isAppUser || normalizePlayerName(player.name).toLocaleLowerCase() === appUserKey) {
+    if (isAppUserPlayer(player, appUserKey)) {
       continue;
     }
 
@@ -143,36 +144,41 @@ export function mapGamePlayerIdsToFriendIds(
   const playerIdMap = new Map(
     [...candidates].filter(([, friendId]) => candidateCounts.get(friendId) === 1),
   );
-
-  if (playerIdMap.size === 0) {
-    return game;
+  for (const player of game.players) {
+    if (isAppUserPlayer(player, appUserKey)) {
+      playerIdMap.set(player.id, APP_USER_ID);
+    }
   }
 
   const mapPlayerId = (playerId: string) => playerIdMap.get(playerId) ?? playerId;
 
   return {
     ...game,
-    players: game.players.map((player) => ({
-      ...player,
-      id: mapPlayerId(player.id),
-      death: player.death
-        ? {
-            ...player.death,
-            ...(player.death.killerPlayerId !== undefined
-              ? { killerPlayerId: mapPlayerId(player.death.killerPlayerId) }
-              : {}),
-            ...(player.death.killerPlayerIds
-              ? { killerPlayerIds: player.death.killerPlayerIds.map(mapPlayerId) }
-              : {}),
-          }
-        : undefined,
-      roleAssignments: player.roleAssignments?.map((assignment) => ({
-        ...assignment,
-        ...(assignment.subjectPlayerId !== undefined
-          ? { subjectPlayerId: mapPlayerId(assignment.subjectPlayerId) }
-          : {}),
-      })),
-    })),
+    players: game.players.map((player) => {
+      const { isAppUser: _isAppUser, ...normalizedPlayer } = player as LegacyPlayer;
+
+      return {
+        ...normalizedPlayer,
+        id: mapPlayerId(player.id),
+        death: player.death
+          ? {
+              ...player.death,
+              ...(player.death.killerPlayerId !== undefined
+                ? { killerPlayerId: mapPlayerId(player.death.killerPlayerId) }
+                : {}),
+              ...(player.death.killerPlayerIds
+                ? { killerPlayerIds: player.death.killerPlayerIds.map(mapPlayerId) }
+                : {}),
+            }
+          : undefined,
+        roleAssignments: player.roleAssignments?.map((assignment) => ({
+          ...assignment,
+          ...(assignment.subjectPlayerId !== undefined
+            ? { subjectPlayerId: mapPlayerId(assignment.subjectPlayerId) }
+            : {}),
+        })),
+      };
+    }),
     conversations: game.conversations.map((conversation) => ({
       ...conversation,
       bigWigPlayerId:
@@ -270,6 +276,16 @@ type GameDataShape = {
   savedNotes: SavedNote[];
   scripts: StoredScript[];
 };
+
+type LegacyPlayer = Player & { isAppUser?: boolean };
+
+function isAppUserPlayer(player: Player, appUserKey: string) {
+  return (
+    player.id === APP_USER_ID ||
+    (player as LegacyPlayer).isAppUser === true ||
+    (!!appUserKey && normalizePlayerName(player.name).toLocaleLowerCase() === appUserKey)
+  );
+}
 
 function slugify(value: string) {
   return value

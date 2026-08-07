@@ -60,7 +60,6 @@ export type PlayerRevive = {
 
 export type Player = {
   id: string;
-  isAppUser?: boolean;
   name: string;
   seat: number;
   death?: PlayerDeath;

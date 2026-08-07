@@ -19,6 +19,7 @@ import { colors } from '@/theme/colors';
 import { hasDuplicatePlayerName, normalizePlayerName } from '@/utils/conversation-utils';
 import { getFriendSummaries } from '@/utils/friend-utils';
 import { getDefaultMapHeight, getDefaultMapWidth } from '@/utils/layout-utils';
+import { APP_USER_ID } from '@/utils/object-id';
 
 export default function CreateRoute() {
   const { gameId: gameIdParam, scriptId: scriptIdParam } = useLocalSearchParams<{
@@ -48,11 +49,11 @@ export default function CreateRoute() {
   const isEditing = Boolean(gameIdParam);
   const players = editingGame
     ? editingGame.players
-        .filter((player) => !player.isAppUser)
+        .filter((player) => player.id !== APP_USER_ID)
         .map(({ id, name }) => ({ id, name }))
     : draftPlayers;
   const fixedPlayerName =
-    editingGame?.players.find((player) => player.isAppUser)?.name ?? appUserName;
+    editingGame?.players.find((player) => player.id === APP_USER_ID)?.name ?? appUserName;
   const legacyScript = editingGame?.script;
   const availableScripts = useMemo(() => {
     if (!legacyScript || scripts.some((script) => script.id === legacyScript.id)) {
