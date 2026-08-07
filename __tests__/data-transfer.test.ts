@@ -58,7 +58,7 @@ describe('data transfer', () => {
           id: 'conversation-1',
           day: 1,
           participantIds: [APP_USER_ID, 'player-alice', 'player-bob'],
-          initiatorId: 'player-alice',
+          initiatorId: APP_USER_ID,
           voterIds: ['player-bob'],
           bigWigPlayerId: 'player-alice',
           createdAt: '2026-08-03T00:00:00.000Z',
@@ -94,10 +94,10 @@ describe('data transfer', () => {
     expect(exportedGame.conversations[0]).toMatchObject({
       id: 'conversation-20260803000000',
       bigWigPlayerId: 'alice',
-      initiatorId: 'alice',
       participantIds: [APP_USER_ID, 'alice', 'bob'],
       voterIds: ['bob'],
     });
+    expect(exportedGame.conversations[0]).not.toHaveProperty('initiatorId');
     expect(exportedGame.players[0]).not.toHaveProperty('isAppUser');
     expect(
       exportedGame.players.every((player: { name?: string }) => player.name === undefined),
@@ -107,6 +107,9 @@ describe('data transfer', () => {
     expect(
       parseBackup(JSON.stringify(backup)).games[0].players.map((player) => player.name),
     ).toEqual(['Keeper', 'Alice', 'Bob']);
+    expect(parseBackup(JSON.stringify(backup)).games[0].conversations[0].initiatorId).toBe(
+      APP_USER_ID,
+    );
   });
 
   it('exports lorics as IDs and imports legacy loric objects', () => {

@@ -32,7 +32,12 @@ describe('backup export integration', () => {
             position?: { x: number; y: number };
             [key: string]: unknown;
           }>;
-          conversations: Array<{ id: string; createdAt: string }>;
+          conversations: Array<{
+            id: string;
+            createdAt: string;
+            participantIds: string[];
+            initiatorId?: string;
+          }>;
           lorics?: unknown[];
           script?: unknown;
           scriptId?: string;
@@ -79,6 +84,11 @@ describe('backup export integration', () => {
       ),
     ).toBe(true);
     expect(
+      exported.data.games.every((game) =>
+        game.conversations.every((conversation) => !('initiatorId' in conversation)),
+      ),
+    ).toBe(true);
+    expect(
       exported.data.games.every(
         (game) =>
           new Set(game.conversations.map((conversation) => conversation.id)).size ===
@@ -107,5 +117,12 @@ describe('backup export integration', () => {
     const restored = parseBackup(output);
     expect(restored.games).toHaveLength(sourceData.games.length);
     expect(restored.games.every((game) => game.players.every((player) => player.name))).toBe(true);
+    expect(
+      restored.games.every((game) =>
+        game.conversations.every(
+          (conversation) => conversation.initiatorId === conversation.participantIds[0],
+        ),
+      ),
+    ).toBe(true);
   });
 });

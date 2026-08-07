@@ -1,5 +1,5 @@
 import type { GameData } from '@/store/game-store';
-import type { Game, Player, Role, StoredScript } from '@/types/game';
+import type { Conversation, Game, Player, Role, StoredScript } from '@/types/game';
 import {
   APP_USER_ID,
   addMissingFriendsForGames,
@@ -33,7 +33,10 @@ type Backup = {
 
 type ExportedPlayer = Omit<Player, 'name'> & { name?: string };
 
-type ExportedGame = Omit<Game, 'players' | 'script'> & {
+type ExportedConversation = Omit<Conversation, 'initiatorId'> & { initiatorId?: string };
+
+type ExportedGame = Omit<Game, 'conversations' | 'players' | 'script'> & {
+  conversations: ExportedConversation[];
   players: ExportedPlayer[];
   scriptId?: string;
   scriptRoleIds?: string[];
@@ -134,6 +137,9 @@ function exportGame(game: Game, scriptsById: Map<string, StoredScript>): Exporte
   const { lorics, script, ...gameWithoutScript } = game;
   const gameWithoutScriptReference = {
     ...gameWithoutScript,
+    conversations: game.conversations.map(
+      ({ initiatorId: _initiatorId, ...conversation }) => conversation,
+    ),
     players: game.players.map(({ name: _name, ...player }) => player),
     ...(lorics !== undefined ? { lorics: getRoleIds(lorics) } : {}),
   };
@@ -187,6 +193,10 @@ function restoreExportedData(data: ExportedGameData): GameData {
       const { lorics, scriptId, scriptRoleIds, scriptRoleOverrides, ...gameWithoutScript } = game;
       const gameWithoutScriptReference = {
         ...gameWithoutScript,
+        conversations: gameWithoutScript.conversations.map((conversation) => ({
+          ...conversation,
+          initiatorId: conversation.initiatorId ?? conversation.participantIds[0] ?? '',
+        })),
         players: gameWithoutScript.players.map((player) => ({
           ...player,
           name:
