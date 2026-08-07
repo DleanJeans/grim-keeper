@@ -1,6 +1,7 @@
 import type { GameData } from '@/store/game-store';
-import type { Game, Role, StoredScript } from '@/types/game';
+import type { Game, Player, Role, StoredScript } from '@/types/game';
 import {
+  APP_USER_ID,
   addMissingFriendsForGames,
   getRoleIds,
   mapGameConversationIds,
@@ -30,7 +31,10 @@ type Backup = {
   version: typeof backupVersion;
 };
 
-type ExportedGame = Omit<Game, 'script'> & {
+type ExportedPlayer = Omit<Player, 'name'> & { name?: string };
+
+type ExportedGame = Omit<Game, 'players' | 'script'> & {
+  players: ExportedPlayer[];
   scriptId?: string;
   scriptRoleIds?: string[];
   scriptRoleOverrides?: string[];
@@ -130,6 +134,7 @@ function exportGame(game: Game, scriptsById: Map<string, StoredScript>): Exporte
   const { lorics, script, ...gameWithoutScript } = game;
   const gameWithoutScriptReference = {
     ...gameWithoutScript,
+    players: game.players.map(({ name: _name, ...player }) => player),
     ...(lorics !== undefined ? { lorics: getRoleIds(lorics) } : {}),
   };
 
@@ -164,6 +169,7 @@ function restoreExportedData(data: ExportedGameData): GameData {
     storedScripts.filter((script) => script.roles.length > 0).map((script) => [script.id, script]),
   );
   const rolesById = new Map<string, Role>();
+  const friendNamesById = new Map(data.friends.map((friend) => [friend.id, friend.name]));
 
   for (const role of data.roleCatalog) {
     rolesById.set(role.id, role);
@@ -181,6 +187,13 @@ function restoreExportedData(data: ExportedGameData): GameData {
       const { lorics, scriptId, scriptRoleIds, scriptRoleOverrides, ...gameWithoutScript } = game;
       const gameWithoutScriptReference = {
         ...gameWithoutScript,
+        players: gameWithoutScript.players.map((player) => ({
+          ...player,
+          name:
+            player.id === APP_USER_ID
+              ? data.appUserName
+              : (friendNamesById.get(player.id) ?? player.name ?? 'Unknown Player'),
+        })),
         ...(lorics !== undefined ? { lorics: getRoleIds(lorics) } : {}),
       };
       const script = scriptId ? scriptsById.get(scriptId) : undefined;

@@ -28,7 +28,7 @@ describe('backup export integration', () => {
         games: Array<{
           players: Array<{
             id: string;
-            name: string;
+            name?: string;
             position?: { x: number; y: number };
             [key: string]: unknown;
           }>;
@@ -56,6 +56,9 @@ describe('backup export integration', () => {
     ).toBe(true);
     expect(
       exported.data.games.every((game) => game.players.every((player) => !('isAppUser' in player))),
+    ).toBe(true);
+    expect(
+      exported.data.games.every((game) => game.players.every((player) => !('name' in player))),
     ).toBe(true);
     expect(
       exported.data.games.every((game) =>
@@ -101,6 +104,8 @@ describe('backup export integration', () => {
     ).toBe(true);
     expect(exported.data.scripts.some((script) => typeof script === 'string')).toBe(true);
     expect(exported.data.scripts.some((script) => typeof script === 'object')).toBe(true);
-    expect(parseBackup(output).games).toHaveLength(sourceData.games.length);
+    const restored = parseBackup(output);
+    expect(restored.games).toHaveLength(sourceData.games.length);
+    expect(restored.games.every((game) => game.players.every((player) => player.name))).toBe(true);
   });
 });

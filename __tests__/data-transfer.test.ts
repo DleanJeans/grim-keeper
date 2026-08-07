@@ -99,7 +99,14 @@ describe('data transfer', () => {
       voterIds: ['bob'],
     });
     expect(exportedGame.players[0]).not.toHaveProperty('isAppUser');
+    expect(
+      exportedGame.players.every((player: { name?: string }) => player.name === undefined),
+    ).toBe(true);
     expect(exportedGame.playerDayNotes[0].playerId).toBe('alice');
+
+    expect(
+      parseBackup(JSON.stringify(backup)).games[0].players.map((player) => player.name),
+    ).toEqual(['Keeper', 'Alice', 'Bob']);
   });
 
   it('exports lorics as IDs and imports legacy loric objects', () => {
