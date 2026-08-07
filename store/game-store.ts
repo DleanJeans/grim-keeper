@@ -136,6 +136,7 @@ type GameState = GameData & {
   setNominationBigWig: (gameId: string, nominationId: string, playerId?: string) => void;
   deleteConversation: (gameId: string, conversationId: string) => void;
   setAppUserName: (name: string) => void;
+  clearData: () => void;
   importData: (data: GameData) => void;
 };
 
@@ -965,6 +966,16 @@ export const useGameStore = create<GameState>()(
         const normalizedName = normalizePlayerName(name) || 'You';
 
         set({ appUserName: normalizedName });
+      },
+      clearData: () => {
+        set({
+          appUserName: 'You',
+          games: [],
+          friends: [],
+          roleCatalog: [],
+          savedNotes: [],
+          scripts: [],
+        });
       },
       importData: (data) => {
         const migratedData = migrateObjectIds(data) as GameData;
