@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 import { useMemo } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { FriendNameForm } from '@/components/friends/friend-name-form';
 import { FriendRow } from '@/components/friends/friend-row';
@@ -25,23 +25,15 @@ export default function FriendsRoute() {
       <Stack.Screen options={{ header: () => <TitleHeader title="Friends" />, title: 'Friends' }} />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        style={{ backgroundColor: colors.background, flex: 1 }}
-        contentContainerStyle={{ gap: 18, padding: 20, paddingBottom: 40 }}
+        style={styles.scrollView}
+        contentContainerStyle={styles.contentContainer}
       >
         <FriendNameForm friends={friends} onAddFriend={addFriend} />
 
-        <View style={{ gap: 10 }}>
+        <View style={styles.friendList}>
           {friends.length === 0 ? (
-            <View
-              style={{
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                borderRadius: 8,
-                borderWidth: 1,
-                padding: 16,
-              }}
-            >
-              <Text selectable style={{ color: colors.textMuted, fontSize: 16, lineHeight: 22 }}>
+            <View style={styles.emptyState}>
+              <Text selectable style={styles.emptyStateText}>
                 No friends yet.
               </Text>
             </View>
@@ -53,3 +45,30 @@ export default function FriendsRoute() {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  scrollView: {
+    backgroundColor: colors.background,
+    flex: 1,
+  },
+  contentContainer: {
+    gap: 18,
+    padding: 20,
+    paddingBottom: 40,
+  },
+  friendList: {
+    gap: 10,
+  },
+  emptyState: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 16,
+  },
+  emptyStateText: {
+    color: colors.textMuted,
+    fontSize: 16,
+    lineHeight: 22,
+  },
+});
