@@ -7,6 +7,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
@@ -97,6 +98,7 @@ export function PlayerToken({
   const visibleRoles = showRoleDetails ? displayedRoles : displayedRoles.filter(isTravelerRole);
   const backgroundRole = visibleRoles.find(isTravelerRole) ?? visibleRoles[0];
   const roleIconSource = useRoleIconSource(backgroundRole);
+  const reduceMotion = useReducedMotion();
   const DeathIcon = player.death?.kind === 'execution' ? FlameKindling : Skull;
   const deathIconColor =
     player.death?.kind === 'execution'
@@ -109,11 +111,11 @@ export function PlayerToken({
   const otherPositionsShared = useSharedValue<{ x: number; y: number }[]>(otherTokenPositions);
 
   useEffect(() => {
-    x.value = withSpring(position.x);
-    y.value = withSpring(position.y);
+    x.value = reduceMotion ? position.x : withSpring(position.x);
+    y.value = reduceMotion ? position.y : withSpring(position.y);
     startX.value = position.x;
     startY.value = position.y;
-  }, [position.x, position.y, startX, startY, x, y]);
+  }, [position.x, position.y, reduceMotion, startX, startY, x, y]);
 
   useEffect(() => {
     otherPositionsShared.value = otherTokenPositions;
