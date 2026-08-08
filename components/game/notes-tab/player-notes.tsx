@@ -18,6 +18,7 @@ type ClaimOrConfirmProps = CommonProps & {
 type RumorProps = CommonProps & {
   day: number;
   kind: 'rumor';
+  onDelete?: () => void;
   showSource?: boolean;
   /** The player who is the source of the rumor (the focused player who said it). */
   source: Player;
@@ -37,6 +38,7 @@ export function PlayerNoteRoleAssignment(props: PlayerNoteRoleAssignmentProps) {
       <PlayerActivityRow
         activity={{
           kind: 'rumor',
+          onDelete: props.onDelete,
           roles: props.roles,
           scriptId: props.scriptId,
           source: props.showSource ? props.source : undefined,

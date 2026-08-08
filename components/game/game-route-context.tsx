@@ -82,6 +82,7 @@ export type GameRouteContextValue = {
   handleCancelRoleAssignment: () => void;
   handleToggleRoleAssignment: (roleId: string) => void;
   handleSaveRoleAssignment: (roleIds?: string[]) => void;
+  handleDeleteRumor: (sourcePlayerId: string, day: number) => void;
   handleSelectRumorSource: (sourcePlayerId: string) => void;
   setActiveRoleDisplayMode: (mode: RoleDisplayMode) => void;
   setShowRoles: (show: boolean) => void;

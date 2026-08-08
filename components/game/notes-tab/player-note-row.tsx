@@ -35,6 +35,7 @@ export function PlayerNoteRow({
     noteEditorPlayerId,
     game,
     showRoles,
+    handleDeleteRumor: onDeleteRumor,
     handleStartAddNote: onAddNote,
     handleStartEditNote: onEditNote,
   } = useGameRouteContext();
@@ -119,6 +120,7 @@ export function PlayerNoteRow({
               key={`own-rumor-${rumor.subjectPlayerId}-${day}`}
               roles={rumorRoles}
               scriptId={game.script?.id}
+              onDelete={() => onDeleteRumor(player.id, day)}
               source={player}
               subject={subject}
             />
@@ -132,6 +134,7 @@ export function PlayerNoteRow({
             key={`rumor-${rumor.sourcePlayer.id}-${day}`}
             roles={rumor.roles}
             scriptId={game.script?.id}
+            onDelete={() => onDeleteRumor(rumor.sourcePlayer.id, day)}
             showSource
             source={rumor.sourcePlayer}
             subject={player}

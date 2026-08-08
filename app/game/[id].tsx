@@ -69,6 +69,7 @@ export default function GameRoute() {
   const setPlayerDeath = useGameStore((state) => state.setPlayerDeath);
   const setPlayerRevive = useGameStore((state) => state.setPlayerRevive);
   const setPlayerRoleAssignment = useGameStore((state) => state.setPlayerRoleAssignment);
+  const deletePlayerRoleAssignment = useGameStore((state) => state.deletePlayerRoleAssignment);
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const setGameScript = useGameStore((state) => state.setGameScript);
   const addPlayerDayNote = useGameStore((state) => state.addPlayerDayNote);
@@ -638,6 +639,10 @@ export default function GameRoute() {
     handleCancelRoleAssignment();
   }
 
+  function handleDeleteRumor(sourcePlayerId: string, day: number) {
+    deletePlayerRoleAssignment(activeGame.id, sourcePlayerId, day, 'rumor');
+  }
+
   function handleMovePlayer(playerId: string, position: PlayerPosition) {
     updatePlayerPosition(activeGame.id, playerId, position);
     // Push any tokens the dragged player is now overlapping out of the way.
@@ -798,6 +803,7 @@ export default function GameRoute() {
     handleCancelRoleAssignment,
     handleToggleRoleAssignment,
     handleSaveRoleAssignment,
+    handleDeleteRumor,
     handleSelectRumorSource,
     setActiveRoleDisplayMode,
     setShowRoles,

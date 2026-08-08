@@ -94,6 +94,12 @@ type GameState = GameData & {
     roleIds: string[],
     subjectPlayerId?: string,
   ) => void;
+  deletePlayerRoleAssignment: (
+    gameId: string,
+    playerId: string,
+    day: number,
+    kind: PlayerRoleAssignment['kind'],
+  ) => void;
   addPlayerDayNote: (
     gameId: string,
     playerId: string,
@@ -598,6 +604,28 @@ export const useGameStore = create<GameState>()(
                             ),
                             assignment,
                           ],
+                        }
+                      : player,
+                  ),
+                }
+              : game,
+          ),
+        }));
+      },
+      deletePlayerRoleAssignment: (gameId, playerId, day, kind) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? {
+                  ...game,
+                  updatedAt: new Date().toISOString(),
+                  players: game.players.map((player) =>
+                    player.id === playerId
+                      ? {
+                          ...player,
+                          roleAssignments: (player.roleAssignments ?? []).filter(
+                            (assignment) => assignment.day !== day || assignment.kind !== kind,
+                          ),
                         }
                       : player,
                   ),
