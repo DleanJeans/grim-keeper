@@ -79,7 +79,7 @@ export function PlayerRow({
         <Pressable
           accessibilityLabel={`Remove ${item.name}`}
           accessibilityRole="button"
-          hitSlop={6}
+          hitSlop={7}
           onPress={() => onRemove?.(item.id)}
           style={({ pressed }) => ({
             alignItems: 'center',

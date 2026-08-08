@@ -173,7 +173,7 @@ function RoleChip({
       <Pressable
         accessibilityLabel={`Remove ${role.name} from script`}
         accessibilityRole="button"
-        hitSlop={6}
+        hitSlop={15}
         onPress={onRemove}
       >
         <X color={colors.textMuted} size={15} strokeWidth={2.5} />
