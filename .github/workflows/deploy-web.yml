@@ -22,6 +22,15 @@ jobs:
         with:
           expo-token: ${{ secrets.EXPO_TOKEN }}
 
+      - name: Check formatting and lint
+        run: pnpm exec biome check app components hooks store theme types utils scripts test app.config.ts
+
+      - name: Typecheck
+        run: node --stack_size=8192 node_modules/typescript/bin/tsc --noEmit
+
+      - name: Unit tests
+        run: pnpm exec jest --runInBand --watchman=false
+
       - name: "Deploy to dev (EAS Hosting alias: dev)"
         if: ${{ github.ref == 'refs/heads/dev' }}
         run: pnpm deploy:web:dev
