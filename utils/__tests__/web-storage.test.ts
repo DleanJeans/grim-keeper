@@ -55,6 +55,20 @@ describe('web storage', () => {
     await expect(storage.getItem('grim-keeper-game-store-v1')).resolves.toBe(value);
   });
 
+  it('reuses an IndexedDB connection for repeated operations', async () => {
+    const { database } = createMemoryDatabase();
+    let openCount = 0;
+    const storage = createIndexedDbStorage(async () => {
+      openCount += 1;
+      return database;
+    });
+
+    await storage.setItem('store', 'state');
+    await storage.getItem('store');
+
+    expect(openCount).toBe(1);
+  });
+
   it('prefers an existing IndexedDB value over legacy storage', async () => {
     const { database } = createMemoryDatabase({ store: 'indexed-db-state' });
     const legacyStorage = createLegacyStorage({ store: 'legacy-state' });
