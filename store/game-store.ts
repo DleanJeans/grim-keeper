@@ -801,7 +801,7 @@ export const useGameStore = create<GameState>()(
             ? note.roleIds.filter((savedRoleId) => savedRoleId !== roleId)
             : [];
           const dropRow = !roleId || (remainingRoleIds.length === 0 && isAppUserNote);
-          const affectedRoleIds = dropRow ? note.roleIds : remainingRoleIds;
+          const affectedRoleIds = dropRow ? note.roleIds : roleId ? [roleId] : [];
           const nextSavedNotes = state.savedNotes.flatMap((candidate) => {
             if (candidate.id !== note.id) {
               return [candidate];
