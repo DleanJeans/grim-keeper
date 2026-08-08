@@ -1,4 +1,4 @@
-import { Eye } from 'lucide-react-native';
+import { Eye, EyeOff } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Keyboard, Platform, Pressable, StyleSheet, View } from 'react-native';
 
@@ -17,6 +17,7 @@ export function RevealRolesButton({
   variant?: 'full' | 'icon';
 }) {
   const color = showRoles ? colors.primary : colors.textMuted;
+  const EyeIcon = showRoles ? EyeOff : Eye;
   const isIcon = variant === 'icon';
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
@@ -91,7 +92,7 @@ export function RevealRolesButton({
           { borderColor: showRoles ? colors.primary : colors.borderStrong },
         ]}
       >
-        <Eye color={color} size={17} strokeWidth={2.6} />
+        <EyeIcon color={color} size={17} strokeWidth={2.6} />
         <Text style={[styles.label, { color }]}>Roles</Text>
       </Pressable>
     );
@@ -130,7 +131,7 @@ export function RevealRolesButton({
               { borderColor: showRoles ? colors.primary : colors.borderStrong },
             ]}
           >
-            <Eye color={color} size={28} strokeWidth={2.6} />
+            <EyeIcon color={color} size={28} strokeWidth={2.6} />
           </View>
         </>
       )}
