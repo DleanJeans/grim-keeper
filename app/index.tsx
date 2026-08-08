@@ -120,6 +120,7 @@ function HomeActionButton({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       onPress={onPress}
       style={({ pressed }) => ({
         alignItems: 'center',
