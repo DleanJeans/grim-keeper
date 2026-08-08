@@ -82,16 +82,22 @@ export function RoleAssignmentActions() {
     : rumorSubjectPlayerId
       ? (players.find((player) => player.id === rumorSubjectPlayerId) ?? null)
       : null;
-  const activeRoleAssignmentLabel = getRoleAssignmentLabel(activeRoleDisplayMode);
+  const assignmentKind = roleAssignmentKind ?? activeRoleDisplayMode;
+  const assignmentAction = roleAssignmentKind ? 'Cancel' : 'Add';
+  const assignmentLabel = getRoleAssignmentLabel(assignmentKind);
 
   return (
     <View style={{ gap: 10 }}>
       <View style={innerActionRow}>
         <RoleAssignmentButton
-          accessibilityLabel={`Add ${activeRoleAssignmentLabel}`}
-          icon={roleDisplayModeIcons[activeRoleDisplayMode]}
-          label={`Add ${activeRoleAssignmentLabel}`}
-          onPress={() => handleStartRoleAssignment(activeRoleDisplayMode)}
+          accessibilityLabel={`${assignmentAction} ${assignmentLabel}`}
+          icon={roleDisplayModeIcons[assignmentKind]}
+          label={`${assignmentAction} ${assignmentLabel}`}
+          onPress={
+            roleAssignmentKind
+              ? handleCancelRoleAssignment
+              : () => handleStartRoleAssignment(assignmentKind)
+          }
           selected={false}
         />
       </View>
