@@ -110,6 +110,25 @@ describe('getLastDayWithData', () => {
     expect(getLastDayWithData(game)).toBe(6);
   });
 
+  it('considers role assignment days', () => {
+    const game = makeGame({
+      players: [
+        makePlayer({
+          roleAssignments: [
+            {
+              day: 7,
+              kind: 'confirm',
+              roleIds: ['role-1'],
+              updatedAt: '2026-01-07T00:00:00.000Z',
+            },
+          ],
+        }),
+      ],
+    });
+
+    expect(getLastDayWithData(game)).toBe(7);
+  });
+
   it('falls back to 1 when playerDayNotes is missing', () => {
     const game = makeGame({ playerDayNotes: undefined });
     expect(getLastDayWithData(game)).toBe(1);
