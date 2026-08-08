@@ -381,6 +381,7 @@ export const useGameStore = create<GameState>()(
       },
       updateScript: (script) => {
         set((state) => ({
+          games: updateGamesWithScript(state.games, script, state.roleCatalog),
           scripts: state.scripts.map((existingScript) =>
             existingScript.id === script.id ? script : existingScript,
           ),
