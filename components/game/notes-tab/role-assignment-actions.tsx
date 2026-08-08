@@ -10,7 +10,7 @@ import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import type { Player, PlayerRoleAssignment, Role, RoleDisplayMode } from '@/types/game';
+import type { Player, PlayerRoleAssignment, Role } from '@/types/game';
 import {
   GENERIC_CHARACTER_TYPE_ROLE_REFERENCES,
   getRoleDisplayForDayOrPrevious,
@@ -25,16 +25,8 @@ const GENERIC_ASSIGNMENT_ROLES = GENERIC_CHARACTER_TYPE_ROLE_REFERENCES.filter((
   GENERIC_ASSIGNMENT_ROLE_NAMES.has(role.name),
 );
 
-const roleDisplayModeIcons: Record<RoleDisplayMode, typeof Tag> = {
-  claim: Tag,
-  confirm: ShieldCheck,
-  guess: CircleHelp,
-  rumor: Megaphone,
-};
-
 export function RoleAssignmentActions() {
   const {
-    activeRoleDisplayMode,
     focusedPlayer,
     game,
     handleCancelRoleAssignment,
@@ -82,24 +74,43 @@ export function RoleAssignmentActions() {
   const rumorSource = rumorSourcePlayerId
     ? (players.find((player) => player.id === rumorSourcePlayerId) ?? null)
     : null;
-  const assignmentKind = roleAssignmentKind ?? activeRoleDisplayMode;
-  const assignmentAction = roleAssignmentKind ? 'Cancel' : 'Add';
-  const assignmentLabel = getRoleAssignmentLabel(assignmentKind);
-
   return (
     <View style={{ gap: 10 }}>
       <View style={innerActionRow}>
-        <RoleAssignmentButton
-          accessibilityLabel={`${assignmentAction} ${assignmentLabel}`}
-          icon={roleDisplayModeIcons[assignmentKind]}
-          label={`${assignmentAction} ${assignmentLabel}`}
-          onPress={
-            roleAssignmentKind
-              ? handleCancelRoleAssignment
-              : () => handleStartRoleAssignment(assignmentKind)
-          }
-          selected={false}
-        />
+        {roleAssignmentKind ? (
+          <RoleAssignmentButton
+            label={`Cancel ${getRoleAssignmentLabel(roleAssignmentKind)}`}
+            onPress={handleCancelRoleAssignment}
+            selected={false}
+          />
+        ) : (
+          <>
+            <RoleAssignmentButton
+              icon={Tag}
+              label="Claim"
+              onPress={() => handleStartRoleAssignment('claim')}
+              selected={false}
+            />
+            <RoleAssignmentButton
+              icon={ShieldCheck}
+              label="Confirm"
+              onPress={() => handleStartRoleAssignment('confirm')}
+              selected={false}
+            />
+            <RoleAssignmentButton
+              icon={Megaphone}
+              label="Rumor"
+              onPress={() => handleStartRoleAssignment('rumor')}
+              selected={false}
+            />
+            <RoleAssignmentButton
+              icon={CircleHelp}
+              label="Guess"
+              onPress={() => handleStartRoleAssignment('guess')}
+              selected={false}
+            />
+          </>
+        )}
       </View>
       {roleAssignmentKind ? (
         <View

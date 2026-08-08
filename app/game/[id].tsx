@@ -23,7 +23,6 @@ import { MapModeActions } from '@/components/game/map-mode-actions';
 import { PlayerCountStatus } from '@/components/game/player-count-status';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
 import { RevealRolesButton } from '@/components/game/reveal-roles-button';
-import { RoleDisplayModes } from '@/components/game/role-display-modes';
 import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
 import type {
@@ -866,10 +865,6 @@ export default function GameRoute() {
                 <MapModeActions activeDay={activeGame.activeDay} onChangeDay={handleChangeDay} />
               </View>
             )}
-
-            <View key="role-display-modes">
-              <RoleDisplayModes />
-            </View>
 
             <View key="tab-bar">
               <GameTabs />
