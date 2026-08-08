@@ -245,14 +245,5 @@ function mergeRoleLists(scriptRoles: Role[], travelerRoles: Role[]) {
 }
 
 function getRoleAssignmentLabel(kind: PlayerRoleAssignment['kind']) {
-  switch (kind) {
-    case 'confirm':
-      return 'Confirm';
-    case 'guess':
-      return 'Guess';
-    case 'rumor':
-      return 'Rumor';
-    case 'claim':
-      return 'Claim';
-  }
+  return kind.charAt(0).toUpperCase() + kind.slice(1);
 }
