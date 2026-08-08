@@ -26,10 +26,10 @@ const roleDisplayModeColors: Record<RoleDisplayMode, string> = {
 };
 
 export function RoleDisplayModes() {
-  const { activeRoleDisplayMode, game, setActiveRoleDisplayMode, showRoles } =
+  const { activeRoleDisplayMode, activeTab, game, setActiveRoleDisplayMode, showRoles } =
     useGameRouteContext();
 
-  if (!game.script || !showRoles) {
+  if (!game.script || (!showRoles && activeTab !== 'notes')) {
     return null;
   }
 
