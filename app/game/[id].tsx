@@ -128,6 +128,7 @@ export default function GameRoute() {
   const mapHeight = clampMapHeight(game?.mapHeight ?? fallbackDimensions.mapHeight);
   const mapScale = getMapScale(viewportMapWidth, mapWidth);
   const openedGameId = useRef<string | null>(null);
+  const appliedDeepLinkKey = useRef<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -203,6 +204,9 @@ export default function GameRoute() {
   // Apply deep-link focus and tab on first mount.
   useEffect(() => {
     if (!game) return;
+    const deepLinkKey = `${game.id}:${playerIdParam ?? ''}:${tabParam ?? ''}`;
+    if (appliedDeepLinkKey.current === deepLinkKey) return;
+    appliedDeepLinkKey.current = deepLinkKey;
     if (playerIdParam && game.players.some((player) => player.id === playerIdParam)) {
       setFocusedPlayerId(playerIdParam);
     }
