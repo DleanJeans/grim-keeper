@@ -10,7 +10,7 @@ import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import type { Player, PlayerRoleAssignment, Role } from '@/types/game';
+import type { Player, PlayerRoleAssignment, Role, RoleDisplayMode } from '@/types/game';
 import {
   GENERIC_CHARACTER_TYPE_ROLE_REFERENCES,
   getRoleDisplayForDayOrPrevious,
@@ -25,8 +25,16 @@ const GENERIC_ASSIGNMENT_ROLES = GENERIC_CHARACTER_TYPE_ROLE_REFERENCES.filter((
   GENERIC_ASSIGNMENT_ROLE_NAMES.has(role.name),
 );
 
+const roleDisplayModeIcons: Record<RoleDisplayMode, typeof Tag> = {
+  claim: Tag,
+  confirm: ShieldCheck,
+  guess: CircleHelp,
+  rumor: Megaphone,
+};
+
 export function RoleAssignmentActions() {
   const {
+    activeRoleDisplayMode,
     focusedPlayer,
     game,
     handleCancelRoleAssignment,
@@ -74,33 +82,17 @@ export function RoleAssignmentActions() {
     : rumorSubjectPlayerId
       ? (players.find((player) => player.id === rumorSubjectPlayerId) ?? null)
       : null;
+  const activeRoleAssignmentLabel = getRoleAssignmentLabel(activeRoleDisplayMode);
 
   return (
     <View style={{ gap: 10 }}>
       <View style={innerActionRow}>
         <RoleAssignmentButton
-          icon={Tag}
-          label="Claim"
-          onPress={() => handleStartRoleAssignment('claim')}
-          selected={roleAssignmentKind === 'claim'}
-        />
-        <RoleAssignmentButton
-          icon={ShieldCheck}
-          label="Confirm"
-          onPress={() => handleStartRoleAssignment('confirm')}
-          selected={roleAssignmentKind === 'confirm'}
-        />
-        <RoleAssignmentButton
-          icon={Megaphone}
-          label="Rumor"
-          onPress={() => handleStartRoleAssignment('rumor')}
-          selected={roleAssignmentKind === 'rumor'}
-        />
-        <RoleAssignmentButton
-          icon={CircleHelp}
-          label="Guess"
-          onPress={() => handleStartRoleAssignment('guess')}
-          selected={roleAssignmentKind === 'guess'}
+          accessibilityLabel={`Add ${activeRoleAssignmentLabel}`}
+          icon={roleDisplayModeIcons[activeRoleDisplayMode]}
+          label={`Add ${activeRoleAssignmentLabel}`}
+          onPress={() => handleStartRoleAssignment(activeRoleDisplayMode)}
+          selected={false}
         />
       </View>
       {roleAssignmentKind ? (
