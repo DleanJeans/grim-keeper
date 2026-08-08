@@ -46,7 +46,7 @@ export default function CreateRoute() {
   const [selectedLoricIds, setSelectedLoricIds] = useState<string[]>([]);
   const draftGameId = useRef<string | null>(null);
   const editingGame = gameIdParam ? games.find((game) => game.id === gameIdParam) : undefined;
-  const isEditing = Boolean(gameIdParam);
+  const isEditing = Boolean(editingGame);
   const players =
     editingGame && draftGameId.current !== editingGame.id
       ? editingGame.players
