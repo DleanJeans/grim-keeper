@@ -46,7 +46,11 @@ export function PlayerRow({
       }}
     >
       <Pressable
-        accessibilityRole="button"
+        accessibilityHint={
+          isEditing || isFixed ? undefined : 'Long press to rearrange this player.'
+        }
+        accessibilityLabel={`${item.name}, player ${index}`}
+        accessibilityRole={isEditing || isFixed ? undefined : 'button'}
         onLongPress={isEditing || isFixed ? undefined : drag}
         style={{ alignItems: 'center', flex: 1, flexDirection: 'row', gap: 12 }}
       >
