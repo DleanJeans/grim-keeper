@@ -213,6 +213,12 @@ export function PlayerToken({
           rearrangeMode ? 'Drag to rearrange this player.' : 'Double tap to select.'
         }
         accessibilityLabel={`${player.name}${player.death ? ', dead' : ''}${visibleRoles.length > 0 ? `, ${visibleRoles.map((role) => role.name).join(', ')}` : ''}`}
+        accessibilityActions={[{ name: 'activate', label: 'Select player' }]}
+        onAccessibilityAction={(event) => {
+          if (event.nativeEvent.actionName === 'activate' && onSelect && !disabled) {
+            onSelect(player.id);
+          }
+        }}
         accessibilityRole="button"
         accessibilityState={{ disabled, selected: isSelected }}
         style={[
