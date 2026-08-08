@@ -82,6 +82,7 @@ type GameState = GameData & {
   setGameLorics: (gameId: string, lorics: Role[]) => void;
   setRoleCatalog: (roles: Role[]) => void;
   addPlayer: (gameId: string, name: string) => void;
+  updateGamePlayers: (gameId: string, players: Array<Pick<Player, 'id' | 'name'>>) => void;
   deleteGame: (gameId: string) => void;
   deletePlayer: (gameId: string, playerId: string) => void;
   setPlayerDeath: (gameId: string, playerId: string, death: PlayerDeath | null) => void;
@@ -496,6 +497,49 @@ export const useGameStore = create<GameState>()(
           );
 
           return { friends, games };
+        });
+      },
+      updateGamePlayers: (gameId, draftPlayers) => {
+        set((state) => {
+          const game = state.games.find((existingGame) => existingGame.id === gameId);
+          if (!game) {
+            return state;
+          }
+
+          const updatedAt = new Date().toISOString();
+          const names = draftPlayers.map((player) => normalizePlayerName(player.name));
+          const friends = addMissingFriends(state.friends, names, updatedAt);
+          const friendIdsByName = new Map(
+            friends.map((friend) => [
+              normalizePlayerName(friend.name).toLocaleLowerCase(),
+              friend.id,
+            ]),
+          );
+          const existingIdsByName = new Map(
+            game.players.map((player) => [
+              normalizePlayerName(player.name).toLocaleLowerCase(),
+              player.id,
+            ]),
+          );
+          const appUser = game.players.find((player) => player.id === APP_USER_ID);
+          const players = [
+            appUser ?? { id: APP_USER_ID, name: state.appUserName, seat: 0 },
+            ...draftPlayers.map((player, index) => ({
+              id:
+                friendIdsByName.get(names[index].toLocaleLowerCase()) ??
+                existingIdsByName.get(names[index].toLocaleLowerCase()) ??
+                player.id,
+              name: names[index],
+              seat: index + 1,
+            })),
+          ];
+
+          return {
+            friends,
+            games: state.games.map((existingGame) =>
+              existingGame.id === gameId ? { ...existingGame, players, updatedAt } : existingGame,
+            ),
+          };
         });
       },
       deleteGame: (gameId) => {
