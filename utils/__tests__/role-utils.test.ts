@@ -445,6 +445,29 @@ describe('role utilities', () => {
     ]);
   });
 
+  it('uses a subject-owned rumor when no source was selected', () => {
+    const subject = {
+      id: 'subject',
+      name: 'Subject',
+      seat: 0,
+      roleAssignments: [
+        {
+          day: 1,
+          kind: 'rumor' as const,
+          roleIds: ['empath'],
+          subjectPlayerId: 'subject',
+          updatedAt: '2026-07-19T00:00:00.000Z',
+        },
+      ],
+    };
+    const roles = [{ id: 'empath', name: 'Empath', team: 'townsfolk' }];
+
+    expect(getRoleDisplayForMode(subject, [subject], 1, roles, 'rumor').roleIds).toEqual([
+      'empath',
+    ]);
+    expect(getLatestRumorMapDisplaysForDayOrPrevious([subject], 1, roles)).toEqual([]);
+  });
+
   it('identifies traveler characters from the role catalog', () => {
     expect(isTravelerRole({ id: 'village_idiot', name: 'Village Idiot', team: 'traveller' })).toBe(
       true,

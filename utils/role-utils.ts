@@ -283,7 +283,7 @@ export function getRoleOwnerNamesForDay(players: Player[], day: number, roles: R
 }
 
 export type RumorAboutPlayer = {
-  /** The player who is the source of the rumor (who said it). */
+  /** The player who owns the rumor assignment. For an anonymous rumor this is the subject. */
   sourcePlayer: Player;
   /** The rumor assignment (always kind === 'rumor'). */
   assignment: PlayerRoleAssignment;
@@ -339,10 +339,6 @@ export function getLatestRumorAboutPlayerForDayOrPrevious(
   let latest: { assignment: PlayerRoleAssignment; sourcePlayer: Player } | undefined;
 
   for (const sourcePlayer of players) {
-    if (sourcePlayer.id === subjectPlayerId) {
-      continue;
-    }
-
     for (const assignment of sourcePlayer.roleAssignments ?? []) {
       if (
         assignment.kind !== 'rumor' ||
@@ -376,7 +372,7 @@ export function getLatestRumorMapDisplaysForDayOrPrevious(
 ): RumorMapDisplay[] {
   return players.flatMap((subjectPlayer) => {
     const rumor = getLatestRumorAboutPlayerForDayOrPrevious(players, subjectPlayer.id, day, roles);
-    return rumor ? [{ ...rumor, subjectPlayer }] : [];
+    return rumor && rumor.sourcePlayer.id !== subjectPlayer.id ? [{ ...rumor, subjectPlayer }] : [];
   });
 }
 

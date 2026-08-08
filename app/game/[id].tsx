@@ -101,6 +101,7 @@ export default function GameRoute() {
   );
   const [roleAssignmentRoleIds, setRoleAssignmentRoleIds] = useState<string[]>([]);
   const [rumorSubjectPlayerId, setRumorSubjectPlayerId] = useState<string | null>(null);
+  const [rumorSourcePlayerId, setRumorSourcePlayerId] = useState<string | null>(null);
   const [activeRoleDisplayMode, setActiveRoleDisplayMode] = useState<RoleDisplayMode>('confirm');
   const [showRoles, setShowRoles] = useState(false);
   const game = getGameById(games, id);
@@ -247,11 +248,10 @@ export default function GameRoute() {
           if (focusedPlayerId) {
             ids.push(focusedPlayerId);
           }
-          // When in rumor mode with a chosen subject, highlight the subject
-          // alongside the focused player so the user can see the source/subject
-          // pairing on the map.
-          if (roleAssignmentKind === 'rumor' && rumorSubjectPlayerId) {
-            ids.push(rumorSubjectPlayerId);
+          // During rumor assignment, the focused player is the subject and an
+          // optional second highlighted player is the source.
+          if (roleAssignmentKind === 'rumor' && rumorSourcePlayerId) {
+            ids.push(rumorSourcePlayerId);
           }
           return ids;
         })());
@@ -344,12 +344,14 @@ export default function GameRoute() {
     setHighlightedVoterIds(null);
 
     if (roleAssignmentKind === 'rumor') {
-      handleConfirmRumorSubject(playerId);
+      handleSelectRumorSource(playerId);
       return;
     }
 
     setRoleAssignmentKind(null);
     setRoleAssignmentRoleIds([]);
+    setRumorSubjectPlayerId(null);
+    setRumorSourcePlayerId(null);
 
     if (votingNominationId) {
       const player = activeGame.players.find((currentPlayer) => currentPlayer.id === playerId);
@@ -559,29 +561,33 @@ export default function GameRoute() {
     setRoleAssignmentKind(kind);
     setRoleAssignmentRoleIds(selectableRoleIds.slice(0, 1));
     if (kind === 'rumor') {
-      // Enter subject-picking mode immediately so the user can tap any
-      // player on the map. The empty string marks "subject pending".
-      setRumorSubjectPlayerId('');
+      // The focused player is the subject. A second map selection can add an
+      // optional source while the role picker remains visible.
+      setRumorSubjectPlayerId(focusedPlayer.id);
+      setRumorSourcePlayerId(null);
     } else {
       setRumorSubjectPlayerId(null);
+      setRumorSourcePlayerId(null);
     }
   }
 
-  function handleConfirmRumorSubject(subjectPlayerId: string) {
-    if (!focusedPlayer || !activeGame.script || roleAssignmentKind !== 'rumor') {
+  function handleSelectRumorSource(sourcePlayerId: string) {
+    if (!focusedPlayer || roleAssignmentKind !== 'rumor') {
       return;
     }
-    if (subjectPlayerId === focusedPlayer.id) {
-      // Tapping the source player is a no-op; the rumor is always about someone else.
+    if (sourcePlayerId === focusedPlayer.id) {
       return;
     }
-    setRumorSubjectPlayerId(subjectPlayerId);
+    setRumorSourcePlayerId((currentSourcePlayerId) =>
+      currentSourcePlayerId === sourcePlayerId ? null : sourcePlayerId,
+    );
   }
 
   function handleCancelRoleAssignment() {
     setRoleAssignmentKind(null);
     setRoleAssignmentRoleIds([]);
     setRumorSubjectPlayerId(null);
+    setRumorSourcePlayerId(null);
   }
 
   function handleToggleRoleAssignment(roleId: string) {
@@ -613,9 +619,17 @@ export default function GameRoute() {
       return;
     }
 
+    const assignmentPlayerId =
+      roleAssignmentKind === 'rumor'
+        ? (rumorSourcePlayerId ?? rumorSubjectPlayerId)
+        : focusedPlayer.id;
+    if (!assignmentPlayerId) {
+      return;
+    }
+
     setPlayerRoleAssignment(
       activeGame.id,
-      focusedPlayer.id,
+      assignmentPlayerId,
       activeGame.activeDay,
       roleAssignmentKind,
       roleIds,
@@ -760,6 +774,7 @@ export default function GameRoute() {
     roleAssignmentKind,
     roleAssignmentRoleIds,
     rumorSubjectPlayerId,
+    rumorSourcePlayerId,
     activeRoleDisplayMode,
     showRoles,
     setActiveTab,
@@ -783,7 +798,7 @@ export default function GameRoute() {
     handleCancelRoleAssignment,
     handleToggleRoleAssignment,
     handleSaveRoleAssignment,
-    handleConfirmRumorSubject,
+    handleSelectRumorSource,
     setActiveRoleDisplayMode,
     setShowRoles,
     handleSetFocusedPlayerDeath,

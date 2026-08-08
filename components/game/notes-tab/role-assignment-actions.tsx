@@ -41,6 +41,7 @@ export function RoleAssignmentActions() {
     handleStartRoleAssignment,
     handleToggleRoleAssignment,
     rumorSubjectPlayerId,
+    rumorSourcePlayerId,
     interactionMode,
     players,
     roleAssignmentKind,
@@ -75,13 +76,12 @@ export function RoleAssignmentActions() {
   const roleOwnerNames = showRoles
     ? getRoleOwnerNamesForDay(players, game.activeDay, selectableRoles)
     : undefined;
-  const rumorSubjectSelectionPending =
-    roleAssignmentKind === 'rumor' && rumorSubjectPlayerId === '';
-  const rumorSubject = rumorSubjectSelectionPending
-    ? null
-    : rumorSubjectPlayerId
-      ? (players.find((player) => player.id === rumorSubjectPlayerId) ?? null)
-      : null;
+  const rumorSubject = rumorSubjectPlayerId
+    ? (players.find((player) => player.id === rumorSubjectPlayerId) ?? null)
+    : null;
+  const rumorSource = rumorSourcePlayerId
+    ? (players.find((player) => player.id === rumorSourcePlayerId) ?? null)
+    : null;
   const assignmentKind = roleAssignmentKind ?? activeRoleDisplayMode;
   const assignmentAction = roleAssignmentKind ? 'Cancel' : 'Add';
   const assignmentLabel = getRoleAssignmentLabel(assignmentKind);
@@ -113,11 +113,7 @@ export function RoleAssignmentActions() {
           }}
         >
           {roleAssignmentKind === 'rumor' ? (
-            <RumorHeader
-              source={focusedPlayer}
-              subject={rumorSubject}
-              subjectSelectionPending={rumorSubjectSelectionPending}
-            />
+            <RumorHeader source={rumorSource} subject={rumorSubject} />
           ) : (
             <View style={{ gap: 3 }}>
               <View
@@ -139,7 +135,11 @@ export function RoleAssignmentActions() {
           {roleAssignmentKind === 'rumor' ? (
             rumorSubject ? (
               <RolePicker
-                description={`What role did ${focusedPlayer.name} say ${rumorSubject.name} is?`}
+                description={
+                  rumorSource
+                    ? `What role did ${rumorSource.name} say ${rumorSubject.name} is?`
+                    : `What role is ${rumorSubject.name} rumored to be?`
+                }
                 onToggleRole={handleToggleRoleAssignment}
                 roles={regularRoles}
                 roleOwnerNames={roleOwnerNames}
@@ -182,50 +182,34 @@ export function RoleAssignmentActions() {
   );
 }
 
-function RumorHeader({
-  source,
-  subject,
-  subjectSelectionPending,
-}: {
-  source: Player;
-  subject: Player | null;
-  subjectSelectionPending: boolean;
-}) {
+function RumorHeader({ source, subject }: { source: Player | null; subject: Player | null }) {
   return (
     <View style={{ gap: 8 }}>
       <View style={{ alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
         <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
-          Rumor from
-        </Text>
-        <PlayerNameWithRole
-          player={source}
-          textStyle={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
-        />
-        <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
-          about
+          Rumor about
         </Text>
         {subject ? (
           <PlayerNameWithRole
             player={subject}
             textStyle={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
           />
-        ) : (
-          <Text
-            selectable
-            style={{
-              color: colors.textMuted,
-              fontStyle: 'italic',
-              fontSize: 16,
-              fontWeight: '900',
-            }}
-          >
-            (no one yet)
-          </Text>
-        )}
+        ) : null}
+        {source ? (
+          <>
+            <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
+              from
+            </Text>
+            <PlayerNameWithRole
+              player={source}
+              textStyle={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
+            />
+          </>
+        ) : null}
       </View>
-      {subjectSelectionPending ? (
+      {!source ? (
         <Text selectable style={{ color: colors.textMuted, fontSize: 13, lineHeight: 18 }}>
-          Tap a player on the map to set the subject of the rumor.
+          Tap another player on the map to add a source (optional).
         </Text>
       ) : null}
     </View>

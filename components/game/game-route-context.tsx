@@ -56,6 +56,7 @@ export type GameRouteContextValue = {
   roleAssignmentKind: PlayerRoleAssignment['kind'] | null;
   roleAssignmentRoleIds: string[];
   rumorSubjectPlayerId: string | null;
+  rumorSourcePlayerId: string | null;
   activeRoleDisplayMode: RoleDisplayMode;
   showRoles: boolean;
 
@@ -81,7 +82,7 @@ export type GameRouteContextValue = {
   handleCancelRoleAssignment: () => void;
   handleToggleRoleAssignment: (roleId: string) => void;
   handleSaveRoleAssignment: (roleIds?: string[]) => void;
-  handleConfirmRumorSubject: (subjectPlayerId: string) => void;
+  handleSelectRumorSource: (sourcePlayerId: string) => void;
   setActiveRoleDisplayMode: (mode: RoleDisplayMode) => void;
   setShowRoles: (show: boolean) => void;
   handleSetFocusedPlayerDeath: (kind: 'execution' | 'night', attribution?: KillAttribution) => void;
