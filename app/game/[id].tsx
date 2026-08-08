@@ -86,6 +86,7 @@ export default function GameRoute() {
   const [activeTab, setActiveTab] = useState<GameTab>('interactions');
   const [trackingMode, setTrackingMode] = useState<TrackingMode | null>(null);
   const [votingNominationId, setVotingNominationId] = useState<string | null>(null);
+  const [votingNominationIsNew, setVotingNominationIsNew] = useState(false);
   const [votingReturnTab, setVotingReturnTab] = useState<GameTab | null>(null);
   const [focusedPlayerId, setFocusedPlayerId] = useState<string | null>(null);
   const [highlightedVoterIds, setHighlightedVoterIds] = useState<string[] | null>(null);
@@ -418,6 +419,7 @@ export default function GameRoute() {
     setIsRearrangeMode(false);
     setTrackingMode(null);
     setVotingNominationId(null);
+    setVotingNominationIsNew(false);
     setVotingReturnTab(null);
     setFocusedPlayerId(null);
     setHighlightedVoterIds(null);
@@ -441,6 +443,7 @@ export default function GameRoute() {
     if (trackingMode === 'nomination' && conversation) {
       setTrackingMode(null);
       setVotingNominationId(conversation.id);
+      setVotingNominationIsNew(true);
       setVotingReturnTab(null);
       setFocusedPlayerId(null);
       setSelectedPlayerIds([]);
@@ -466,7 +469,7 @@ export default function GameRoute() {
 
   function handleCancelVoting() {
     const returnTab = votingReturnTab;
-    if (votingNominationId) {
+    if (votingNominationId && votingNominationIsNew) {
       // The nomination was added to the log by handleConfirmTracking before
       // we entered vote-confirming. Cancelling now should drop it entirely.
       deleteConversation(activeGame.id, votingNominationId);
@@ -481,6 +484,7 @@ export default function GameRoute() {
   function handleEditNominationVotes(nominationId: string, voterIds: string[]) {
     handleCancelTracking();
     setVotingNominationId(nominationId);
+    setVotingNominationIsNew(false);
     setVotingReturnTab('nominations');
     setSelectedPlayerIds(voterIds);
     setActiveTab('nominations');
