@@ -121,6 +121,7 @@ function HomeActionButton({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityValue={count === undefined ? undefined : { text: String(count) }}
       onPress={onPress}
       style={({ pressed }) => ({
         alignItems: 'center',
