@@ -517,7 +517,27 @@ export const useGameStore = create<GameState>()(
             const players = game.players
               .filter((player) => player.id !== playerId)
               .sort((first, second) => first.seat - second.seat)
-              .map((player, index) => ({ ...player, seat: index }));
+              .map((player, index) => ({
+                ...player,
+                death: player.death
+                  ? {
+                      ...player.death,
+                      killerPlayerId:
+                        player.death.killerPlayerId === playerId
+                          ? undefined
+                          : player.death.killerPlayerId,
+                      killerPlayerIds: player.death.killerPlayerIds?.filter(
+                        (killerId) => killerId !== playerId,
+                      ),
+                    }
+                  : undefined,
+                roleAssignments: player.roleAssignments?.map((assignment) =>
+                  assignment.subjectPlayerId === playerId
+                    ? { ...assignment, subjectPlayerId: undefined }
+                    : assignment,
+                ),
+                seat: index,
+              }));
 
             return {
               ...game,
