@@ -26,9 +26,10 @@ const roleDisplayModeColors: Record<RoleDisplayMode, string> = {
 };
 
 export function RoleDisplayModes() {
-  const { activeRoleDisplayMode, game, setActiveRoleDisplayMode } = useGameRouteContext();
+  const { activeRoleDisplayMode, game, setActiveRoleDisplayMode, showRoles } =
+    useGameRouteContext();
 
-  if (!game.script) {
+  if (!game.script || !showRoles) {
     return null;
   }
 
