@@ -112,12 +112,6 @@ export function RoleAssignmentActions() {
             padding: 12,
           }}
         >
-          <RoleAssignmentButton
-            compact
-            label="Cancel"
-            onPress={handleCancelRoleAssignment}
-            selected={false}
-          />
           {roleAssignmentKind === 'rumor' ? (
             <RumorHeader
               source={focusedPlayer}
