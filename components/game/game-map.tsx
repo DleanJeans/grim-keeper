@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg from 'react-native-svg';
 import {
@@ -43,29 +44,47 @@ export function GameMap() {
   const displayMapWidth = mapWidth * mapScale;
   const displayMapHeight = mapHeight * mapScale;
 
-  const positions = new Map(
-    players.map((player) => [
-      player.id,
-      getPlayerMapPosition(player, players, mapWidth, mapHeight, activeTokenSize),
-    ]),
+  const positions = useMemo(
+    () =>
+      new Map(
+        players.map((player) => [
+          player.id,
+          getPlayerMapPosition(player, players, mapWidth, mapHeight, activeTokenSize),
+        ]),
+      ),
+    [activeTokenSize, mapHeight, mapWidth, players],
   );
-  const selectedPlayerIdSet = new Set(highlightedPlayerIds);
+  const selectedPlayerIdSet = useMemo(() => new Set(highlightedPlayerIds), [highlightedPlayerIds]);
   const showNominationCurves = activeTab === 'nominations';
   const showInteractionCurves = activeTab === 'interactions';
   const showRumorCurves = activeTab === 'notes' && activeRoleDisplayMode === 'rumor' && showRoles;
   const rumorMapDisplays = showRumorCurves
     ? getLatestRumorMapDisplaysForDayOrPrevious(players, activeDay, game.script?.roles ?? [])
     : [];
-  const groupRepeats = buildConversationGroupRepeats(conversations, activeDay);
-  const disabledPlayerIdSet = new Set(disabledPlayerIds);
-  const activeDayNominations = conversations.filter(
-    (conversation) => conversation.day === activeDay && conversation.kind === 'nomination',
+  const groupRepeats = useMemo(
+    () => buildConversationGroupRepeats(conversations, activeDay),
+    [activeDay, conversations],
   );
-  const nominatorIds = new Set(activeDayNominations.map((nomination) => nomination.initiatorId));
-  const nominatedIds = new Set(
-    activeDayNominations.flatMap((nomination) =>
-      nomination.participantIds.filter((playerId) => playerId !== nomination.initiatorId),
-    ),
+  const disabledPlayerIdSet = useMemo(() => new Set(disabledPlayerIds), [disabledPlayerIds]);
+  const activeDayNominations = useMemo(
+    () =>
+      conversations.filter(
+        (conversation) => conversation.day === activeDay && conversation.kind === 'nomination',
+      ),
+    [activeDay, conversations],
+  );
+  const nominatorIds = useMemo(
+    () => new Set(activeDayNominations.map((nomination) => nomination.initiatorId)),
+    [activeDayNominations],
+  );
+  const nominatedIds = useMemo(
+    () =>
+      new Set(
+        activeDayNominations.flatMap((nomination) =>
+          nomination.participantIds.filter((playerId) => playerId !== nomination.initiatorId),
+        ),
+      ),
+    [activeDayNominations],
   );
 
   return (
