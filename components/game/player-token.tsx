@@ -131,7 +131,7 @@ export function PlayerToken({
     const blockers = otherPositionsShared.value;
     let bestX = px;
     let bestY = py;
-    let bestDistanceSquared = 0;
+    let bestDistanceSquared = Infinity;
     for (let i = 0; i < blockers.length; i += 1) {
       const blocker = blockers[i];
       const dx = px - blocker.x;
