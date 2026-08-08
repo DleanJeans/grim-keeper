@@ -45,7 +45,6 @@ import {
   mapGamePlayerIdsToFriendIds,
   migrateObjectIds,
 } from '@/utils/object-id';
-import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 import { mergeRoleCatalogMetadata } from '@/utils/role-utils';
 import {
   getNotesForPlayer,
@@ -617,43 +616,36 @@ export const useGameStore = create<GameState>()(
       },
       setPlayerDeath: (gameId, playerId, death) => {
         set((state) => ({
-          games: state.games.map((game) =>
-            game.id === gameId
-              ? {
-                  ...game,
-                  updatedAt: new Date().toISOString(),
-                  players: game.players.map((player) =>
-                    player.id === playerId
-                      ? {
-                          ...player,
-                          death: death ?? undefined,
-                          revive: death ? undefined : player.revive,
-                        }
-                      : player,
-                  ),
-                }
-              : game,
-          ),
+          games: state.games.map((game) => {
+            if (game.id !== gameId) return game;
+            return synchronizeDeadVoteUsage({
+              ...game,
+              updatedAt: new Date().toISOString(),
+              players: game.players.map((player) =>
+                player.id === playerId
+                  ? {
+                      ...player,
+                      death: death ?? undefined,
+                      revive: death ? undefined : player.revive,
+                    }
+                  : player,
+              ),
+            });
+          }),
         }));
       },
       setPlayerRevive: (gameId, playerId, revive) => {
         set((state) => ({
-          games: state.games.map((game) =>
-            game.id === gameId
-              ? {
-                  ...game,
-                  updatedAt: new Date().toISOString(),
-                  players: game.players.map((player) =>
-                    player.id === playerId
-                      ? {
-                          ...player,
-                          revive: revive ?? undefined,
-                        }
-                      : player,
-                  ),
-                }
-              : game,
-          ),
+          games: state.games.map((game) => {
+            if (game.id !== gameId) return game;
+            return synchronizeDeadVoteUsage({
+              ...game,
+              updatedAt: new Date().toISOString(),
+              players: game.players.map((player) =>
+                player.id === playerId ? { ...player, revive: revive ?? undefined } : player,
+              ),
+            });
+          }),
         }));
       },
       setPlayerRoleAssignment: (gameId, playerId, day, kind, roleIds, subjectPlayerId) => {
@@ -1077,27 +1069,20 @@ export const useGameStore = create<GameState>()(
       },
       updateNominationVotes: (gameId, nominationId, voterIds) => {
         const uniqueVoterIds = [...new Set(voterIds)];
-        const voterIdSet = new Set(uniqueVoterIds);
 
         set((state) => ({
-          games: state.games.map((game) =>
-            game.id === gameId
-              ? {
-                  ...game,
-                  updatedAt: new Date().toISOString(),
-                  players: game.players.map((player) =>
-                    voterIdSet.has(player.id) && isPlayerCurrentlyDead(player, game.activeDay)
-                      ? { ...player, deadVoteUsed: true }
-                      : player,
-                  ),
-                  conversations: game.conversations.map((conversation) =>
-                    conversation.id === nominationId
-                      ? { ...conversation, voterIds: uniqueVoterIds }
-                      : conversation,
-                  ),
-                }
-              : game,
-          ),
+          games: state.games.map((game) => {
+            if (game.id !== gameId) return game;
+            return synchronizeDeadVoteUsage({
+              ...game,
+              updatedAt: new Date().toISOString(),
+              conversations: game.conversations.map((conversation) =>
+                conversation.id === nominationId
+                  ? { ...conversation, voterIds: uniqueVoterIds }
+                  : conversation,
+              ),
+            });
+          }),
         }));
       },
       setNominationBigWig: (gameId, nominationId, playerId) => {
@@ -1119,17 +1104,16 @@ export const useGameStore = create<GameState>()(
       },
       deleteConversation: (gameId, conversationId) => {
         set((state) => ({
-          games: state.games.map((game) =>
-            game.id === gameId
-              ? {
-                  ...game,
-                  updatedAt: new Date().toISOString(),
-                  conversations: game.conversations.filter(
-                    (conversation) => conversation.id !== conversationId,
-                  ),
-                }
-              : game,
-          ),
+          games: state.games.map((game) => {
+            if (game.id !== gameId) return game;
+            return synchronizeDeadVoteUsage({
+              ...game,
+              updatedAt: new Date().toISOString(),
+              conversations: game.conversations.filter(
+                (conversation) => conversation.id !== conversationId,
+              ),
+            });
+          }),
         }));
       },
       setAppUserName: (name) => {
@@ -1217,6 +1201,31 @@ export function getGameById(games: Game[], gameId: string | undefined) {
 
 function createId(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function synchronizeDeadVoteUsage(game: Game): Game {
+  const usedPlayerIds = new Set<string>();
+  for (const conversation of game.conversations) {
+    if (conversation.kind !== 'nomination') continue;
+    for (const voterId of conversation.voterIds ?? []) {
+      const voter = game.players.find((player) => player.id === voterId);
+      if (voter?.death && voter.death.day <= conversation.day) {
+        const revived =
+          voter.revive &&
+          voter.revive.day >= voter.death.day &&
+          voter.revive.day <= conversation.day;
+        if (!revived) usedPlayerIds.add(voterId);
+      }
+    }
+  }
+
+  return {
+    ...game,
+    players: game.players.map((player) => ({
+      ...player,
+      deadVoteUsed: usedPlayerIds.has(player.id) ? true : undefined,
+    })),
+  };
 }
 
 function upsertPlayerDayNote(
