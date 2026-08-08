@@ -74,8 +74,10 @@ export default function GameRoute() {
   const setGameScript = useGameStore((state) => state.setGameScript);
   const addPlayerDayNote = useGameStore((state) => state.addPlayerDayNote);
   const editPlayerDayNote = useGameStore((state) => state.editPlayerDayNote);
-  const updatePlayerPosition = useGameStore((state) => state.updatePlayerPosition);
   const updatePlayerPositions = useGameStore((state) => state.updatePlayerPositions);
+  const movePlayerAndResolveCollisions = useGameStore(
+    (state) => state.movePlayerAndResolveCollisions,
+  );
   const addConversation = useGameStore((state) => state.addConversation);
   const updateNominationVotes = useGameStore((state) => state.updateNominationVotes);
   const deleteConversation = useGameStore((state) => state.deleteConversation);
@@ -652,23 +654,14 @@ export default function GameRoute() {
   }
 
   function handleMovePlayer(playerId: string, position: PlayerPosition) {
-    updatePlayerPosition(activeGame.id, playerId, position);
-    // Push any tokens the dragged player is now overlapping out of the way.
-    // The dragged player is the anchor — it stays at `position`, the others
-    // get shoved.
-    const playersWithMoved = activeGame.players.map((player) =>
-      player.id === playerId ? { ...player, position } : player,
-    );
-    const { positions } = resolveTokenCollisions(
-      playersWithMoved,
+    movePlayerAndResolveCollisions(
+      activeGame.id,
+      playerId,
+      position,
       mapWidth,
       mapHeight,
       activeTokenSize,
-      playerId,
     );
-    if (Object.keys(positions).length > 0) {
-      updatePlayerPositions(activeGame.id, positions);
-    }
   }
 
   function handleSetFocusedPlayerDeath(kind: 'execution' | 'night', attribution?: KillAttribution) {

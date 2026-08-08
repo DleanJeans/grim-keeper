@@ -27,7 +27,12 @@ import {
   getFriendSummaries,
   hasFriendName,
 } from '@/utils/friend-utils';
-import { clampMapHeight, getDefaultTokenSize, getTokenSize } from '@/utils/layout-utils';
+import {
+  clampMapHeight,
+  getDefaultTokenSize,
+  getTokenSize,
+  resolveTokenCollisions,
+} from '@/utils/layout-utils';
 import {
   APP_USER_ID,
   createConversationId,
@@ -134,6 +139,14 @@ type GameState = GameData & {
   setActiveDay: (gameId: string, day: number) => void;
   updatePlayerPosition: (gameId: string, playerId: string, position: PlayerPosition) => void;
   updatePlayerPositions: (gameId: string, positions: Record<string, PlayerPosition>) => void;
+  movePlayerAndResolveCollisions: (
+    gameId: string,
+    playerId: string,
+    position: PlayerPosition,
+    mapWidth: number,
+    mapHeight: number,
+    tokenSize: number,
+  ) => void;
   addConversation: (
     gameId: string,
     day: number,
@@ -984,6 +997,45 @@ export const useGameStore = create<GameState>()(
                 }
               : game,
           ),
+        }));
+      },
+      movePlayerAndResolveCollisions: (
+        gameId,
+        playerId,
+        position,
+        mapWidth,
+        mapHeight,
+        tokenSize,
+      ) => {
+        set((state) => ({
+          games: state.games.map((game) => {
+            if (game.id !== gameId) {
+              return game;
+            }
+
+            const movedPlayers = game.players.map((player) =>
+              player.id === playerId ? { ...player, position } : player,
+            );
+            const { positions } = resolveTokenCollisions(
+              movedPlayers,
+              mapWidth,
+              mapHeight,
+              tokenSize,
+              playerId,
+            );
+
+            return {
+              ...game,
+              updatedAt: new Date().toISOString(),
+              players: movedPlayers.map((player) =>
+                player.id === playerId
+                  ? player
+                  : positions[player.id]
+                    ? { ...player, position: positions[player.id] }
+                    : player,
+              ),
+            };
+          }),
         }));
       },
       addConversation: (gameId, day, participantIds, kind = 'interaction') => {
