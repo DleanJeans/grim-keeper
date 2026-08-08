@@ -35,9 +35,7 @@ function buildSeed() {
     state: {
       appUserName: 'You',
       games: [],
-      friends: [
-        { id: 'friend-aaron', name: FRIEND_NAME, createdAt: '2026-01-01T00:00:00.000Z' },
-      ],
+      friends: [{ id: 'friend-aaron', name: FRIEND_NAME, createdAt: '2026-01-01T00:00:00.000Z' }],
       roleCatalog: [],
       savedNotes: [],
       scripts: [],
@@ -136,9 +134,7 @@ async function runOnce(context: BrowserContext, options: RunOptions): Promise<st
 }
 
 async function run() {
-  const browser = CDP_URL
-    ? await chromium.connectOverCDP(CDP_URL)
-    : await chromium.launch();
+  const browser = CDP_URL ? await chromium.connectOverCDP(CDP_URL) : await chromium.launch();
   const ownsBrowser = !CDP_URL;
   const allFailures: string[] = [];
   const labels: string[] = [];
@@ -171,7 +167,9 @@ async function run() {
     process.exit(1);
   }
 
-  console.log(`PASS: friend selected, input still focused, player added to list (${labels.join(' + ')}).`);
+  console.log(
+    `PASS: friend selected, input still focused, player added to list (${labels.join(' + ')}).`,
+  );
 }
 
 run().catch((err) => {

@@ -12,10 +12,7 @@ export function EditGameButton({ onPress }: { onPress: () => void }) {
       accessibilityRole="button"
       hitSlop={8}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.button,
-        pressed ? styles.pressed : styles.idle,
-      ]}
+      style={({ pressed }) => [styles.button, pressed ? styles.pressed : styles.idle]}
     >
       <Settings color={colors.text} size={16} strokeWidth={2.3} />
       <Text style={styles.label}>Edit Game</Text>

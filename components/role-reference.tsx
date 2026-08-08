@@ -80,7 +80,11 @@ export function RoleReference({
     return (
       <View
         accessibilityLabel={accessibilityLabel ?? role.name}
-        style={[baseRowStyle, variant === 'note' && noteReferenceStyles.container, resolvedContainerStyle]}
+        style={[
+          baseRowStyle,
+          variant === 'note' && noteReferenceStyles.container,
+          resolvedContainerStyle,
+        ]}
       >
         {body}
       </View>

@@ -1,4 +1,4 @@
-import { Check, UserRoundSearch, X } from 'lucide-react-native';
+import { Check, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 

@@ -137,12 +137,7 @@ function TalkedToPill({ name, player, repeated }: TalkedToPillProps) {
   return (
     <View style={containerStyle}>
       {player ? (
-        <PlayerNameWithRole
-          player={player}
-          iconSize={16}
-          iconScale={2}
-          textStyle={textStyle}
-        />
+        <PlayerNameWithRole player={player} iconSize={16} iconScale={2} textStyle={textStyle} />
       ) : (
         <Text selectable style={textStyle}>
           {name}
