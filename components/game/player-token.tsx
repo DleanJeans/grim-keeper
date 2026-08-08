@@ -206,6 +206,13 @@ export function PlayerToken({
   return (
     <GestureDetector gesture={rearrangeMode ? pan : tap}>
       <Animated.View
+        accessible
+        accessibilityHint={
+          rearrangeMode ? 'Drag to rearrange this player.' : 'Double tap to select.'
+        }
+        accessibilityLabel={`${player.name}${player.death ? ', dead' : ''}${visibleRoles.length > 0 ? `, ${visibleRoles.map((role) => role.name).join(', ')}` : ''}`}
+        accessibilityRole="button"
+        accessibilityState={{ disabled, selected: isSelected }}
         style={[
           {
             alignItems: 'center',
