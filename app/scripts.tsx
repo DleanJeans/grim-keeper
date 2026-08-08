@@ -245,6 +245,7 @@ export default function ScriptsRoute() {
             <TextInput
               autoCapitalize="none"
               autoCorrect={false}
+              accessibilityLabel="Search BotC Scripts"
               onChangeText={setSearchText}
               onSubmitEditing={() => loadRemoteScripts()}
               placeholder="Search scripts"

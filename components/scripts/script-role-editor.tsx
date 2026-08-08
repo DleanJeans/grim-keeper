@@ -61,6 +61,7 @@ export function ScriptRoleEditor({ onChange, roleCatalog, script }: ScriptRoleEd
       <TextInput
         autoCapitalize="words"
         autoCorrect={false}
+        accessibilityLabel="Script name"
         enterKeyHint="done"
         onBlur={commitScriptName}
         onChangeText={setScriptName}
@@ -88,6 +89,7 @@ export function ScriptRoleEditor({ onChange, roleCatalog, script }: ScriptRoleEd
       <TextInput
         autoCapitalize="words"
         autoCorrect={false}
+        accessibilityLabel="Add a role"
         onChangeText={setQuery}
         placeholder="Add a role"
         placeholderTextColor={colors.textSubtle}
