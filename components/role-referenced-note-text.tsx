@@ -1,7 +1,6 @@
 import { type StyleProp, type TextStyle, View } from 'react-native';
-
-import { useGameStore } from '@/store/game-store';
 import { RoleReferenceNoteLine } from '@/components/role-reference-note-line';
+import { useGameStore } from '@/store/game-store';
 import type { Game, Player, Role } from '@/types/game';
 import { GENERIC_CHARACTER_TYPE_ROLE_REFERENCES } from '@/utils/role-utils';
 

@@ -1,10 +1,12 @@
 import {
+  BOTC_SCRIPTS_API_URL,
   createHomebrewScript,
   createOfficialCarouselScript,
   createStoredScript,
   fetchOfficialRemoteScripts,
   OFFICIAL_CAROUSEL_SCRIPT_ID,
   type RemoteScript,
+  restoreRemoteScript,
 } from '@/utils/script-service';
 
 describe('script service', () => {
@@ -82,6 +84,47 @@ describe('script service', () => {
       name: 'Trouble Brewing',
       roles: [{ id: 'imp', name: 'Imp', team: 'demon', edition: 'tb' }],
     });
+  });
+
+  it('restores an ID-only downloaded script from its remote content', async () => {
+    const originalFetch = globalThis.fetch;
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          id: '_meta',
+          author: 'Homebrew Author',
+          name: 'Extension Cord',
+          version: '1.0.0',
+        },
+        'imp',
+      ],
+    } as unknown as Response);
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    try {
+      await expect(
+        restoreRemoteScript(
+          {
+            id: '947-extension-cord',
+            name: 'extension-cord',
+            remoteId: 947,
+            roles: [],
+            updatedAt: '',
+            version: '',
+          },
+          [{ id: 'imp', name: 'Imp', team: 'demon' }],
+        ),
+      ).resolves.toMatchObject({
+        id: '947-extension-cord',
+        name: 'Extension Cord',
+        remoteId: 947,
+        roles: [{ id: 'imp', name: 'Imp', team: 'demon' }],
+      });
+      expect(fetchMock).toHaveBeenCalledWith(`${BOTC_SCRIPTS_API_URL}/947/json`);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 
   it('loads only the official base scripts from BotC Scripts', async () => {

@@ -306,10 +306,15 @@ function isGameData(value: unknown): value is GameData {
     isRecord(value) &&
     typeof value.appUserName === 'string' &&
     Array.isArray(value.friends) &&
+    value.friends.every(isFriend) &&
     Array.isArray(value.games) &&
+    value.games.every(isGame) &&
     Array.isArray(value.roleCatalog) &&
+    value.roleCatalog.every(isRole) &&
     Array.isArray(value.savedNotes) &&
-    Array.isArray(value.scripts)
+    value.savedNotes.every(isSavedNote) &&
+    Array.isArray(value.scripts) &&
+    value.scripts.every(isStoredScript)
   );
 }
 
@@ -318,11 +323,127 @@ function isExportedGameData(value: unknown): value is ExportedGameData {
     isRecord(value) &&
     typeof value.appUserName === 'string' &&
     Array.isArray(value.friends) &&
+    value.friends.every(isFriend) &&
     Array.isArray(value.games) &&
+    value.games.every(isExportedGame) &&
     Array.isArray(value.roleCatalog) &&
+    value.roleCatalog.every(isRole) &&
     Array.isArray(value.savedNotes) &&
-    Array.isArray(value.scripts)
+    value.savedNotes.every(isSavedNote) &&
+    Array.isArray(value.scripts) &&
+    value.scripts.every((script) => typeof script === 'string' || isStoredScript(script))
   );
+}
+
+function isFriend(value: unknown): value is GameData['friends'][number] {
+  return isRecord(value) && isString(value.id) && isString(value.name) && isString(value.createdAt);
+}
+
+function isRole(value: unknown): value is Role {
+  return isRecord(value) && isString(value.id) && isString(value.name);
+}
+
+function isStoredScript(value: unknown): value is StoredScript {
+  return (
+    isRecord(value) &&
+    isString(value.id) &&
+    isString(value.name) &&
+    isString(value.version) &&
+    isString(value.updatedAt) &&
+    Array.isArray(value.roles) &&
+    value.roles.every(isRole)
+  );
+}
+
+function isPlayer(value: unknown): value is Player {
+  return (
+    isRecord(value) &&
+    isString(value.id) &&
+    isString(value.name) &&
+    isFiniteNumber(value.seat) &&
+    (!('position' in value) || value.position === undefined || isPosition(value.position))
+  );
+}
+
+function isPosition(value: unknown) {
+  return isRecord(value) && isFiniteNumber(value.x) && isFiniteNumber(value.y);
+}
+
+function isConversation(value: unknown) {
+  return (
+    isRecord(value) &&
+    isString(value.id) &&
+    isFiniteNumber(value.day) &&
+    isStringArray(value.participantIds) &&
+    isString(value.initiatorId) &&
+    (!('voterIds' in value) || value.voterIds === undefined || isStringArray(value.voterIds))
+  );
+}
+
+function isGame(value: unknown): value is Game {
+  return (
+    isRecord(value) &&
+    isString(value.id) &&
+    isString(value.createdAt) &&
+    isString(value.updatedAt) &&
+    isFiniteNumber(value.activeDay) &&
+    Array.isArray(value.players) &&
+    value.players.every(isPlayer) &&
+    Array.isArray(value.conversations) &&
+    value.conversations.every(isConversation)
+  );
+}
+
+function isExportedGame(value: unknown): value is ExportedGame {
+  return (
+    isRecord(value) &&
+    isString(value.id) &&
+    isString(value.createdAt) &&
+    isString(value.updatedAt) &&
+    isFiniteNumber(value.activeDay) &&
+    Array.isArray(value.players) &&
+    value.players.every(
+      (player) =>
+        isRecord(player) &&
+        isString(player.id) &&
+        (!('name' in player) || player.name === undefined),
+    ) &&
+    Array.isArray(value.conversations) &&
+    value.conversations.every(
+      (conversation) =>
+        isRecord(conversation) &&
+        isString(conversation.id) &&
+        isFiniteNumber(conversation.day) &&
+        isStringArray(conversation.participantIds),
+    )
+  );
+}
+
+function isSavedNote(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isString(value.id) &&
+    isString(value.playerName) &&
+    isStringArray(value.roleIds) &&
+    isString(value.text) &&
+    isString(value.gameId) &&
+    isString(value.scriptName) &&
+    isFiniteNumber(value.day) &&
+    isString(value.createdAt) &&
+    isString(value.updatedAt)
+  );
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every(isString);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

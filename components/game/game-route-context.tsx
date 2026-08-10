@@ -7,6 +7,7 @@ import type {
   Player,
   PlayerPosition,
   PlayerRoleAssignment,
+  RoleDisplayMode,
 } from '@/types/game';
 
 export type GameTab = 'interactions' | 'nominations' | 'deaths' | 'notes';
@@ -55,6 +56,8 @@ export type GameRouteContextValue = {
   roleAssignmentKind: PlayerRoleAssignment['kind'] | null;
   roleAssignmentRoleIds: string[];
   rumorSubjectPlayerId: string | null;
+  rumorSourcePlayerId: string | null;
+  activeRoleDisplayMode: RoleDisplayMode;
   showRoles: boolean;
 
   // Handlers
@@ -79,7 +82,9 @@ export type GameRouteContextValue = {
   handleCancelRoleAssignment: () => void;
   handleToggleRoleAssignment: (roleId: string) => void;
   handleSaveRoleAssignment: (roleIds?: string[]) => void;
-  handleConfirmRumorSubject: (subjectPlayerId: string) => void;
+  handleDeleteRumor: (sourcePlayerId: string, day: number) => void;
+  handleSelectRumorSource: (sourcePlayerId: string) => void;
+  setActiveRoleDisplayMode: (mode: RoleDisplayMode) => void;
   setShowRoles: (show: boolean) => void;
   handleSetFocusedPlayerDeath: (kind: 'execution' | 'night', attribution?: KillAttribution) => void;
   handleReviveFocusedPlayer: () => void;

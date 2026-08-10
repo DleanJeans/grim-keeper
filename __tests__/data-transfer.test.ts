@@ -167,6 +167,34 @@ describe('data transfer', () => {
     );
   });
 
+  it('rejects malformed nested game data', () => {
+    const malformed = {
+      data: {
+        appUserName: 'Keeper',
+        friends: [],
+        games: [
+          {
+            activeDay: 'one',
+            conversations: [],
+            createdAt: '2026-08-03T00:00:00.000Z',
+            id: 'game-1',
+            players: [],
+            updatedAt: '2026-08-03T00:00:00.000Z',
+          },
+        ],
+        roleCatalog: [],
+        savedNotes: [],
+        scripts: [],
+      },
+      format: 'grim-keeper-backup',
+      version: 1,
+    };
+
+    expect(() => parseBackup(JSON.stringify(malformed))).toThrow(
+      'The backup is missing required Grim Keeper data.',
+    );
+  });
+
   it('exports game script references instead of cloned script objects', () => {
     const role: Role = { id: 'washerwoman', name: 'Washerwoman' };
     const script: StoredScript = {

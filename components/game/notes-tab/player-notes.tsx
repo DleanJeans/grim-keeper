@@ -12,12 +12,13 @@ type CommonProps = {
 };
 
 type ClaimOrConfirmProps = CommonProps & {
-  kind: 'claim' | 'confirm';
+  kind: 'claim' | 'confirm' | 'guess';
 };
 
 type RumorProps = CommonProps & {
   day: number;
   kind: 'rumor';
+  onDelete?: () => void;
   showSource?: boolean;
   /** The player who is the source of the rumor (the focused player who said it). */
   source: Player;
@@ -37,6 +38,7 @@ export function PlayerNoteRoleAssignment(props: PlayerNoteRoleAssignmentProps) {
       <PlayerActivityRow
         activity={{
           kind: 'rumor',
+          onDelete: props.onDelete,
           roles: props.roles,
           scriptId: props.scriptId,
           source: props.showSource ? props.source : undefined,
@@ -54,15 +56,15 @@ function ClaimOrConfirmRow({
   roles,
   scriptId,
 }: {
-  kind: 'claim' | 'confirm';
+  kind: 'claim' | 'confirm' | 'guess';
   roles: Role[];
   scriptId?: string;
 }) {
-  const labelKind = kind === 'confirm' ? 'confirm' : 'claim';
+  const labelKind = kind;
   return (
     <View style={[styles.row, gameStyles.noteCard]}>
-      <Text style={roleLabelStyle[labelKind]}>
-        {labelKind === 'confirm' ? 'Confirmed' : 'Claimed'}
+      <Text style={getRoleLabelStyle(labelKind)}>
+        {labelKind === 'confirm' ? 'Confirmed' : labelKind === 'guess' ? 'Guessed' : 'Claimed'}
       </Text>
       {labelKind === 'confirm' ? (
         <Check color={colors.roleConfirm} size={14} strokeWidth={3} />
@@ -85,9 +87,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '900',
   },
+  roleLabelClaim: {
+    color: colors.roleClaim,
+  },
+  roleLabelConfirm: {
+    color: colors.roleConfirm,
+  },
+  roleLabelGuess: {
+    color: colors.roleGuess,
+  },
 });
 
-const roleLabelStyle = {
-  claim: { ...styles.roleLabel, color: colors.roleClaim },
-  confirm: { ...styles.roleLabel, color: colors.roleConfirm },
-};
+function getRoleLabelStyle(kind: 'claim' | 'confirm' | 'guess') {
+  switch (kind) {
+    case 'confirm':
+      return [styles.roleLabel, styles.roleLabelConfirm];
+    case 'guess':
+      return [styles.roleLabel, styles.roleLabelGuess];
+    case 'claim':
+      return [styles.roleLabel, styles.roleLabelClaim];
+  }
+}

@@ -61,6 +61,7 @@ export function ScriptRoleEditor({ onChange, roleCatalog, script }: ScriptRoleEd
       <TextInput
         autoCapitalize="words"
         autoCorrect={false}
+        accessibilityLabel="Script name"
         enterKeyHint="done"
         onBlur={commitScriptName}
         onChangeText={setScriptName}
@@ -88,6 +89,7 @@ export function ScriptRoleEditor({ onChange, roleCatalog, script }: ScriptRoleEd
       <TextInput
         autoCapitalize="words"
         autoCorrect={false}
+        accessibilityLabel="Add a role"
         onChangeText={setQuery}
         placeholder="Add a role"
         placeholderTextColor={colors.textSubtle}
@@ -171,7 +173,7 @@ function RoleChip({
       <Pressable
         accessibilityLabel={`Remove ${role.name} from script`}
         accessibilityRole="button"
-        hitSlop={6}
+        hitSlop={15}
         onPress={onRemove}
       >
         <X color={colors.textMuted} size={15} strokeWidth={2.5} />

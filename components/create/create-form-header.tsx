@@ -119,6 +119,7 @@ export function CreateFormHeader({
             <TextInput
               autoCapitalize="words"
               autoCorrect={false}
+              accessibilityLabel="Player name"
               enterKeyHint="done"
               ref={inputRef}
               onBlur={onBlurName}

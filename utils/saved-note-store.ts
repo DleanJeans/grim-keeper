@@ -43,9 +43,9 @@ export function migrateV1ToV3(
         return friend;
       }
       const normalized = legacyNotes
-        .map((note) =>
+        .map((note, index) =>
           typeof note === 'string'
-            ? { id: `friend-note-${Date.now()}`, text: note, createdAt: friend.createdAt }
+            ? { id: `friend-note-${friend.id}-${index}`, text: note, createdAt: friend.createdAt }
             : note,
         )
         .filter((note): note is LegacyFriendNote => !!note?.text);

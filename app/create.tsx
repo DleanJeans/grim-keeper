@@ -27,9 +27,8 @@ export default function CreateRoute() {
     scriptId?: string;
   }>();
   const appUserName = useGameStore((state) => state.appUserName);
-  const addPlayer = useGameStore((state) => state.addPlayer);
   const createGame = useGameStore((state) => state.createGame);
-  const deletePlayer = useGameStore((state) => state.deletePlayer);
+  const updateGamePlayers = useGameStore((state) => state.updateGamePlayers);
   const games = useGameStore((state) => state.games);
   const scripts = useGameStore((state) => state.scripts);
   const setGameScript = useGameStore((state) => state.setGameScript);
@@ -45,13 +44,15 @@ export default function CreateRoute() {
     scriptIdParam ?? null,
   );
   const [selectedLoricIds, setSelectedLoricIds] = useState<string[]>([]);
+  const draftGameId = useRef<string | null>(null);
   const editingGame = gameIdParam ? games.find((game) => game.id === gameIdParam) : undefined;
-  const isEditing = Boolean(gameIdParam);
-  const players = editingGame
-    ? editingGame.players
-        .filter((player) => player.id !== APP_USER_ID)
-        .map(({ id, name }) => ({ id, name }))
-    : draftPlayers;
+  const isEditing = Boolean(editingGame);
+  const players =
+    editingGame && draftGameId.current !== editingGame.id
+      ? editingGame.players
+          .filter((player) => player.id !== APP_USER_ID)
+          .map(({ id, name }) => ({ id, name }))
+      : draftPlayers;
   const fixedPlayerName =
     editingGame?.players.find((player) => player.id === APP_USER_ID)?.name ?? appUserName;
   const legacyScript = editingGame?.script;
@@ -96,6 +97,17 @@ export default function CreateRoute() {
   }, [friends, normalizedName, selectedNames]);
 
   useEffect(() => {
+    if (editingGame && draftGameId.current !== editingGame.id) {
+      draftGameId.current = editingGame.id;
+      setDraftPlayers(
+        editingGame.players
+          .filter((player) => player.id !== APP_USER_ID)
+          .map(({ id, name }) => ({ id, name })),
+      );
+    }
+  }, [editingGame]);
+
+  useEffect(() => {
     if (scriptIdParam) {
       setDraftSelectedScriptId(scriptIdParam);
     } else if (isEditing) {
@@ -128,14 +140,10 @@ export default function CreateRoute() {
       return;
     }
 
-    if (isEditing && editingGame) {
-      addPlayer(editingGame.id, normalizedName);
-    } else {
-      setDraftPlayers((currentPlayers) => [
-        ...currentPlayers,
-        { id: createDraftId(), name: normalizedName },
-      ]);
-    }
+    setDraftPlayers((currentPlayers) => [
+      ...currentPlayers,
+      { id: createDraftId(), name: normalizedName },
+    ]);
     setName('');
     setNameFocused(true);
     requestAnimationFrame(() => inputRef.current?.focus());
@@ -148,25 +156,16 @@ export default function CreateRoute() {
       return;
     }
 
-    if (isEditing && editingGame) {
-      addPlayer(editingGame.id, normalizedFriendName);
-    } else {
-      setDraftPlayers((currentPlayers) => [
-        ...currentPlayers,
-        { id: createDraftId(), name: normalizedFriendName },
-      ]);
-    }
+    setDraftPlayers((currentPlayers) => [
+      ...currentPlayers,
+      { id: createDraftId(), name: normalizedFriendName },
+    ]);
     setName('');
     setNameFocused(true);
     setTimeout(() => inputRef.current?.focus(), 0);
   }
 
   function handleRemovePlayer(playerId: string) {
-    if (isEditing && editingGame) {
-      deletePlayer(editingGame.id, playerId);
-      return;
-    }
-
     setDraftPlayers((currentPlayers) => currentPlayers.filter((player) => player.id !== playerId));
   }
 
@@ -178,6 +177,7 @@ export default function CreateRoute() {
     Keyboard.dismiss();
 
     if (isEditing && editingGame) {
+      updateGamePlayers(editingGame.id, players);
       setGameScript(editingGame.id, selectedScript);
       setGameLorics(
         editingGame.id,
@@ -290,9 +290,7 @@ export default function CreateRoute() {
           }
           ListHeaderComponentStyle={styles.listHeader}
           onDragEnd={({ data }) => {
-            if (!isEditing) {
-              setDraftPlayers(data);
-            }
+            setDraftPlayers(data);
           }}
           renderItem={(params) => (
             <PlayerRow

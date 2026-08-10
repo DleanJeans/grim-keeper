@@ -1,6 +1,7 @@
-import { FlameKindling, Megaphone, Skull, Vote } from 'lucide-react-native';
-import { StyleSheet, View } from 'react-native';
+import { FlameKindling, Megaphone, Skull, Trash2, Vote } from 'lucide-react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
+import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { DeadVoteIcon } from '@/components/game/dead-vote-icon';
 import { NomIcon } from '@/components/game/noms-tab/nom-icon';
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
@@ -30,6 +31,7 @@ type StandardPlayerActivity = {
 
 type RumorPlayerActivity = {
   kind: 'rumor';
+  onDelete?: () => void;
   roles: Role[];
   scriptId?: string;
   source?: Player;
@@ -40,38 +42,7 @@ export type PlayerActivity = StandardPlayerActivity | RumorPlayerActivity;
 
 export function PlayerActivityRow({ activity, day }: { activity: PlayerActivity; day: number }) {
   if (activity.kind === 'rumor') {
-    return (
-      <View style={[styles.row, gameStyles.noteCard]}>
-        <View style={styles.icon}>
-          <Megaphone color={colors.roleRumor} size={14} strokeWidth={2.5} />
-        </View>
-        <Text style={styles.verbRumor}>Rumor</Text>
-        {activity.source ? (
-          <>
-            <Text style={styles.preposition}>from</Text>
-            <View style={styles.source}>
-              <PlayerNameWithRole
-                day={day}
-                player={activity.source}
-                textStyle={styles.playerName}
-                variant="note"
-              />
-              <Text style={styles.preposition}>:</Text>
-            </View>
-          </>
-        ) : null}
-        <PlayerNameWithRole
-          day={day}
-          player={activity.subject}
-          textStyle={styles.playerName}
-          variant="note"
-        />
-        <Text style={styles.preposition}>is</Text>
-        {activity.roles.map((role) => (
-          <RoleReference key={role.id} role={role} scriptId={activity.scriptId} variant="note" />
-        ))}
-      </View>
-    );
+    return <RumorActivityRow activity={activity} day={day} />;
   }
 
   const color = getActivityColor(activity.kind);
@@ -103,12 +74,88 @@ export function PlayerActivityRow({ activity, day }: { activity: PlayerActivity;
   );
 }
 
+function RumorActivityRow({ activity, day }: { activity: RumorPlayerActivity; day: number }) {
+  const showDialog = useAppDialog();
+
+  function handleDeletePress() {
+    if (!activity.onDelete) {
+      return;
+    }
+
+    showDialog(`Delete rumor about ${activity.subject.name}?`, undefined, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: activity.onDelete },
+    ]);
+  }
+
+  return (
+    <View style={[styles.rumorCard, gameStyles.noteCard]}>
+      <View style={styles.rumorContent}>
+        <View style={styles.icon}>
+          <Megaphone color={colors.roleRumor} size={14} strokeWidth={2.5} />
+        </View>
+        <Text style={styles.verbRumor}>Rumor</Text>
+        {activity.source ? (
+          <>
+            <Text style={styles.preposition}>from</Text>
+            <PlayerNameWithRole
+              day={day}
+              player={activity.source}
+              textStyle={styles.playerName}
+              variant="note"
+            />
+            <Text style={styles.preposition}>about</Text>
+          </>
+        ) : null}
+        <PlayerNameWithRole
+          day={day}
+          player={activity.subject}
+          textStyle={styles.playerName}
+          variant="note"
+        />
+        <Text style={styles.preposition}>is</Text>
+        {activity.roles.map((role) => (
+          <RoleReference key={role.id} role={role} scriptId={activity.scriptId} variant="note" />
+        ))}
+      </View>
+      {activity.onDelete ? (
+        <Pressable
+          accessibilityLabel={`Delete rumor about ${activity.subject.name}`}
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={handleDeletePress}
+          style={({ pressed }) => [
+            styles.deleteButton,
+            pressed ? styles.deleteButtonPressed : null,
+          ]}
+        >
+          <Trash2 color={colors.danger} size={16} strokeWidth={2.4} />
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   row: {
     alignItems: 'center',
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 4,
+  },
+  rumorCard: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'space-between',
+  },
+  rumorContent: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    minWidth: 0,
   },
   icon: {
     alignItems: 'center',
@@ -152,9 +199,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
-  source: {
+  deleteButton: {
     alignItems: 'center',
-    flexDirection: 'row',
+    justifyContent: 'center',
+    padding: 2,
+  },
+  deleteButtonPressed: {
+    opacity: 0.55,
   },
 });
 

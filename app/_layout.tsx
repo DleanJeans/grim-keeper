@@ -2,6 +2,7 @@ import { DarkTheme, ThemeProvider } from 'expo-router/react-navigation';
 import { Stack } from 'expo-router/stack';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AppDialogProvider } from '@/components/dialog/app-dialog-provider';
 import { GameHeader } from '@/components/game-header';
@@ -61,7 +62,11 @@ export default function RootLayout() {
   }, [storeHydrated]);
 
   if (!fontsReady || !storeHydrated) {
-    return null;
+    return (
+      <View accessibilityLabel="Loading Grim Keeper" style={styles.loading}>
+        <ActivityIndicator accessibilityLabel="Loading" color={colors.primary} size="large" />
+      </View>
+    );
   }
 
   return (
@@ -112,3 +117,12 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  loading: {
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    flex: 1,
+    justifyContent: 'center',
+  },
+});

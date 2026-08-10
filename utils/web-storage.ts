@@ -21,10 +21,26 @@ export function createIndexedDbStorage(
   openDatabase: OpenDatabase = openIndexedDb,
   legacyStorage: LegacyStorage | undefined = getLegacyStorage(),
 ): StateStorage {
+  let databasePromise: Promise<KeyValueDatabase> | undefined;
+
+  async function withDatabase<T>(operation: (database: KeyValueDatabase) => Promise<T>) {
+    databasePromise ??= openDatabase().catch((error) => {
+      databasePromise = undefined;
+      throw error;
+    });
+
+    try {
+      return await operation(await databasePromise);
+    } catch (error) {
+      databasePromise = undefined;
+      throw error;
+    }
+  }
+
   return {
     getItem: async (name) => {
       try {
-        const storedValue = await withDatabase(openDatabase, (database) => database.get(name));
+        const storedValue = await withDatabase((database) => database.get(name));
         if (storedValue !== null) {
           return storedValue;
         }
@@ -35,7 +51,7 @@ export function createIndexedDbStorage(
         }
 
         try {
-          await withDatabase(openDatabase, (database) => database.set(name, legacyValue));
+          await withDatabase((database) => database.set(name, legacyValue));
           legacyStorage?.removeItem(name);
         } catch {
           // Keep the legacy value available if migration cannot be completed yet.
@@ -48,33 +64,20 @@ export function createIndexedDbStorage(
     },
     setItem: async (name, value) => {
       try {
-        await withDatabase(openDatabase, (database) => database.set(name, value));
+        await withDatabase((database) => database.set(name, value));
       } catch (error) {
         throw toStorageError(error);
       }
     },
     removeItem: async (name) => {
       try {
-        await withDatabase(openDatabase, (database) => database.remove(name));
+        await withDatabase((database) => database.remove(name));
         legacyStorage?.removeItem(name);
       } catch (error) {
         throw toStorageError(error);
       }
     },
   };
-}
-
-async function withDatabase<T>(
-  openDatabase: OpenDatabase,
-  operation: (database: KeyValueDatabase) => Promise<T>,
-) {
-  const database = await openDatabase();
-
-  try {
-    return await operation(database);
-  } finally {
-    database.close?.();
-  }
 }
 
 function openIndexedDb(): Promise<KeyValueDatabase> {

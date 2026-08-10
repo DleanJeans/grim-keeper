@@ -27,7 +27,12 @@ import {
   getFriendSummaries,
   hasFriendName,
 } from '@/utils/friend-utils';
-import { clampMapHeight, getDefaultTokenSize, getTokenSize } from '@/utils/layout-utils';
+import {
+  clampMapHeight,
+  getDefaultTokenSize,
+  getTokenSize,
+  resolveTokenCollisions,
+} from '@/utils/layout-utils';
 import {
   APP_USER_ID,
   createConversationId,
@@ -40,7 +45,7 @@ import {
   mapGamePlayerIdsToFriendIds,
   migrateObjectIds,
 } from '@/utils/object-id';
-import { isPlayerCurrentlyDead } from '@/utils/player-utils';
+import { mergeRoleCatalogMetadata } from '@/utils/role-utils';
 import {
   getNotesForPlayer,
   type LegacyFriendNote,
@@ -81,6 +86,7 @@ type GameState = GameData & {
   setGameLorics: (gameId: string, lorics: Role[]) => void;
   setRoleCatalog: (roles: Role[]) => void;
   addPlayer: (gameId: string, name: string) => void;
+  updateGamePlayers: (gameId: string, players: Array<Pick<Player, 'id' | 'name'>>) => void;
   deleteGame: (gameId: string) => void;
   deletePlayer: (gameId: string, playerId: string) => void;
   setPlayerDeath: (gameId: string, playerId: string, death: PlayerDeath | null) => void;
@@ -92,6 +98,12 @@ type GameState = GameData & {
     kind: PlayerRoleAssignment['kind'],
     roleIds: string[],
     subjectPlayerId?: string,
+  ) => void;
+  deletePlayerRoleAssignment: (
+    gameId: string,
+    playerId: string,
+    day: number,
+    kind: PlayerRoleAssignment['kind'],
   ) => void;
   addPlayerDayNote: (
     gameId: string,
@@ -126,6 +138,14 @@ type GameState = GameData & {
   setActiveDay: (gameId: string, day: number) => void;
   updatePlayerPosition: (gameId: string, playerId: string, position: PlayerPosition) => void;
   updatePlayerPositions: (gameId: string, positions: Record<string, PlayerPosition>) => void;
+  movePlayerAndResolveCollisions: (
+    gameId: string,
+    playerId: string,
+    position: PlayerPosition,
+    mapWidth: number,
+    mapHeight: number,
+    tokenSize: number,
+  ) => void;
   addConversation: (
     gameId: string,
     day: number,
@@ -136,6 +156,7 @@ type GameState = GameData & {
   setNominationBigWig: (gameId: string, nominationId: string, playerId?: string) => void;
   deleteConversation: (gameId: string, conversationId: string) => void;
   setAppUserName: (name: string) => void;
+  clearData: () => void;
   importData: (data: GameData) => void;
 };
 
@@ -325,6 +346,7 @@ export const useGameStore = create<GameState>()(
         set((state) => {
           const normalizedScript = {
             ...script,
+            roles: mergeRoleCatalogMetadata(script.roles, state.roleCatalog),
             id: createScriptId(
               script,
               state.scripts
@@ -356,10 +378,13 @@ export const useGameStore = create<GameState>()(
           scripts[existingIndex] = {
             ...normalizedScript,
             id: state.scripts[existingIndex].id,
-            roles: mergeRoleNotes(normalizedScript.roles, [
-              ...state.roleCatalog,
-              ...state.scripts[existingIndex].roles,
-            ]),
+            roles: mergeRoleNotes(
+              mergeRoleCatalogMetadata(normalizedScript.roles, [
+                ...state.roleCatalog,
+                ...state.scripts[existingIndex].roles,
+              ]),
+              [...state.roleCatalog, ...state.scripts[existingIndex].roles],
+            ),
           };
           return {
             games: updateGamesWithScript(state.games, scripts[existingIndex], state.roleCatalog),
@@ -369,6 +394,7 @@ export const useGameStore = create<GameState>()(
       },
       updateScript: (script) => {
         set((state) => ({
+          games: updateGamesWithScript(state.games, script, state.roleCatalog),
           scripts: state.scripts.map((existingScript) =>
             existingScript.id === script.id ? script : existingScript,
           ),
@@ -391,10 +417,13 @@ export const useGameStore = create<GameState>()(
                   script: script
                     ? {
                         ...script,
-                        roles: mergeRoleNotes(script.roles, [
-                          ...state.roleCatalog,
-                          ...(game.script?.roles ?? []),
-                        ]),
+                        roles: mergeRoleNotes(
+                          mergeRoleCatalogMetadata(script.roles, [
+                            ...state.roleCatalog,
+                            ...(game.script?.roles ?? []),
+                          ]),
+                          [...state.roleCatalog, ...(game.script?.roles ?? [])],
+                        ),
                       }
                     : undefined,
                   updatedAt: new Date().toISOString(),
@@ -417,9 +446,26 @@ export const useGameStore = create<GameState>()(
         }));
       },
       setRoleCatalog: (roles) => {
-        set((state) => ({
-          roleCatalog: mergeRoleNotes(dedupeRoles(roles), state.roleCatalog),
-        }));
+        set((state) => {
+          const roleCatalog = mergeRoleNotes(dedupeRoles(roles), state.roleCatalog);
+          const scripts = state.scripts.map((script) => ({
+            ...script,
+            roles: mergeRoleCatalogMetadata(script.roles, roleCatalog),
+          }));
+          const games = state.games.map((game) =>
+            game.script
+              ? {
+                  ...game,
+                  script: {
+                    ...game.script,
+                    roles: mergeRoleCatalogMetadata(game.script.roles, roleCatalog),
+                  },
+                }
+              : game,
+          );
+
+          return { games, roleCatalog, scripts };
+        });
       },
       addPlayer: (gameId, name) => {
         const normalizedName = normalizePlayerName(name);
@@ -465,6 +511,49 @@ export const useGameStore = create<GameState>()(
           return { friends, games };
         });
       },
+      updateGamePlayers: (gameId, draftPlayers) => {
+        set((state) => {
+          const game = state.games.find((existingGame) => existingGame.id === gameId);
+          if (!game) {
+            return state;
+          }
+
+          const updatedAt = new Date().toISOString();
+          const names = draftPlayers.map((player) => normalizePlayerName(player.name));
+          const friends = addMissingFriends(state.friends, names, updatedAt);
+          const friendIdsByName = new Map(
+            friends.map((friend) => [
+              normalizePlayerName(friend.name).toLocaleLowerCase(),
+              friend.id,
+            ]),
+          );
+          const existingIdsByName = new Map(
+            game.players.map((player) => [
+              normalizePlayerName(player.name).toLocaleLowerCase(),
+              player.id,
+            ]),
+          );
+          const appUser = game.players.find((player) => player.id === APP_USER_ID);
+          const players = [
+            appUser ?? { id: APP_USER_ID, name: state.appUserName, seat: 0 },
+            ...draftPlayers.map((player, index) => ({
+              id:
+                friendIdsByName.get(names[index].toLocaleLowerCase()) ??
+                existingIdsByName.get(names[index].toLocaleLowerCase()) ??
+                player.id,
+              name: names[index],
+              seat: index + 1,
+            })),
+          ];
+
+          return {
+            friends,
+            games: state.games.map((existingGame) =>
+              existingGame.id === gameId ? { ...existingGame, players, updatedAt } : existingGame,
+            ),
+          };
+        });
+      },
       deleteGame: (gameId) => {
         set((state) => ({
           games: state.games.filter((game) => game.id !== gameId),
@@ -484,7 +573,27 @@ export const useGameStore = create<GameState>()(
             const players = game.players
               .filter((player) => player.id !== playerId)
               .sort((first, second) => first.seat - second.seat)
-              .map((player, index) => ({ ...player, seat: index }));
+              .map((player, index) => ({
+                ...player,
+                death: player.death
+                  ? {
+                      ...player.death,
+                      killerPlayerId:
+                        player.death.killerPlayerId === playerId
+                          ? undefined
+                          : player.death.killerPlayerId,
+                      killerPlayerIds: player.death.killerPlayerIds?.filter(
+                        (killerId) => killerId !== playerId,
+                      ),
+                    }
+                  : undefined,
+                roleAssignments: player.roleAssignments?.map((assignment) =>
+                  assignment.subjectPlayerId === playerId
+                    ? { ...assignment, subjectPlayerId: undefined }
+                    : assignment,
+                ),
+                seat: index,
+              }));
 
             return {
               ...game,
@@ -507,43 +616,36 @@ export const useGameStore = create<GameState>()(
       },
       setPlayerDeath: (gameId, playerId, death) => {
         set((state) => ({
-          games: state.games.map((game) =>
-            game.id === gameId
-              ? {
-                  ...game,
-                  updatedAt: new Date().toISOString(),
-                  players: game.players.map((player) =>
-                    player.id === playerId
-                      ? {
-                          ...player,
-                          death: death ?? undefined,
-                          revive: death ? undefined : player.revive,
-                        }
-                      : player,
-                  ),
-                }
-              : game,
-          ),
+          games: state.games.map((game) => {
+            if (game.id !== gameId) return game;
+            return synchronizeDeadVoteUsage({
+              ...game,
+              updatedAt: new Date().toISOString(),
+              players: game.players.map((player) =>
+                player.id === playerId
+                  ? {
+                      ...player,
+                      death: death ?? undefined,
+                      revive: death ? undefined : player.revive,
+                    }
+                  : player,
+              ),
+            });
+          }),
         }));
       },
       setPlayerRevive: (gameId, playerId, revive) => {
         set((state) => ({
-          games: state.games.map((game) =>
-            game.id === gameId
-              ? {
-                  ...game,
-                  updatedAt: new Date().toISOString(),
-                  players: game.players.map((player) =>
-                    player.id === playerId
-                      ? {
-                          ...player,
-                          revive: revive ?? undefined,
-                        }
-                      : player,
-                  ),
-                }
-              : game,
-          ),
+          games: state.games.map((game) => {
+            if (game.id !== gameId) return game;
+            return synchronizeDeadVoteUsage({
+              ...game,
+              updatedAt: new Date().toISOString(),
+              players: game.players.map((player) =>
+                player.id === playerId ? { ...player, revive: revive ?? undefined } : player,
+              ),
+            });
+          }),
         }));
       },
       setPlayerRoleAssignment: (gameId, playerId, day, kind, roleIds, subjectPlayerId) => {
@@ -572,6 +674,28 @@ export const useGameStore = create<GameState>()(
                             ),
                             assignment,
                           ],
+                        }
+                      : player,
+                  ),
+                }
+              : game,
+          ),
+        }));
+      },
+      deletePlayerRoleAssignment: (gameId, playerId, day, kind) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? {
+                  ...game,
+                  updatedAt: new Date().toISOString(),
+                  players: game.players.map((player) =>
+                    player.id === playerId
+                      ? {
+                          ...player,
+                          roleAssignments: (player.roleAssignments ?? []).filter(
+                            (assignment) => assignment.day !== day || assignment.kind !== kind,
+                          ),
                         }
                       : player,
                   ),
@@ -747,7 +871,7 @@ export const useGameStore = create<GameState>()(
             ? note.roleIds.filter((savedRoleId) => savedRoleId !== roleId)
             : [];
           const dropRow = !roleId || (remainingRoleIds.length === 0 && isAppUserNote);
-          const affectedRoleIds = dropRow ? note.roleIds : remainingRoleIds;
+          const affectedRoleIds = dropRow ? note.roleIds : roleId ? [roleId] : [];
           const nextSavedNotes = state.savedNotes.flatMap((candidate) => {
             if (candidate.id !== note.id) {
               return [candidate];
@@ -867,6 +991,45 @@ export const useGameStore = create<GameState>()(
           ),
         }));
       },
+      movePlayerAndResolveCollisions: (
+        gameId,
+        playerId,
+        position,
+        mapWidth,
+        mapHeight,
+        tokenSize,
+      ) => {
+        set((state) => ({
+          games: state.games.map((game) => {
+            if (game.id !== gameId) {
+              return game;
+            }
+
+            const movedPlayers = game.players.map((player) =>
+              player.id === playerId ? { ...player, position } : player,
+            );
+            const { positions } = resolveTokenCollisions(
+              movedPlayers,
+              mapWidth,
+              mapHeight,
+              tokenSize,
+              playerId,
+            );
+
+            return {
+              ...game,
+              updatedAt: new Date().toISOString(),
+              players: movedPlayers.map((player) =>
+                player.id === playerId
+                  ? player
+                  : positions[player.id]
+                    ? { ...player, position: positions[player.id] }
+                    : player,
+              ),
+            };
+          }),
+        }));
+      },
       addConversation: (gameId, day, participantIds, kind = 'interaction') => {
         const uniqueParticipantIds = [...new Set(participantIds)];
 
@@ -906,27 +1069,20 @@ export const useGameStore = create<GameState>()(
       },
       updateNominationVotes: (gameId, nominationId, voterIds) => {
         const uniqueVoterIds = [...new Set(voterIds)];
-        const voterIdSet = new Set(uniqueVoterIds);
 
         set((state) => ({
-          games: state.games.map((game) =>
-            game.id === gameId
-              ? {
-                  ...game,
-                  updatedAt: new Date().toISOString(),
-                  players: game.players.map((player) =>
-                    voterIdSet.has(player.id) && isPlayerCurrentlyDead(player, game.activeDay)
-                      ? { ...player, deadVoteUsed: true }
-                      : player,
-                  ),
-                  conversations: game.conversations.map((conversation) =>
-                    conversation.id === nominationId
-                      ? { ...conversation, voterIds: uniqueVoterIds }
-                      : conversation,
-                  ),
-                }
-              : game,
-          ),
+          games: state.games.map((game) => {
+            if (game.id !== gameId) return game;
+            return synchronizeDeadVoteUsage({
+              ...game,
+              updatedAt: new Date().toISOString(),
+              conversations: game.conversations.map((conversation) =>
+                conversation.id === nominationId
+                  ? { ...conversation, voterIds: uniqueVoterIds }
+                  : conversation,
+              ),
+            });
+          }),
         }));
       },
       setNominationBigWig: (gameId, nominationId, playerId) => {
@@ -948,23 +1104,32 @@ export const useGameStore = create<GameState>()(
       },
       deleteConversation: (gameId, conversationId) => {
         set((state) => ({
-          games: state.games.map((game) =>
-            game.id === gameId
-              ? {
-                  ...game,
-                  updatedAt: new Date().toISOString(),
-                  conversations: game.conversations.filter(
-                    (conversation) => conversation.id !== conversationId,
-                  ),
-                }
-              : game,
-          ),
+          games: state.games.map((game) => {
+            if (game.id !== gameId) return game;
+            return synchronizeDeadVoteUsage({
+              ...game,
+              updatedAt: new Date().toISOString(),
+              conversations: game.conversations.filter(
+                (conversation) => conversation.id !== conversationId,
+              ),
+            });
+          }),
         }));
       },
       setAppUserName: (name) => {
         const normalizedName = normalizePlayerName(name) || 'You';
 
         set({ appUserName: normalizedName });
+      },
+      clearData: () => {
+        set({
+          appUserName: 'You',
+          games: [],
+          friends: [],
+          roleCatalog: [],
+          savedNotes: [],
+          scripts: [],
+        });
       },
       importData: (data) => {
         const migratedData = migrateObjectIds(data) as GameData;
@@ -993,12 +1158,29 @@ export const useGameStore = create<GameState>()(
       },
       merge: (persistedState, currentState) => {
         const state = persistedState as Partial<GameState> | undefined;
-        const scripts = state?.scripts ?? currentState.scripts;
+        const roleCatalog = state?.roleCatalog ?? currentState.roleCatalog;
+        const scripts = (state?.scripts ?? currentState.scripts).map((script) => ({
+          ...script,
+          roles: mergeRoleCatalogMetadata(script.roles, roleCatalog),
+        }));
+        const games = (state?.games ?? currentState.games).map((game) =>
+          game.script
+            ? {
+                ...game,
+                script: {
+                  ...game.script,
+                  roles: mergeRoleCatalogMetadata(game.script.roles, roleCatalog),
+                },
+              }
+            : game,
+        );
 
         return {
           ...currentState,
           ...state,
-          games: restoreDuplicateScriptImages(state?.games ?? currentState.games, scripts),
+          games: restoreDuplicateScriptImages(games, scripts),
+          roleCatalog,
+          scripts,
         };
       },
       partialize: (state) => ({
@@ -1019,6 +1201,31 @@ export function getGameById(games: Game[], gameId: string | undefined) {
 
 function createId(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function synchronizeDeadVoteUsage(game: Game): Game {
+  const usedPlayerIds = new Set<string>();
+  for (const conversation of game.conversations) {
+    if (conversation.kind !== 'nomination') continue;
+    for (const voterId of conversation.voterIds ?? []) {
+      const voter = game.players.find((player) => player.id === voterId);
+      if (voter?.death && voter.death.day <= conversation.day) {
+        const revived =
+          voter.revive &&
+          voter.revive.day >= voter.death.day &&
+          voter.revive.day <= conversation.day;
+        if (!revived) usedPlayerIds.add(voterId);
+      }
+    }
+  }
+
+  return {
+    ...game,
+    players: game.players.map((player) => ({
+      ...player,
+      deadVoteUsed: usedPlayerIds.has(player.id) ? true : undefined,
+    })),
+  };
 }
 
 function upsertPlayerDayNote(
@@ -1091,21 +1298,22 @@ function updateGamesWithScript(games: Game[], script: StoredScript, roleCatalog:
       return game;
     }
 
+    const scriptRoles = mergeRoleCatalogMetadata(script.roles, roleCatalog);
     const roleIds = [
       ...new Set([...(game.scriptRoleIds ?? []), ...getRoleIds(game.scriptRoleOverrides)]),
     ];
     const existingRoles = game.script?.roles ?? [];
     const rolesById = new Map(
-      [...script.roles, ...roleCatalog, ...existingRoles].map((role) => [role.id, role]),
+      [...scriptRoles, ...roleCatalog, ...existingRoles].map((role) => [role.id, role]),
     );
     const additionalRoles = roleIds
-      .filter((roleId) => !script.roles.some((scriptRole) => scriptRole.id === roleId))
+      .filter((roleId) => !scriptRoles.some((scriptRole) => scriptRole.id === roleId))
       .flatMap((roleId) => {
         const role = rolesById.get(roleId);
         return role ? [role] : [];
       });
     const roles = mergeRoleNotes(
-      [...script.roles, ...additionalRoles],
+      [...scriptRoles, ...additionalRoles],
       [...roleCatalog, ...existingRoles],
     );
 

@@ -23,9 +23,15 @@ import { MapModeActions } from '@/components/game/map-mode-actions';
 import { PlayerCountStatus } from '@/components/game/player-count-status';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
 import { RevealRolesButton } from '@/components/game/reveal-roles-button';
+import { RoleDisplayModes } from '@/components/game/role-display-modes';
 import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
-import type { KillAttribution, PlayerPosition, PlayerRoleAssignment } from '@/types/game';
+import type {
+  KillAttribution,
+  PlayerPosition,
+  PlayerRoleAssignment,
+  RoleDisplayMode,
+} from '@/types/game';
 import { getLastDayWithData } from '@/utils/game-utils';
 import {
   clampMapHeight,
@@ -63,12 +69,15 @@ export default function GameRoute() {
   const setPlayerDeath = useGameStore((state) => state.setPlayerDeath);
   const setPlayerRevive = useGameStore((state) => state.setPlayerRevive);
   const setPlayerRoleAssignment = useGameStore((state) => state.setPlayerRoleAssignment);
+  const deletePlayerRoleAssignment = useGameStore((state) => state.deletePlayerRoleAssignment);
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const setGameScript = useGameStore((state) => state.setGameScript);
   const addPlayerDayNote = useGameStore((state) => state.addPlayerDayNote);
   const editPlayerDayNote = useGameStore((state) => state.editPlayerDayNote);
-  const updatePlayerPosition = useGameStore((state) => state.updatePlayerPosition);
   const updatePlayerPositions = useGameStore((state) => state.updatePlayerPositions);
+  const movePlayerAndResolveCollisions = useGameStore(
+    (state) => state.movePlayerAndResolveCollisions,
+  );
   const addConversation = useGameStore((state) => state.addConversation);
   const updateNominationVotes = useGameStore((state) => state.updateNominationVotes);
   const deleteConversation = useGameStore((state) => state.deleteConversation);
@@ -79,6 +88,7 @@ export default function GameRoute() {
   const [activeTab, setActiveTab] = useState<GameTab>('interactions');
   const [trackingMode, setTrackingMode] = useState<TrackingMode | null>(null);
   const [votingNominationId, setVotingNominationId] = useState<string | null>(null);
+  const [votingNominationIsNew, setVotingNominationIsNew] = useState(false);
   const [votingReturnTab, setVotingReturnTab] = useState<GameTab | null>(null);
   const [focusedPlayerId, setFocusedPlayerId] = useState<string | null>(null);
   const [highlightedVoterIds, setHighlightedVoterIds] = useState<string[] | null>(null);
@@ -95,6 +105,8 @@ export default function GameRoute() {
   );
   const [roleAssignmentRoleIds, setRoleAssignmentRoleIds] = useState<string[]>([]);
   const [rumorSubjectPlayerId, setRumorSubjectPlayerId] = useState<string | null>(null);
+  const [rumorSourcePlayerId, setRumorSourcePlayerId] = useState<string | null>(null);
+  const [activeRoleDisplayMode, setActiveRoleDisplayMode] = useState<RoleDisplayMode>('confirm');
   const [showRoles, setShowRoles] = useState(false);
   const game = getGameById(games, id);
   const viewportMapWidth = getDefaultMapWidth(width);
@@ -118,6 +130,7 @@ export default function GameRoute() {
   const mapHeight = clampMapHeight(game?.mapHeight ?? fallbackDimensions.mapHeight);
   const mapScale = getMapScale(viewportMapWidth, mapWidth);
   const openedGameId = useRef<string | null>(null);
+  const appliedDeepLinkKey = useRef<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -193,6 +206,9 @@ export default function GameRoute() {
   // Apply deep-link focus and tab on first mount.
   useEffect(() => {
     if (!game) return;
+    const deepLinkKey = `${game.id}:${playerIdParam ?? ''}:${tabParam ?? ''}`;
+    if (appliedDeepLinkKey.current === deepLinkKey) return;
+    appliedDeepLinkKey.current = deepLinkKey;
     if (playerIdParam && game.players.some((player) => player.id === playerIdParam)) {
       setFocusedPlayerId(playerIdParam);
     }
@@ -240,11 +256,10 @@ export default function GameRoute() {
           if (focusedPlayerId) {
             ids.push(focusedPlayerId);
           }
-          // When in rumor mode with a chosen subject, highlight the subject
-          // alongside the focused player so the user can see the source/subject
-          // pairing on the map.
-          if (roleAssignmentKind === 'rumor' && rumorSubjectPlayerId) {
-            ids.push(rumorSubjectPlayerId);
+          // During rumor assignment, the focused player is the subject and an
+          // optional second highlighted player is the source.
+          if (roleAssignmentKind === 'rumor' && rumorSourcePlayerId) {
+            ids.push(rumorSourcePlayerId);
           }
           return ids;
         })());
@@ -337,12 +352,14 @@ export default function GameRoute() {
     setHighlightedVoterIds(null);
 
     if (roleAssignmentKind === 'rumor') {
-      handleConfirmRumorSubject(playerId);
+      handleSelectRumorSource(playerId);
       return;
     }
 
     setRoleAssignmentKind(null);
     setRoleAssignmentRoleIds([]);
+    setRumorSubjectPlayerId(null);
+    setRumorSourcePlayerId(null);
 
     if (votingNominationId) {
       const player = activeGame.players.find((currentPlayer) => currentPlayer.id === playerId);
@@ -408,6 +425,7 @@ export default function GameRoute() {
     setIsRearrangeMode(false);
     setTrackingMode(null);
     setVotingNominationId(null);
+    setVotingNominationIsNew(false);
     setVotingReturnTab(null);
     setFocusedPlayerId(null);
     setHighlightedVoterIds(null);
@@ -431,6 +449,7 @@ export default function GameRoute() {
     if (trackingMode === 'nomination' && conversation) {
       setTrackingMode(null);
       setVotingNominationId(conversation.id);
+      setVotingNominationIsNew(true);
       setVotingReturnTab(null);
       setFocusedPlayerId(null);
       setSelectedPlayerIds([]);
@@ -456,7 +475,7 @@ export default function GameRoute() {
 
   function handleCancelVoting() {
     const returnTab = votingReturnTab;
-    if (votingNominationId) {
+    if (votingNominationId && votingNominationIsNew) {
       // The nomination was added to the log by handleConfirmTracking before
       // we entered vote-confirming. Cancelling now should drop it entirely.
       deleteConversation(activeGame.id, votingNominationId);
@@ -471,6 +490,7 @@ export default function GameRoute() {
   function handleEditNominationVotes(nominationId: string, voterIds: string[]) {
     handleCancelTracking();
     setVotingNominationId(nominationId);
+    setVotingNominationIsNew(false);
     setVotingReturnTab('nominations');
     setSelectedPlayerIds(voterIds);
     setActiveTab('nominations');
@@ -552,29 +572,33 @@ export default function GameRoute() {
     setRoleAssignmentKind(kind);
     setRoleAssignmentRoleIds(selectableRoleIds.slice(0, 1));
     if (kind === 'rumor') {
-      // Enter subject-picking mode immediately so the user can tap any
-      // player on the map. The empty string marks "subject pending".
-      setRumorSubjectPlayerId('');
+      // The focused player is the subject. A second map selection can add an
+      // optional source while the role picker remains visible.
+      setRumorSubjectPlayerId(focusedPlayer.id);
+      setRumorSourcePlayerId(null);
     } else {
       setRumorSubjectPlayerId(null);
+      setRumorSourcePlayerId(null);
     }
   }
 
-  function handleConfirmRumorSubject(subjectPlayerId: string) {
-    if (!focusedPlayer || !activeGame.script || roleAssignmentKind !== 'rumor') {
+  function handleSelectRumorSource(sourcePlayerId: string) {
+    if (!focusedPlayer || roleAssignmentKind !== 'rumor') {
       return;
     }
-    if (subjectPlayerId === focusedPlayer.id) {
-      // Tapping the source player is a no-op; the rumor is always about someone else.
+    if (sourcePlayerId === focusedPlayer.id) {
       return;
     }
-    setRumorSubjectPlayerId(subjectPlayerId);
+    setRumorSourcePlayerId((currentSourcePlayerId) =>
+      currentSourcePlayerId === sourcePlayerId ? null : sourcePlayerId,
+    );
   }
 
   function handleCancelRoleAssignment() {
     setRoleAssignmentKind(null);
     setRoleAssignmentRoleIds([]);
     setRumorSubjectPlayerId(null);
+    setRumorSourcePlayerId(null);
   }
 
   function handleToggleRoleAssignment(roleId: string) {
@@ -606,9 +630,17 @@ export default function GameRoute() {
       return;
     }
 
+    const assignmentPlayerId =
+      roleAssignmentKind === 'rumor'
+        ? (rumorSourcePlayerId ?? rumorSubjectPlayerId)
+        : focusedPlayer.id;
+    if (!assignmentPlayerId) {
+      return;
+    }
+
     setPlayerRoleAssignment(
       activeGame.id,
-      focusedPlayer.id,
+      assignmentPlayerId,
       activeGame.activeDay,
       roleAssignmentKind,
       roleIds,
@@ -617,24 +649,19 @@ export default function GameRoute() {
     handleCancelRoleAssignment();
   }
 
+  function handleDeleteRumor(sourcePlayerId: string, day: number) {
+    deletePlayerRoleAssignment(activeGame.id, sourcePlayerId, day, 'rumor');
+  }
+
   function handleMovePlayer(playerId: string, position: PlayerPosition) {
-    updatePlayerPosition(activeGame.id, playerId, position);
-    // Push any tokens the dragged player is now overlapping out of the way.
-    // The dragged player is the anchor — it stays at `position`, the others
-    // get shoved.
-    const playersWithMoved = activeGame.players.map((player) =>
-      player.id === playerId ? { ...player, position } : player,
-    );
-    const { positions } = resolveTokenCollisions(
-      playersWithMoved,
+    movePlayerAndResolveCollisions(
+      activeGame.id,
+      playerId,
+      position,
       mapWidth,
       mapHeight,
       activeTokenSize,
-      playerId,
     );
-    if (Object.keys(positions).length > 0) {
-      updatePlayerPositions(activeGame.id, positions);
-    }
   }
 
   function handleSetFocusedPlayerDeath(kind: 'execution' | 'night', attribution?: KillAttribution) {
@@ -753,6 +780,8 @@ export default function GameRoute() {
     roleAssignmentKind,
     roleAssignmentRoleIds,
     rumorSubjectPlayerId,
+    rumorSourcePlayerId,
+    activeRoleDisplayMode,
     showRoles,
     setActiveTab,
     setNoteDraft,
@@ -775,7 +804,9 @@ export default function GameRoute() {
     handleCancelRoleAssignment,
     handleToggleRoleAssignment,
     handleSaveRoleAssignment,
-    handleConfirmRumorSubject,
+    handleDeleteRumor,
+    handleSelectRumorSource,
+    setActiveRoleDisplayMode,
     setShowRoles,
     handleSetFocusedPlayerDeath,
     handleReviveFocusedPlayer,
@@ -836,6 +867,10 @@ export default function GameRoute() {
                 <MapModeActions activeDay={activeGame.activeDay} onChangeDay={handleChangeDay} />
               </View>
             )}
+
+            <View key="role-display-modes">
+              <RoleDisplayModes />
+            </View>
 
             <View key="tab-bar">
               <GameTabs />

@@ -144,10 +144,10 @@ describe('resolveTokenCollisions', () => {
     expect(result.positions.a).toBeUndefined();
     // b ended up pushed out of a's overlap zone.
     expect(result.positions.b).toBeDefined();
-    expect(result.positions.b!.x).toBeGreaterThanOrEqual(139);
+    expect(result.positions.b?.x).toBeGreaterThanOrEqual(139);
     // c got pushed further right to make room for b.
     expect(result.positions.c).toBeDefined();
-    expect(result.positions.c!.x).toBeGreaterThan(180);
+    expect(result.positions.c?.x).toBeGreaterThan(180);
   });
 
   it('clamps pushed tokens to the map bounds', () => {
@@ -161,7 +161,7 @@ describe('resolveTokenCollisions', () => {
     // b's center can't go below the inset (tokenSize/2 = 30), so it gets
     // pinned there even though a is still overlapping.
     expect(result.positions.b).toBeDefined();
-    expect(result.positions.b!.x).toBeGreaterThanOrEqual(30);
+    expect(result.positions.b?.x).toBeGreaterThanOrEqual(30);
   });
 
   it('skips players without a position so they keep their default placement', () => {

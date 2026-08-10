@@ -5,6 +5,8 @@ export type PlayerPosition = {
   y: number;
 };
 
+export type RoleDisplayMode = 'claim' | 'confirm' | 'guess' | 'rumor';
+
 export type Role = {
   ability?: string;
   id: string;
@@ -30,7 +32,7 @@ export type StoredScript = {
 
 export type PlayerRoleAssignment = {
   day: number;
-  kind: 'claim' | 'confirm' | 'rumor';
+  kind: 'claim' | 'confirm' | 'guess' | 'rumor';
   roleIds: string[];
   /** Only set for kind === 'rumor'. Identifies the player the rumor is about. */
   subjectPlayerId?: string;

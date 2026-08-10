@@ -180,7 +180,6 @@ export function resolveTokenCollisions(
   anchorId?: string,
 ): TokenCollisionResolution {
   const resolvedTokenSize = getTokenSize(tokenSize);
-  const radius = resolvedTokenSize / 2;
   const minDistance = resolvedTokenSize;
 
   const positions = new Map<string, PlayerPosition>();

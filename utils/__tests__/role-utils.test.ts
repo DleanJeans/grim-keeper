@@ -6,9 +6,11 @@ import {
   getAssignedRoleIdsForDayOrPrevious,
   getEffectiveRoleForPlayer,
   getKillerRoleOptions,
+  getLatestRumorMapDisplaysForDayOrPrevious,
   getPlayerRoleBucket,
   getRoleAssignmentForDay,
   getRoleDisplayForDayOrPrevious,
+  getRoleDisplayForMode,
   getRoleIconUrl,
   getRoleIconUrlForAlignment,
   getRoleNames,
@@ -20,10 +22,113 @@ import {
   getTravelerClaimRoles,
   isFlowerGirlRole,
   isTravelerRole,
+  mergeRoleCatalogMetadata,
   mergeScriptRoles,
+  parseRoleIconCatalog,
 } from '@/utils/role-utils';
 
 describe('role utilities', () => {
+  it('lets confirmed roles override every map display mode', () => {
+    const roles = [
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+      { id: 'soldier', name: 'Soldier', team: 'townsfolk' },
+    ];
+    const player = {
+      id: 'subject',
+      name: 'Subject',
+      seat: 0,
+      roleAssignments: [
+        {
+          day: 1,
+          kind: 'claim' as const,
+          roleIds: ['empath'],
+          updatedAt: '2026-07-14T00:00:00.000Z',
+        },
+        {
+          day: 1,
+          kind: 'guess' as const,
+          roleIds: ['soldier'],
+          updatedAt: '2026-07-14T00:01:00.000Z',
+        },
+        {
+          day: 1,
+          kind: 'confirm' as const,
+          roleIds: ['imp'],
+          updatedAt: '2026-07-14T00:02:00.000Z',
+        },
+      ],
+    };
+    const rumorSource = {
+      id: 'source',
+      name: 'Source',
+      seat: 1,
+      roleAssignments: [
+        {
+          day: 1,
+          kind: 'rumor' as const,
+          roleIds: ['empath'],
+          subjectPlayerId: 'subject',
+          updatedAt: '2026-07-14T00:03:00.000Z',
+        },
+      ],
+    };
+
+    for (const mode of ['claim', 'confirm', 'guess', 'rumor'] as const) {
+      expect(getRoleDisplayForMode(player, [player, rumorSource], 1, roles, mode)).toMatchObject({
+        kind: 'confirm',
+        roleIds: ['imp'],
+      });
+    }
+  });
+
+  it('uses the newest rumor per subject for map display', () => {
+    const source = {
+      id: 'source',
+      name: 'Source',
+      seat: 0,
+      roleAssignments: [
+        {
+          day: 1,
+          kind: 'rumor' as const,
+          roleIds: ['empath'],
+          subjectPlayerId: 'subject',
+          updatedAt: '2026-07-14T00:00:00.000Z',
+        },
+      ],
+    };
+    const newerSource = {
+      id: 'newer-source',
+      name: 'Newer Source',
+      seat: 1,
+      roleAssignments: [
+        {
+          day: 2,
+          kind: 'rumor' as const,
+          roleIds: ['imp'],
+          subjectPlayerId: 'subject',
+          updatedAt: '2026-07-14T00:01:00.000Z',
+        },
+      ],
+    };
+    const subject = { id: 'subject', name: 'Subject', seat: 2 };
+    const roles = [
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+    ];
+
+    expect(
+      getLatestRumorMapDisplaysForDayOrPrevious([source, newerSource, subject], 2, roles),
+    ).toEqual([
+      {
+        assignment: newerSource.roleAssignments?.[0],
+        roles: [roles[1]],
+        sourcePlayer: newerSource,
+        subjectPlayer: subject,
+      },
+    ]);
+  });
+
   it('provides generic character type role references with lowercase icon URLs', () => {
     expect(GENERIC_CHARACTER_TYPE_ROLES.map(({ imageUrl, name }) => ({ imageUrl, name }))).toEqual(
       ['Demon', 'Evil', 'Good', 'Minion', 'Outsider', 'Townsfolk', 'Traveller'].map((name) => ({
@@ -54,8 +159,8 @@ describe('role utilities', () => {
         ({ imageUrl }) => imageUrl,
       ),
     ).toEqual([
-      'https://release.botc.app/resources/characters/generic/traveler.webp',
-      'https://release.botc.app/resources/characters/generic/traveler.webp',
+      'https://release.botc.app/resources/characters/generic/traveller.webp',
+      'https://release.botc.app/resources/characters/generic/traveller.webp',
     ]);
   });
 
@@ -152,6 +257,15 @@ describe('role utilities', () => {
     ).toBe('https://release.botc.app/resources/characters/tb/imp_e.webp');
   });
 
+  it('uses official role metadata when an imported role is missing edition data', () => {
+    expect(getRoleIconUrl({ id: 'fanggu', name: 'Fang Gu' })).toBe(
+      'https://release.botc.app/resources/characters/snv/fanggu_e.webp',
+    );
+    expect(getRoleIconUrl({ id: 'gunslinger', name: 'Gunslinger' })).toBe(
+      'https://release.botc.app/resources/characters/tb/gunslinger.webp',
+    );
+  });
+
   it('uses custom role image URLs instead of generated role paths', () => {
     const [townsfolk] = mergeScriptRoles(
       [
@@ -195,6 +309,42 @@ describe('role utilities', () => {
     expect(getRoleIconUrl(officialRole)).toBe(
       'https://release.botc.app/resources/characters/tb/imp_e.webp',
     );
+  });
+
+  it('fills missing official role metadata from the catalog', () => {
+    const [role] = mergeRoleCatalogMetadata(
+      [{ id: 'fanggu', name: 'Fang Gu', team: 'demon' }],
+      [
+        {
+          edition: 'snv',
+          id: 'fanggu',
+          imageUrl: 'https://release.botc.app/resources/characters/snv/fanggu_g.webp',
+          name: 'Fang Gu',
+          team: 'demon',
+        },
+      ],
+    );
+
+    expect(role.edition).toBe('snv');
+    expect(getRoleIconUrl(role)).toBe(
+      'https://release.botc.app/resources/characters/snv/fanggu_g.webp',
+    );
+  });
+
+  it('builds role metadata from the resources icon index', () => {
+    const [role] = parseRoleIconCatalog(
+      '<a href="/resources/characters/snv/fanggu_g.webp"></a>' +
+        '<a href="/resources/characters/snv/fanggu_e.webp"></a>',
+    );
+
+    expect(role).toMatchObject({
+      edition: 'snv',
+      id: 'fanggu',
+      imageUrls: [
+        'https://release.botc.app/resources/characters/snv/fanggu_g.webp',
+        'https://release.botc.app/resources/characters/snv/fanggu_e.webp',
+      ],
+    });
   });
 
   it('builds aligned traveler claim role variants', () => {
@@ -293,6 +443,29 @@ describe('role utilities', () => {
     expect(getRumorAboutPlayerForDay([source, subject], subject.id, 1, [])[0].roles).toEqual([
       expect.objectContaining({ id: 'generic_evil', name: 'Evil' }),
     ]);
+  });
+
+  it('uses a subject-owned rumor when no source was selected', () => {
+    const subject = {
+      id: 'subject',
+      name: 'Subject',
+      seat: 0,
+      roleAssignments: [
+        {
+          day: 1,
+          kind: 'rumor' as const,
+          roleIds: ['empath'],
+          subjectPlayerId: 'subject',
+          updatedAt: '2026-07-19T00:00:00.000Z',
+        },
+      ],
+    };
+    const roles = [{ id: 'empath', name: 'Empath', team: 'townsfolk' }];
+
+    expect(getRoleDisplayForMode(subject, [subject], 1, roles, 'rumor').roleIds).toEqual([
+      'empath',
+    ]);
+    expect(getLatestRumorMapDisplaysForDayOrPrevious([subject], 1, roles)).toEqual([]);
   });
 
   it('identifies traveler characters from the role catalog', () => {

@@ -35,6 +35,7 @@ export function PlayerNoteRow({
     noteEditorPlayerId,
     game,
     showRoles,
+    handleDeleteRumor: onDeleteRumor,
     handleStartAddNote: onAddNote,
     handleStartEditNote: onEditNote,
   } = useGameRouteContext();
@@ -47,6 +48,11 @@ export function PlayerNoteRow({
     : undefined;
   const roles =
     roleAssignment && game.script ? getRolesByIds(roleAssignment.roleIds, game.script.roles) : [];
+  const guessAssignment = showRoles
+    ? getRoleAssignmentForDay(player.roleAssignments, day, 'guess')
+    : undefined;
+  const guessedRoles =
+    guessAssignment && game.script ? getRolesByIds(guessAssignment.roleIds, game.script.roles) : [];
   const rumorAboutThisPlayer =
     showRoles && game.script
       ? getRumorAboutPlayerForDay(game.players, player.id, day, game.script.roles)
@@ -92,6 +98,10 @@ export function PlayerNoteRow({
           />
         ) : null}
 
+        {guessedRoles.length > 0 ? (
+          <PlayerNoteRoleAssignment kind="guess" roles={guessedRoles} scriptId={game.script?.id} />
+        ) : null}
+
         {ownRumor.map((rumor) => {
           const subject = rumor.subjectPlayerId
             ? playersById.get(rumor.subjectPlayerId)
@@ -110,6 +120,7 @@ export function PlayerNoteRow({
               key={`own-rumor-${rumor.subjectPlayerId}-${day}`}
               roles={rumorRoles}
               scriptId={game.script?.id}
+              onDelete={() => onDeleteRumor(player.id, day)}
               source={player}
               subject={subject}
             />
@@ -123,6 +134,7 @@ export function PlayerNoteRow({
             key={`rumor-${rumor.sourcePlayer.id}-${day}`}
             roles={rumor.roles}
             scriptId={game.script?.id}
+            onDelete={() => onDeleteRumor(rumor.sourcePlayer.id, day)}
             showSource
             source={rumor.sourcePlayer}
             subject={player}

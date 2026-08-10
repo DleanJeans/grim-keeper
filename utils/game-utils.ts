@@ -16,6 +16,12 @@ export function getLastDayWithData(game: Game): number {
   }
 
   for (const player of game.players) {
+    for (const assignment of player.roleAssignments ?? []) {
+      if (assignment.day > lastDay) {
+        lastDay = assignment.day;
+      }
+    }
+
     if (player.death && player.death.day > lastDay) {
       lastDay = player.death.day;
     }

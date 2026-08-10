@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ChevronRight, Trash2 } from 'lucide-react-native';
+import { Trash2 } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
 import { SavedGameRolesRow } from '@/components/saved-game-roles-row';

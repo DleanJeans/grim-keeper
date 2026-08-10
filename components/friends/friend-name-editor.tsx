@@ -71,11 +71,7 @@ export function FriendNameSaveButton({
         paddingHorizontal: 10,
       })}
     >
-      <Check
-        color={canSave ? colors.onPrimary : colors.onDisabled}
-        size={18}
-        strokeWidth={2.8}
-      />
+      <Check color={canSave ? colors.onPrimary : colors.onDisabled} size={18} strokeWidth={2.8} />
     </Pressable>
   );
 }
