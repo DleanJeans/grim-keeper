@@ -22,6 +22,7 @@ const players: Player[] = Array.from({ length: 8 }, (_, seat) => ({
 describe('layout utils', () => {
   it('derives stable map dimensions from the initial viewport', () => {
     expect(getDefaultMapWidth(390)).toBe(350);
+    expect(getDefaultMapWidth(1920)).toBe(1200);
     expect(getDefaultMapHeight(350, 844)).toBe(440);
     expect(getDefaultMapHeight(350, 1129)).toBe(580);
     expect(getLegacyMapHeight(350, 1129)).toBe(587);

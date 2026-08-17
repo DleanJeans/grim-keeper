@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { FriendNameForm } from '@/components/friends/friend-name-form';
 import { FriendRow } from '@/components/friends/friend-row';
+import { ResponsiveContent } from '@/components/responsive-content';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
 import { useGameStore } from '@/store/game-store';
@@ -26,21 +27,23 @@ export default function FriendsRoute() {
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         style={styles.scrollView}
-        contentContainerStyle={styles.contentContainer}
+        contentContainerStyle={styles.scrollContent}
       >
-        <FriendNameForm friends={friends} onAddFriend={addFriend} />
+        <ResponsiveContent style={styles.contentContainer}>
+          <FriendNameForm friends={friends} onAddFriend={addFriend} />
 
-        <View style={styles.friendList}>
-          {friends.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text selectable style={styles.emptyStateText}>
-                No friends yet.
-              </Text>
-            </View>
-          ) : (
-            friends.map((friend) => <FriendRow friend={friend} key={friend.id} />)
-          )}
-        </View>
+          <View style={styles.friendList}>
+            {friends.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text selectable style={styles.emptyStateText}>
+                  No friends yet.
+                </Text>
+              </View>
+            ) : (
+              friends.map((friend) => <FriendRow friend={friend} key={friend.id} />)
+            )}
+          </View>
+        </ResponsiveContent>
       </ScrollView>
     </>
   );
@@ -54,6 +57,9 @@ const styles = StyleSheet.create({
   contentContainer: {
     gap: 18,
     padding: 20,
+    paddingBottom: 40,
+  },
+  scrollContent: {
     paddingBottom: 40,
   },
   friendList: {

@@ -24,6 +24,7 @@ import { PlayerCountStatus } from '@/components/game/player-count-status';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
 import { RevealRolesButton } from '@/components/game/reveal-roles-button';
 import { RoleDisplayModes } from '@/components/game/role-display-modes';
+import { ResponsiveContent } from '@/components/responsive-content';
 import { Text } from '@/components/text';
 import { getGameById, useGameStore } from '@/store/game-store';
 import type {
@@ -836,49 +837,51 @@ export default function GameRoute() {
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
           >
-            <GameMap />
+            <ResponsiveContent style={styles.gameContent}>
+              <GameMap />
 
-            <View key="day-and-counts" style={styles.dayAndCountsRow}>
-              <View style={styles.leftCounts}>
-                <CharacterTypeCountEditor
-                  counts={activeGame.characterTypeCounts}
-                  onChange={(counts) => setCharacterTypeCounts(activeGame.id, counts)}
-                  playerCount={nonTravelerPlayers.length}
-                />
+              <View key="day-and-counts" style={styles.dayAndCountsRow}>
+                <View style={styles.leftCounts}>
+                  <CharacterTypeCountEditor
+                    counts={activeGame.characterTypeCounts}
+                    onChange={(counts) => setCharacterTypeCounts(activeGame.id, counts)}
+                    playerCount={nonTravelerPlayers.length}
+                  />
+                </View>
+                <View style={styles.centeredDayCount}>
+                  <DayCount activeDay={activeGame.activeDay} lastDayWithData={lastDayWithData} />
+                </View>
+                <View style={styles.rightCounts}>
+                  <PlayerCountStatus
+                    alivePlayerCount={alivePlayerCount}
+                    deadPlayerCount={deadPlayerCount}
+                    travelerPlayerCount={travelerPlayerCount}
+                  />
+                </View>
               </View>
-              <View style={styles.centeredDayCount}>
-                <DayCount activeDay={activeGame.activeDay} lastDayWithData={lastDayWithData} />
-              </View>
-              <View style={styles.rightCounts}>
-                <PlayerCountStatus
-                  alivePlayerCount={alivePlayerCount}
-                  deadPlayerCount={deadPlayerCount}
-                  travelerPlayerCount={travelerPlayerCount}
-                />
-              </View>
-            </View>
 
-            {isRearrangeMode ? (
-              <View key="rearrange-actions">
-                <RearrangeActions />
+              {isRearrangeMode ? (
+                <View key="rearrange-actions">
+                  <RearrangeActions />
+                </View>
+              ) : (
+                <View key="map-mode-actions">
+                  <MapModeActions activeDay={activeGame.activeDay} onChangeDay={handleChangeDay} />
+                </View>
+              )}
+
+              <View key="role-display-modes">
+                <RoleDisplayModes />
               </View>
-            ) : (
-              <View key="map-mode-actions">
-                <MapModeActions activeDay={activeGame.activeDay} onChangeDay={handleChangeDay} />
+
+              <View key="tab-bar">
+                <GameTabs />
               </View>
-            )}
 
-            <View key="role-display-modes">
-              <RoleDisplayModes />
-            </View>
-
-            <View key="tab-bar">
-              <GameTabs />
-            </View>
-
-            <GameTabContent>
-              <ActiveGameTab />
-            </GameTabContent>
+              <GameTabContent>
+                <ActiveGameTab />
+              </GameTabContent>
+            </ResponsiveContent>
           </Animated.ScrollView>
 
           {focusedPlayer ? (
@@ -921,6 +924,9 @@ const styles = StyleSheet.create({
   centeredDayCount: { alignItems: 'center', flex: 1 },
   leftCounts: { alignItems: 'flex-start', flex: 1 },
   rightCounts: { alignItems: 'flex-end', flex: 1 },
+  gameContent: {
+    gap: 20,
+  },
   scroll: {
     flex: 1,
   },

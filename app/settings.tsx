@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { Trash2 } from 'lucide-react-native';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
+import { ResponsiveContent } from '@/components/responsive-content';
 import { DataTransferCard } from '@/components/settings/data-transfer-card';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
@@ -29,20 +30,22 @@ export default function SettingsRoute() {
         options={{ header: () => <TitleHeader title="Settings" />, title: 'Settings' }}
       />
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={styles.scrollContent}
         contentInsetAdjustmentBehavior="automatic"
         style={styles.screen}
       >
-        <DataTransferCard />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Clear all data"
-          onPress={confirmClearData}
-          style={({ pressed }) => [styles.clearButton, pressed && styles.clearButtonPressed]}
-        >
-          <Trash2 color={colors.danger} size={18} strokeWidth={2.6} />
-          <Text style={styles.clearButtonText}>Clear data</Text>
-        </Pressable>
+        <ResponsiveContent style={styles.content}>
+          <DataTransferCard />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Clear all data"
+            onPress={confirmClearData}
+            style={({ pressed }) => [styles.clearButton, pressed && styles.clearButtonPressed]}
+          >
+            <Trash2 color={colors.danger} size={18} strokeWidth={2.6} />
+            <Text style={styles.clearButtonText}>Clear data</Text>
+          </Pressable>
+        </ResponsiveContent>
       </ScrollView>
     </>
   );
@@ -52,6 +55,8 @@ const styles = StyleSheet.create({
   content: {
     gap: 16,
     padding: 20,
+  },
+  scrollContent: {
     paddingBottom: 40,
   },
   clearButton: {

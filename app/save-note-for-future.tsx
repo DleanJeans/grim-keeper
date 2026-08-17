@@ -1,9 +1,10 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Check, Trash2, X } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { RolePicker } from '@/components/game/notes-tab/role-picker';
+import { ResponsiveContent } from '@/components/responsive-content';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
@@ -112,37 +113,46 @@ export default function SaveNoteForFutureScreen() {
       <Stack.Screen options={{ title: 'Save Note for Future' }} />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ gap: 18, padding: 20, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
         style={{ backgroundColor: colors.background, flex: 1 }}
       >
-        <NotePreview day={noteDay} playerName={playerName} text={text} />
+        <ResponsiveContent style={styles.content}>
+          <NotePreview day={noteDay} playerName={playerName} text={text} />
 
-        {pickerRoles.length > 0 ? (
-          <RolePicker
-            description="Select every role where this note should appear. Mentioned roles and this player’s claimed or confirmed roles are selected automatically."
-            onToggleRole={handleToggleRole}
-            roles={pickerRoles}
-            selectedFirst
-            selectedRoleIds={selectedRoleIds}
-            scriptId={noteScriptId}
-          />
-        ) : (
-          <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 21 }}>
-            Select a game script before choosing roles for this note.
-          </Text>
-        )}
+          {pickerRoles.length > 0 ? (
+            <RolePicker
+              description="Select every role where this note should appear. Mentioned roles and this player’s claimed or confirmed roles are selected automatically."
+              onToggleRole={handleToggleRole}
+              roles={pickerRoles}
+              selectedFirst
+              selectedRoleIds={selectedRoleIds}
+              scriptId={noteScriptId}
+            />
+          ) : (
+            <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 21 }}>
+              Select a game script before choosing roles for this note.
+            </Text>
+          )}
 
-        {error ? (
-          <Text selectable style={{ color: colors.danger, fontSize: 14 }}>
-            {error}
-          </Text>
-        ) : null}
+          {error ? (
+            <Text selectable style={{ color: colors.danger, fontSize: 14 }}>
+              {error}
+            </Text>
+          ) : null}
 
-        <SaveNoteActions canRemove={canRemove} onRemove={handleRemove} onSave={handleSave} />
+          <SaveNoteActions canRemove={canRemove} onRemove={handleRemove} onSave={handleSave} />
+        </ResponsiveContent>
       </ScrollView>
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  content: {
+    gap: 18,
+    padding: 20,
+  },
+});
 
 function getInitialRoleIds(
   savedNote: SavedNote | undefined,

@@ -1,8 +1,9 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Search } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
+import { ResponsiveContent } from '@/components/responsive-content';
 import { RemoteScriptCard } from '@/components/scripts/remote-script-card';
 import { ScriptCard } from '@/components/scripts/script-card';
 import { UploadScriptButton } from '@/components/scripts/upload-script-button';
@@ -199,119 +200,121 @@ export default function ScriptsRoute() {
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         style={{ backgroundColor: colors.background, flex: 1 }}
-        contentContainerStyle={{ gap: 22, padding: 20, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
       >
-        <View style={{ gap: 6 }}>
-          <Text
-            selectable
-            style={{
-              color: colors.textMuted,
-              fontSize: 15,
-              lineHeight: 21,
-              textAlign: 'center',
-            }}
-          >
-            Download scripts from BotC Scripts or upload a homebrew JSON file, then add or remove
-            roles before using them in a game.
-          </Text>
-        </View>
-
-        {process.env.EXPO_OS === 'web' ? (
-          <UploadScriptButton onFileSelected={handleUploadFile} />
-        ) : null}
-
-        <SavedScriptsSection
-          canSelect={isSelectingForGame}
-          editingScriptId={editingScriptId}
-          roleCatalog={roleCatalog}
-          scripts={scripts}
-          onDelete={confirmDeleteScript}
-          onEdit={(scriptId) =>
-            setEditingScriptId((currentId) => (currentId === scriptId ? null : scriptId))
-          }
-          onView={handleViewScript}
-          onSelect={handleSelectScript}
-          onUpdate={updateScript}
-        />
-
-        <View style={{ gap: 10 }}>
-          <Text
-            selectable
-            style={{ color: colors.text, fontSize: 18, fontWeight: '900', textAlign: 'center' }}
-          >
-            Download from BotC Scripts
-          </Text>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <TextInput
-              autoCapitalize="none"
-              autoCorrect={false}
-              accessibilityLabel="Search BotC Scripts"
-              onChangeText={setSearchText}
-              onSubmitEditing={() => loadRemoteScripts()}
-              placeholder="Search scripts"
-              placeholderTextColor={colors.textSubtle}
-              returnKeyType="search"
-              value={searchText}
+        <ResponsiveContent style={styles.content}>
+          <View style={{ gap: 6 }}>
+            <Text
+              selectable
               style={{
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                borderRadius: 8,
-                borderWidth: 1,
-                color: colors.text,
-                flex: 1,
-                minHeight: 46,
-                paddingHorizontal: 12,
-                paddingVertical: 10,
+                color: colors.textMuted,
+                fontSize: 15,
+                lineHeight: 21,
+                textAlign: 'center',
               }}
-            />
-            <Pressable
-              accessibilityLabel="Search BotC Scripts"
-              accessibilityRole="button"
-              disabled={remoteLoading}
-              onPress={() => loadRemoteScripts()}
-              style={({ pressed }) => ({
-                alignItems: 'center',
-                backgroundColor: pressed ? colors.surfacePressed : colors.surfaceRaised,
-                borderColor: colors.borderStrong,
-                borderRadius: 8,
-                borderWidth: 1,
-                justifyContent: 'center',
-                opacity: remoteLoading ? 0.6 : 1,
-                width: 50,
-              })}
             >
-              <Search color={colors.text} size={18} strokeWidth={2.6} />
-            </Pressable>
+              Download scripts from BotC Scripts or upload a homebrew JSON file, then add or remove
+              roles before using them in a game.
+            </Text>
           </View>
-          {catalogError ? (
-            <Text selectable style={{ color: colors.warning, fontSize: 13, lineHeight: 18 }}>
-              {catalogError}
-            </Text>
+
+          {process.env.EXPO_OS === 'web' ? (
+            <UploadScriptButton onFileSelected={handleUploadFile} />
           ) : null}
-          {remoteError ? (
-            <Text selectable style={{ color: colors.danger, fontSize: 14, lineHeight: 20 }}>
-              {remoteError}
+
+          <SavedScriptsSection
+            canSelect={isSelectingForGame}
+            editingScriptId={editingScriptId}
+            roleCatalog={roleCatalog}
+            scripts={scripts}
+            onDelete={confirmDeleteScript}
+            onEdit={(scriptId) =>
+              setEditingScriptId((currentId) => (currentId === scriptId ? null : scriptId))
+            }
+            onView={handleViewScript}
+            onSelect={handleSelectScript}
+            onUpdate={updateScript}
+          />
+
+          <View style={{ gap: 10 }}>
+            <Text
+              selectable
+              style={{ color: colors.text, fontSize: 18, fontWeight: '900', textAlign: 'center' }}
+            >
+              Download from BotC Scripts
             </Text>
-          ) : remoteLoading ? (
-            <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
-              Loading scripts…
-            </Text>
-          ) : remoteScripts.length === 0 ? (
-            <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
-              No scripts found.
-            </Text>
-          ) : (
-            remoteScripts.map((script) => (
-              <RemoteScriptCard
-                downloading={downloadingId === script.pk}
-                key={script.pk}
-                onDownload={() => handleDownload(script)}
-                savedScript={scripts.find((savedScript) => savedScript.remoteId === script.pk)}
-                script={script}
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TextInput
+                autoCapitalize="none"
+                autoCorrect={false}
+                accessibilityLabel="Search BotC Scripts"
+                onChangeText={setSearchText}
+                onSubmitEditing={() => loadRemoteScripts()}
+                placeholder="Search scripts"
+                placeholderTextColor={colors.textSubtle}
+                returnKeyType="search"
+                value={searchText}
+                style={{
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  color: colors.text,
+                  flex: 1,
+                  minHeight: 46,
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                }}
               />
-            ))
-          )}
-        </View>
+              <Pressable
+                accessibilityLabel="Search BotC Scripts"
+                accessibilityRole="button"
+                disabled={remoteLoading}
+                onPress={() => loadRemoteScripts()}
+                style={({ pressed }) => ({
+                  alignItems: 'center',
+                  backgroundColor: pressed ? colors.surfacePressed : colors.surfaceRaised,
+                  borderColor: colors.borderStrong,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  justifyContent: 'center',
+                  opacity: remoteLoading ? 0.6 : 1,
+                  width: 50,
+                })}
+              >
+                <Search color={colors.text} size={18} strokeWidth={2.6} />
+              </Pressable>
+            </View>
+            {catalogError ? (
+              <Text selectable style={{ color: colors.warning, fontSize: 13, lineHeight: 18 }}>
+                {catalogError}
+              </Text>
+            ) : null}
+            {remoteError ? (
+              <Text selectable style={{ color: colors.danger, fontSize: 14, lineHeight: 20 }}>
+                {remoteError}
+              </Text>
+            ) : remoteLoading ? (
+              <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
+                Loading scripts…
+              </Text>
+            ) : remoteScripts.length === 0 ? (
+              <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
+                No scripts found.
+              </Text>
+            ) : (
+              remoteScripts.map((script) => (
+                <RemoteScriptCard
+                  downloading={downloadingId === script.pk}
+                  key={script.pk}
+                  onDownload={() => handleDownload(script)}
+                  savedScript={scripts.find((savedScript) => savedScript.remoteId === script.pk)}
+                  script={script}
+                />
+              ))
+            )}
+          </View>
+        </ResponsiveContent>
       </ScrollView>
     </>
   );
@@ -320,6 +323,13 @@ export default function ScriptsRoute() {
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'The script could not be read.';
 }
+
+const styles = StyleSheet.create({
+  content: {
+    gap: 22,
+    padding: 20,
+  },
+});
 
 function SavedScriptsSection({
   canSelect,

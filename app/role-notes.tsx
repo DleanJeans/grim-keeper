@@ -1,5 +1,6 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { ResponsiveContent } from '@/components/responsive-content';
 import { RoleIcon } from '@/components/role-icon';
 import { RoleWikiLink } from '@/components/role-wiki-link';
 import { SavedNotes } from '@/components/saved-notes';
@@ -74,32 +75,34 @@ export default function RoleNotesScreen() {
       />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={styles.content}
+        contentContainerStyle={styles.scrollContent}
         style={styles.screen}
       >
-        <Text selectable style={styles.description}>
-          {description ?? 'No description available.'}
-        </Text>
-
-        <RoleWikiLink roleName={role.name} />
-
-        {hasNotes ? (
-          <SavedNotes
-            day={game?.activeDay}
-            games={games}
-            label
-            mode="role"
-            notes={mergedNotes}
-            players={game?.players}
-            roleId={role.id}
-            roles={script?.roles ?? roleCatalog}
-            scripts={scripts}
-          />
-        ) : (
-          <Text selectable style={styles.emptyText}>
-            No notes for this role.
+        <ResponsiveContent style={styles.content}>
+          <Text selectable style={styles.description}>
+            {description ?? 'No description available.'}
           </Text>
-        )}
+
+          <RoleWikiLink roleName={role.name} />
+
+          {hasNotes ? (
+            <SavedNotes
+              day={game?.activeDay}
+              games={games}
+              label
+              mode="role"
+              notes={mergedNotes}
+              players={game?.players}
+              roleId={role.id}
+              roles={script?.roles ?? roleCatalog}
+              scripts={scripts}
+            />
+          ) : (
+            <Text selectable style={styles.emptyText}>
+              No notes for this role.
+            </Text>
+          )}
+        </ResponsiveContent>
       </ScrollView>
     </>
   );
@@ -108,8 +111,10 @@ export default function RoleNotesScreen() {
 const styles = StyleSheet.create({
   content: {
     gap: 18,
+    padding: 20,
+  },
+  scrollContent: {
     paddingBottom: 40,
-    paddingHorizontal: 20,
   },
   description: {
     color: colors.textMuted,
