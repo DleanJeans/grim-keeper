@@ -6,7 +6,7 @@ import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Game, StoredScript } from '@/types/game';
-import { downloadJson, getJsonFilename, shareJsonFile } from '@/utils/file-transfer';
+import { downloadJson, shareJsonFile } from '@/utils/file-transfer';
 import { createGameTransfer } from '@/utils/game-transfer';
 
 type ExportGameButtonProps = {
@@ -22,7 +22,7 @@ export function ExportGameButton({ game, scripts }: ExportGameButtonProps) {
     try {
       setIsExporting(true);
       const json = createGameTransfer(game, scripts);
-      const filename = getJsonFilename('grim-keeper-game');
+      const filename = `grim-keeper--${game.id}.json`;
 
       if (process.env.EXPO_OS === 'web') {
         downloadJson(json, filename);
