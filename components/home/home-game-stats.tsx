@@ -31,17 +31,17 @@ export function HomeGameStats({ games }: HomeGameStatsProps) {
         <Text selectable style={styles.value}>
           {formatRate(winRate)}
         </Text>
+        <AlignmentLabels />
         <AlignmentWinRates evil={formatRate(evilWinRate)} good={formatRate(goodWinRate)} />
         <AlignmentGameValues evil={String(evilWins)} good={String(goodWins)} />
-      </StatCard>
-      <StatCard label="Good / Evil">
-        <AlignmentWinRates evil={formatRate(evilSideRate)} good={formatRate(goodSideRate)} />
-        <AlignmentGameValues evil={String(evilGames)} good={String(goodGames)} />
       </StatCard>
       <StatCard label="Total games">
         <Text selectable style={styles.value}>
           {totalGames}
         </Text>
+        <AlignmentLabels />
+        <AlignmentWinRates evil={formatRate(evilSideRate)} good={formatRate(goodSideRate)} />
+        <AlignmentGameValues evil={String(evilGames)} good={String(goodGames)} />
       </StatCard>
     </View>
   );
@@ -51,6 +51,19 @@ function formatRate(rate: number | undefined) {
   return rate === undefined ? '—' : `${rate}%`;
 }
 
+function AlignmentLabels() {
+  return (
+    <View style={styles.alignmentRow}>
+      <Text selectable style={[styles.alignmentLabel, styles.goodValue]}>
+        Good
+      </Text>
+      <Text selectable style={[styles.alignmentLabel, styles.evilValue]}>
+        Evil
+      </Text>
+    </View>
+  );
+}
+
 type AlignmentRowProps = {
   evil: string;
   good: string;
@@ -58,14 +71,11 @@ type AlignmentRowProps = {
   valueStyle: StyleProp<TextStyle>;
 };
 
-function AlignmentRow({ evil, good, separatorStyle, valueStyle }: AlignmentRowProps) {
+function AlignmentRow({ evil, good, valueStyle }: AlignmentRowProps) {
   return (
     <View style={styles.alignmentRow}>
       <Text selectable style={[valueStyle, styles.goodValue]}>
         {good}
-      </Text>
-      <Text selectable style={separatorStyle}>
-        /
       </Text>
       <Text selectable style={[valueStyle, styles.evilValue]}>
         {evil}
@@ -114,6 +124,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '100%',
   },
+  alignmentLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
   card: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
@@ -129,6 +143,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
+    textAlign: 'center',
   },
   evilValue: {
     color: colors.danger,
