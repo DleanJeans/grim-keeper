@@ -5,8 +5,10 @@ import { getEffectiveRoleForPlayer, getRoleAlignment } from '@/utils/role-utils'
 export type GameStats = {
   completedGames: number;
   evilGames: number;
+  evilSideRate: number | undefined;
   evilWinRate: number | undefined;
   goodGames: number;
+  goodSideRate: number | undefined;
   goodWinRate: number | undefined;
   totalGames: number;
   winRate: number | undefined;
@@ -58,8 +60,10 @@ export function getGameStats(games: Game[]): GameStats {
   return {
     completedGames,
     evilGames: evilGames.length,
+    evilSideRate: getPercentage(evilGames.length, goodGames.length + evilGames.length),
     evilWinRate: getWinRate(completedEvilGames),
     goodGames: goodGames.length,
+    goodSideRate: getPercentage(goodGames.length, goodGames.length + evilGames.length),
     goodWinRate: getWinRate(completedGoodGames),
     totalGames: games.length,
     winRate: completedGames === 0 ? undefined : Math.round((wins / completedGames) * 100),
@@ -78,11 +82,11 @@ function getGameAlignment(game: Game) {
 }
 
 function getWinRate(games: Game[]) {
-  if (games.length === 0) {
-    return undefined;
-  }
+  return getPercentage(games.filter((game) => game.result === 'won').length, games.length);
+}
 
-  return Math.round((games.filter((game) => game.result === 'won').length / games.length) * 100);
+function getPercentage(value: number, total: number) {
+  return total === 0 ? undefined : Math.round((value / total) * 100);
 }
 
 export function isGameResult(value: unknown): value is GameResult {

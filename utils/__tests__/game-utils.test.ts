@@ -141,8 +141,10 @@ describe('getGameStats', () => {
     expect(getGameStats([])).toEqual({
       completedGames: 0,
       evilGames: 0,
+      evilSideRate: undefined,
       evilWinRate: undefined,
       goodGames: 0,
+      goodSideRate: undefined,
       goodWinRate: undefined,
       totalGames: 0,
       winRate: undefined,
@@ -160,8 +162,10 @@ describe('getGameStats', () => {
     ).toEqual({
       completedGames: 2,
       evilGames: 0,
+      evilSideRate: undefined,
       evilWinRate: undefined,
       goodGames: 0,
+      goodSideRate: undefined,
       goodWinRate: undefined,
       totalGames: 3,
       winRate: 50,
@@ -177,8 +181,10 @@ describe('getGameStats', () => {
 
     expect(getGameStats([goodGame, evilGame, travelerGame, activeGoodGame])).toMatchObject({
       evilGames: 1,
+      evilSideRate: 33,
       evilWinRate: 0,
       goodGames: 2,
+      goodSideRate: 67,
       goodWinRate: 100,
     });
   });

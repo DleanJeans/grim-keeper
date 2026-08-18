@@ -11,8 +11,16 @@ type HomeGameStatsProps = {
 };
 
 export function HomeGameStats({ games }: HomeGameStatsProps) {
-  const { evilGames, evilWinRate, goodGames, goodWinRate, totalGames, winRate } =
-    getGameStats(games);
+  const {
+    evilGames,
+    evilSideRate,
+    evilWinRate,
+    goodGames,
+    goodSideRate,
+    goodWinRate,
+    totalGames,
+    winRate,
+  } = getGameStats(games);
 
   return (
     <View style={styles.stats}>
@@ -25,7 +33,8 @@ export function HomeGameStats({ games }: HomeGameStatsProps) {
         </View>
       </StatCard>
       <StatCard label="Good / Evil games">
-        <AlignmentGameCounts evil={String(evilGames)} good={String(goodGames)} />
+        <AlignmentGameValues evil={String(evilGames)} good={String(goodGames)} />
+        <AlignmentGameValues evil={formatRate(evilSideRate)} good={formatRate(goodSideRate)} />
       </StatCard>
       <StatCard label="Total games">
         <Text selectable style={styles.value}>
@@ -56,7 +65,7 @@ function AlignmentWinRates({ evil, good }: { evil: string; good: string }) {
   );
 }
 
-function AlignmentGameCounts({ evil, good }: { evil: string; good: string }) {
+function AlignmentGameValues({ evil, good }: { evil: string; good: string }) {
   return (
     <View style={styles.alignmentRow}>
       <Text selectable style={[styles.countValue, styles.goodValue]}>
