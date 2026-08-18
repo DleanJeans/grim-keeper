@@ -35,7 +35,7 @@ export function HomeGameStats({ games }: HomeGameStatsProps) {
       </StatCard>
       <StatCard label="Good / Evil">
         <AlignmentGameValues evil={String(evilGames)} good={String(goodGames)} />
-        <AlignmentGameValues evil={formatRate(evilSideRate)} good={formatRate(goodSideRate)} />
+        <AlignmentWinRates evil={formatRate(evilSideRate)} good={formatRate(goodSideRate)} />
       </StatCard>
       <StatCard label="Total games">
         <Text selectable style={styles.value}>
