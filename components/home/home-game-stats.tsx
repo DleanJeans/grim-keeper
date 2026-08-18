@@ -166,5 +166,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontVariant: ['tabular-nums'],
     fontWeight: '900',
+    textAlign: 'center',
   },
 });
