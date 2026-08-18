@@ -5,6 +5,9 @@ export const defaultTokenSize = 68;
 export const minTokenSize = 40;
 export const maxTokenSize = 100;
 export const tokenSizeStep = 2;
+export const minMapWidth = 240;
+export const maxMapWidth = DESKTOP_CONTENT_MAX_WIDTH;
+export const mapWidthStep = 20;
 export const minMapHeight = 240;
 export const maxMapHeight = 2000;
 export const mapHeightStep = 20;
@@ -17,6 +20,10 @@ export function getTokenSize(tokenSize = defaultTokenSize) {
 
 export function getDefaultMapWidth(viewportWidth: number) {
   return Math.max(1, Math.min(DESKTOP_CONTENT_MAX_WIDTH, Math.round(viewportWidth - 40)));
+}
+
+export function clampMapWidth(mapWidth: number) {
+  return Math.min(maxMapWidth, Math.max(minMapWidth, Math.round(mapWidth)));
 }
 
 export function getLegacyMapHeight(mapWidth: number, viewportHeight: number) {

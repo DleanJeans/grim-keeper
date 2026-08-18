@@ -1,6 +1,7 @@
 import type { Player } from '@/types/game';
 import {
   clampMapHeight,
+  clampMapWidth,
   clampTokenPosition,
   getDefaultMapHeight,
   getDefaultMapWidth,
@@ -27,6 +28,12 @@ describe('layout utils', () => {
     expect(getDefaultMapHeight(350, 1129)).toBe(580);
     expect(getLegacyMapHeight(350, 1129)).toBe(587);
     expect(clampMapHeight(587)).toBe(580);
+  });
+
+  it('clamps manually resized map widths to the supported range', () => {
+    expect(clampMapWidth(239)).toBe(240);
+    expect(clampMapWidth(1201)).toBe(1200);
+    expect(clampMapWidth(587)).toBe(587);
   });
 
   it('scales the logical map to the available width', () => {
@@ -59,6 +66,17 @@ describe('layout utils', () => {
     expect(positions.right.x).toBe(316);
     expect(positions.right.y).toBeCloseTo((537 * 580) / 587);
     expect(positions.new).toBeUndefined();
+  });
+
+  it('scales stored positions when the logical map width changes', () => {
+    const positionedPlayers: Player[] = [
+      { id: 'center', name: 'center', seat: 0, position: { x: 600, y: 300 } },
+    ];
+
+    const positions = scalePlayerMapPositions(positionedPlayers, 1200, 600, 350, 600, 68);
+
+    expect(positions.center.x).toBeCloseTo(175);
+    expect(positions.center.y).toBe(300);
   });
 
   it('places players clockwise along the map borders with the first player at 6 oclock', () => {

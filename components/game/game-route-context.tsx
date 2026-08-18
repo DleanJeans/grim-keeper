@@ -75,6 +75,7 @@ export type GameRouteContextValue = {
   handleEditNominationVotes: (nominationId: string, voterIds: string[]) => void;
   handleToggleVoterHighlights: () => void;
   handleChangeDay: (day: number) => void;
+  handleResizeMapWidth: (sizeDelta: number) => void;
   handleResizeMapHeight: (sizeDelta: number) => void;
   handleRotateTokens: (angleRadians: number) => void;
   handleResizeTokens: (sizeDelta: number) => void;

@@ -6,9 +6,12 @@ import { onDarkTextStrong, outlinedActionRow, outlinedActionStyle } from '@/comp
 import { Text } from '@/components/text';
 import {
   mapHeightStep,
+  mapWidthStep,
   maxMapHeight,
+  maxMapWidth,
   maxTokenSize,
   minMapHeight,
+  minMapWidth,
   minTokenSize,
   tokenSizeStep,
 } from '@/utils/layout-utils';
@@ -19,15 +22,19 @@ export function RearrangeActions() {
   const {
     activeTokenSize,
     exitRearrangeMode,
+    handleResizeMapWidth,
     handleResizeMapHeight,
     handleResizeTokens,
     handleRotateTokens,
     mapHeight,
+    mapWidth,
   } = useGameRouteContext();
   const canShrinkTokens = activeTokenSize > minTokenSize;
   const canEnlargeTokens = activeTokenSize < maxTokenSize;
   const canShrinkMap = mapHeight > minMapHeight;
   const canEnlargeMap = mapHeight < maxMapHeight;
+  const canShrinkMapWidth = mapWidth > minMapWidth;
+  const canEnlargeMapWidth = mapWidth < maxMapWidth;
 
   return (
     <View style={styles.root}>
@@ -50,6 +57,16 @@ export function RearrangeActions() {
         onIncrease={() => handleResizeMapHeight(mapHeightStep)}
         title="Map"
         value={mapHeight}
+      />
+      <DimensionAdjustRow
+        canDecrease={canShrinkMapWidth}
+        canIncrease={canEnlargeMapWidth}
+        decreaseAccessibilityLabel="Decrease game map width"
+        increaseAccessibilityLabel="Increase game map width"
+        onDecrease={() => handleResizeMapWidth(-mapWidthStep)}
+        onIncrease={() => handleResizeMapWidth(mapWidthStep)}
+        title="Width"
+        value={mapWidth}
       />
       <View style={outlinedActionRow}>
         <Pressable

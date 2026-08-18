@@ -36,6 +36,7 @@ import type {
 import { getLastDayWithData } from '@/utils/game-utils';
 import {
   clampMapHeight,
+  clampMapWidth,
   getDefaultMapHeight,
   getDefaultMapWidth,
   getLegacyMapHeight,
@@ -552,6 +553,37 @@ export default function GameRoute() {
     setMapDimensions(activeGame.id, mapWidth, nextHeight);
   }
 
+  function handleResizeMapWidth(sizeDelta: number) {
+    const nextWidth = clampMapWidth(mapWidth + sizeDelta);
+    if (nextWidth === mapWidth) {
+      return;
+    }
+
+    const scaledPositions = scalePlayerMapPositions(
+      activeGame.players,
+      mapWidth,
+      mapHeight,
+      nextWidth,
+      mapHeight,
+      activeTokenSize,
+    );
+    const resizedPlayers = activeGame.players.map((player) => {
+      const position = scaledPositions[player.id];
+      return position ? { ...player, position } : player;
+    });
+    const { positions: collisionPositions } = resolveTokenCollisions(
+      resizedPlayers,
+      nextWidth,
+      mapHeight,
+      activeTokenSize,
+    );
+    const positions = { ...scaledPositions, ...collisionPositions };
+    if (Object.keys(positions).length > 0) {
+      updatePlayerPositions(activeGame.id, positions);
+    }
+    setMapDimensions(activeGame.id, nextWidth, mapHeight);
+  }
+
   function handleStartRoleAssignment(kind: PlayerRoleAssignment['kind']) {
     if (!focusedPlayer || !activeGame.script) {
       return;
@@ -798,6 +830,7 @@ export default function GameRoute() {
     handleEditNominationVotes,
     handleToggleVoterHighlights,
     handleChangeDay,
+    handleResizeMapWidth,
     handleResizeMapHeight,
     handleRotateTokens,
     handleResizeTokens,
