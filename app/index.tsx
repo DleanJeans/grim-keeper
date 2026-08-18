@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppUserNameCard } from '@/components/app-user-name-card';
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
+import { HomeGameStats } from '@/components/home/home-game-stats';
 import { HomeHeaderActions } from '@/components/home/home-header-actions';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { SavedGameRow } from '@/components/saved-game-row';
@@ -74,6 +75,8 @@ export default function HomeRoute() {
           />
 
           <View style={{ gap: 12 }}>
+            <HomeGameStats games={games} />
+
             <Text
               selectable
               style={{ color: colors.text, fontSize: 22, fontWeight: '800', textAlign: 'center' }}

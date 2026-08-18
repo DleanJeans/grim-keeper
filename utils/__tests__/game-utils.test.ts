@@ -1,5 +1,5 @@
 import type { Game, Player } from '@/types/game';
-import { getLastDayWithData } from '@/utils/game-utils';
+import { getGameStats, getLastDayWithData } from '@/utils/game-utils';
 
 function makePlayer(overrides: Partial<Player> = {}): Player {
   return {
@@ -132,5 +132,31 @@ describe('getLastDayWithData', () => {
   it('falls back to 1 when playerDayNotes is missing', () => {
     const game = makeGame({ playerDayNotes: undefined });
     expect(getLastDayWithData(game)).toBe(1);
+  });
+});
+
+describe('getGameStats', () => {
+  it('returns an empty win rate when no games have a result', () => {
+    expect(getGameStats([])).toEqual({
+      completedGames: 0,
+      totalGames: 0,
+      winRate: undefined,
+      wins: 0,
+    });
+  });
+
+  it('counts every saved game while calculating win rate from completed games', () => {
+    expect(
+      getGameStats([
+        makeGame({ id: 'won', result: 'won' }),
+        makeGame({ id: 'lost', result: 'lost' }),
+        makeGame({ id: 'active' }),
+      ]),
+    ).toEqual({
+      completedGames: 2,
+      totalGames: 3,
+      winRate: 50,
+      wins: 1,
+    });
   });
 });

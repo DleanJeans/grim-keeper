@@ -1,5 +1,12 @@
 import type { Game, GameResult } from '@/types/game';
 
+export type GameStats = {
+  completedGames: number;
+  totalGames: number;
+  winRate: number | undefined;
+  wins: number;
+};
+
 export function getLastDayWithData(game: Game): number {
   let lastDay = 0;
 
@@ -32,6 +39,18 @@ export function getLastDayWithData(game: Game): number {
   }
 
   return Math.max(1, lastDay);
+}
+
+export function getGameStats(games: Game[]): GameStats {
+  const completedGames = games.filter((game) => game.result !== undefined).length;
+  const wins = games.filter((game) => game.result === 'won').length;
+
+  return {
+    completedGames,
+    totalGames: games.length,
+    winRate: completedGames === 0 ? undefined : Math.round((wins / completedGames) * 100),
+    wins,
+  };
 }
 
 export function isGameResult(value: unknown): value is GameResult {
