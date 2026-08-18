@@ -1,37 +1,39 @@
-import { CircleHelp, Megaphone, ShieldCheck, Tag } from 'lucide-react-native';
-import type { ComponentType } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { RoleDisplayMode } from '@/types/game';
+import type { Player, RoleDisplayMode } from '@/types/game';
+import {
+  getLatestRumorMapDisplaysForDayOrPrevious,
+  getRoleAssignmentForDayOrPrevious,
+} from '@/utils/role-utils';
 
 const roleDisplayModes: {
-  icon: typeof Tag;
   label: string;
   value: RoleDisplayMode;
 }[] = [
-  { icon: ShieldCheck, label: 'Confirm', value: 'confirm' },
-  { icon: Tag, label: 'Claim', value: 'claim' },
-  { icon: Megaphone, label: 'Rumor', value: 'rumor' },
-  { icon: CircleHelp, label: 'Guess', value: 'guess' },
+  { label: 'Confirm', value: 'confirm' },
+  { label: 'Claim', value: 'claim' },
+  { label: 'Rumor', value: 'rumor' },
+  { label: 'Guess', value: 'guess' },
 ];
 
-const roleDisplayModeColors: Record<RoleDisplayMode, string> = {
-  claim: colors.roleClaim,
-  confirm: colors.roleConfirm,
-  guess: colors.roleGuess,
-  rumor: colors.roleRumor,
-};
-
 export function RoleDisplayModes() {
-  const { activeRoleDisplayMode, game, setActiveRoleDisplayMode, showRoles } =
+  const { activeDay, activeRoleDisplayMode, game, setActiveRoleDisplayMode, showRoles } =
     useGameRouteContext();
 
   if (!game.script || !showRoles) {
     return null;
   }
+
+  const roleDisplayModeCounts: Record<RoleDisplayMode, number> = {
+    claim: countRoleAssignments(game.players, activeDay, 'claim'),
+    confirm: countRoleAssignments(game.players, activeDay, 'confirm'),
+    guess: countRoleAssignments(game.players, activeDay, 'guess'),
+    rumor: getLatestRumorMapDisplaysForDayOrPrevious(game.players, activeDay, game.script.roles)
+      .length,
+  };
 
   return (
     <View
@@ -39,10 +41,10 @@ export function RoleDisplayModes() {
       accessibilityRole="radiogroup"
       style={styles.segmentedControl}
     >
-      {roleDisplayModes.map(({ icon, label, value }, index) => (
+      {roleDisplayModes.map(({ label, value }, index) => (
         <RoleDisplayModeButton
           first={index === 0}
-          icon={icon}
+          count={roleDisplayModeCounts[value]}
           key={value}
           label={label}
           onPress={() => setActiveRoleDisplayMode(value)}
@@ -54,16 +56,27 @@ export function RoleDisplayModes() {
   );
 }
 
+function countRoleAssignments(
+  players: Player[],
+  day: number,
+  kind: Exclude<RoleDisplayMode, 'rumor'>,
+) {
+  return players.filter((player) => {
+    const assignment = getRoleAssignmentForDayOrPrevious(player.roleAssignments, day, kind);
+    return (assignment?.roleIds.length ?? 0) > 0;
+  }).length;
+}
+
 function RoleDisplayModeButton({
+  count,
   first,
-  icon: Icon,
   label,
   onPress,
   selected,
   value,
 }: {
+  count: number;
   first: boolean;
-  icon: ComponentType<{ color: string; size: number; strokeWidth?: number }>;
   label: string;
   onPress: () => void;
   selected: boolean;
@@ -71,7 +84,7 @@ function RoleDisplayModeButton({
 }) {
   return (
     <Pressable
-      accessibilityLabel={`Show ${label.toLocaleLowerCase()}`}
+      accessibilityLabel={`Show ${label.toLocaleLowerCase()} (${count})`}
       accessibilityRole="radio"
       accessibilityState={{ selected }}
       onPress={onPress}
@@ -83,12 +96,9 @@ function RoleDisplayModeButton({
         selected && styles.segmentSelected,
       ]}
     >
-      <Icon
-        color={selected ? roleDisplayModeColors[value] : colors.noteDayHeader}
-        size={16}
-        strokeWidth={2.5}
-      />
-      <Text style={[styles.segmentLabel, selected && styles.segmentSelectedLabel]}>{label}</Text>
+      <Text style={[styles.segmentLabel, selected && styles.segmentSelectedLabel]}>
+        {label} ({count})
+      </Text>
     </Pressable>
   );
 }
@@ -107,7 +117,6 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     flex: 1,
     flexDirection: 'row',
-    gap: 6,
     justifyContent: 'center',
     minHeight: 46,
     minWidth: 0,
