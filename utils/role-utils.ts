@@ -383,6 +383,17 @@ export function getRoleDisplayForMode(
   roles: Role[],
   mode: RoleDisplayMode,
 ): RoleDisplay {
+  if (mode === 'all') {
+    for (const priorityMode of ['confirm', 'claim', 'rumor', 'guess'] as const) {
+      const roleDisplay = getRoleDisplayForMode(player, players, day, roles, priorityMode);
+      if (roleDisplay.roleIds.length > 0) {
+        return roleDisplay;
+      }
+    }
+
+    return EMPTY_ROLE_DISPLAY;
+  }
+
   const confirmedAssignment = getRoleAssignmentForDayOrPrevious(
     player.roleAssignments,
     day,

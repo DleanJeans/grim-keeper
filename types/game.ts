@@ -5,7 +5,7 @@ export type PlayerPosition = {
   y: number;
 };
 
-export type RoleDisplayMode = 'claim' | 'confirm' | 'guess' | 'rumor';
+export type RoleDisplayMode = 'all' | 'claim' | 'confirm' | 'guess' | 'rumor';
 
 export type Role = {
   ability?: string;

@@ -57,7 +57,10 @@ export function GameMap() {
   const selectedPlayerIdSet = useMemo(() => new Set(highlightedPlayerIds), [highlightedPlayerIds]);
   const showNominationCurves = activeTab === 'nominations';
   const showInteractionCurves = activeTab === 'interactions';
-  const showRumorCurves = activeTab === 'notes' && activeRoleDisplayMode === 'rumor' && showRoles;
+  const showRumorCurves =
+    activeTab === 'notes' &&
+    (activeRoleDisplayMode === 'all' || activeRoleDisplayMode === 'rumor') &&
+    showRoles;
   const rumorMapDisplays = showRumorCurves
     ? getLatestRumorMapDisplaysForDayOrPrevious(players, activeDay, game.script?.roles ?? [])
     : [];

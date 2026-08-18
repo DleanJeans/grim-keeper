@@ -13,11 +13,14 @@ const roleDisplayModes: {
   label: string;
   value: RoleDisplayMode;
 }[] = [
+  { label: 'All', value: 'all' },
   { label: 'Confirm', value: 'confirm' },
   { label: 'Claim', value: 'claim' },
   { label: 'Rumor', value: 'rumor' },
   { label: 'Guess', value: 'guess' },
 ];
+
+type CountedRoleDisplayMode = Exclude<RoleDisplayMode, 'all'>;
 
 export function RoleDisplayModes() {
   const { activeDay, activeRoleDisplayMode, game, setActiveRoleDisplayMode, showRoles } =
@@ -27,7 +30,7 @@ export function RoleDisplayModes() {
     return null;
   }
 
-  const roleDisplayModeCounts: Record<RoleDisplayMode, number> = {
+  const roleDisplayModeCounts: Record<CountedRoleDisplayMode, number> = {
     claim: countRoleAssignments(game.players, activeDay, 'claim'),
     confirm: countRoleAssignments(game.players, activeDay, 'confirm'),
     guess: countRoleAssignments(game.players, activeDay, 'guess'),
@@ -44,7 +47,7 @@ export function RoleDisplayModes() {
       {roleDisplayModes.map(({ label, value }, index) => (
         <RoleDisplayModeButton
           first={index === 0}
-          count={roleDisplayModeCounts[value]}
+          count={value === 'all' ? undefined : roleDisplayModeCounts[value]}
           key={value}
           label={label}
           onPress={() => setActiveRoleDisplayMode(value)}
@@ -59,7 +62,7 @@ export function RoleDisplayModes() {
 function countRoleAssignments(
   players: Player[],
   day: number,
-  kind: Exclude<RoleDisplayMode, 'rumor'>,
+  kind: Exclude<RoleDisplayMode, 'all' | 'rumor'>,
 ) {
   return players.filter((player) => {
     const assignment = getRoleAssignmentForDayOrPrevious(player.roleAssignments, day, kind);
@@ -75,7 +78,7 @@ function RoleDisplayModeButton({
   selected,
   value,
 }: {
-  count: number;
+  count?: number;
   first: boolean;
   label: string;
   onPress: () => void;
@@ -84,20 +87,22 @@ function RoleDisplayModeButton({
 }) {
   return (
     <Pressable
-      accessibilityLabel={`Show ${label.toLocaleLowerCase()} (${count})`}
+      accessibilityLabel={`Show ${label.toLocaleLowerCase()}${count === undefined ? '' : ` (${count})`}`}
       accessibilityRole="radio"
       accessibilityState={{ selected }}
       onPress={onPress}
       style={({ pressed }) => [
         styles.segment,
         first && styles.firstSegment,
+        value === 'all' && styles.allSegment,
         value === 'guess' && styles.lastSegment,
         pressed && styles.segmentPressed,
         selected && styles.segmentSelected,
       ]}
     >
       <Text style={[styles.segmentLabel, selected && styles.segmentSelectedLabel]}>
-        {label} ({count})
+        {label}
+        {count === undefined ? '' : ` (${count})`}
       </Text>
     </Pressable>
   );
@@ -107,6 +112,9 @@ const styles = StyleSheet.create({
   firstSegment: {
     borderBottomLeftRadius: 8,
     borderTopLeftRadius: 8,
+  },
+  allSegment: {
+    flex: 0.5,
   },
   lastSegment: {
     borderBottomRightRadius: 8,
