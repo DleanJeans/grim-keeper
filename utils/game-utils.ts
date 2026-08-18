@@ -6,9 +6,11 @@ export type GameStats = {
   completedGames: number;
   evilGames: number;
   evilSideRate: number | undefined;
+  evilWins: number;
   evilWinRate: number | undefined;
   goodGames: number;
   goodSideRate: number | undefined;
+  goodWins: number;
   goodWinRate: number | undefined;
   totalGames: number;
   winRate: number | undefined;
@@ -56,14 +58,18 @@ export function getGameStats(games: Game[]): GameStats {
   const evilGames = games.filter((game) => getGameAlignment(game) === 'e');
   const completedGoodGames = goodGames.filter((game) => game.result !== undefined);
   const completedEvilGames = evilGames.filter((game) => game.result !== undefined);
+  const goodWins = completedGoodGames.filter((game) => game.result === 'won').length;
+  const evilWins = completedEvilGames.filter((game) => game.result === 'won').length;
 
   return {
     completedGames,
     evilGames: evilGames.length,
     evilSideRate: getPercentage(evilGames.length, goodGames.length + evilGames.length),
+    evilWins,
     evilWinRate: getWinRate(completedEvilGames),
     goodGames: goodGames.length,
     goodSideRate: getPercentage(goodGames.length, goodGames.length + evilGames.length),
+    goodWins,
     goodWinRate: getWinRate(completedGoodGames),
     totalGames: games.length,
     winRate: completedGames === 0 ? undefined : Math.round((wins / completedGames) * 100),
