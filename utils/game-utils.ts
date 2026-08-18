@@ -1,7 +1,11 @@
 import type { Game, GameResult } from '@/types/game';
+import { APP_USER_ID } from '@/utils/object-id';
+import { getEffectiveRoleForPlayer, getRoleAlignment } from '@/utils/role-utils';
 
 export type GameStats = {
   completedGames: number;
+  evilWinRate: number | undefined;
+  goodWinRate: number | undefined;
   totalGames: number;
   winRate: number | undefined;
   wins: number;
@@ -44,13 +48,39 @@ export function getLastDayWithData(game: Game): number {
 export function getGameStats(games: Game[]): GameStats {
   const completedGames = games.filter((game) => game.result !== undefined).length;
   const wins = games.filter((game) => game.result === 'won').length;
+  const goodGames = games.filter(
+    (game) => game.result !== undefined && getGameAlignment(game) === 'g',
+  );
+  const evilGames = games.filter(
+    (game) => game.result !== undefined && getGameAlignment(game) === 'e',
+  );
 
   return {
     completedGames,
+    evilWinRate: getWinRate(evilGames),
+    goodWinRate: getWinRate(goodGames),
     totalGames: games.length,
     winRate: completedGames === 0 ? undefined : Math.round((wins / completedGames) * 100),
     wins,
   };
+}
+
+function getGameAlignment(game: Game) {
+  const appUser = game.players.find((player) => player.id === APP_USER_ID);
+  const role =
+    appUser && game.script
+      ? getEffectiveRoleForPlayer(appUser, game.script.roles, game.activeDay).role
+      : null;
+
+  return role ? getRoleAlignment(role) : undefined;
+}
+
+function getWinRate(games: Game[]) {
+  if (games.length === 0) {
+    return undefined;
+  }
+
+  return Math.round((games.filter((game) => game.result === 'won').length / games.length) * 100);
 }
 
 export function isGameResult(value: unknown): value is GameResult {

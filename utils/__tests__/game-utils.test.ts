@@ -1,5 +1,6 @@
 import type { Game, Player } from '@/types/game';
 import { getGameStats, getLastDayWithData } from '@/utils/game-utils';
+import { APP_USER_ID } from '@/utils/object-id';
 
 function makePlayer(overrides: Partial<Player> = {}): Player {
   return {
@@ -139,6 +140,8 @@ describe('getGameStats', () => {
   it('returns an empty win rate when no games have a result', () => {
     expect(getGameStats([])).toEqual({
       completedGames: 0,
+      evilWinRate: undefined,
+      goodWinRate: undefined,
       totalGames: 0,
       winRate: undefined,
       wins: 0,
@@ -154,9 +157,52 @@ describe('getGameStats', () => {
       ]),
     ).toEqual({
       completedGames: 2,
+      evilWinRate: undefined,
+      goodWinRate: undefined,
       totalGames: 3,
       winRate: 50,
       wins: 1,
     });
   });
+
+  it('calculates separate win rates from the app user role alignment', () => {
+    const goodGame = makeAlignedGame('townsfolk', 'won');
+    const evilGame = makeAlignedGame('demon', 'lost');
+
+    expect(getGameStats([goodGame, evilGame])).toMatchObject({
+      evilWinRate: 0,
+      goodWinRate: 100,
+    });
+  });
 });
+
+function makeAlignedGame(team: 'demon' | 'townsfolk', result: 'lost' | 'won'): Game {
+  const roleId = `${team}-role`;
+
+  return makeGame({
+    id: `${team}-${result}`,
+    players: [
+      {
+        id: APP_USER_ID,
+        name: 'Alice',
+        roleAssignments: [
+          {
+            day: 1,
+            kind: 'confirm',
+            roleIds: [roleId],
+            updatedAt: '2026-01-01T00:00:00.000Z',
+          },
+        ],
+        seat: 0,
+      },
+    ],
+    result,
+    script: {
+      id: `${team}-script`,
+      name: `${team} script`,
+      roles: [{ id: roleId, name: team, team }],
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      version: '1',
+    },
+  });
+}

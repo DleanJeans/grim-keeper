@@ -10,14 +10,22 @@ type HomeGameStatsProps = {
 };
 
 export function HomeGameStats({ games }: HomeGameStatsProps) {
-  const { totalGames, winRate } = getGameStats(games);
+  const { evilWinRate, goodWinRate, totalGames, winRate } = getGameStats(games);
 
   return (
     <View style={styles.stats}>
       <StatCard label="Win rate" value={winRate === undefined ? '—' : `${winRate}%`} />
+      <StatCard
+        label="Good / Evil"
+        value={`${formatRate(goodWinRate)} / ${formatRate(evilWinRate)}`}
+      />
       <StatCard label="Total games" value={String(totalGames)} />
     </View>
   );
+}
+
+function formatRate(rate: number | undefined) {
+  return rate === undefined ? '—' : `${rate}%`;
 }
 
 function StatCard({ label, value }: { label: string; value: string }) {
