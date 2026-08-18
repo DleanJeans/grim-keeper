@@ -18,7 +18,7 @@ export function GameResultButton({ onChange, result }: GameResultButtonProps) {
 
   function handlePress() {
     showDialog('Game result', 'Choose how this game ended.', [
-      { text: 'Won', onPress: () => onChange('won') },
+      { text: 'Won', onPress: () => onChange('won'), style: 'success' },
       { text: 'Lost', onPress: () => onChange('lost'), style: 'destructive' },
       { text: 'Clear', onPress: () => onChange(undefined) },
       { text: 'Cancel', style: 'cancel' },

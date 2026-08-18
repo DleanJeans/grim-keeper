@@ -6,7 +6,7 @@ import { colors } from '@/theme/colors';
 
 type DialogButton = {
   onPress?: () => void;
-  style?: 'cancel' | 'default' | 'destructive';
+  style?: 'cancel' | 'default' | 'destructive' | 'success';
   text: string;
 };
 
@@ -63,6 +63,7 @@ export function AppDialogProvider({ children }: { children: ReactNode }) {
                   style={({ pressed }) => [
                     styles.action,
                     button.style === 'destructive' ? styles.destructiveAction : null,
+                    button.style === 'success' ? styles.successAction : null,
                     pressed ? styles.actionPressed : null,
                   ]}
                 >
@@ -70,6 +71,7 @@ export function AppDialogProvider({ children }: { children: ReactNode }) {
                     style={[
                       styles.actionText,
                       button.style === 'destructive' ? styles.destructiveActionText : null,
+                      button.style === 'success' ? styles.successActionText : null,
                     ]}
                   >
                     {button.text}
@@ -157,5 +159,12 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 21,
     fontWeight: '900',
+  },
+  successAction: {
+    backgroundColor: colors.successSurface,
+    borderColor: colors.successBorder,
+  },
+  successActionText: {
+    color: colors.successText,
   },
 });
