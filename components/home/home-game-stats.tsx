@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { StyleProp, TextStyle } from 'react-native';
 import { StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
@@ -31,11 +32,11 @@ export function HomeGameStats({ games }: HomeGameStatsProps) {
           {formatRate(winRate)}
         </Text>
         <AlignmentWinRates evil={formatRate(evilWinRate)} good={formatRate(goodWinRate)} />
-        <AlignmentWinCounts evil={String(evilWins)} good={String(goodWins)} />
+        <AlignmentGameValues evil={String(evilWins)} good={String(goodWins)} />
       </StatCard>
       <StatCard label="Good / Evil">
-        <AlignmentGameValues evil={String(evilGames)} good={String(goodGames)} />
         <AlignmentWinRates evil={formatRate(evilSideRate)} good={formatRate(goodSideRate)} />
+        <AlignmentGameValues evil={String(evilGames)} good={String(goodGames)} />
       </StatCard>
       <StatCard label="Total games">
         <Text selectable style={styles.value}>
@@ -50,51 +51,48 @@ function formatRate(rate: number | undefined) {
   return rate === undefined ? '—' : `${rate}%`;
 }
 
-function AlignmentWinRates({ evil, good }: { evil: string; good: string }) {
+type AlignmentRowProps = {
+  evil: string;
+  good: string;
+  separatorStyle: StyleProp<TextStyle>;
+  valueStyle: StyleProp<TextStyle>;
+};
+
+function AlignmentRow({ evil, good, separatorStyle, valueStyle }: AlignmentRowProps) {
   return (
     <View style={styles.alignmentRow}>
-      <Text selectable style={[styles.rateValue, styles.goodValue]}>
+      <Text selectable style={[valueStyle, styles.goodValue]}>
         {good}
       </Text>
-      <Text selectable style={styles.rateSeparator}>
+      <Text selectable style={separatorStyle}>
         /
       </Text>
-      <Text selectable style={[styles.rateValue, styles.evilValue]}>
+      <Text selectable style={[valueStyle, styles.evilValue]}>
         {evil}
       </Text>
     </View>
+  );
+}
+
+function AlignmentWinRates({ evil, good }: { evil: string; good: string }) {
+  return (
+    <AlignmentRow
+      evil={evil}
+      good={good}
+      separatorStyle={styles.rateSeparator}
+      valueStyle={styles.rateValue}
+    />
   );
 }
 
 function AlignmentGameValues({ evil, good }: { evil: string; good: string }) {
   return (
-    <View style={styles.alignmentRow}>
-      <Text selectable style={[styles.countValue, styles.goodValue]}>
-        {good}
-      </Text>
-      <Text selectable style={styles.countSeparator}>
-        /
-      </Text>
-      <Text selectable style={[styles.countValue, styles.evilValue]}>
-        {evil}
-      </Text>
-    </View>
-  );
-}
-
-function AlignmentWinCounts({ evil, good }: { evil: string; good: string }) {
-  return (
-    <View style={styles.alignmentRow}>
-      <Text selectable style={[styles.winCountValue, styles.goodValue]}>
-        {good}
-      </Text>
-      <Text selectable style={styles.winCountSeparator}>
-        /
-      </Text>
-      <Text selectable style={[styles.winCountValue, styles.evilValue]}>
-        {evil}
-      </Text>
-    </View>
+    <AlignmentRow
+      evil={evil}
+      good={good}
+      separatorStyle={styles.countSeparator}
+      valueStyle={styles.countValue}
+    />
   );
 }
 
@@ -113,7 +111,8 @@ const styles = StyleSheet.create({
   alignmentRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 6,
+    justifyContent: 'space-between',
+    width: '100%',
   },
   card: {
     backgroundColor: colors.surface,
@@ -154,7 +153,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   rateValue: {
-    fontSize: 11,
+    fontSize: 14,
     fontVariant: ['tabular-nums'],
     fontWeight: '800',
   },
@@ -167,16 +166,5 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontVariant: ['tabular-nums'],
     fontWeight: '900',
-  },
-  winCountSeparator: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontWeight: '800',
-    fontVariant: ['tabular-nums'],
-  },
-  winCountValue: {
-    fontSize: 11,
-    fontVariant: ['tabular-nums'],
-    fontWeight: '800',
   },
 });
