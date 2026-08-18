@@ -4,7 +4,9 @@ import { getEffectiveRoleForPlayer, getRoleAlignment } from '@/utils/role-utils'
 
 export type GameStats = {
   completedGames: number;
+  evilGames: number;
   evilWinRate: number | undefined;
+  goodGames: number;
   goodWinRate: number | undefined;
   totalGames: number;
   winRate: number | undefined;
@@ -48,17 +50,17 @@ export function getLastDayWithData(game: Game): number {
 export function getGameStats(games: Game[]): GameStats {
   const completedGames = games.filter((game) => game.result !== undefined).length;
   const wins = games.filter((game) => game.result === 'won').length;
-  const goodGames = games.filter(
-    (game) => game.result !== undefined && getGameAlignment(game) === 'g',
-  );
-  const evilGames = games.filter(
-    (game) => game.result !== undefined && getGameAlignment(game) === 'e',
-  );
+  const goodGames = games.filter((game) => getGameAlignment(game) === 'g');
+  const evilGames = games.filter((game) => getGameAlignment(game) === 'e');
+  const completedGoodGames = goodGames.filter((game) => game.result !== undefined);
+  const completedEvilGames = evilGames.filter((game) => game.result !== undefined);
 
   return {
     completedGames,
-    evilWinRate: getWinRate(evilGames),
-    goodWinRate: getWinRate(goodGames),
+    evilGames: evilGames.length,
+    evilWinRate: getWinRate(completedEvilGames),
+    goodGames: goodGames.length,
+    goodWinRate: getWinRate(completedGoodGames),
     totalGames: games.length,
     winRate: completedGames === 0 ? undefined : Math.round((wins / completedGames) * 100),
     wins,

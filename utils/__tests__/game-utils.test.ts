@@ -140,7 +140,9 @@ describe('getGameStats', () => {
   it('returns an empty win rate when no games have a result', () => {
     expect(getGameStats([])).toEqual({
       completedGames: 0,
+      evilGames: 0,
       evilWinRate: undefined,
+      goodGames: 0,
       goodWinRate: undefined,
       totalGames: 0,
       winRate: undefined,
@@ -157,7 +159,9 @@ describe('getGameStats', () => {
       ]),
     ).toEqual({
       completedGames: 2,
+      evilGames: 0,
       evilWinRate: undefined,
+      goodGames: 0,
       goodWinRate: undefined,
       totalGames: 3,
       winRate: 50,
@@ -168,15 +172,19 @@ describe('getGameStats', () => {
   it('calculates separate win rates from the app user role alignment', () => {
     const goodGame = makeAlignedGame('townsfolk', 'won');
     const evilGame = makeAlignedGame('demon', 'lost');
+    const travelerGame = makeAlignedGame('traveller', 'won');
+    const activeGoodGame = makeAlignedGame('townsfolk');
 
-    expect(getGameStats([goodGame, evilGame])).toMatchObject({
+    expect(getGameStats([goodGame, evilGame, travelerGame, activeGoodGame])).toMatchObject({
+      evilGames: 1,
       evilWinRate: 0,
+      goodGames: 2,
       goodWinRate: 100,
     });
   });
 });
 
-function makeAlignedGame(team: 'demon' | 'townsfolk', result: 'lost' | 'won'): Game {
+function makeAlignedGame(team: 'demon' | 'townsfolk' | 'traveller', result?: 'lost' | 'won'): Game {
   const roleId = `${team}-role`;
 
   return makeGame({
