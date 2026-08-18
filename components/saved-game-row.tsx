@@ -30,9 +30,12 @@ export function SavedGameRow({ game, onDelete }: SavedGameRowProps) {
         >
           <View style={styles.details}>
             <View style={styles.titleGroup}>
-              <Text selectable style={styles.title}>
-                {game.script?.name ?? formatGameDate(game.createdAt)}
-              </Text>
+              <View style={styles.titleRow}>
+                <Text selectable style={styles.title}>
+                  {game.script?.name ?? formatGameDate(game.createdAt)}
+                </Text>
+                {game.result ? <GameResultBadge result={game.result} /> : null}
+              </View>
               {game.script ? (
                 <Text selectable style={styles.date}>
                   {formatGameDate(game.createdAt)}
@@ -42,11 +45,6 @@ export function SavedGameRow({ game, onDelete }: SavedGameRowProps) {
             <Text selectable style={styles.metadata}>
               {game.players.length} players - {getLastDayWithData(game)} days
             </Text>
-            {game.result ? (
-              <Text selectable style={[styles.resultLabel, resultStyles.label]}>
-                {formatResult(game.result)}
-              </Text>
-            ) : null}
             {game.script ? <SavedGameRolesRow game={game} /> : null}
           </View>
         </Pressable>
@@ -69,12 +67,27 @@ export function SavedGameRow({ game, onDelete }: SavedGameRowProps) {
   );
 }
 
+function GameResultBadge({ result }: { result: GameResult }) {
+  return (
+    <View
+      accessibilityLabel={`Game result: ${result}`}
+      style={[styles.badge, result === 'won' ? styles.wonBadge : styles.lostBadge]}
+    >
+      <Text
+        selectable
+        style={[styles.badgeLabel, result === 'won' ? styles.wonBadgeLabel : styles.lostBadgeLabel]}
+      >
+        {formatResult(result)}
+      </Text>
+    </View>
+  );
+}
+
 function getResultStyles(result?: GameResult) {
   if (result === 'won') {
     return {
       container: styles.wonContainer,
       divider: styles.wonDivider,
-      label: styles.wonLabel,
       surface: styles.wonSurface,
     };
   }
@@ -83,7 +96,6 @@ function getResultStyles(result?: GameResult) {
     return {
       container: styles.lostContainer,
       divider: styles.lostDivider,
-      label: styles.lostLabel,
       surface: styles.lostSurface,
     };
   }
@@ -91,13 +103,12 @@ function getResultStyles(result?: GameResult) {
   return {
     container: null,
     divider: null,
-    label: null,
     surface: styles.surface,
   };
 }
 
 function formatResult(result: GameResult) {
-  return `Result: ${result[0].toLocaleUpperCase()}${result.slice(1)}`;
+  return `${result[0].toLocaleUpperCase()}${result.slice(1)}`;
 }
 
 function formatGameDate(createdAt: string) {
@@ -112,6 +123,19 @@ function formatGameDate(createdAt: string) {
 }
 
 const styles = StyleSheet.create({
+  badge: {
+    alignItems: 'center',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderCurve: 'continuous',
+    flexShrink: 0,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  badgeLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
   container: {
     backgroundColor: colors.surface,
     borderColor: colors.borderStrong,
@@ -155,10 +179,6 @@ const styles = StyleSheet.create({
   lostDivider: {
     borderLeftColor: colors.danger,
   },
-  lostLabel: {
-    color: colors.danger,
-    fontWeight: '800',
-  },
   lostSurface: {
     backgroundColor: colors.dangerSurface,
   },
@@ -168,9 +188,6 @@ const styles = StyleSheet.create({
   },
   pressed: {
     backgroundColor: colors.surfacePressed,
-  },
-  resultLabel: {
-    fontSize: 13,
   },
   row: {
     flexDirection: 'row',
@@ -182,9 +199,22 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 17,
     fontWeight: '700',
+    flexShrink: 1,
   },
   titleGroup: {
     gap: 2,
+  },
+  titleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  lostBadge: {
+    backgroundColor: colors.dangerSurface,
+    borderColor: colors.danger,
+  },
+  lostBadgeLabel: {
+    color: colors.danger,
   },
   wonContainer: {
     backgroundColor: colors.successSurface,
@@ -193,9 +223,12 @@ const styles = StyleSheet.create({
   wonDivider: {
     borderLeftColor: colors.successBorder,
   },
-  wonLabel: {
+  wonBadge: {
+    backgroundColor: colors.successSurface,
+    borderColor: colors.successBorder,
+  },
+  wonBadgeLabel: {
     color: colors.successText,
-    fontWeight: '800',
   },
   wonSurface: {
     backgroundColor: colors.successSurface,
