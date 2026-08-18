@@ -7,6 +7,8 @@ export type PlayerPosition = {
 
 export type RoleDisplayMode = 'all' | 'claim' | 'confirm' | 'guess' | 'rumor';
 
+export type GameResult = 'lost' | 'won';
+
 export type Role = {
   ability?: string;
   id: string;
@@ -117,6 +119,7 @@ export type Game = {
   createdAt: string;
   updatedAt: string;
   activeDay: number;
+  result?: GameResult;
   mapWidth?: number;
   mapHeight?: number;
   tokenSize?: number;

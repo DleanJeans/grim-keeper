@@ -90,6 +90,7 @@ export default function GameRoute() {
   const setMapDimensions = useGameStore((state) => state.setMapDimensions);
   const setTokenSize = useGameStore((state) => state.setTokenSize);
   const setCharacterTypeCounts = useGameStore((state) => state.setCharacterTypeCounts);
+  const setGameResult = useGameStore((state) => state.setGameResult);
   const [activeTab, setActiveTab] = useState<GameTab>('interactions');
   const [trackingMode, setTrackingMode] = useState<TrackingMode | null>(null);
   const [votingNominationId, setVotingNominationId] = useState<string | null>(null);
@@ -888,7 +889,11 @@ export default function GameRoute() {
 
       <GameRouteProvider value={contextValue}>
         <View style={styles.body}>
-          <InlineGameHeader activeGame={activeGame} headerTranslateY={gameHeaderTranslateY} />
+          <InlineGameHeader
+            activeGame={activeGame}
+            headerTranslateY={gameHeaderTranslateY}
+            onResultChange={(result) => setGameResult(activeGame.id, result)}
+          />
           <Animated.ScrollView
             contentInsetAdjustmentBehavior="automatic"
             keyboardShouldPersistTaps="always"

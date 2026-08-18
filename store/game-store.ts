@@ -9,6 +9,7 @@ import type {
   Conversation,
   Friend,
   Game,
+  GameResult,
   Player,
   PlayerDayNote,
   PlayerDayNoteEntry,
@@ -136,6 +137,7 @@ type GameState = GameData & {
   setMapDimensions: (gameId: string, mapWidth: number, mapHeight: number) => void;
   setTokenSize: (gameId: string, tokenSize: number) => void;
   setCharacterTypeCounts: (gameId: string, counts?: CharacterTypeCounts) => void;
+  setGameResult: (gameId: string, result?: GameResult) => void;
   setActiveDay: (gameId: string, day: number) => void;
   updatePlayerPosition: (gameId: string, playerId: string, position: PlayerPosition) => void;
   updatePlayerPositions: (
@@ -950,6 +952,13 @@ export const useGameStore = create<GameState>()(
             game.id === gameId
               ? { ...game, characterTypeCounts, updatedAt: new Date().toISOString() }
               : game,
+          ),
+        }));
+      },
+      setGameResult: (gameId, result) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId ? { ...game, result, updatedAt: new Date().toISOString() } : game,
           ),
         }));
       },

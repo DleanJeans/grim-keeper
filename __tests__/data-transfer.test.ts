@@ -123,6 +123,36 @@ describe('data transfer', () => {
     expect(parseBackup(JSON.stringify(backup)).games[0].conversations[0].kind).toBe('interaction');
   });
 
+  it('preserves won and lost game results and omits unset results', () => {
+    const baseGame: Game = {
+      activeDay: 1,
+      conversations: [],
+      createdAt: '2026-08-03T00:00:00.000Z',
+      id: 'game-1',
+      players: [],
+      updatedAt: '2026-08-03T00:00:00.000Z',
+    };
+    const backup = JSON.parse(
+      createBackup({
+        ...data,
+        games: [
+          { ...baseGame, id: 'won-game', result: 'won' },
+          { ...baseGame, id: 'lost-game', result: 'lost' },
+          { ...baseGame, id: 'unset-game' },
+        ],
+      }),
+    );
+
+    expect(backup.data.games[0].result).toBe('won');
+    expect(backup.data.games[1].result).toBe('lost');
+    expect(backup.data.games[2]).not.toHaveProperty('result');
+    expect(parseBackup(JSON.stringify(backup)).games.map((game) => game.result)).toEqual([
+      'won',
+      'lost',
+      undefined,
+    ]);
+  });
+
   it('exports lorics as IDs and imports legacy loric objects', () => {
     const loric: Role = {
       edition: 'tb',

@@ -9,6 +9,7 @@ import type {
   SavedNote,
   StoredScript,
 } from '@/types/game';
+import { isGameResult } from '@/utils/game-utils';
 import {
   APP_USER_ID,
   addMissingFriendsForGames,
@@ -206,6 +207,7 @@ function isGame(value: unknown): value is Game {
     isString(value.createdAt) &&
     isString(value.updatedAt) &&
     isFiniteNumber(value.activeDay) &&
+    isOptionalGameResult(value.result) &&
     isOptionalFiniteNumber(value.mapWidth) &&
     isOptionalFiniteNumber(value.mapHeight) &&
     isOptionalFiniteNumber(value.tokenSize) &&
@@ -318,6 +320,10 @@ function isOptionalString(value: unknown): value is string | undefined {
 
 function isOptionalStringArray(value: unknown): value is string[] | undefined {
   return value === undefined || isStringArray(value);
+}
+
+function isOptionalGameResult(value: unknown) {
+  return value === undefined || isGameResult(value);
 }
 
 function isString(value: unknown): value is string {

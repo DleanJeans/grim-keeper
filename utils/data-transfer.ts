@@ -1,5 +1,6 @@
 import type { GameData } from '@/store/game-store';
 import type { Conversation, Game, Player, Role, StoredScript } from '@/types/game';
+import { isGameResult } from '@/utils/game-utils';
 import {
   APP_USER_ID,
   addMissingFriendsForGames,
@@ -387,6 +388,7 @@ function isGame(value: unknown): value is Game {
     isString(value.createdAt) &&
     isString(value.updatedAt) &&
     isFiniteNumber(value.activeDay) &&
+    isOptionalGameResult(value.result) &&
     Array.isArray(value.players) &&
     value.players.every(isPlayer) &&
     Array.isArray(value.conversations) &&
@@ -401,6 +403,7 @@ function isExportedGame(value: unknown): value is ExportedGame {
     isString(value.createdAt) &&
     isString(value.updatedAt) &&
     isFiniteNumber(value.activeDay) &&
+    isOptionalGameResult(value.result) &&
     Array.isArray(value.players) &&
     value.players.every(
       (player) =>
@@ -444,6 +447,10 @@ function isFiniteNumber(value: unknown): value is number {
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every(isString);
+}
+
+function isOptionalGameResult(value: unknown) {
+  return value === undefined || isGameResult(value);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

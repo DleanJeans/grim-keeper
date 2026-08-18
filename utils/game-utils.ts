@@ -1,4 +1,4 @@
-import type { Game } from '@/types/game';
+import type { Game, GameResult } from '@/types/game';
 
 export function getLastDayWithData(game: Game): number {
   let lastDay = 0;
@@ -32,4 +32,8 @@ export function getLastDayWithData(game: Game): number {
   }
 
   return Math.max(1, lastDay);
+}
+
+export function isGameResult(value: unknown): value is GameResult {
+  return value === 'lost' || value === 'won';
 }

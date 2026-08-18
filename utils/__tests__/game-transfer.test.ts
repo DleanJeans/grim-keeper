@@ -29,6 +29,27 @@ describe('game transfer', () => {
     expect(transfer.data.script).toEqual(script);
   });
 
+  it('round trips won and lost results and omits an unset result', () => {
+    const wonTransfer = JSON.parse(createGameTransfer(createGame({ result: 'won' }), [script]));
+    const lostTransfer = JSON.parse(createGameTransfer(createGame({ result: 'lost' }), [script]));
+    const unsetTransfer = JSON.parse(createGameTransfer(createGame(), [script]));
+
+    expect(wonTransfer.data.game.result).toBe('won');
+    expect(lostTransfer.data.game.result).toBe('lost');
+    expect(unsetTransfer.data.game).not.toHaveProperty('result');
+    expect(parseGameTransfer(JSON.stringify(wonTransfer)).data.game.result).toBe('won');
+    expect(parseGameTransfer(JSON.stringify(lostTransfer)).data.game.result).toBe('lost');
+  });
+
+  it('rejects an invalid game result', () => {
+    const transfer = JSON.parse(createGameTransfer(createGame(), [script]));
+    transfer.data.game.result = 'draw';
+
+    expect(() => parseGameTransfer(JSON.stringify(transfer))).toThrow(
+      'The game transfer is missing required Grim Keeper data.',
+    );
+  });
+
   it('rejects a game export when its referenced script is unavailable', () => {
     const game = { ...createGame(), script: undefined };
 
@@ -116,10 +137,12 @@ function createData(overrides: Partial<GameData> = {}): GameData {
 function createGame({
   aliceId = 'alice',
   bobId = 'bob',
+  result,
   script: gameScript = script,
 }: {
   aliceId?: string;
   bobId?: string;
+  result?: Game['result'];
   script?: StoredScript;
 } = {}): Game {
   const createdAt = '2026-08-18T00:00:00.000Z';
@@ -162,6 +185,7 @@ function createGame({
       },
     ],
     players,
+    ...(result ? { result } : {}),
     script: gameScript,
     scriptId: gameScript?.id,
     updatedAt: createdAt,

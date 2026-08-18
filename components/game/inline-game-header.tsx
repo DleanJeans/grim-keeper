@@ -6,9 +6,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FullscreenButton } from '@/components/fullscreen-button';
 import { EditGameButton } from '@/components/game/edit-game-button';
+import { GameResultButton } from '@/components/game/game-result-button';
 import { ViewScriptButton } from '@/components/game/view-script-button';
 import { colors } from '@/theme/colors';
-import type { Game } from '@/types/game';
+import type { Game, GameResult } from '@/types/game';
 import { goBackOrHome } from '@/utils/navigation-utils';
 
 // Visual gap between the bottom of the header and the first content item.
@@ -21,9 +22,14 @@ export const INLINE_GAME_HEADER_HEIGHT = ROW_HEIGHT + VISUAL_GAP;
 type InlineGameHeaderProps = {
   activeGame: Game;
   headerTranslateY: SharedValue<number>;
+  onResultChange: (result?: GameResult) => void;
 };
 
-export function InlineGameHeader({ activeGame, headerTranslateY }: InlineGameHeaderProps) {
+export function InlineGameHeader({
+  activeGame,
+  headerTranslateY,
+  onResultChange,
+}: InlineGameHeaderProps) {
   const insets = useSafeAreaInsets();
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: headerTranslateY.value }],
@@ -54,6 +60,9 @@ export function InlineGameHeader({ activeGame, headerTranslateY }: InlineGameHea
           <EditGameButton
             onPress={() => router.push({ pathname: '/create', params: { gameId: activeGame.id } })}
           />
+        </View>
+        <View style={styles.slot}>
+          <GameResultButton onChange={onResultChange} result={activeGame.result} />
         </View>
         <View style={styles.slot}>
           {gameScriptId ? (

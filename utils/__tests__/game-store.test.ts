@@ -1,3 +1,14 @@
+jest.mock('expo-sqlite/localStorage/install', () => ({}));
+jest.mock('react-native', () => ({ Platform: { OS: 'web' } }));
+jest.mock('@/utils/web-storage', () => ({
+  webStorage: {
+    getItem: jest.fn(async () => null),
+    removeItem: jest.fn(async () => undefined),
+    setItem: jest.fn(async () => undefined),
+  },
+}));
+
+import { useGameStore } from '@/store/game-store';
 import type { Game, SavedNote, StoredScript } from '@/types/game';
 import { getNotesForPlayer, migrateV2ToV3 } from '@/utils/saved-note-store';
 
@@ -49,6 +60,35 @@ describe('getNotesForPlayer', () => {
     ];
 
     expect(getNotesForPlayer(savedNotes, '   ')).toEqual([]);
+  });
+});
+
+describe('setGameResult', () => {
+  const game: Game = {
+    activeDay: 1,
+    conversations: [],
+    createdAt: '2026-07-07T00:00:00.000Z',
+    id: 'game-1',
+    players: [],
+    updatedAt: '2026-07-07T00:00:00.000Z',
+  };
+
+  afterEach(() => {
+    useGameStore.setState({ games: [] });
+  });
+
+  it('sets, changes, and clears a game result', () => {
+    useGameStore.setState({ games: [game] });
+
+    useGameStore.getState().setGameResult('game-1', 'won');
+    expect(useGameStore.getState().games[0]).toMatchObject({ result: 'won' });
+
+    useGameStore.getState().setGameResult('game-1', 'lost');
+    expect(useGameStore.getState().games[0]).toMatchObject({ result: 'lost' });
+
+    useGameStore.getState().setGameResult('game-1');
+    expect(useGameStore.getState().games[0].result).toBeUndefined();
+    expect(useGameStore.getState().games[0].updatedAt).not.toBe(game.updatedAt);
   });
 });
 
