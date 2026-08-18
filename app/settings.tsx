@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { DataTransferCard } from '@/components/settings/data-transfer-card';
+import { GameTransferCard } from '@/components/settings/game-transfer-card';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
 import { useGameStore } from '@/store/game-store';
@@ -35,6 +36,7 @@ export default function SettingsRoute() {
         style={styles.screen}
       >
         <ResponsiveContent style={styles.content}>
+          <GameTransferCard />
           <DataTransferCard />
           <Pressable
             accessibilityRole="button"

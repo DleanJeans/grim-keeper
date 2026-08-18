@@ -11,6 +11,7 @@ import {
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import { CreateFormHeader } from '@/components/create/create-form-header';
 import { CreateHeaderDoneButton } from '@/components/create/create-header-done-button';
+import { ExportGameButton } from '@/components/create/export-game-button';
 import { type DraftPlayer, PlayerRow } from '@/components/create/player-row';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
@@ -285,6 +286,11 @@ export default function CreateRoute() {
             />
           }
           ListHeaderComponentStyle={styles.listHeader}
+          ListFooterComponent={
+            isEditing && editingGame ? (
+              <ExportGameButton game={editingGame} scripts={scripts} />
+            ) : null
+          }
           onDragEnd={({ data }) => {
             setDraftPlayers(data);
           }}
