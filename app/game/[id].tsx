@@ -41,7 +41,10 @@ import {
   getDefaultMapWidth,
   getLegacyMapHeight,
   getMapScale,
+  getNextMapDimension,
   getTokenSize,
+  mapHeightStep,
+  mapWidthStep,
   resolveTokenCollisions,
   rotatePlayerMapPositions,
   scalePlayerMapPositions,
@@ -101,6 +104,10 @@ export default function GameRoute() {
     playerId: string;
   } | null>(null);
   const [isRearrangeMode, setIsRearrangeMode] = useState(false);
+  const [lastRotationPositions, setLastRotationPositions] = useState<Record<
+    string,
+    PlayerPosition | undefined
+  > | null>(null);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [roleAssignmentKind, setRoleAssignmentKind] = useState<PlayerRoleAssignment['kind'] | null>(
     null,
@@ -330,15 +337,17 @@ export default function GameRoute() {
   const lastDayWithData = getLastDayWithData(activeGame);
 
   function exitMapModes() {
-    setIsRearrangeMode(false);
+    exitRearrangeMode();
   }
 
   function exitRearrangeMode() {
     setIsRearrangeMode(false);
+    setLastRotationPositions(null);
   }
 
   function enterRearrangeMode() {
     setIsRearrangeMode(true);
+    setLastRotationPositions(null);
   }
 
   function handleDeleteConversation(conversationId: string) {
@@ -383,7 +392,7 @@ export default function GameRoute() {
     }
 
     if (!trackingMode) {
-      setIsRearrangeMode(false);
+      exitRearrangeMode();
       setFocusedPlayerId((currentPlayerId) => (currentPlayerId === playerId ? null : playerId));
       return;
     }
@@ -419,12 +428,12 @@ export default function GameRoute() {
 
     setTrackingMode(mode);
     setHighlightedVoterIds(null);
-    setIsRearrangeMode(false);
+    exitRearrangeMode();
     setSelectedPlayerIds([focusedPlayerId]);
   }
 
   function handleCancelTracking() {
-    setIsRearrangeMode(false);
+    exitRearrangeMode();
     setTrackingMode(null);
     setVotingNominationId(null);
     setVotingNominationIsNew(false);
@@ -513,11 +522,15 @@ export default function GameRoute() {
     handleCancelTracking();
     setHighlightedVoterIds(null);
     setFocusedPlayerId(selectedPlayerId);
-    setIsRearrangeMode(false);
+    exitRearrangeMode();
     setActiveDay(activeGame.id, day);
   }
 
   function handleRotateTokens(angleRadians: number) {
+    const previousPositions: Record<string, PlayerPosition | undefined> = Object.fromEntries(
+      activeGame.players.map((player) => [player.id, player.position]),
+    );
+    setLastRotationPositions(previousPositions);
     updatePlayerPositions(
       activeGame.id,
       rotatePlayerMapPositions(
@@ -530,9 +543,19 @@ export default function GameRoute() {
     );
   }
 
+  function handleUndoRotation() {
+    if (!lastRotationPositions) {
+      return;
+    }
+
+    updatePlayerPositions(activeGame.id, lastRotationPositions);
+    setLastRotationPositions(null);
+  }
+
   function handleResizeTokens(sizeDelta: number) {
     const nextSize = getTokenSize(activeTokenSize + sizeDelta);
     setTokenSize(activeGame.id, nextSize);
+    setLastRotationPositions(null);
     // Pushing is only needed when tokens grow into each other; shrinking can
     // never create new overlaps.
     if (nextSize <= activeTokenSize) {
@@ -545,20 +568,22 @@ export default function GameRoute() {
   }
 
   function handleResizeMapHeight(sizeDelta: number) {
-    const nextHeight = clampMapHeight(mapHeight + sizeDelta);
+    const nextHeight = getNextMapDimension(mapHeight, sizeDelta, mapHeightStep, clampMapHeight);
     if (nextHeight === mapHeight) {
       return;
     }
 
+    setLastRotationPositions(null);
     setMapDimensions(activeGame.id, mapWidth, nextHeight);
   }
 
   function handleResizeMapWidth(sizeDelta: number) {
-    const nextWidth = clampMapWidth(mapWidth + sizeDelta);
+    const nextWidth = getNextMapDimension(mapWidth, sizeDelta, mapWidthStep, clampMapWidth);
     if (nextWidth === mapWidth) {
       return;
     }
 
+    setLastRotationPositions(null);
     const scaledPositions = scalePlayerMapPositions(
       activeGame.players,
       mapWidth,
@@ -687,6 +712,7 @@ export default function GameRoute() {
   }
 
   function handleMovePlayer(playerId: string, position: PlayerPosition) {
+    setLastRotationPositions(null);
     movePlayerAndResolveCollisions(
       activeGame.id,
       playerId,
@@ -816,6 +842,7 @@ export default function GameRoute() {
     rumorSourcePlayerId,
     activeRoleDisplayMode,
     showRoles,
+    canUndoRotation: lastRotationPositions !== null,
     setActiveTab,
     setNoteDraft,
     exitMapModes,
@@ -833,6 +860,7 @@ export default function GameRoute() {
     handleResizeMapWidth,
     handleResizeMapHeight,
     handleRotateTokens,
+    handleUndoRotation,
     handleResizeTokens,
     handleStartRoleAssignment,
     handleCancelRoleAssignment,

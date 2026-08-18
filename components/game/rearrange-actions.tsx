@@ -1,4 +1,4 @@
-import { Minus, Plus, RotateCcw, RotateCw } from 'lucide-react-native';
+import { Minus, Plus, RotateCcw, RotateCw, Undo2 } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { MapModeButton } from '@/components/game/map-mode-button';
@@ -21,11 +21,13 @@ const dimensionDisplayWidth = 58;
 export function RearrangeActions() {
   const {
     activeTokenSize,
+    canUndoRotation,
     exitRearrangeMode,
     handleResizeMapWidth,
     handleResizeMapHeight,
     handleResizeTokens,
     handleRotateTokens,
+    handleUndoRotation,
     mapHeight,
     mapWidth,
   } = useGameRouteContext();
@@ -49,16 +51,6 @@ export function RearrangeActions() {
         value={activeTokenSize}
       />
       <DimensionAdjustRow
-        canDecrease={canShrinkMap}
-        canIncrease={canEnlargeMap}
-        decreaseAccessibilityLabel="Decrease game map height"
-        increaseAccessibilityLabel="Increase game map height"
-        onDecrease={() => handleResizeMapHeight(-mapHeightStep)}
-        onIncrease={() => handleResizeMapHeight(mapHeightStep)}
-        title="Map"
-        value={mapHeight}
-      />
-      <DimensionAdjustRow
         canDecrease={canShrinkMapWidth}
         canIncrease={canEnlargeMapWidth}
         decreaseAccessibilityLabel="Decrease game map width"
@@ -67,6 +59,16 @@ export function RearrangeActions() {
         onIncrease={() => handleResizeMapWidth(mapWidthStep)}
         title="Width"
         value={mapWidth}
+      />
+      <DimensionAdjustRow
+        canDecrease={canShrinkMap}
+        canIncrease={canEnlargeMap}
+        decreaseAccessibilityLabel="Decrease game map height"
+        increaseAccessibilityLabel="Increase game map height"
+        onDecrease={() => handleResizeMapHeight(-mapHeightStep)}
+        onIncrease={() => handleResizeMapHeight(mapHeightStep)}
+        title="Height"
+        value={mapHeight}
       />
       <View style={outlinedActionRow}>
         <Pressable
@@ -92,6 +94,20 @@ export function RearrangeActions() {
         >
           <RotateCw color="#f8fafc" size={17} strokeWidth={2.7} />
           <Text style={onDarkTextStrong}>Right</Text>
+        </Pressable>
+      </View>
+      <View style={outlinedActionRow}>
+        <Pressable
+          accessibilityLabel="Undo last token rotation"
+          accessibilityRole="button"
+          disabled={!canUndoRotation}
+          onPress={handleUndoRotation}
+          style={({ pressed }) =>
+            outlinedActionStyle({ pressed, disabled: !canUndoRotation, flex: 1 })
+          }
+        >
+          <Undo2 color="#f8fafc" size={17} strokeWidth={2.7} />
+          <Text style={onDarkTextStrong}>Undo</Text>
         </Pressable>
       </View>
     </View>

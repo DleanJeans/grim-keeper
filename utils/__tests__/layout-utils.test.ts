@@ -8,6 +8,7 @@ import {
   getDefaultTokenSize,
   getLegacyMapHeight,
   getMapScale,
+  getNextMapDimension,
   getPlayerMapPosition,
   getTokenSize,
   resolveTokenCollisions,
@@ -34,6 +35,12 @@ describe('layout utils', () => {
     expect(clampMapWidth(239)).toBe(240);
     expect(clampMapWidth(1201)).toBe(1200);
     expect(clampMapWidth(587)).toBe(587);
+  });
+
+  it('snaps dimension changes to the next step in the pressed direction', () => {
+    expect(getNextMapDimension(554, -20, 20, clampMapHeight)).toBe(540);
+    expect(getNextMapDimension(554, 20, 20, clampMapHeight)).toBe(560);
+    expect(getNextMapDimension(560, 20, 20, clampMapHeight)).toBe(580);
   });
 
   it('scales the logical map to the available width', () => {

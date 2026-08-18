@@ -26,6 +26,23 @@ export function clampMapWidth(mapWidth: number) {
   return Math.min(maxMapWidth, Math.max(minMapWidth, Math.round(mapWidth)));
 }
 
+export function getNextMapDimension(
+  currentValue: number,
+  sizeDelta: number,
+  step: number,
+  clamp: (value: number) => number,
+) {
+  if (sizeDelta === 0) {
+    return clamp(currentValue);
+  }
+
+  const steppedValue =
+    sizeDelta > 0 ? Math.ceil(currentValue / step) * step : Math.floor(currentValue / step) * step;
+  const nextValue = steppedValue === currentValue ? currentValue + sizeDelta : steppedValue;
+
+  return clamp(nextValue);
+}
+
 export function getLegacyMapHeight(mapWidth: number, viewportHeight: number) {
   return Math.max(mapWidth, Math.floor(viewportHeight * 0.52));
 }

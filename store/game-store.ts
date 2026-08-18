@@ -138,7 +138,10 @@ type GameState = GameData & {
   setCharacterTypeCounts: (gameId: string, counts?: CharacterTypeCounts) => void;
   setActiveDay: (gameId: string, day: number) => void;
   updatePlayerPosition: (gameId: string, playerId: string, position: PlayerPosition) => void;
-  updatePlayerPositions: (gameId: string, positions: Record<string, PlayerPosition>) => void;
+  updatePlayerPositions: (
+    gameId: string,
+    positions: Record<string, PlayerPosition | undefined>,
+  ) => void;
   movePlayerAndResolveCollisions: (
     gameId: string,
     playerId: string,
@@ -985,9 +988,20 @@ export const useGameStore = create<GameState>()(
               ? {
                   ...game,
                   updatedAt: new Date().toISOString(),
-                  players: game.players.map((player) =>
-                    positions[player.id] ? { ...player, position: positions[player.id] } : player,
-                  ),
+                  players: game.players.map((player) => {
+                    if (!Object.prototype.hasOwnProperty.call(positions, player.id)) {
+                      return player;
+                    }
+
+                    const position = positions[player.id];
+                    if (position) {
+                      return { ...player, position };
+                    }
+
+                    const playerWithoutPosition = { ...player };
+                    delete playerWithoutPosition.position;
+                    return playerWithoutPosition;
+                  }),
                 }
               : game,
           ),

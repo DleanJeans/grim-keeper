@@ -59,6 +59,7 @@ export type GameRouteContextValue = {
   rumorSourcePlayerId: string | null;
   activeRoleDisplayMode: RoleDisplayMode;
   showRoles: boolean;
+  canUndoRotation: boolean;
 
   // Handlers
   setActiveTab: (tab: GameTab) => void;
@@ -78,6 +79,7 @@ export type GameRouteContextValue = {
   handleResizeMapWidth: (sizeDelta: number) => void;
   handleResizeMapHeight: (sizeDelta: number) => void;
   handleRotateTokens: (angleRadians: number) => void;
+  handleUndoRotation: () => void;
   handleResizeTokens: (sizeDelta: number) => void;
   handleStartRoleAssignment: (kind: PlayerRoleAssignment['kind']) => void;
   handleCancelRoleAssignment: () => void;
