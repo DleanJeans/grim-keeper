@@ -74,12 +74,81 @@ describe('role utilities', () => {
       ],
     };
 
-    for (const mode of ['claim', 'confirm', 'guess', 'rumor'] as const) {
+    for (const mode of ['all', 'claim', 'confirm', 'guess', 'rumor'] as const) {
       expect(getRoleDisplayForMode(player, [player, rumorSource], 1, roles, mode)).toMatchObject({
         kind: 'confirm',
         roleIds: ['imp'],
       });
     }
+  });
+
+  it('merges all role display modes by priority', () => {
+    const roles = [
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+      { id: 'soldier', name: 'Soldier', team: 'townsfolk' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+    ];
+    const player = {
+      id: 'subject',
+      name: 'Subject',
+      seat: 0,
+      roleAssignments: [
+        {
+          day: 1,
+          kind: 'claim' as const,
+          roleIds: ['empath'],
+          updatedAt: '2026-07-14T00:00:00.000Z',
+        },
+        {
+          day: 1,
+          kind: 'guess' as const,
+          roleIds: ['poisoner'],
+          updatedAt: '2026-07-14T00:01:00.000Z',
+        },
+      ],
+    };
+    const rumorSource = {
+      id: 'source',
+      name: 'Source',
+      seat: 1,
+      roleAssignments: [
+        {
+          day: 1,
+          kind: 'rumor' as const,
+          roleIds: ['soldier'],
+          subjectPlayerId: 'subject',
+          updatedAt: '2026-07-14T00:02:00.000Z',
+        },
+      ],
+    };
+
+    expect(getRoleDisplayForMode(player, [player, rumorSource], 1, roles, 'all')).toMatchObject({
+      kind: 'claim',
+      roleIds: ['empath'],
+    });
+
+    player.roleAssignments = player.roleAssignments.filter(
+      (assignment) => assignment.kind !== 'claim',
+    );
+    expect(getRoleDisplayForMode(player, [player, rumorSource], 1, roles, 'all')).toMatchObject({
+      kind: 'rumor',
+      roleIds: ['soldier'],
+    });
+
+    rumorSource.roleAssignments = [];
+    expect(getRoleDisplayForMode(player, [player, rumorSource], 1, roles, 'all')).toMatchObject({
+      kind: 'guess',
+      roleIds: ['poisoner'],
+    });
+
+    player.roleAssignments = player.roleAssignments.filter(
+      (assignment) => assignment.kind !== 'guess',
+    );
+    expect(getRoleDisplayForMode(player, [player, rumorSource], 1, roles, 'all')).toMatchObject({
+      kind: undefined,
+      roleIds: [],
+    });
   });
 
   it('uses the newest rumor per subject for map display', () => {

@@ -27,6 +27,7 @@ import {
   getFriendSummaries,
   hasFriendName,
 } from '@/utils/friend-utils';
+import { type GameTransfer, mergeGameTransfer } from '@/utils/game-transfer';
 import {
   clampMapHeight,
   getDefaultTokenSize,
@@ -158,6 +159,7 @@ type GameState = GameData & {
   setAppUserName: (name: string) => void;
   clearData: () => void;
   importData: (data: GameData) => void;
+  importGameTransfer: (transfer: GameTransfer) => void;
 };
 
 export const useGameStore = create<GameState>()(
@@ -1134,6 +1136,9 @@ export const useGameStore = create<GameState>()(
       importData: (data) => {
         const migratedData = migrateObjectIds(data) as GameData;
         set(migratedData);
+      },
+      importGameTransfer: (transfer) => {
+        set((state) => mergeGameTransfer(state, transfer));
       },
     }),
     {

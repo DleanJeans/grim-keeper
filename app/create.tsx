@@ -11,6 +11,7 @@ import {
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import { CreateFormHeader } from '@/components/create/create-form-header';
 import { CreateHeaderDoneButton } from '@/components/create/create-header-done-button';
+import { ExportGameButton } from '@/components/create/export-game-button';
 import { type DraftPlayer, PlayerRow } from '@/components/create/player-row';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
@@ -20,6 +21,7 @@ import { hasDuplicatePlayerName, normalizePlayerName } from '@/utils/conversatio
 import { getFriendSummaries } from '@/utils/friend-utils';
 import { getDefaultMapHeight, getDefaultMapWidth } from '@/utils/layout-utils';
 import { APP_USER_ID } from '@/utils/object-id';
+import { DESKTOP_CONTENT_MAX_WIDTH } from '@/utils/responsive-utils';
 
 export default function CreateRoute() {
   const { gameId: gameIdParam, scriptId: scriptIdParam } = useLocalSearchParams<{
@@ -223,12 +225,7 @@ export default function CreateRoute() {
           automaticallyAdjustKeyboardInsets
           containerStyle={{ backgroundColor: colors.background, flex: 1 }}
           contentInsetAdjustmentBehavior="automatic"
-          contentContainerStyle={{
-            gap: 6,
-            paddingBottom: 40,
-            paddingHorizontal: 20,
-            paddingTop: 20,
-          }}
+          contentContainerStyle={styles.listContent}
           data={players}
           extraData={playerOrderKey}
           keyboardShouldPersistTaps="handled"
@@ -289,6 +286,11 @@ export default function CreateRoute() {
             />
           }
           ListHeaderComponentStyle={styles.listHeader}
+          ListFooterComponent={
+            isEditing && editingGame ? (
+              <ExportGameButton game={editingGame} scripts={scripts} />
+            ) : null
+          }
           onDragEnd={({ data }) => {
             setDraftPlayers(data);
           }}
@@ -314,6 +316,15 @@ function createDraftId() {
 }
 
 const styles = StyleSheet.create({
+  listContent: {
+    alignSelf: 'center',
+    gap: 6,
+    maxWidth: DESKTOP_CONTENT_MAX_WIDTH,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    width: '100%',
+  },
   listHeader: {
     zIndex: 10,
   },

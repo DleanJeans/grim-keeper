@@ -1,11 +1,12 @@
 import { router, Stack } from 'expo-router';
 import { Plus, ScrollText, Users } from 'lucide-react-native';
 import { useMemo } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppUserNameCard } from '@/components/app-user-name-card';
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { HomeHeaderActions } from '@/components/home/home-header-actions';
+import { ResponsiveContent } from '@/components/responsive-content';
 import { SavedGameRow } from '@/components/saved-game-row';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
@@ -50,59 +51,68 @@ export default function HomeRoute() {
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         style={{ backgroundColor: colors.background, flex: 1 }}
-        contentContainerStyle={{ gap: 24, padding: 20, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
       >
-        <AppUserNameCard appUserName={appUserName} onSave={setAppUserName} />
+        <ResponsiveContent style={styles.content}>
+          <AppUserNameCard appUserName={appUserName} onSave={setAppUserName} />
 
-        <View style={{ flexDirection: 'row', gap: 12 }}>
-          <HomeActionButton icon="plus" label="New Game" onPress={() => router.push('/create')} />
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <HomeActionButton icon="plus" label="New Game" onPress={() => router.push('/create')} />
+            <HomeActionButton
+              count={friends.length}
+              icon="users"
+              label="Friends"
+              onPress={() => router.push('/friends')}
+            />
+          </View>
+
           <HomeActionButton
-            count={friends.length}
-            icon="users"
-            label="Friends"
-            onPress={() => router.push('/friends')}
+            count={scripts.length}
+            icon="scripts"
+            label="Scripts"
+            onPress={() => router.push('/scripts')}
           />
-        </View>
 
-        <HomeActionButton
-          count={scripts.length}
-          icon="scripts"
-          label="Scripts"
-          onPress={() => router.push('/scripts')}
-        />
-
-        <View style={{ gap: 12 }}>
-          <Text
-            selectable
-            style={{ color: colors.text, fontSize: 22, fontWeight: '800', textAlign: 'center' }}
-          >
-            Previous games
-          </Text>
-
-          {games.length === 0 ? (
-            <View
-              style={{
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                borderRadius: 8,
-                borderWidth: 1,
-                padding: 16,
-              }}
+          <View style={{ gap: 12 }}>
+            <Text
+              selectable
+              style={{ color: colors.text, fontSize: 22, fontWeight: '800', textAlign: 'center' }}
             >
-              <Text selectable style={{ color: colors.textMuted, fontSize: 16, lineHeight: 22 }}>
-                No games yet.
-              </Text>
-            </View>
-          ) : (
-            games.map((game) => (
-              <SavedGameRow key={game.id} game={game} onDelete={confirmDeleteGame} />
-            ))
-          )}
-        </View>
+              Previous games
+            </Text>
+
+            {games.length === 0 ? (
+              <View
+                style={{
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  padding: 16,
+                }}
+              >
+                <Text selectable style={{ color: colors.textMuted, fontSize: 16, lineHeight: 22 }}>
+                  No games yet.
+                </Text>
+              </View>
+            ) : (
+              games.map((game) => (
+                <SavedGameRow key={game.id} game={game} onDelete={confirmDeleteGame} />
+              ))
+            )}
+          </View>
+        </ResponsiveContent>
       </ScrollView>
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  content: {
+    gap: 24,
+    padding: 20,
+  },
+});
 
 function HomeActionButton({
   icon,

@@ -1,5 +1,3 @@
-import { File, Paths } from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
 import { Download, FileUp, Upload } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
@@ -11,6 +9,7 @@ import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { createBackup, parseBackup } from '@/utils/data-transfer';
 import { getBackupStats } from '@/utils/data-transfer-stats';
+import { downloadJson, getJsonFilename, shareJsonFile } from '@/utils/file-transfer';
 
 type SelectedBackup = {
   data: GameData;
@@ -39,11 +38,11 @@ export function DataTransferCard() {
       });
 
       if (process.env.EXPO_OS === 'web') {
-        downloadBackup(json);
+        downloadJson(json, `grim-keeper-backup-${new Date().toISOString().slice(0, 10)}.json`);
         return;
       }
 
-      await shareBackupFile(json);
+      await shareJsonFile(json, getJsonFilename('grim-keeper-backup'), 'Export Grim Keeper backup');
     } catch (error) {
       showDialog('Could not export backup', getErrorMessage(error));
     } finally {
@@ -315,39 +314,6 @@ function SelectedBackupSummary({
       <ActionButton icon="upload" label="Paste backup instead" onPress={onClear} secondary />
     </View>
   );
-}
-
-function downloadBackup(json: string) {
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `grim-keeper-backup-${new Date().toISOString().slice(0, 10)}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
-async function shareBackupFile(json: string) {
-  if (!(await Sharing.isAvailableAsync())) {
-    throw new Error('File sharing is not available on this device.');
-  }
-
-  const file = new File(Paths.cache, getBackupFilename());
-  file.write(json);
-
-  try {
-    await Sharing.shareAsync(file.uri, {
-      dialogTitle: 'Export Grim Keeper backup',
-      mimeType: 'application/json',
-      UTI: 'public.json',
-    });
-  } finally {
-    file.delete();
-  }
-}
-
-function getBackupFilename() {
-  return `grim-keeper-backup-${new Date().toISOString().replaceAll(':', '-')}.json`;
 }
 
 function formatFileSize(bytes: number) {

@@ -1,4 +1,5 @@
 import type { Player, PlayerPosition } from '@/types/game';
+import { DESKTOP_CONTENT_MAX_WIDTH } from '@/utils/responsive-utils';
 
 export const defaultTokenSize = 68;
 export const minTokenSize = 40;
@@ -15,7 +16,7 @@ export function getTokenSize(tokenSize = defaultTokenSize) {
 }
 
 export function getDefaultMapWidth(viewportWidth: number) {
-  return Math.max(1, Math.round(viewportWidth - 40));
+  return Math.max(1, Math.min(DESKTOP_CONTENT_MAX_WIDTH, Math.round(viewportWidth - 40)));
 }
 
 export function getLegacyMapHeight(mapWidth: number, viewportHeight: number) {

@@ -1,12 +1,13 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { FriendGamesList } from '@/components/friends/friend-games-list';
 import {
   FriendNameEditToggle,
   FriendNameInputRow,
   FriendNameSaveButton,
 } from '@/components/friends/friend-name-editor';
+import { ResponsiveContent } from '@/components/responsive-content';
 import { SavedNotes } from '@/components/saved-notes';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
@@ -115,16 +116,45 @@ export default function FriendDetailRoute() {
       />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ gap: 18, padding: 20, paddingBottom: 40 }}
+        contentContainerStyle={styles.scrollContent}
         style={{ backgroundColor: colors.background, flex: 1 }}
       >
-        {editing && duplicateName ? (
-          <Text selectable style={{ color: colors.danger, fontSize: 14, textAlign: 'center' }}>
-            That name is already in use.
-          </Text>
-        ) : null}
+        <ResponsiveContent style={styles.content}>
+          {editing && duplicateName ? (
+            <Text selectable style={{ color: colors.danger, fontSize: 14, textAlign: 'center' }}>
+              That name is already in use.
+            </Text>
+          ) : null}
 
-        {notes.length ? (
+          {notes.length ? (
+            <View style={{ gap: 6 }}>
+              <Text
+                selectable
+                style={{
+                  color: colors.textMuted,
+                  fontSize: 12,
+                  fontWeight: '900',
+                  letterSpacing: 0.5,
+                  textAlign: 'center',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Notes
+              </Text>
+              <SavedNotes
+                games={games}
+                mode="note"
+                notes={notes}
+                roles={roleCatalog}
+                scripts={scripts}
+              />
+            </View>
+          ) : (
+            <Text selectable style={{ color: colors.textMuted, fontSize: 15, textAlign: 'center' }}>
+              No saved notes yet.
+            </Text>
+          )}
+
           <View style={{ gap: 6 }}>
             <Text
               selectable
@@ -137,44 +167,27 @@ export default function FriendDetailRoute() {
                 textTransform: 'uppercase',
               }}
             >
-              Notes
+              {friend.gamesPlayed} {friend.gamesPlayed === 1 ? 'game played' : 'games played'}
             </Text>
-            <SavedNotes
+            <FriendGamesList
+              friendName={friend.name}
               games={games}
-              mode="note"
-              notes={notes}
-              roles={roleCatalog}
+              roleCatalog={roleCatalog}
               scripts={scripts}
             />
           </View>
-        ) : (
-          <Text selectable style={{ color: colors.textMuted, fontSize: 15, textAlign: 'center' }}>
-            No saved notes yet.
-          </Text>
-        )}
-
-        <View style={{ gap: 6 }}>
-          <Text
-            selectable
-            style={{
-              color: colors.textMuted,
-              fontSize: 12,
-              fontWeight: '900',
-              letterSpacing: 0.5,
-              textAlign: 'center',
-              textTransform: 'uppercase',
-            }}
-          >
-            {friend.gamesPlayed} {friend.gamesPlayed === 1 ? 'game played' : 'games played'}
-          </Text>
-          <FriendGamesList
-            friendName={friend.name}
-            games={games}
-            roleCatalog={roleCatalog}
-            scripts={scripts}
-          />
-        </View>
+        </ResponsiveContent>
       </ScrollView>
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  content: {
+    gap: 18,
+    padding: 20,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+});

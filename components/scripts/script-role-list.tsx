@@ -1,13 +1,14 @@
 import { router } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
 import type { ReactElement } from 'react';
-import { Pressable, SectionList, View } from 'react-native';
+import { Pressable, SectionList, StyleSheet, View } from 'react-native';
 
 import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Role } from '@/types/game';
+import { DESKTOP_CONTENT_MAX_WIDTH } from '@/utils/responsive-utils';
 import { getSavedNoteTextsForRole } from '@/utils/saved-note-utils';
 
 const ROLE_SECTIONS = [
@@ -54,7 +55,7 @@ export function ScriptRoleList({
   return (
     <SectionList
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+      contentContainerStyle={styles.contentContainer}
       ListHeaderComponent={header}
       ListHeaderComponentStyle={{ paddingBottom: 8 }}
       renderItem={({ item }) => (
@@ -79,6 +80,16 @@ export function ScriptRoleList({
     />
   );
 }
+
+const styles = StyleSheet.create({
+  contentContainer: {
+    alignSelf: 'center',
+    maxWidth: DESKTOP_CONTENT_MAX_WIDTH,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+    width: '100%',
+  },
+});
 
 function ScriptRoleSectionHeader({ label }: { label: string }) {
   return (
