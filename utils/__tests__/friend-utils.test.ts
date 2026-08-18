@@ -1,5 +1,10 @@
-import type { Friend, Game } from '@/types/game';
-import { addMissingFriends, getFriendSummaries, hasFriendName } from '@/utils/friend-utils';
+import type { Friend, Game, SavedNote } from '@/types/game';
+import {
+  addMissingFriends,
+  getFriendSummaries,
+  hasFriendName,
+  sortFriendSummaries,
+} from '@/utils/friend-utils';
 
 const games: Game[] = [
   {
@@ -49,5 +54,47 @@ describe('friend utils', () => {
       expect.objectContaining({ name: 'Ben', gamesPlayed: 1 }),
       expect.objectContaining({ name: 'Cora', gamesPlayed: 1 }),
     ]);
+  });
+
+  it('sorts friends by games played, then saved notes', () => {
+    const savedNotes: SavedNote[] = [
+      {
+        id: 'note-1',
+        playerName: 'Ben',
+        roleIds: [],
+        text: 'One note',
+        gameId: 'game-1',
+        scriptName: '',
+        day: 1,
+        createdAt: '2026-07-07T00:00:00.000Z',
+        updatedAt: '2026-07-07T00:00:00.000Z',
+      },
+      {
+        id: 'note-2',
+        playerName: 'Cora',
+        roleIds: [],
+        text: 'First note',
+        gameId: 'game-1',
+        scriptName: '',
+        day: 1,
+        createdAt: '2026-07-07T00:00:00.000Z',
+        updatedAt: '2026-07-07T00:00:00.000Z',
+      },
+      {
+        id: 'note-3',
+        playerName: 'Cora',
+        roleIds: [],
+        text: 'Second note',
+        gameId: 'game-2',
+        scriptName: '',
+        day: 1,
+        createdAt: '2026-07-07T00:00:00.000Z',
+        updatedAt: '2026-07-07T00:00:00.000Z',
+      },
+    ];
+
+    expect(
+      sortFriendSummaries(getFriendSummaries(games, []), savedNotes).map((friend) => friend.name),
+    ).toEqual(['Alice', 'Cora', 'Ben']);
   });
 });

@@ -9,16 +9,17 @@ import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import { getFriendSummaries } from '@/utils/friend-utils';
+import { getFriendSummaries, sortFriendSummaries } from '@/utils/friend-utils';
 
 export default function FriendsRoute() {
   const appUserName = useGameStore((state) => state.appUserName);
   const games = useGameStore((state) => state.games);
   const storedFriends = useGameStore((state) => state.friends);
+  const savedNotes = useGameStore((state) => state.savedNotes);
   const addFriend = useGameStore((state) => state.addFriend);
   const friends = useMemo(
-    () => getFriendSummaries(games, storedFriends, appUserName),
-    [appUserName, games, storedFriends],
+    () => sortFriendSummaries(getFriendSummaries(games, storedFriends, appUserName), savedNotes),
+    [appUserName, games, savedNotes, storedFriends],
   );
 
   return (

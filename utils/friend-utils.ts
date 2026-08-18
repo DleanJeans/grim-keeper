@@ -1,6 +1,7 @@
-import type { Friend, FriendSummary, Game } from '@/types/game';
+import type { Friend, FriendSummary, Game, SavedNote } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
 import { APP_USER_ID, createFriendId } from '@/utils/object-id';
+import { getNotesForPlayer } from '@/utils/saved-note-store';
 
 export function getFriendSummaries(
   games: Game[],
@@ -62,6 +63,22 @@ export function getFriendSummaries(
   return [...summaries.values()].sort((first, second) =>
     first.name.localeCompare(second.name, undefined, { sensitivity: 'base' }),
   );
+}
+
+export function sortFriendSummaries(friends: FriendSummary[], savedNotes: SavedNote[]) {
+  return [...friends].sort((first, second) => {
+    const gamesDifference = second.gamesPlayed - first.gamesPlayed;
+    if (gamesDifference) {
+      return gamesDifference;
+    }
+
+    const notesDifference =
+      getNotesForPlayer(savedNotes, second.name).length -
+      getNotesForPlayer(savedNotes, first.name).length;
+    return (
+      notesDifference || first.name.localeCompare(second.name, undefined, { sensitivity: 'base' })
+    );
+  });
 }
 
 export function hasFriendName(friends: FriendSummary[], name: string) {
