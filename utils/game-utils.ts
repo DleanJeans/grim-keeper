@@ -17,9 +17,12 @@ export type GameStats = {
   wins: number;
 };
 
-export type MostPlayedCharacter = {
+export type CharacterStats = {
+  completedGames: number;
   count: number;
   role: Role;
+  winRate: number | undefined;
+  wins: number;
 };
 
 export function getLastDayWithData(game: Game): number {
@@ -82,8 +85,11 @@ export function getGameStats(games: Game[]): GameStats {
   };
 }
 
-export function getMostPlayedCharacters(games: Game[], limit = 5): MostPlayedCharacter[] {
-  const characterCounts = new Map<string, MostPlayedCharacter>();
+export function getCharacterStats(games: Game[]): CharacterStats[] {
+  const characterCounts = new Map<
+    string,
+    { completedGames: number; count: number; role: Role; wins: number }
+  >();
 
   for (const game of games) {
     const appUser = game.players.find((player) => player.id === APP_USER_ID);
@@ -96,20 +102,33 @@ export function getMostPlayedCharacters(games: Game[], limit = 5): MostPlayedCha
       continue;
     }
 
-    const character = characterCounts.get(role.name);
-    if (character) {
-      character.count += 1;
-    } else {
-      characterCounts.set(role.name, { count: 1, role });
+    const character = characterCounts.get(role.name) ?? {
+      completedGames: 0,
+      count: 0,
+      role,
+      wins: 0,
+    };
+    character.count += 1;
+
+    if (game.result !== undefined) {
+      character.completedGames += 1;
+      if (game.result === 'won') {
+        character.wins += 1;
+      }
     }
+
+    characterCounts.set(role.name, character);
   }
 
   return [...characterCounts.values()]
+    .map((character) => ({
+      ...character,
+      winRate: getPercentage(character.wins, character.completedGames),
+    }))
     .sort(
       (first, second) =>
         second.count - first.count || first.role.name.localeCompare(second.role.name),
-    )
-    .slice(0, limit);
+    );
 }
 
 function getGameAlignment(game: Game) {

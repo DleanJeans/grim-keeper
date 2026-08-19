@@ -1,11 +1,13 @@
+import { router } from 'expo-router';
+import { ChevronRight } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import type { StyleProp, TextStyle } from 'react-native';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Game, Role } from '@/types/game';
-import { getGameStats, getMostPlayedCharacters } from '@/utils/game-utils';
+import { getCharacterStats, getGameStats } from '@/utils/game-utils';
 
 const TOP_CHARACTERS_LIMIT = 5;
 
@@ -26,7 +28,7 @@ export function HomeGameStats({ games }: HomeGameStatsProps) {
     totalGames,
     winRate,
   } = getGameStats(games);
-  const mostPlayedCharacters = getMostPlayedCharacters(games, TOP_CHARACTERS_LIMIT);
+  const topCharacters = getCharacterStats(games).slice(0, TOP_CHARACTERS_LIMIT);
 
   return (
     <View style={styles.container}>
@@ -48,9 +50,9 @@ export function HomeGameStats({ games }: HomeGameStatsProps) {
           <AlignmentGameValues evil={String(evilGames)} good={String(goodGames)} />
         </StatCard>
       </View>
-      <StatCard label="Top Characters">
-        {mostPlayedCharacters.length > 0 ? (
-          mostPlayedCharacters.map(({ count, role }) => (
+      <StatCard label="Top Characters" right={<ViewAllStatsButton />}>
+        {topCharacters.length > 0 ? (
+          topCharacters.map(({ count, role }) => (
             <TopCharacterRow count={count} key={role.id} role={role} />
           ))
         ) : (
@@ -122,14 +124,43 @@ function AlignmentGameValues({ evil, good }: { evil: string; good: string }) {
   );
 }
 
-function StatCard({ children, label }: { children: ReactNode; label: string }) {
+function StatCard({
+  children,
+  label,
+  right,
+}: {
+  children: ReactNode;
+  label: string;
+  right?: ReactNode;
+}) {
+  const hasAction = Boolean(right);
+
   return (
     <View style={styles.card}>
-      <Text selectable style={styles.label}>
-        {label}
-      </Text>
+      <View style={[styles.cardHeader, hasAction && styles.cardHeaderWithAction]}>
+        <Text selectable style={[styles.label, hasAction && styles.labelWithAction]}>
+          {label}
+        </Text>
+        {right}
+      </View>
       {children}
     </View>
+  );
+}
+
+function ViewAllStatsButton() {
+  return (
+    <Pressable
+      accessibilityHint="Opens full character stats"
+      accessibilityLabel="View all stats"
+      accessibilityRole="button"
+      hitSlop={8}
+      onPress={() => router.push('/stats')}
+      style={({ pressed }) => [styles.statsButton, pressed && styles.statsButtonPressed]}
+    >
+      <Text style={styles.statsButtonLabel}>View all</Text>
+      <ChevronRight color={colors.textMuted} size={16} strokeWidth={2.5} />
+    </Pressable>
   );
 }
 
@@ -159,6 +190,15 @@ const styles = StyleSheet.create({
   alignmentLabel: {
     fontSize: 11,
     fontWeight: '800',
+  },
+  cardHeader: {
+    alignItems: 'center',
+    minHeight: 22,
+    width: '100%',
+  },
+  cardHeaderWithAction: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   card: {
     backgroundColor: colors.surface,
@@ -211,6 +251,9 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     textAlign: 'center',
   },
+  labelWithAction: {
+    textAlign: 'left',
+  },
   evilValue: {
     color: colors.danger,
   },
@@ -241,6 +284,19 @@ const styles = StyleSheet.create({
   stats: {
     flexDirection: 'row',
     gap: 12,
+  },
+  statsButton: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 2,
+  },
+  statsButtonLabel: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  statsButtonPressed: {
+    opacity: 0.65,
   },
   value: {
     color: colors.text,
