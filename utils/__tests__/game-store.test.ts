@@ -92,6 +92,101 @@ describe('setGameResult', () => {
   });
 });
 
+describe('updateGamePlayers', () => {
+  afterEach(() => {
+    useGameStore.setState({ games: [], friends: [] });
+  });
+
+  it('preserves retained player state while adding and reordering players', () => {
+    const game: Game = {
+      activeDay: 2,
+      conversations: [],
+      createdAt: '2026-07-07T00:00:00.000Z',
+      id: 'game-1',
+      players: [
+        { id: 'app-user', name: 'You', seat: 0 },
+        {
+          id: 'alice',
+          name: 'Alice',
+          seat: 1,
+          death: { day: 1, kind: 'night', updatedAt: '2026-07-08T00:00:00.000Z' },
+          position: { x: 80, y: 120 },
+          roleAssignments: [
+            {
+              day: 1,
+              kind: 'confirm',
+              roleIds: ['empath'],
+              updatedAt: '2026-07-08T00:00:00.000Z',
+            },
+            {
+              day: 2,
+              kind: 'claim',
+              roleIds: ['soldier'],
+              updatedAt: '2026-07-09T00:00:00.000Z',
+            },
+          ],
+        },
+      ],
+      updatedAt: '2026-07-07T00:00:00.000Z',
+    };
+
+    useGameStore.setState({ games: [game] });
+
+    useGameStore.getState().updateGamePlayers('game-1', [
+      { id: 'alice', name: 'Alice' },
+      { id: 'draft-traveler', name: 'Traveler' },
+    ]);
+
+    const players = useGameStore.getState().games[0].players;
+    expect(players).toHaveLength(3);
+    expect(players[1]).toEqual(game.players[1]);
+    expect(players[2]).toMatchObject({ id: 'traveler', name: 'Traveler', seat: 2 });
+  });
+
+  it('cleans references only for players removed by the edit', () => {
+    const game: Game = {
+      activeDay: 1,
+      conversations: [
+        {
+          id: 'conversation-1',
+          day: 1,
+          initiatorId: 'alice',
+          participantIds: ['alice', 'bob'],
+          createdAt: '2026-07-07T00:00:00.000Z',
+        },
+      ],
+      createdAt: '2026-07-07T00:00:00.000Z',
+      id: 'game-1',
+      players: [
+        { id: 'app-user', name: 'You', seat: 0 },
+        { id: 'alice', name: 'Alice', seat: 1, position: { x: 80, y: 120 } },
+        {
+          id: 'bob',
+          name: 'Bob',
+          seat: 2,
+          death: {
+            day: 1,
+            kind: 'night',
+            updatedAt: '2026-07-08T00:00:00.000Z',
+            killerPlayerId: 'alice',
+          },
+        },
+      ],
+      updatedAt: '2026-07-07T00:00:00.000Z',
+    };
+
+    useGameStore.setState({ games: [game] });
+
+    useGameStore.getState().updateGamePlayers('game-1', [{ id: 'alice', name: 'Alice' }]);
+
+    expect(useGameStore.getState().games[0].players).toEqual([
+      { id: 'app-user', name: 'You', seat: 0 },
+      { id: 'alice', name: 'Alice', seat: 1, position: { x: 80, y: 120 } },
+    ]);
+    expect(useGameStore.getState().games[0].conversations).toEqual([]);
+  });
+});
+
 describe('migrateV2ToV3', () => {
   it('converts friend notes to saved notes and strips notes from friends', () => {
     const game: Game = {

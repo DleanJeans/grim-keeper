@@ -534,29 +534,91 @@ export const useGameStore = create<GameState>()(
               friend.id,
             ]),
           );
-          const existingIdsByName = new Map(
-            game.players.map((player) => [
-              normalizePlayerName(player.name).toLocaleLowerCase(),
-              player.id,
-            ]),
-          );
+          const existingPlayersById = new Map(game.players.map((player) => [player.id, player]));
           const appUser = game.players.find((player) => player.id === APP_USER_ID);
+          const retainedPlayerIds = new Set(appUser ? [appUser.id] : []);
           const players = [
             appUser ?? { id: APP_USER_ID, name: state.appUserName, seat: 0 },
-            ...draftPlayers.map((player, index) => ({
-              id:
-                friendIdsByName.get(names[index].toLocaleLowerCase()) ??
-                existingIdsByName.get(names[index].toLocaleLowerCase()) ??
-                player.id,
-              name: names[index],
-              seat: index + 1,
-            })),
+            ...draftPlayers.map((player, index) => {
+              const name = names[index];
+              const existingPlayer = existingPlayersById.get(player.id);
+
+              if (existingPlayer) {
+                retainedPlayerIds.add(existingPlayer.id);
+                return { ...existingPlayer, name, seat: index + 1 };
+              }
+
+              return {
+                id: friendIdsByName.get(name.toLocaleLowerCase()) ?? player.id,
+                name,
+                seat: index + 1,
+              };
+            }),
           ];
+          const removedPlayerIds = new Set(
+            game.players
+              .filter((player) => !retainedPlayerIds.has(player.id))
+              .map((player) => player.id),
+          );
+          const conversations = game.conversations
+            .filter(
+              (conversation) =>
+                !conversation.participantIds.some((playerId) => removedPlayerIds.has(playerId)),
+            )
+            .map((conversation) => ({
+              ...conversation,
+              bigWigPlayerId:
+                conversation.bigWigPlayerId && removedPlayerIds.has(conversation.bigWigPlayerId)
+                  ? undefined
+                  : conversation.bigWigPlayerId,
+              voterIds: conversation.voterIds?.filter(
+                (playerId) => !removedPlayerIds.has(playerId),
+              ),
+            }));
+          const playerDayNotes = game.playerDayNotes?.filter(
+            (entry) => !removedPlayerIds.has(entry.playerId),
+          );
 
           return {
             friends,
             games: state.games.map((existingGame) =>
-              existingGame.id === gameId ? { ...existingGame, players, updatedAt } : existingGame,
+              existingGame.id === gameId
+                ? {
+                    ...existingGame,
+                    conversations,
+                    playerDayNotes,
+                    players: players.map((player) => {
+                      if (removedPlayerIds.size === 0) {
+                        return player;
+                      }
+
+                      const death = player.death
+                        ? {
+                            ...player.death,
+                            killerPlayerId: removedPlayerIds.has(player.death.killerPlayerId ?? '')
+                              ? undefined
+                              : player.death.killerPlayerId,
+                            killerPlayerIds: player.death.killerPlayerIds?.filter(
+                              (killerId) => !removedPlayerIds.has(killerId),
+                            ),
+                          }
+                        : undefined;
+                      const roleAssignments = player.roleAssignments?.map((assignment) =>
+                        assignment.subjectPlayerId &&
+                        removedPlayerIds.has(assignment.subjectPlayerId)
+                          ? { ...assignment, subjectPlayerId: undefined }
+                          : assignment,
+                      );
+
+                      return {
+                        ...player,
+                        ...(death ? { death } : {}),
+                        ...(roleAssignments ? { roleAssignments } : {}),
+                      };
+                    }),
+                    updatedAt,
+                  }
+                : existingGame,
             ),
           };
         });
