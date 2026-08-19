@@ -103,6 +103,8 @@ describe('updateGamePlayers', () => {
       conversations: [],
       createdAt: '2026-07-07T00:00:00.000Z',
       id: 'game-1',
+      mapHeight: 400,
+      mapWidth: 600,
       players: [
         { id: 'app-user', name: 'You', seat: 0 },
         {
@@ -140,7 +142,12 @@ describe('updateGamePlayers', () => {
     const players = useGameStore.getState().games[0].players;
     expect(players).toHaveLength(3);
     expect(players[1]).toEqual(game.players[1]);
-    expect(players[2]).toMatchObject({ id: 'traveler', name: 'Traveler', seat: 2 });
+    expect(players[2]).toMatchObject({
+      id: 'traveler',
+      name: 'Traveler',
+      position: { x: 300, y: 200 },
+      seat: 2,
+    });
   });
 
   it('cleans references only for players removed by the edit', () => {
@@ -184,6 +191,36 @@ describe('updateGamePlayers', () => {
       { id: 'alice', name: 'Alice', seat: 1, position: { x: 80, y: 120 } },
     ]);
     expect(useGameStore.getState().games[0].conversations).toEqual([]);
+  });
+});
+
+describe('addPlayer', () => {
+  afterEach(() => {
+    useGameStore.setState({ games: [], friends: [] });
+  });
+
+  it('places a newly added player at the center of the map', () => {
+    const game: Game = {
+      activeDay: 1,
+      conversations: [],
+      createdAt: '2026-07-07T00:00:00.000Z',
+      id: 'game-1',
+      mapHeight: 400,
+      mapWidth: 600,
+      players: [{ id: 'app-user', name: 'You', seat: 0 }],
+      tokenSize: 68,
+      updatedAt: '2026-07-07T00:00:00.000Z',
+    };
+
+    useGameStore.setState({ games: [game] });
+
+    useGameStore.getState().addPlayer('game-1', 'Traveler');
+
+    expect(useGameStore.getState().games[0].players[1]).toMatchObject({
+      id: 'traveler',
+      name: 'Traveler',
+      position: { x: 300, y: 200 },
+    });
   });
 });
 

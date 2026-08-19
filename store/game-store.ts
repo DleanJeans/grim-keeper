@@ -31,6 +31,7 @@ import {
 import { type GameTransfer, mergeGameTransfer } from '@/utils/game-transfer';
 import {
   clampMapHeight,
+  clampTokenPosition,
   getDefaultTokenSize,
   getTokenSize,
   resolveTokenCollisions,
@@ -498,6 +499,7 @@ export const useGameStore = create<GameState>()(
           const updatedAt = new Date().toISOString();
           const friends = addMissingFriends(state.friends, [normalizedName], updatedAt);
           const friend = getFriendByName(friends, normalizedName);
+          const position = getMapCenterPosition(game);
           const games = state.games.map((existingGame) =>
             existingGame.id === gameId
               ? {
@@ -509,6 +511,7 @@ export const useGameStore = create<GameState>()(
                       id: friend?.id ?? createId('player'),
                       name: normalizedName,
                       seat: Math.max(-1, ...existingGame.players.map((player) => player.seat)) + 1,
+                      ...(position ? { position } : {}),
                     },
                   ],
                 }
@@ -537,6 +540,7 @@ export const useGameStore = create<GameState>()(
           const existingPlayersById = new Map(game.players.map((player) => [player.id, player]));
           const appUser = game.players.find((player) => player.id === APP_USER_ID);
           const retainedPlayerIds = new Set(appUser ? [appUser.id] : []);
+          const newPlayerPosition = getMapCenterPosition(game);
           const players = [
             appUser ?? { id: APP_USER_ID, name: state.appUserName, seat: 0 },
             ...draftPlayers.map((player, index) => {
@@ -552,6 +556,7 @@ export const useGameStore = create<GameState>()(
                 id: friendIdsByName.get(name.toLocaleLowerCase()) ?? player.id,
                 name,
                 seat: index + 1,
+                ...(newPlayerPosition ? { position: newPlayerPosition } : {}),
               };
             }),
           ];
@@ -1291,6 +1296,19 @@ export function getGameById(games: Game[], gameId: string | undefined) {
 
 function createId(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function getMapCenterPosition(game: Game): PlayerPosition | undefined {
+  if (game.mapWidth === undefined || game.mapHeight === undefined) {
+    return undefined;
+  }
+
+  return clampTokenPosition(
+    { x: game.mapWidth / 2, y: game.mapHeight / 2 },
+    game.mapWidth,
+    game.mapHeight,
+    game.tokenSize,
+  );
 }
 
 function synchronizeDeadVoteUsage(game: Game): Game {
