@@ -59,6 +59,7 @@ export type GameRouteContextValue = {
   rumorSourcePlayerId: string | null;
   activeRoleDisplayMode: RoleDisplayMode;
   showRoles: boolean;
+  dayEditLocked: boolean;
   canUndoRotation: boolean;
 
   // Handlers
@@ -76,6 +77,7 @@ export type GameRouteContextValue = {
   handleEditNominationVotes: (nominationId: string, voterIds: string[]) => void;
   handleToggleVoterHighlights: () => void;
   handleChangeDay: (day: number) => void;
+  runDayEdit: (edit: () => void, day?: number) => void;
   handleResizeMapWidth: (sizeDelta: number) => void;
   handleResizeMapHeight: (sizeDelta: number) => void;
   handleRotateTokens: (angleRadians: number) => void;

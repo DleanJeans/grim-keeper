@@ -6,9 +6,11 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { ActiveGameTab } from '@/components/game/active-game-tab';
 import { CharacterTypeCountEditor } from '@/components/game/character-type-counts';
 import { DayCount } from '@/components/game/day-count';
+import { DayEditLockButton } from '@/components/game/day-edit-lock-button';
 import { GameMap } from '@/components/game/game-map';
 import {
   type GameRouteContextValue,
@@ -70,6 +72,7 @@ export default function GameRoute() {
     tab?: string;
   }>();
   const { height, width } = useWindowDimensions();
+  const showDialog = useAppDialog();
   const games = useGameStore((state) => state.games);
   const setPlayerDeath = useGameStore((state) => state.setPlayerDeath);
   const setPlayerRevive = useGameStore((state) => state.setPlayerRevive);
@@ -118,7 +121,13 @@ export default function GameRoute() {
   const [rumorSourcePlayerId, setRumorSourcePlayerId] = useState<string | null>(null);
   const [activeRoleDisplayMode, setActiveRoleDisplayMode] = useState<RoleDisplayMode>('confirm');
   const [showRoles, setShowRoles] = useState(false);
+  const [dayEditLocked, setDayEditLocked] = useState(false);
   const game = getGameById(games, id);
+  const lastDayWithData = game ? getLastDayWithData(game) : 1;
+
+  useEffect(() => {
+    setDayEditLocked(!!game && game.activeDay < lastDayWithData);
+  }, [game?.activeDay, game?.id, lastDayWithData]);
   const viewportMapWidth = getDefaultMapWidth(width);
   const fallbackMapDimensions = useRef<{
     gameId: string;
@@ -207,7 +216,6 @@ export default function GameRoute() {
       }
       return;
     }
-    const lastDayWithData = getLastDayWithData(game);
     if (game.activeDay < lastDayWithData) {
       setActiveDay(game.id, lastDayWithData);
     }
@@ -335,7 +343,31 @@ export default function GameRoute() {
   ).length;
   const alivePlayerCount = nonTravelerPlayers.length - deadPlayerCount;
   const travelerPlayerCount = travelerPlayerIds.size;
-  const lastDayWithData = getLastDayWithData(activeGame);
+  function runDayEdit(edit: () => void, day = activeGame.activeDay) {
+    const isHistoricalDay = day < lastDayWithData;
+    if (!dayEditLocked && (!isHistoricalDay || day === activeGame.activeDay)) {
+      edit();
+      return;
+    }
+
+    showDialog(
+      isHistoricalDay ? `Edit Day ${day}?` : 'Day editing locked',
+      isHistoricalDay
+        ? `Day ${day} is not the latest day with data (Day ${lastDayWithData}). Changes may affect later game state.`
+        : `Day ${day} is locked. Unlock it to continue editing.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          style: 'destructive',
+          onPress: () => {
+            setDayEditLocked(false);
+            edit();
+          },
+        },
+      ],
+    );
+  }
 
   function exitMapModes() {
     exitRearrangeMode();
@@ -352,12 +384,12 @@ export default function GameRoute() {
   }
 
   function handleDeleteConversation(conversationId: string) {
-    deleteConversation(activeGame.id, conversationId);
+    runDayEdit(() => deleteConversation(activeGame.id, conversationId));
   }
 
   function handleDeleteNomination(nominationId: string) {
     setHighlightedVoterIds(null);
-    deleteConversation(activeGame.id, nominationId);
+    runDayEdit(() => deleteConversation(activeGame.id, nominationId));
   }
 
   function handleSelectPlayer(playerId: string) {
@@ -451,24 +483,26 @@ export default function GameRoute() {
       return;
     }
 
-    const conversation = addConversation(
-      activeGame.id,
-      activeGame.activeDay,
-      selectedPlayerIds,
-      trackingMode,
-    );
+    runDayEdit(() => {
+      const conversation = addConversation(
+        activeGame.id,
+        activeGame.activeDay,
+        selectedPlayerIds,
+        trackingMode,
+      );
 
-    if (trackingMode === 'nomination' && conversation) {
-      setTrackingMode(null);
-      setVotingNominationId(conversation.id);
-      setVotingNominationIsNew(true);
-      setVotingReturnTab(null);
-      setFocusedPlayerId(null);
-      setSelectedPlayerIds([]);
-      return;
-    }
+      if (trackingMode === 'nomination' && conversation) {
+        setTrackingMode(null);
+        setVotingNominationId(conversation.id);
+        setVotingNominationIsNew(true);
+        setVotingReturnTab(null);
+        setFocusedPlayerId(null);
+        setSelectedPlayerIds([]);
+        return;
+      }
 
-    handleCancelTracking();
+      handleCancelTracking();
+    });
   }
 
   function handleConfirmVotes() {
@@ -477,12 +511,14 @@ export default function GameRoute() {
     }
 
     const returnTab = votingReturnTab;
-    updateNominationVotes(activeGame.id, votingNominationId, selectedPlayerIds);
-    handleCancelTracking();
+    runDayEdit(() => {
+      updateNominationVotes(activeGame.id, votingNominationId, selectedPlayerIds);
+      handleCancelTracking();
 
-    if (returnTab) {
-      setActiveTab(returnTab);
-    }
+      if (returnTab) {
+        setActiveTab(returnTab);
+      }
+    });
   }
 
   function handleCancelVoting() {
@@ -531,17 +567,19 @@ export default function GameRoute() {
     const previousPositions: Record<string, PlayerPosition | undefined> = Object.fromEntries(
       activeGame.players.map((player) => [player.id, player.position]),
     );
-    setLastRotationPositions(previousPositions);
-    updatePlayerPositions(
-      activeGame.id,
-      rotatePlayerMapPositions(
-        activeGame.players,
-        mapWidth,
-        mapHeight,
-        angleRadians,
-        activeTokenSize,
-      ),
-    );
+    runDayEdit(() => {
+      setLastRotationPositions(previousPositions);
+      updatePlayerPositions(
+        activeGame.id,
+        rotatePlayerMapPositions(
+          activeGame.players,
+          mapWidth,
+          mapHeight,
+          angleRadians,
+          activeTokenSize,
+        ),
+      );
+    });
   }
 
   function handleUndoRotation() {
@@ -549,23 +587,32 @@ export default function GameRoute() {
       return;
     }
 
-    updatePlayerPositions(activeGame.id, lastRotationPositions);
-    setLastRotationPositions(null);
+    runDayEdit(() => {
+      updatePlayerPositions(activeGame.id, lastRotationPositions);
+      setLastRotationPositions(null);
+    });
   }
 
   function handleResizeTokens(sizeDelta: number) {
     const nextSize = getTokenSize(activeTokenSize + sizeDelta);
-    setTokenSize(activeGame.id, nextSize);
-    setLastRotationPositions(null);
-    // Pushing is only needed when tokens grow into each other; shrinking can
-    // never create new overlaps.
-    if (nextSize <= activeTokenSize) {
-      return;
-    }
-    const { positions } = resolveTokenCollisions(activeGame.players, mapWidth, mapHeight, nextSize);
-    if (Object.keys(positions).length > 0) {
-      updatePlayerPositions(activeGame.id, positions);
-    }
+    runDayEdit(() => {
+      setTokenSize(activeGame.id, nextSize);
+      setLastRotationPositions(null);
+      // Pushing is only needed when tokens grow into each other; shrinking can
+      // never create new overlaps.
+      if (nextSize <= activeTokenSize) {
+        return;
+      }
+      const { positions } = resolveTokenCollisions(
+        activeGame.players,
+        mapWidth,
+        mapHeight,
+        nextSize,
+      );
+      if (Object.keys(positions).length > 0) {
+        updatePlayerPositions(activeGame.id, positions);
+      }
+    });
   }
 
   function handleResizeMapHeight(sizeDelta: number) {
@@ -574,8 +621,10 @@ export default function GameRoute() {
       return;
     }
 
-    setLastRotationPositions(null);
-    setMapDimensions(activeGame.id, mapWidth, nextHeight);
+    runDayEdit(() => {
+      setLastRotationPositions(null);
+      setMapDimensions(activeGame.id, mapWidth, nextHeight);
+    });
   }
 
   function handleResizeMapWidth(sizeDelta: number) {
@@ -584,30 +633,32 @@ export default function GameRoute() {
       return;
     }
 
-    setLastRotationPositions(null);
-    const scaledPositions = scalePlayerMapPositions(
-      activeGame.players,
-      mapWidth,
-      mapHeight,
-      nextWidth,
-      mapHeight,
-      activeTokenSize,
-    );
-    const resizedPlayers = activeGame.players.map((player) => {
-      const position = scaledPositions[player.id];
-      return position ? { ...player, position } : player;
+    runDayEdit(() => {
+      setLastRotationPositions(null);
+      const scaledPositions = scalePlayerMapPositions(
+        activeGame.players,
+        mapWidth,
+        mapHeight,
+        nextWidth,
+        mapHeight,
+        activeTokenSize,
+      );
+      const resizedPlayers = activeGame.players.map((player) => {
+        const position = scaledPositions[player.id];
+        return position ? { ...player, position } : player;
+      });
+      const { positions: collisionPositions } = resolveTokenCollisions(
+        resizedPlayers,
+        nextWidth,
+        mapHeight,
+        activeTokenSize,
+      );
+      const positions = { ...scaledPositions, ...collisionPositions };
+      if (Object.keys(positions).length > 0) {
+        updatePlayerPositions(activeGame.id, positions);
+      }
+      setMapDimensions(activeGame.id, nextWidth, mapHeight);
     });
-    const { positions: collisionPositions } = resolveTokenCollisions(
-      resizedPlayers,
-      nextWidth,
-      mapHeight,
-      activeTokenSize,
-    );
-    const positions = { ...scaledPositions, ...collisionPositions };
-    if (Object.keys(positions).length > 0) {
-      updatePlayerPositions(activeGame.id, positions);
-    }
-    setMapDimensions(activeGame.id, nextWidth, mapHeight);
   }
 
   function handleStartRoleAssignment(kind: PlayerRoleAssignment['kind']) {
@@ -664,14 +715,16 @@ export default function GameRoute() {
     const nextRoleIds = roleAssignmentRoleIds[0] === roleId ? [] : [roleId];
 
     const travelerRole = roleCatalog.find((role) => role.id === roleId);
-    if (travelerRole && isTravelerRole(travelerRole) && activeGame.script) {
-      const nextScript = addRoleToScript(activeGame.script, travelerRole);
-      if (nextScript !== activeGame.script) {
-        setGameScript(activeGame.id, nextScript);
+    runDayEdit(() => {
+      if (travelerRole && isTravelerRole(travelerRole) && activeGame.script) {
+        const nextScript = addRoleToScript(activeGame.script, travelerRole);
+        if (nextScript !== activeGame.script) {
+          setGameScript(activeGame.id, nextScript);
+        }
       }
-    }
 
-    handleSaveRoleAssignment(nextRoleIds);
+      handleSaveRoleAssignment(nextRoleIds);
+    });
 
     if (travelerRole && isTravelerRole(travelerRole)) {
       requestAnimationFrame(() => {
@@ -709,19 +762,21 @@ export default function GameRoute() {
   }
 
   function handleDeleteRumor(sourcePlayerId: string, day: number) {
-    deletePlayerRoleAssignment(activeGame.id, sourcePlayerId, day, 'rumor');
+    runDayEdit(() => deletePlayerRoleAssignment(activeGame.id, sourcePlayerId, day, 'rumor'), day);
   }
 
   function handleMovePlayer(playerId: string, position: PlayerPosition) {
-    setLastRotationPositions(null);
-    movePlayerAndResolveCollisions(
-      activeGame.id,
-      playerId,
-      position,
-      mapWidth,
-      mapHeight,
-      activeTokenSize,
-    );
+    runDayEdit(() => {
+      setLastRotationPositions(null);
+      movePlayerAndResolveCollisions(
+        activeGame.id,
+        playerId,
+        position,
+        mapWidth,
+        mapHeight,
+        activeTokenSize,
+      );
+    });
   }
 
   function handleSetFocusedPlayerDeath(kind: 'execution' | 'night', attribution?: KillAttribution) {
@@ -729,12 +784,14 @@ export default function GameRoute() {
       return;
     }
 
-    setPlayerDeath(activeGame.id, focusedPlayer.id, {
-      day: activeGame.activeDay,
-      kind,
-      ...attribution,
-      updatedAt: new Date().toISOString(),
-    });
+    runDayEdit(() =>
+      setPlayerDeath(activeGame.id, focusedPlayer.id, {
+        day: activeGame.activeDay,
+        kind,
+        ...attribution,
+        updatedAt: new Date().toISOString(),
+      }),
+    );
   }
 
   function handleReviveFocusedPlayer() {
@@ -742,10 +799,12 @@ export default function GameRoute() {
       return;
     }
 
-    setPlayerRevive(activeGame.id, focusedPlayer.id, {
-      day: activeGame.activeDay,
-      updatedAt: new Date().toISOString(),
-    });
+    runDayEdit(() =>
+      setPlayerRevive(activeGame.id, focusedPlayer.id, {
+        day: activeGame.activeDay,
+        updatedAt: new Date().toISOString(),
+      }),
+    );
   }
 
   function handleUndoFocusedPlayerDeath() {
@@ -753,7 +812,7 @@ export default function GameRoute() {
       return;
     }
 
-    setPlayerDeath(activeGame.id, focusedPlayer.id, null);
+    runDayEdit(() => setPlayerDeath(activeGame.id, focusedPlayer.id, null));
   }
 
   function handleStartEditNote(playerId: string, day: number, noteId: string) {
@@ -788,18 +847,20 @@ export default function GameRoute() {
       return;
     }
 
-    if (noteEditor.noteId) {
-      editPlayerDayNote(
-        activeGame.id,
-        noteEditor.playerId,
-        noteEditor.day,
-        noteEditor.noteId,
-        noteDraft,
-      );
-    } else {
-      addPlayerDayNote(activeGame.id, noteEditor.playerId, noteEditor.day, noteDraft);
-    }
-    handleCancelNoteEdit();
+    runDayEdit(() => {
+      if (noteEditor.noteId) {
+        editPlayerDayNote(
+          activeGame.id,
+          noteEditor.playerId,
+          noteEditor.day,
+          noteEditor.noteId,
+          noteDraft,
+        );
+      } else {
+        addPlayerDayNote(activeGame.id, noteEditor.playerId, noteEditor.day, noteDraft);
+      }
+      handleCancelNoteEdit();
+    }, noteEditor.day);
   }
 
   const contextValue: GameRouteContextValue = {
@@ -843,6 +904,7 @@ export default function GameRoute() {
     rumorSourcePlayerId,
     activeRoleDisplayMode,
     showRoles,
+    dayEditLocked,
     canUndoRotation: lastRotationPositions !== null,
     setActiveTab,
     setNoteDraft,
@@ -858,6 +920,7 @@ export default function GameRoute() {
     handleEditNominationVotes,
     handleToggleVoterHighlights,
     handleChangeDay,
+    runDayEdit,
     handleResizeMapWidth,
     handleResizeMapHeight,
     handleRotateTokens,
@@ -910,12 +973,21 @@ export default function GameRoute() {
                 <View style={styles.leftCounts}>
                   <CharacterTypeCountEditor
                     counts={activeGame.characterTypeCounts}
-                    onChange={(counts) => setCharacterTypeCounts(activeGame.id, counts)}
+                    onChange={(counts) =>
+                      runDayEdit(() => setCharacterTypeCounts(activeGame.id, counts))
+                    }
                     playerCount={nonTravelerPlayers.length}
                   />
                 </View>
                 <View style={styles.centeredDayCount}>
                   <DayCount activeDay={activeGame.activeDay} lastDayWithData={lastDayWithData} />
+                  <View style={styles.dayEditLock}>
+                    <DayEditLockButton
+                      activeDay={activeGame.activeDay}
+                      locked={dayEditLocked}
+                      onToggle={() => setDayEditLocked((locked) => !locked)}
+                    />
+                  </View>
                 </View>
                 <View style={styles.rightCounts}>
                   <PlayerCountStatus
@@ -987,7 +1059,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
   },
-  centeredDayCount: { alignItems: 'center', flex: 1 },
+  centeredDayCount: { alignItems: 'center', flex: 1, position: 'relative' },
+  dayEditLock: { position: 'absolute', right: 0 },
   leftCounts: { alignItems: 'flex-start', flex: 1 },
   rightCounts: { alignItems: 'flex-end', flex: 1 },
   gameContent: {

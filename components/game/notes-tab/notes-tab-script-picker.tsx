@@ -5,7 +5,7 @@ import { GameScriptPicker } from '@/components/scripts/game-script-picker';
 import { useGameStore } from '@/store/game-store';
 
 export function NotesTabScriptPicker() {
-  const { game } = useGameRouteContext();
+  const { game, runDayEdit } = useGameRouteContext();
   const scripts = useGameStore((state) => state.scripts);
   const setGameScript = useGameStore((state) => state.setGameScript);
 
@@ -22,9 +22,11 @@ export function NotesTabScriptPicker() {
         })
       }
       onSelect={(scriptId) =>
-        setGameScript(
-          game.id,
-          scripts.find((script) => script.id === scriptId),
+        runDayEdit(() =>
+          setGameScript(
+            game.id,
+            scripts.find((script) => script.id === scriptId),
+          ),
         )
       }
       scripts={scripts}

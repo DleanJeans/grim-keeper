@@ -20,7 +20,7 @@ type DeathLogProps = {
 
 export function DeathLog({ activeDay, players, script }: DeathLogProps) {
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
-  const { game } = useGameRouteContext();
+  const { game, runDayEdit } = useGameRouteContext();
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const setPlayerDeath = useGameStore((state) => state.setPlayerDeath);
   const entries = collectLogEntries(players, activeDay);
@@ -66,14 +66,16 @@ export function DeathLog({ activeDay, players, script }: DeathLogProps) {
                   initialAttribution={entry.death}
                   onCancel={() => setEditingPlayerId(null)}
                   onConfirm={(attribution) => {
-                    setPlayerDeath(game.id, entry.player.id, {
-                      ...entry.death,
-                      killerPlayerId: undefined,
-                      killerPlayerIds: undefined,
-                      ...attribution,
-                      updatedAt: new Date().toISOString(),
+                    runDayEdit(() => {
+                      setPlayerDeath(game.id, entry.player.id, {
+                        ...entry.death,
+                        killerPlayerId: undefined,
+                        killerPlayerIds: undefined,
+                        ...attribution,
+                        updatedAt: new Date().toISOString(),
+                      });
+                      setEditingPlayerId(null);
                     });
-                    setEditingPlayerId(null);
                   }}
                   player={entry.player}
                   title="Change killer for"
