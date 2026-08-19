@@ -11,6 +11,7 @@ import { ResponsiveContent } from '@/components/responsive-content';
 import { SavedNotes } from '@/components/saved-notes';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
+import { ViewAllStatsButton } from '@/components/view-all-stats-button';
 import { getNotesForPlayer, useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { normalizePlayerName } from '@/utils/conversation-utils';
@@ -155,20 +156,13 @@ export default function FriendDetailRoute() {
             </Text>
           )}
 
-          <View style={{ gap: 6 }}>
-            <Text
-              selectable
-              style={{
-                color: colors.textMuted,
-                fontSize: 12,
-                fontWeight: '900',
-                letterSpacing: 0.5,
-                textAlign: 'center',
-                textTransform: 'uppercase',
-              }}
-            >
-              {friend.gamesPlayed} {friend.gamesPlayed === 1 ? 'game played' : 'games played'}
-            </Text>
+          <View style={styles.gamesSection}>
+            <View style={styles.gamesHeader}>
+              <Text selectable style={styles.sectionLabel}>
+                {friend.gamesPlayed} {friend.gamesPlayed === 1 ? 'game played' : 'games played'}
+              </Text>
+              <ViewAllStatsButton friendId={friend.id} />
+            </View>
             <FriendGamesList
               friendName={friend.name}
               games={games}
@@ -186,6 +180,23 @@ const styles = StyleSheet.create({
   content: {
     gap: 18,
     padding: 20,
+  },
+  gamesHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  gamesSection: {
+    gap: 6,
+  },
+  sectionLabel: {
+    color: colors.textMuted,
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   scrollContent: {
     paddingBottom: 40,

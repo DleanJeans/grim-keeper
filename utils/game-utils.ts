@@ -85,17 +85,17 @@ export function getGameStats(games: Game[]): GameStats {
   };
 }
 
-export function getCharacterStats(games: Game[]): CharacterStats[] {
+export function getCharacterStats(games: Game[], playerId = APP_USER_ID): CharacterStats[] {
   const characterCounts = new Map<
     string,
     { completedGames: number; count: number; role: Role; wins: number }
   >();
 
   for (const game of games) {
-    const appUser = game.players.find((player) => player.id === APP_USER_ID);
+    const player = game.players.find((candidate) => candidate.id === playerId);
     const role =
-      appUser && game.script
-        ? getEffectiveRoleForPlayer(appUser, game.script.roles, game.activeDay).role
+      player && game.script
+        ? getEffectiveRoleForPlayer(player, game.script.roles, game.activeDay).role
         : null;
 
     if (!role) {

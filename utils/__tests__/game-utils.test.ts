@@ -224,16 +224,34 @@ describe('getCharacterStats', () => {
   it('ignores games without a recorded app user character', () => {
     expect(getCharacterStats([makeGame(), makeGame({ script: undefined })])).toEqual([]);
   });
+
+  it('can calculate stats for a friend player id', () => {
+    expect(
+      getCharacterStats([makeAlignedGame('townsfolk', 'won', 'friend-1')], 'friend-1'),
+    ).toEqual([
+      {
+        completedGames: 1,
+        count: 1,
+        role: { id: 'townsfolk-role', name: 'townsfolk', team: 'townsfolk' },
+        winRate: 100,
+        wins: 1,
+      },
+    ]);
+  });
 });
 
-function makeAlignedGame(team: 'demon' | 'townsfolk' | 'traveller', result?: 'lost' | 'won'): Game {
+function makeAlignedGame(
+  team: 'demon' | 'townsfolk' | 'traveller',
+  result?: 'lost' | 'won',
+  playerId = APP_USER_ID,
+): Game {
   const roleId = `${team}-role`;
 
   return makeGame({
     id: `${team}-${result}`,
     players: [
       {
-        id: APP_USER_ID,
+        id: playerId,
         name: 'Alice',
         roleAssignments: [
           {

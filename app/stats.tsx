@@ -1,4 +1,5 @@
-import { Stack } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
+import { useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { ResponsiveContent } from '@/components/responsive-content';
@@ -8,15 +9,25 @@ import { TitleHeader } from '@/components/title-header';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Role } from '@/types/game';
+import { getFriendSummaries } from '@/utils/friend-utils';
 import { getCharacterStats } from '@/utils/game-utils';
 
 export default function StatsRoute() {
+  const { friendId } = useLocalSearchParams<{ friendId?: string }>();
+  const appUserName = useGameStore((state) => state.appUserName);
   const games = useGameStore((state) => state.games);
-  const characterStats = getCharacterStats(games);
+  const storedFriends = useGameStore((state) => state.friends);
+  const friend = useMemo(
+    () =>
+      getFriendSummaries(games, storedFriends, appUserName).find((item) => item.id === friendId),
+    [appUserName, friendId, games, storedFriends],
+  );
+  const characterStats = getCharacterStats(games, friendId);
+  const title = friend ? `${friend.name} Stats` : 'Stats';
 
   return (
     <>
-      <Stack.Screen options={{ header: () => <TitleHeader title="Stats" />, title: 'Stats' }} />
+      <Stack.Screen options={{ header: () => <TitleHeader title={title} />, title }} />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.scrollContent}

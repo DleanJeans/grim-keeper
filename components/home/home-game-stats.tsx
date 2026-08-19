@@ -1,10 +1,9 @@
-import { router } from 'expo-router';
-import { ChevronRight } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import type { StyleProp, TextStyle } from 'react-native';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
+import { ViewAllStatsButton } from '@/components/view-all-stats-button';
 import { colors } from '@/theme/colors';
 import type { Game, Role } from '@/types/game';
 import { getCharacterStats, getGameStats } from '@/utils/game-utils';
@@ -148,22 +147,6 @@ function StatCard({
   );
 }
 
-function ViewAllStatsButton() {
-  return (
-    <Pressable
-      accessibilityHint="Opens full character stats"
-      accessibilityLabel="View all stats"
-      accessibilityRole="button"
-      hitSlop={8}
-      onPress={() => router.push('/stats')}
-      style={({ pressed }) => [styles.statsButton, pressed && styles.statsButtonPressed]}
-    >
-      <Text style={styles.statsButtonLabel}>View all</Text>
-      <ChevronRight color={colors.textMuted} size={16} strokeWidth={2.5} />
-    </Pressable>
-  );
-}
-
 function TopCharacterRow({ count, role }: { count: number; role: Role }) {
   return (
     <View style={styles.characterRow}>
@@ -284,19 +267,6 @@ const styles = StyleSheet.create({
   stats: {
     flexDirection: 'row',
     gap: 12,
-  },
-  statsButton: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 2,
-  },
-  statsButtonLabel: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  statsButtonPressed: {
-    opacity: 0.65,
   },
   value: {
     color: colors.text,
