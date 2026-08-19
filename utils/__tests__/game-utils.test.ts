@@ -1,5 +1,5 @@
 import type { Game, Player } from '@/types/game';
-import { getGameStats, getLastDayWithData } from '@/utils/game-utils';
+import { getGameStats, getLastDayWithData, getMostPlayedCharacters } from '@/utils/game-utils';
 import { APP_USER_ID } from '@/utils/object-id';
 
 function makePlayer(overrides: Partial<Player> = {}): Player {
@@ -193,6 +193,37 @@ describe('getGameStats', () => {
       goodWins: 1,
       goodWinRate: 100,
     });
+  });
+});
+
+describe('getMostPlayedCharacters', () => {
+  it('counts the app user character across saved games', () => {
+    const empathGame = makeAlignedGame('townsfolk', 'won');
+    const secondEmpathGame = makeAlignedGame('townsfolk', 'lost');
+    const impGame = makeAlignedGame('demon', 'won');
+
+    expect(getMostPlayedCharacters([empathGame, secondEmpathGame, impGame])).toEqual([
+      {
+        count: 2,
+        role: { id: 'townsfolk-role', name: 'townsfolk', team: 'townsfolk' },
+      },
+      {
+        count: 1,
+        role: { id: 'demon-role', name: 'demon', team: 'demon' },
+      },
+    ]);
+  });
+
+  it('ignores games without a recorded app user character', () => {
+    expect(getMostPlayedCharacters([makeGame(), makeGame({ script: undefined })])).toEqual([]);
+  });
+
+  it('limits the result to the requested number of characters', () => {
+    const games = (['demon', 'townsfolk', 'traveller'] as const).map((team) =>
+      makeAlignedGame(team, 'won'),
+    );
+
+    expect(getMostPlayedCharacters(games, 2)).toHaveLength(2);
   });
 });
 

@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react';
 import type { StyleProp, TextStyle } from 'react-native';
 import { StyleSheet, View } from 'react-native';
-
+import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { Game } from '@/types/game';
-import { getGameStats } from '@/utils/game-utils';
+import type { Game, Role } from '@/types/game';
+import { getGameStats, getMostPlayedCharacters } from '@/utils/game-utils';
+
+const TOP_CHARACTERS_LIMIT = 5;
 
 type HomeGameStatsProps = {
   games: Game[];
@@ -24,24 +26,38 @@ export function HomeGameStats({ games }: HomeGameStatsProps) {
     totalGames,
     winRate,
   } = getGameStats(games);
+  const mostPlayedCharacters = getMostPlayedCharacters(games, TOP_CHARACTERS_LIMIT);
 
   return (
-    <View style={styles.stats}>
-      <StatCard label="Win rate">
-        <Text selectable style={styles.value}>
-          {formatRate(winRate)}
-        </Text>
-        <AlignmentLabels />
-        <AlignmentWinRates evil={formatRate(evilWinRate)} good={formatRate(goodWinRate)} />
-        <AlignmentGameValues evil={String(evilWins)} good={String(goodWins)} />
-      </StatCard>
-      <StatCard label="Total games">
-        <Text selectable style={styles.value}>
-          {totalGames}
-        </Text>
-        <AlignmentLabels />
-        <AlignmentWinRates evil={formatRate(evilSideRate)} good={formatRate(goodSideRate)} />
-        <AlignmentGameValues evil={String(evilGames)} good={String(goodGames)} />
+    <View style={styles.container}>
+      <View style={styles.stats}>
+        <StatCard label="Win Rate">
+          <Text selectable style={styles.value}>
+            {formatRate(winRate)}
+          </Text>
+          <AlignmentLabels />
+          <AlignmentWinRates evil={formatRate(evilWinRate)} good={formatRate(goodWinRate)} />
+          <AlignmentGameValues evil={String(evilWins)} good={String(goodWins)} />
+        </StatCard>
+        <StatCard label="Total Games">
+          <Text selectable style={styles.value}>
+            {totalGames}
+          </Text>
+          <AlignmentLabels />
+          <AlignmentWinRates evil={formatRate(evilSideRate)} good={formatRate(goodSideRate)} />
+          <AlignmentGameValues evil={String(evilGames)} good={String(goodGames)} />
+        </StatCard>
+      </View>
+      <StatCard label="Top Characters">
+        {mostPlayedCharacters.length > 0 ? (
+          mostPlayedCharacters.map(({ count, role }) => (
+            <TopCharacterRow count={count} key={role.id} role={role} />
+          ))
+        ) : (
+          <Text selectable style={styles.emptyValue}>
+            —
+          </Text>
+        )}
       </StatCard>
     </View>
   );
@@ -117,6 +133,22 @@ function StatCard({ children, label }: { children: ReactNode; label: string }) {
   );
 }
 
+function TopCharacterRow({ count, role }: { count: number; role: Role }) {
+  return (
+    <View style={styles.characterRow}>
+      <View style={styles.characterInfo}>
+        <RoleIcon role={role} size={24} />
+        <Text numberOfLines={1} selectable style={styles.characterName}>
+          {role.name}
+        </Text>
+      </View>
+      <Text selectable style={styles.characterCount}>
+        {count}
+      </Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   alignmentRow: {
     alignItems: 'center',
@@ -136,6 +168,40 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 4,
     padding: 14,
+  },
+  characterCount: {
+    color: colors.text,
+    fontSize: 18,
+    fontVariant: ['tabular-nums'],
+    minWidth: 24,
+    textAlign: 'right',
+  },
+  characterInfo: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    gap: 8,
+    minWidth: 0,
+  },
+  characterName: {
+    color: colors.text,
+    flex: 1,
+    fontSize: 16,
+  },
+  characterRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  container: {
+    gap: 12,
+  },
+  emptyValue: {
+    color: colors.textMuted,
+    fontSize: 22,
+    fontWeight: '900',
+    textAlign: 'center',
   },
   label: {
     color: colors.textMuted,
