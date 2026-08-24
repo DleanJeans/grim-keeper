@@ -402,7 +402,8 @@ describe('role utilities', () => {
 
   it('builds role metadata from the resources icon index', () => {
     const [role] = parseRoleIconCatalog(
-      '<a href="/resources/characters/snv/fanggu_g.webp"></a>' +
+      '<a href="/resources/characters/snv/fanggu_n.webp"></a>' +
+        '<a href="/resources/characters/snv/fanggu_g.webp"></a>' +
         '<a href="/resources/characters/snv/fanggu_e.webp"></a>',
     );
 
@@ -410,6 +411,7 @@ describe('role utilities', () => {
       edition: 'snv',
       id: 'fanggu',
       imageUrls: [
+        'https://release.botc.app/resources/characters/snv/fanggu_n.webp',
         'https://release.botc.app/resources/characters/snv/fanggu_g.webp',
         'https://release.botc.app/resources/characters/snv/fanggu_e.webp',
       ],
@@ -417,7 +419,13 @@ describe('role utilities', () => {
   });
 
   it('builds aligned traveler claim role variants', () => {
-    const traveler = { edition: 'carousel', id: 'baron', name: 'Baron', team: 'traveller' };
+    const traveler = {
+      edition: 'carousel',
+      id: 'baron',
+      imageUrl: 'https://release.botc.app/resources/characters/carousel/baron_n.webp',
+      name: 'Baron',
+      team: 'traveller',
+    };
     const [good, evil] = getTravelerClaimRoles(traveler);
 
     expect(getRoleIconUrlForAlignment(traveler, 'g')).toBe(
@@ -433,6 +441,31 @@ describe('role utilities', () => {
       imageUrl: 'https://release.botc.app/resources/characters/carousel/baron_e.webp',
       name: 'Evil Baron',
     });
+  });
+
+  it('resolves aligned traveler assignments to their role variants', () => {
+    const roles = [{ edition: 'carousel', id: 'baron', name: 'Baron', team: 'traveller' }];
+
+    expect(
+      getRolesForDay(
+        [
+          {
+            day: 1,
+            kind: 'confirm',
+            roleIds: ['baron_evil'],
+            updatedAt: '2026-07-14T00:00:00.000Z',
+          },
+        ],
+        1,
+        roles,
+      ),
+    ).toEqual([
+      expect.objectContaining({
+        id: 'baron_evil',
+        imageUrl: 'https://release.botc.app/resources/characters/carousel/baron_e.webp',
+        name: 'Evil Baron',
+      }),
+    ]);
   });
 
   it('uses custom traveler image URLs for good and evil claims', () => {

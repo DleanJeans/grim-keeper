@@ -61,8 +61,11 @@ export function RoleAssignmentActions() {
     game.script.roles,
   );
   const confirmedTravelerRole = confirmedRoleDisplay.roles.find(isTravelerRole);
-  const travelerClaimRoles = confirmedTravelerRole
-    ? getTravelerClaimRoles(confirmedTravelerRole)
+  const confirmedTravelerBaseRole = confirmedTravelerRole
+    ? getTravelerBaseRole(confirmedTravelerRole, game.script.roles)
+    : undefined;
+  const travelerClaimRoles = confirmedTravelerBaseRole
+    ? getTravelerClaimRoles(confirmedTravelerBaseRole)
     : [];
   const isTravelerClaim = roleAssignmentKind === 'claim' && !!confirmedTravelerRole;
   const roleOwnerNames = showRoles
@@ -231,6 +234,16 @@ function mergeRoleLists(scriptRoles: Role[], travelerRoles: Role[]) {
   const scriptRoleIds = new Set(scriptRoles.map((role) => role.id));
 
   return [...scriptRoles, ...travelerRoles.filter((role) => !scriptRoleIds.has(role.id))];
+}
+
+function getTravelerBaseRole(role: Role, roles: Role[]) {
+  return (
+    roles.find(
+      (candidate) =>
+        candidate.id === role.id ||
+        getTravelerClaimRoles(candidate).some(({ id }) => id === role.id),
+    ) ?? role
+  );
 }
 
 function getRoleAssignmentLabel(kind: PlayerRoleAssignment['kind']) {

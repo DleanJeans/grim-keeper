@@ -114,7 +114,7 @@ export function getRoleIconUrl(role: Role) {
 }
 
 export function getRoleIconUrlForAlignment(role: Role, alignment: 'g' | 'e') {
-  const imageUrl = getRoleImageUrl(role, alignment);
+  const imageUrl = getRoleImageUrlForAlignment(role, alignment);
   if (imageUrl) {
     return imageUrl;
   }
@@ -616,7 +616,7 @@ export function parseRoleIconCatalog(content: string): Role[] {
 
   for (const match of content.matchAll(iconPattern)) {
     const [, edition, filename] = match;
-    const alignmentMatch = /^(.*?)(?:_([ge]))?$/.exec(filename);
+    const alignmentMatch = /^(.*?)(?:_([gen]))?$/.exec(filename);
     const roleId = alignmentMatch?.[1];
     const alignment = alignmentMatch?.[2];
 
@@ -796,6 +796,15 @@ function getRoleImageUrl(role: Role, alignment?: 'g' | 'e') {
   return getRoleAlignment(role) === 'e'
     ? (role.imageUrls[1] ?? role.imageUrls[0])
     : role.imageUrls[0];
+}
+
+function getRoleImageUrlForAlignment(role: Role, alignment: 'g' | 'e') {
+  if (isTravelerRole(role) && getRoleEdition(role)) {
+    const alignmentSuffix = new RegExp(`_${alignment}\\.[^/?#]+(?:[?#].*)?$`);
+    return role.imageUrls?.find((imageUrl) => alignmentSuffix.test(imageUrl));
+  }
+
+  return getRoleImageUrl(role, alignment);
 }
 
 function normalizeImageUrls(value: unknown) {

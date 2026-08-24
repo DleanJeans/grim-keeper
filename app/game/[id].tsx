@@ -711,7 +711,7 @@ export default function GameRoute() {
     setRumorSourcePlayerId(null);
   }
 
-  function handleToggleRoleAssignment(roleId: string) {
+  function handleToggleRoleAssignment(roleId: string, keepOpen = false) {
     const nextRoleIds = roleAssignmentRoleIds[0] === roleId ? [] : [roleId];
 
     const travelerRole = roleCatalog.find((role) => role.id === roleId);
@@ -723,7 +723,10 @@ export default function GameRoute() {
         }
       }
 
-      handleSaveRoleAssignment(nextRoleIds);
+      if (keepOpen) {
+        setRoleAssignmentRoleIds(nextRoleIds);
+      }
+      handleSaveRoleAssignment(nextRoleIds, keepOpen);
     });
 
     if (travelerRole && isTravelerRole(travelerRole)) {
@@ -733,7 +736,7 @@ export default function GameRoute() {
     }
   }
 
-  function handleSaveRoleAssignment(roleIds = roleAssignmentRoleIds.slice(0, 1)) {
+  function handleSaveRoleAssignment(roleIds = roleAssignmentRoleIds.slice(0, 1), keepOpen = false) {
     if (!focusedPlayer || !roleAssignmentKind || !activeGame.script) {
       return;
     }
@@ -758,7 +761,9 @@ export default function GameRoute() {
       roleIds,
       roleAssignmentKind === 'rumor' ? (rumorSubjectPlayerId ?? undefined) : undefined,
     );
-    handleCancelRoleAssignment();
+    if (!keepOpen) {
+      handleCancelRoleAssignment();
+    }
   }
 
   function handleDeleteRumor(sourcePlayerId: string, day: number) {

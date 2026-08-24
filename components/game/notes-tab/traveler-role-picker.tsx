@@ -2,18 +2,20 @@ import { ChevronDown, Search, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { TravelerRoleAlignmentButton } from '@/components/game/notes-tab/traveler-role-alignment-button';
 import { TravelerRoleOption } from '@/components/game/notes-tab/traveler-role-option';
 import { RoleIcon } from '@/components/role-icon';
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Role } from '@/types/game';
+import { getTravelerClaimRoles } from '@/utils/role-utils';
 
 type TravelerRolePickerProps = {
   description?: string;
   roles: Role[];
   selectedRoleIds: string[];
   scriptId?: string;
-  onToggleRole: (roleId: string) => void;
+  onToggleRole: (roleId: string, keepOpen?: boolean) => void;
 };
 
 export function TravelerRolePicker({
@@ -25,10 +27,18 @@ export function TravelerRolePicker({
 }: TravelerRolePickerProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const selectedTravelerRoleIds = selectedRoleIds.filter((roleId) =>
-    roles.some((role) => role.id === roleId),
+  const selectedTravelerRole = roles.find((role) =>
+    selectedRoleIds.some((roleId) => isTravelerRoleSelection(role, roleId)),
   );
-  const selectedTravelerRole = roles.find((role) => selectedTravelerRoleIds.includes(role.id));
+  const selectedTravelerRoleId = selectedTravelerRole
+    ? selectedRoleIds.find((roleId) => isTravelerRoleSelection(selectedTravelerRole, roleId))
+    : undefined;
+  const selectedTravelerDisplayRole =
+    selectedTravelerRole && selectedTravelerRoleId
+      ? (getTravelerClaimRoles(selectedTravelerRole).find(
+          (role) => role.id === selectedTravelerRoleId,
+        ) ?? selectedTravelerRole)
+      : selectedTravelerRole;
   const disabled = roles.length === 0;
   const filteredRoles = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
@@ -71,7 +81,9 @@ export function TravelerRolePicker({
       >
         <View style={styles.selectorContent}>
           <View style={styles.summaryRow}>
-            {selectedTravelerRole ? <RoleIcon role={selectedTravelerRole} size={20} /> : null}
+            {selectedTravelerDisplayRole ? (
+              <RoleIcon role={selectedTravelerDisplayRole} size={20} />
+            ) : null}
             <Text selectable style={[styles.summary, disabled && styles.disabledText]}>
               {summary}
             </Text>
@@ -149,10 +161,16 @@ export function TravelerRolePicker({
                     {filteredRoles.map((role) => (
                       <TravelerRoleOption
                         key={role.id}
-                        onPress={() => onToggleRole(role.id)}
+                        onPress={() =>
+                          onToggleRole(
+                            selectedTravelerRole?.id === role.id
+                              ? (selectedTravelerRoleId ?? role.id)
+                              : role.id,
+                          )
+                        }
                         role={role}
                         scriptId={scriptId}
-                        selected={selectedRoleIds.includes(role.id)}
+                        selected={selectedTravelerRole?.id === role.id}
                       />
                     ))}
                   </View>
@@ -166,7 +184,22 @@ export function TravelerRolePicker({
           </View>
         </View>
       </Modal>
+      {selectedTravelerRole ? (
+        <TravelerRoleAlignmentButton
+          key={selectedTravelerRole.id}
+          onSelect={(roleId) => onToggleRole(roleId, true)}
+          role={selectedTravelerRole}
+          selectedRoleId={selectedTravelerRoleId}
+        />
+      ) : null}
     </View>
+  );
+}
+
+function isTravelerRoleSelection(role: Role, selectedRoleId: string) {
+  return (
+    role.id === selectedRoleId ||
+    getTravelerClaimRoles(role).some(({ id }) => id === selectedRoleId)
   );
 }
 
