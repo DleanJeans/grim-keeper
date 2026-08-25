@@ -10,6 +10,7 @@ jest.mock('@/utils/web-storage', () => ({
 
 import { useGameStore } from '@/store/game-store';
 import type { Game, SavedNote, StoredScript } from '@/types/game';
+import { getGameStats } from '@/utils/game-utils';
 import { getNotesForPlayer, migrateV2ToV3 } from '@/utils/saved-note-store';
 
 const baseNote: Omit<SavedNote, 'playerName' | 'createdAt'> = {
@@ -89,6 +90,19 @@ describe('setGameResult', () => {
     useGameStore.getState().setGameResult('game-1');
     expect(useGameStore.getState().games[0].result).toBeUndefined();
     expect(useGameStore.getState().games[0].updatedAt).not.toBe(game.updatedAt);
+  });
+
+  it('updates the Home stats snapshot immediately when a result changes', () => {
+    useGameStore.setState({ games: [game] });
+    let stats = getGameStats(useGameStore.getState().games);
+    const unsubscribe = useGameStore.subscribe((state) => {
+      stats = getGameStats(state.games);
+    });
+
+    useGameStore.getState().setGameResult('game-1', 'won');
+
+    unsubscribe();
+    expect(stats).toMatchObject({ completedGames: 1, totalGames: 1, winRate: 100, wins: 1 });
   });
 });
 

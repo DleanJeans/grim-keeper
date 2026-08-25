@@ -4,17 +4,15 @@ import { StyleSheet, View } from 'react-native';
 import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
 import { ViewAllStatsButton } from '@/components/view-all-stats-button';
+import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import type { Game, Role } from '@/types/game';
+import type { Role } from '@/types/game';
 import { getCharacterStats, getGameStats } from '@/utils/game-utils';
 
 const TOP_CHARACTERS_LIMIT = 5;
 
-type HomeGameStatsProps = {
-  games: Game[];
-};
-
-export function HomeGameStats({ games }: HomeGameStatsProps) {
+export function HomeGameStats() {
+  const games = useGameStore((state) => state.games);
   const {
     evilGames,
     evilSideRate,

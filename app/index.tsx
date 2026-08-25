@@ -75,7 +75,7 @@ export default function HomeRoute() {
           />
 
           <View style={{ gap: 12 }}>
-            <HomeGameStats games={games} />
+            <HomeGameStats />
 
             <Text
               selectable

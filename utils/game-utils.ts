@@ -60,25 +60,55 @@ export function getLastDayWithData(game: Game): number {
 }
 
 export function getGameStats(games: Game[]): GameStats {
-  const completedGames = games.filter((game) => game.result !== undefined).length;
-  const wins = games.filter((game) => game.result === 'won').length;
-  const goodGames = games.filter((game) => getGameAlignment(game) === 'g');
-  const evilGames = games.filter((game) => getGameAlignment(game) === 'e');
-  const completedGoodGames = goodGames.filter((game) => game.result !== undefined);
-  const completedEvilGames = evilGames.filter((game) => game.result !== undefined);
-  const goodWins = completedGoodGames.filter((game) => game.result === 'won').length;
-  const evilWins = completedEvilGames.filter((game) => game.result === 'won').length;
+  let completedGames = 0;
+  let evilGames = 0;
+  let evilWins = 0;
+  let evilCompletedGames = 0;
+  let goodGames = 0;
+  let goodWins = 0;
+  let goodCompletedGames = 0;
+  let wins = 0;
+
+  for (const game of games) {
+    const hasResult = game.result !== undefined;
+
+    if (hasResult) {
+      completedGames += 1;
+      if (game.result === 'won') {
+        wins += 1;
+      }
+    }
+
+    const alignment = getGameAlignment(game);
+    if (alignment === 'g') {
+      goodGames += 1;
+      if (hasResult) {
+        goodCompletedGames += 1;
+        if (game.result === 'won') {
+          goodWins += 1;
+        }
+      }
+    } else if (alignment === 'e') {
+      evilGames += 1;
+      if (hasResult) {
+        evilCompletedGames += 1;
+        if (game.result === 'won') {
+          evilWins += 1;
+        }
+      }
+    }
+  }
 
   return {
     completedGames,
-    evilGames: evilGames.length,
-    evilSideRate: getPercentage(evilGames.length, goodGames.length + evilGames.length),
+    evilGames,
+    evilSideRate: getPercentage(evilGames, goodGames + evilGames),
     evilWins,
-    evilWinRate: getWinRate(completedEvilGames),
-    goodGames: goodGames.length,
-    goodSideRate: getPercentage(goodGames.length, goodGames.length + evilGames.length),
+    evilWinRate: getPercentage(evilWins, evilCompletedGames),
+    goodGames,
+    goodSideRate: getPercentage(goodGames, goodGames + evilGames),
     goodWins,
-    goodWinRate: getWinRate(completedGoodGames),
+    goodWinRate: getPercentage(goodWins, goodCompletedGames),
     totalGames: games.length,
     winRate: completedGames === 0 ? undefined : Math.round((wins / completedGames) * 100),
     wins,
@@ -139,10 +169,6 @@ function getGameAlignment(game: Game) {
       : null;
 
   return role ? getRoleAlignment(role) : undefined;
-}
-
-function getWinRate(games: Game[]) {
-  return getPercentage(games.filter((game) => game.result === 'won').length, games.length);
 }
 
 function getPercentage(value: number, total: number) {
