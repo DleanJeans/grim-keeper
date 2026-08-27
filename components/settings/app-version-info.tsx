@@ -1,5 +1,4 @@
 import Constants from 'expo-constants';
-import * as Updates from 'expo-updates';
 import { StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
@@ -7,7 +6,7 @@ import { colors } from '@/theme/colors';
 
 export function AppVersionInfo() {
   const version = Constants.expoConfig?.version ?? 'Unknown';
-  const deployedAt = Updates.createdAt;
+  const deployedAt = parseDeploymentDate(process.env.EXPO_PUBLIC_DEPLOYED_AT);
 
   return (
     <View style={styles.container}>
@@ -31,6 +30,15 @@ function formatDeploymentDate(date: Date) {
     month: 'short',
     year: 'numeric',
   }).format(date);
+}
+
+function parseDeploymentDate(timestamp: string | undefined) {
+  if (!timestamp) {
+    return undefined;
+  }
+
+  const date = new Date(timestamp);
+  return Number.isNaN(date.getTime()) ? undefined : date;
 }
 
 const styles = StyleSheet.create({
