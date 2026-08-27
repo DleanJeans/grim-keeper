@@ -57,7 +57,7 @@ export type GameRouteContextValue = {
   roleAssignmentRoleIds: string[];
   rumorSubjectPlayerId: string | null;
   rumorSourcePlayerId: string | null;
-  activeRoleDisplayMode: RoleDisplayMode;
+  activeRoleDisplayModes: RoleDisplayMode[];
   showRoles: boolean;
   dayEditLocked: boolean;
   canUndoRotation: boolean;
@@ -89,7 +89,7 @@ export type GameRouteContextValue = {
   handleSaveRoleAssignment: (roleIds?: string[]) => void;
   handleDeleteRumor: (sourcePlayerId: string, day: number) => void;
   handleSelectRumorSource: (sourcePlayerId: string) => void;
-  setActiveRoleDisplayMode: (mode: RoleDisplayMode) => void;
+  setActiveRoleDisplayModes: (modes: RoleDisplayMode[]) => void;
   setShowRoles: (show: boolean) => void;
   handleSetFocusedPlayerDeath: (kind: 'execution' | 'night', attribution?: KillAttribution) => void;
   handleReviveFocusedPlayer: () => void;

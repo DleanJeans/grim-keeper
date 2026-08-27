@@ -394,15 +394,6 @@ export function getRoleDisplayForMode(
     return EMPTY_ROLE_DISPLAY;
   }
 
-  const confirmedAssignment = getRoleAssignmentForDayOrPrevious(
-    player.roleAssignments,
-    day,
-    'confirm',
-  );
-  if (confirmedAssignment?.roleIds.length) {
-    return getRoleDisplayFromAssignment(confirmedAssignment, roles);
-  }
-
   if (mode === 'rumor') {
     const rumor = getLatestRumorAboutPlayerForDayOrPrevious(players, player.id, day, roles);
     return rumor ? getRoleDisplayFromAssignment(rumor.assignment, roles) : EMPTY_ROLE_DISPLAY;
@@ -410,6 +401,27 @@ export function getRoleDisplayForMode(
 
   const assignment = getRoleAssignmentForDayOrPrevious(player.roleAssignments, day, mode);
   return assignment ? getRoleDisplayFromAssignment(assignment, roles) : EMPTY_ROLE_DISPLAY;
+}
+
+export function getRoleDisplayForModes(
+  player: Player,
+  players: Player[],
+  day: number,
+  roles: Role[],
+  modes: RoleDisplayMode[],
+): RoleDisplay {
+  for (const mode of ['all', 'confirm', 'claim', 'rumor', 'guess'] as const) {
+    if (!modes.includes(mode)) {
+      continue;
+    }
+
+    const roleDisplay = getRoleDisplayForMode(player, players, day, roles, mode);
+    if (roleDisplay.roleIds.length > 0) {
+      return roleDisplay;
+    }
+  }
+
+  return EMPTY_ROLE_DISPLAY;
 }
 
 export function getRolesByIds(roleIds: string[], roles: Role[]) {

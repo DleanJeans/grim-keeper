@@ -119,7 +119,9 @@ export default function GameRoute() {
   const [roleAssignmentRoleIds, setRoleAssignmentRoleIds] = useState<string[]>([]);
   const [rumorSubjectPlayerId, setRumorSubjectPlayerId] = useState<string | null>(null);
   const [rumorSourcePlayerId, setRumorSourcePlayerId] = useState<string | null>(null);
-  const [activeRoleDisplayMode, setActiveRoleDisplayMode] = useState<RoleDisplayMode>('confirm');
+  const [activeRoleDisplayModes, setActiveRoleDisplayModes] = useState<RoleDisplayMode[]>([
+    'confirm',
+  ]);
   const [showRoles, setShowRoles] = useState(false);
   const [dayEditLocked, setDayEditLocked] = useState(false);
   const game = getGameById(games, id);
@@ -907,7 +909,7 @@ export default function GameRoute() {
     roleAssignmentRoleIds,
     rumorSubjectPlayerId,
     rumorSourcePlayerId,
-    activeRoleDisplayMode,
+    activeRoleDisplayModes,
     showRoles,
     dayEditLocked,
     canUndoRotation: lastRotationPositions !== null,
@@ -937,7 +939,7 @@ export default function GameRoute() {
     handleSaveRoleAssignment,
     handleDeleteRumor,
     handleSelectRumorSource,
-    setActiveRoleDisplayMode,
+    setActiveRoleDisplayModes,
     setShowRoles,
     handleSetFocusedPlayerDeath,
     handleReviveFocusedPlayer,

@@ -23,7 +23,7 @@ const roleDisplayModes: {
 type CountedRoleDisplayMode = Exclude<RoleDisplayMode, 'all'>;
 
 export function RoleDisplayModes() {
-  const { activeDay, activeRoleDisplayMode, game, setActiveRoleDisplayMode, showRoles } =
+  const { activeDay, activeRoleDisplayModes, game, setActiveRoleDisplayModes, showRoles } =
     useGameRouteContext();
 
   if (!game.script || !showRoles) {
@@ -41,7 +41,7 @@ export function RoleDisplayModes() {
   return (
     <View
       accessibilityLabel="Role display modes"
-      accessibilityRole="radiogroup"
+      accessibilityRole="toolbar"
       style={styles.segmentedControl}
     >
       {roleDisplayModes.map(({ label, value }, index) => (
@@ -50,8 +50,14 @@ export function RoleDisplayModes() {
           count={value === 'all' ? undefined : roleDisplayModeCounts[value]}
           key={value}
           label={label}
-          onPress={() => setActiveRoleDisplayMode(value)}
-          selected={activeRoleDisplayMode === value}
+          onPress={() =>
+            setActiveRoleDisplayModes(
+              activeRoleDisplayModes.includes(value)
+                ? activeRoleDisplayModes.filter((mode) => mode !== value)
+                : [...activeRoleDisplayModes, value],
+            )
+          }
+          selected={activeRoleDisplayModes.includes(value)}
           value={value}
         />
       ))}
@@ -88,7 +94,7 @@ function RoleDisplayModeButton({
   return (
     <Pressable
       accessibilityLabel={`Show ${label.toLocaleLowerCase()}${count === undefined ? '' : ` (${count})`}`}
-      accessibilityRole="radio"
+      accessibilityRole="togglebutton"
       accessibilityState={{ selected }}
       onPress={onPress}
       style={({ pressed }) => [

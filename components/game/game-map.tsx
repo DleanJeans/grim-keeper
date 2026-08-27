@@ -14,13 +14,13 @@ import { getPlayerMapPosition } from '@/utils/layout-utils';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 import {
   getLatestRumorMapDisplaysForDayOrPrevious,
-  getRoleDisplayForMode,
+  getRoleDisplayForModes,
 } from '@/utils/role-utils';
 
 export function GameMap() {
   const {
     activeDay,
-    activeRoleDisplayMode,
+    activeRoleDisplayModes,
     activeTab,
     conversations,
     disabledPlayerIds,
@@ -59,7 +59,7 @@ export function GameMap() {
   const showInteractionCurves = activeTab === 'interactions';
   const showRumorCurves =
     activeTab === 'notes' &&
-    (activeRoleDisplayMode === 'all' || activeRoleDisplayMode === 'rumor') &&
+    (activeRoleDisplayModes.includes('all') || activeRoleDisplayModes.includes('rumor')) &&
     showRoles;
   const rumorMapDisplays = showRumorCurves
     ? getLatestRumorMapDisplaysForDayOrPrevious(players, activeDay, game.script?.roles ?? [])
@@ -229,7 +229,7 @@ export function GameMap() {
             <PlayerTokenForMap
               key={player.id}
               activeDay={activeDay}
-              activeRoleDisplayMode={activeRoleDisplayMode}
+              activeRoleDisplayModes={activeRoleDisplayModes}
               activeTokenSize={activeTokenSize}
               disabled={disabledPlayerIdSet.has(player.id)}
               gameRoles={game.script?.roles ?? []}
@@ -258,7 +258,7 @@ export function GameMap() {
 
 function PlayerTokenForMap({
   activeDay,
-  activeRoleDisplayMode,
+  activeRoleDisplayModes,
   activeTokenSize,
   disabled,
   gameRoles,
@@ -279,7 +279,7 @@ function PlayerTokenForMap({
   showRoles,
 }: {
   activeDay: number;
-  activeRoleDisplayMode: RoleDisplayMode;
+  activeRoleDisplayModes: RoleDisplayMode[];
   activeTokenSize: number;
   disabled: boolean;
   gameRoles: Role[];
@@ -299,12 +299,12 @@ function PlayerTokenForMap({
   position: PlayerPosition;
   showRoles: boolean;
 }) {
-  const roleDisplay = getRoleDisplayForMode(
+  const roleDisplay = getRoleDisplayForModes(
     player,
     players,
     activeDay,
     gameRoles,
-    activeRoleDisplayMode,
+    activeRoleDisplayModes,
   );
 
   return (

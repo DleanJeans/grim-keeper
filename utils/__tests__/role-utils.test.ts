@@ -11,6 +11,7 @@ import {
   getRoleAssignmentForDay,
   getRoleDisplayForDayOrPrevious,
   getRoleDisplayForMode,
+  getRoleDisplayForModes,
   getRoleIconUrl,
   getRoleIconUrlForAlignment,
   getRoleNames,
@@ -28,7 +29,7 @@ import {
 } from '@/utils/role-utils';
 
 describe('role utilities', () => {
-  it('lets confirmed roles override every map display mode', () => {
+  it('only displays the requested individual mode', () => {
     const roles = [
       { id: 'empath', name: 'Empath', team: 'townsfolk' },
       { id: 'imp', name: 'Imp', team: 'demon' },
@@ -74,12 +75,79 @@ describe('role utilities', () => {
       ],
     };
 
-    for (const mode of ['all', 'claim', 'confirm', 'guess', 'rumor'] as const) {
-      expect(getRoleDisplayForMode(player, [player, rumorSource], 1, roles, mode)).toMatchObject({
+    expect(getRoleDisplayForMode(player, [player, rumorSource], 1, roles, 'claim')).toMatchObject({
+      kind: 'claim',
+      roleIds: ['empath'],
+    });
+    expect(getRoleDisplayForMode(player, [player, rumorSource], 1, roles, 'confirm')).toMatchObject(
+      {
         kind: 'confirm',
         roleIds: ['imp'],
-      });
-    }
+      },
+    );
+    expect(getRoleDisplayForMode(player, [player, rumorSource], 1, roles, 'guess')).toMatchObject({
+      kind: 'guess',
+      roleIds: ['soldier'],
+    });
+    expect(getRoleDisplayForMode(player, [player, rumorSource], 1, roles, 'rumor')).toMatchObject({
+      kind: 'rumor',
+      roleIds: ['empath'],
+    });
+  });
+
+  it('displays only enabled modes in left-to-right priority', () => {
+    const roles = [
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'soldier', name: 'Soldier', team: 'townsfolk' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+    ];
+    const player = {
+      id: 'subject',
+      name: 'Subject',
+      seat: 0,
+      roleAssignments: [
+        {
+          day: 1,
+          kind: 'claim' as const,
+          roleIds: ['empath'],
+          updatedAt: '2026-07-14T00:00:00.000Z',
+        },
+        {
+          day: 1,
+          kind: 'guess' as const,
+          roleIds: ['poisoner'],
+          updatedAt: '2026-07-14T00:01:00.000Z',
+        },
+      ],
+    };
+    const rumorSource = {
+      id: 'source',
+      name: 'Source',
+      seat: 1,
+      roleAssignments: [
+        {
+          day: 1,
+          kind: 'rumor' as const,
+          roleIds: ['soldier'],
+          subjectPlayerId: 'subject',
+          updatedAt: '2026-07-14T00:02:00.000Z',
+        },
+      ],
+    };
+
+    expect(
+      getRoleDisplayForModes(player, [player, rumorSource], 1, roles, ['guess', 'claim']),
+    ).toMatchObject({ kind: 'claim', roleIds: ['empath'] });
+    expect(
+      getRoleDisplayForModes(player, [player, rumorSource], 1, roles, ['confirm']),
+    ).toMatchObject({ kind: undefined, roleIds: [] });
+    expect(getRoleDisplayForModes(player, [player, rumorSource], 1, roles, [])).toMatchObject({
+      kind: undefined,
+      roleIds: [],
+    });
+    expect(
+      getRoleDisplayForModes(player, [player, rumorSource], 1, roles, ['guess', 'all']),
+    ).toMatchObject({ kind: 'claim', roleIds: ['empath'] });
   });
 
   it('merges all role display modes by priority', () => {
