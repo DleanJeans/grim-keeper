@@ -93,7 +93,7 @@ function RoleDisplayModeButton({
 }) {
   return (
     <Pressable
-      accessibilityLabel={`Show ${label.toLocaleLowerCase()}${count === undefined ? '' : ` (${count})`}`}
+      accessibilityLabel={`Show ${label.toLocaleLowerCase()}${count === undefined ? '' : `: ${count}`}`}
       accessibilityRole="togglebutton"
       accessibilityState={{ selected }}
       onPress={onPress}
@@ -107,8 +107,7 @@ function RoleDisplayModeButton({
       ]}
     >
       <Text style={[styles.segmentLabel, selected && styles.segmentSelectedLabel]}>
-        {label}
-        {count === undefined ? '' : ` (${count})`}
+        {count === undefined ? label : `${label}: ${count}`}
       </Text>
     </Pressable>
   );
