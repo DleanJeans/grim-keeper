@@ -3,6 +3,7 @@ import { Trash2 } from 'lucide-react-native';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { ResponsiveContent } from '@/components/responsive-content';
+import { AppVersionInfo } from '@/components/settings/app-version-info';
 import { DataTransferCard } from '@/components/settings/data-transfer-card';
 import { GameTransferCard } from '@/components/settings/game-transfer-card';
 import { Text } from '@/components/text';
@@ -47,6 +48,7 @@ export default function SettingsRoute() {
             <Trash2 color={colors.danger} size={18} strokeWidth={2.6} />
             <Text style={styles.clearButtonText}>Clear data</Text>
           </Pressable>
+          <AppVersionInfo />
         </ResponsiveContent>
       </ScrollView>
     </>
