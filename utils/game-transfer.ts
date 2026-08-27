@@ -248,6 +248,7 @@ function isPlayer(value: unknown): value is Player {
     isString(value.id) &&
     isString(value.name) &&
     isFiniteNumber(value.seat) &&
+    isOptionalBoolean(value.isStoryteller) &&
     (value.position === undefined || isPosition(value.position)) &&
     (value.death === undefined || isRecord(value.death)) &&
     (value.revive === undefined || isRecord(value.revive)) &&
@@ -316,6 +317,10 @@ function isOptionalFiniteNumber(value: unknown): value is number | undefined {
 
 function isOptionalString(value: unknown): value is string | undefined {
   return value === undefined || isString(value);
+}
+
+function isOptionalBoolean(value: unknown): value is boolean | undefined {
+  return value === undefined || typeof value === 'boolean';
 }
 
 function isOptionalStringArray(value: unknown): value is string[] | undefined {

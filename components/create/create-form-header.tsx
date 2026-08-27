@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { FixedPlayerRow } from '@/components/create/fixed-player-row';
 import { LoricPicker } from '@/components/create/loric-picker';
+import { StorytellerPicker } from '@/components/create/storyteller-picker';
 import { FriendSuggestions } from '@/components/friends/friend-suggestions';
 import { GameScriptPicker } from '@/components/scripts/game-script-picker';
 import { Text, TextInput } from '@/components/text';
@@ -31,11 +32,14 @@ type CreateFormHeaderProps = {
   onSelectFriend: (name: string) => void;
   onSelectLorics: (roleIds: string[]) => void;
   onSelectScript: (scriptId: string | null) => void;
+  onSelectStoryteller: (friendId?: string) => void;
   onStart: () => void;
   onSubmitName: () => void;
   scripts: StoredScript[];
   selectedScriptId: string | null;
   selectedLoricIds: string[];
+  selectedStorytellerId: string | null;
+  storytellers: FriendSummary[];
 };
 
 export function CreateFormHeader({
@@ -58,11 +62,14 @@ export function CreateFormHeader({
   onSelectFriend,
   onSelectLorics,
   onSelectScript,
+  onSelectStoryteller,
   onStart,
   onSubmitName,
   scripts,
   selectedScriptId,
   selectedLoricIds,
+  selectedStorytellerId,
+  storytellers,
 }: CreateFormHeaderProps) {
   const [pickerHeights, setPickerHeights] = useState({ script: 0, lorics: 0 });
   const syncedPickerHeight = Math.max(
@@ -99,6 +106,12 @@ export function CreateFormHeader({
           />
         </View>
       </View>
+
+      <StorytellerPicker
+        friends={storytellers}
+        onSelect={onSelectStoryteller}
+        selectedFriendId={selectedStorytellerId}
+      />
 
       <View style={styles.nameSection}>
         <Text selectable style={styles.instructions}>

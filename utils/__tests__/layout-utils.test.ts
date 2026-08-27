@@ -101,6 +101,26 @@ describe('layout utils', () => {
     ]);
   });
 
+  it('keeps storytellers centered without changing seated-player positions', () => {
+    const storyteller: Player = {
+      id: 'storyteller',
+      isStoryteller: true,
+      name: 'Storyteller',
+      seat: -1,
+    };
+    const mixedPlayers = [...players, storyteller];
+
+    expect(getPlayerMapPosition(storyteller, mixedPlayers, 268, 200)).toEqual({
+      x: 134,
+      y: 100,
+    });
+    expect(
+      mixedPlayers
+        .filter((player) => !player.isStoryteller)
+        .map((player) => getPlayerMapPosition(player, mixedPlayers, 268, 200)),
+    ).toEqual(players.map((player) => getPlayerMapPosition(player, players, 268, 200)));
+  });
+
   it('keeps the token border inside the map', () => {
     expect(clampTokenPosition({ x: 0, y: 200 }, 200, 200, 68, 3)).toEqual({
       x: 37,

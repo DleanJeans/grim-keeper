@@ -67,6 +67,7 @@ type CreateGameInput = {
   mapWidth: number;
   playerNames: string[];
   script?: StoredScript;
+  storyteller?: Pick<Friend, 'id' | 'name'>;
 };
 
 export type GameData = {
@@ -89,7 +90,11 @@ type GameState = GameData & {
   setGameLorics: (gameId: string, lorics: Role[]) => void;
   setRoleCatalog: (roles: Role[]) => void;
   addPlayer: (gameId: string, name: string) => void;
-  updateGamePlayers: (gameId: string, players: Array<Pick<Player, 'id' | 'name'>>) => void;
+  updateGamePlayers: (
+    gameId: string,
+    players: Array<Pick<Player, 'id' | 'name'>>,
+    storyteller?: Pick<Friend, 'id' | 'name'>,
+  ) => void;
   deleteGame: (gameId: string) => void;
   deletePlayer: (gameId: string, playerId: string) => void;
   setPlayerDeath: (gameId: string, playerId: string, death: PlayerDeath | null) => void;
@@ -292,20 +297,29 @@ export const useGameStore = create<GameState>()(
 
         return renamedFriendId;
       },
-      createGame: ({ lorics, mapHeight, mapWidth, playerNames, script }) => {
+      createGame: ({ lorics, mapHeight, mapWidth, playerNames, script, storyteller }) => {
         const now = new Date().toISOString();
         const appUserName = normalizePlayerName(get().appUserName) || 'You';
         const appUserKey = appUserName.toLocaleLowerCase();
-        const otherPlayerNames = playerNames.filter(
-          (name) => normalizePlayerName(name).toLocaleLowerCase() !== appUserKey,
+        const storytellerNameKey = normalizePlayerName(storyteller?.name ?? '').toLocaleLowerCase();
+        const otherPlayerNames = playerNames.filter((name) => {
+          const nameKey = normalizePlayerName(name).toLocaleLowerCase();
+          return nameKey !== appUserKey && nameKey !== storytellerNameKey;
+        });
+        const friends = addMissingFriends(
+          get().friends,
+          [...otherPlayerNames, ...(storyteller ? [storyteller.name] : [])],
+          now,
         );
-        const friends = addMissingFriends(get().friends, otherPlayerNames, now);
         const friendIdsByName = new Map(
           friends.map((friend) => [
             normalizePlayerName(friend.name).toLocaleLowerCase(),
             friend.id,
           ]),
         );
+        const storytellerFriend = storyteller
+          ? (getFriendByName(friends, storyteller.name) ?? storyteller)
+          : undefined;
         const players = [appUserName, ...otherPlayerNames].map<Player>((name, index) => {
           const normalizedName = normalizePlayerName(name);
 
@@ -320,6 +334,11 @@ export const useGameStore = create<GameState>()(
         });
         const normalizedMapWidth = Math.max(1, Math.round(mapWidth));
         const normalizedMapHeight = clampMapHeight(mapHeight);
+        const tokenSize = getDefaultTokenSize(
+          players.length,
+          normalizedMapWidth,
+          normalizedMapHeight,
+        );
         const game: Game = {
           id: createGameId(
             script?.name,
@@ -331,8 +350,26 @@ export const useGameStore = create<GameState>()(
           activeDay: 1,
           mapWidth: normalizedMapWidth,
           mapHeight: normalizedMapHeight,
-          tokenSize: getDefaultTokenSize(players.length, normalizedMapWidth, normalizedMapHeight),
-          players,
+          tokenSize,
+          players: [
+            ...players,
+            ...(storytellerFriend
+              ? [
+                  {
+                    id: storytellerFriend.id,
+                    isStoryteller: true,
+                    name: normalizePlayerName(storytellerFriend.name),
+                    position: clampTokenPosition(
+                      { x: normalizedMapWidth / 2, y: normalizedMapHeight / 2 },
+                      normalizedMapWidth,
+                      normalizedMapHeight,
+                      tokenSize,
+                    ),
+                    seat: -1,
+                  },
+                ]
+              : []),
+          ],
           conversations: [],
           lorics: lorics?.map((role) => role.id),
           scriptId: script?.id,
@@ -521,7 +558,7 @@ export const useGameStore = create<GameState>()(
           return { friends, games };
         });
       },
-      updateGamePlayers: (gameId, draftPlayers) => {
+      updateGamePlayers: (gameId, draftPlayers, storyteller) => {
         set((state) => {
           const game = state.games.find((existingGame) => existingGame.id === gameId);
           if (!game) {
@@ -529,21 +566,38 @@ export const useGameStore = create<GameState>()(
           }
 
           const updatedAt = new Date().toISOString();
-          const names = draftPlayers.map((player) => normalizePlayerName(player.name));
-          const friends = addMissingFriends(state.friends, names, updatedAt);
+          const storytellerNameKey = normalizePlayerName(
+            storyteller?.name ?? '',
+          ).toLocaleLowerCase();
+          const regularDraftPlayers = storytellerNameKey
+            ? draftPlayers.filter(
+                (player) =>
+                  normalizePlayerName(player.name).toLocaleLowerCase() !== storytellerNameKey,
+              )
+            : draftPlayers;
+          const names = regularDraftPlayers.map((player) => normalizePlayerName(player.name));
+          const friends = addMissingFriends(
+            state.friends,
+            [...names, ...(storyteller ? [storyteller.name] : [])],
+            updatedAt,
+          );
           const friendIdsByName = new Map(
             friends.map((friend) => [
               normalizePlayerName(friend.name).toLocaleLowerCase(),
               friend.id,
             ]),
           );
+          const storytellerFriend = storyteller
+            ? (getFriendByName(friends, storyteller.name) ?? storyteller)
+            : undefined;
           const existingPlayersById = new Map(game.players.map((player) => [player.id, player]));
           const appUser = game.players.find((player) => player.id === APP_USER_ID);
+          const existingStoryteller = game.players.find((player) => player.isStoryteller);
           const retainedPlayerIds = new Set(appUser ? [appUser.id] : []);
           const newPlayerPosition = getMapCenterPosition(game);
           const players = [
             appUser ?? { id: APP_USER_ID, name: state.appUserName, seat: 0 },
-            ...draftPlayers.map((player, index) => {
+            ...regularDraftPlayers.map((player, index) => {
               const name = names[index];
               const existingPlayer = existingPlayersById.get(player.id);
 
@@ -559,6 +613,32 @@ export const useGameStore = create<GameState>()(
                 ...(newPlayerPosition ? { position: newPlayerPosition } : {}),
               };
             }),
+            ...(storytellerFriend
+              ? [
+                  (() => {
+                    const existingPlayer =
+                      existingStoryteller?.id === storytellerFriend.id
+                        ? existingStoryteller
+                        : undefined;
+                    if (existingPlayer) {
+                      retainedPlayerIds.add(existingPlayer.id);
+                    }
+
+                    return {
+                      ...existingPlayer,
+                      id: storytellerFriend.id,
+                      isStoryteller: true,
+                      name: normalizePlayerName(storytellerFriend.name),
+                      seat: -1,
+                      ...(existingPlayer?.position
+                        ? { position: existingPlayer.position }
+                        : newPlayerPosition
+                          ? { position: newPlayerPosition }
+                          : {}),
+                    };
+                  })(),
+                ]
+              : []),
           ];
           const removedPlayerIds = new Set(
             game.players
@@ -1065,7 +1145,7 @@ export const useGameStore = create<GameState>()(
                   ...game,
                   updatedAt: new Date().toISOString(),
                   players: game.players.map((player) => {
-                    if (!Object.prototype.hasOwnProperty.call(positions, player.id)) {
+                    if (!Object.hasOwn(positions, player.id)) {
                       return player;
                     }
 

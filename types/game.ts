@@ -64,6 +64,7 @@ export type PlayerRevive = {
 
 export type Player = {
   id: string;
+  isStoryteller?: boolean;
   name: string;
   seat: number;
   death?: PlayerDeath;

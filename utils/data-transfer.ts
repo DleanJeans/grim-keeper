@@ -362,6 +362,7 @@ function isPlayer(value: unknown): value is Player {
     isString(value.id) &&
     isString(value.name) &&
     isFiniteNumber(value.seat) &&
+    isOptionalBoolean(value.isStoryteller) &&
     (!('position' in value) || value.position === undefined || isPosition(value.position))
   );
 }
@@ -409,6 +410,7 @@ function isExportedGame(value: unknown): value is ExportedGame {
       (player) =>
         isRecord(player) &&
         isString(player.id) &&
+        isOptionalBoolean(player.isStoryteller) &&
         (!('name' in player) || player.name === undefined),
     ) &&
     Array.isArray(value.conversations) &&
@@ -443,6 +445,10 @@ function isString(value: unknown): value is string {
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
+}
+
+function isOptionalBoolean(value: unknown): value is boolean | undefined {
+  return value === undefined || typeof value === 'boolean';
 }
 
 function isStringArray(value: unknown): value is string[] {

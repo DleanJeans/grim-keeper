@@ -129,7 +129,7 @@ export default function GameRoute() {
 
   useEffect(() => {
     setDayEditLocked(!!game && game.activeDay < lastDayWithData);
-  }, [game?.activeDay, game?.id, lastDayWithData]);
+  }, [game, lastDayWithData]);
   const viewportMapWidth = getDefaultMapWidth(width);
   const fallbackMapDimensions = useRef<{
     gameId: string;
@@ -221,7 +221,7 @@ export default function GameRoute() {
     if (game.activeDay < lastDayWithData) {
       setActiveDay(game.id, lastDayWithData);
     }
-  }, [dayParam, game, setActiveDay]);
+  }, [dayParam, game, lastDayWithData, setActiveDay]);
 
   // Apply deep-link focus and tab on first mount.
   useEffect(() => {
@@ -328,8 +328,9 @@ export default function GameRoute() {
           )
         : [];
   const gameRoles = activeGame.script?.roles ?? [];
+  const countedPlayers = activeGame.players.filter((player) => !player.isStoryteller);
   const travelerPlayerIds = new Set(
-    activeGame.players
+    countedPlayers
       .filter((player) =>
         getRolesForDayOrPrevious(player.roleAssignments, activeGame.activeDay, gameRoles).some(
           isTravelerRole,
@@ -337,9 +338,7 @@ export default function GameRoute() {
       )
       .map((player) => player.id),
   );
-  const nonTravelerPlayers = activeGame.players.filter(
-    (player) => !travelerPlayerIds.has(player.id),
-  );
+  const nonTravelerPlayers = countedPlayers.filter((player) => !travelerPlayerIds.has(player.id));
   const deadPlayerCount = nonTravelerPlayers.filter((player) =>
     isPlayerCurrentlyDead(player, activeGame.activeDay),
   ).length;

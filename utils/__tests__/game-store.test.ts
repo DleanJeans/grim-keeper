@@ -238,6 +238,89 @@ describe('addPlayer', () => {
   });
 });
 
+describe('storyteller players', () => {
+  afterEach(() => {
+    useGameStore.setState({ games: [], friends: [] });
+  });
+
+  it('creates a storyteller separately from seated players at map center', () => {
+    const storyteller = {
+      createdAt: '2026-07-07T00:00:00.000Z',
+      id: 'storyteller',
+      name: 'Storyteller',
+    };
+    useGameStore.setState({ appUserName: 'Keeper', friends: [storyteller], games: [] });
+
+    const game = useGameStore.getState().createGame({
+      mapHeight: 400,
+      mapWidth: 600,
+      playerNames: ['Storyteller', 'Alice'],
+      storyteller,
+    });
+
+    expect(game.players).toHaveLength(3);
+    expect(game.players[1]).toMatchObject({ id: 'alice', name: 'Alice', seat: 1 });
+    expect(game.players[2]).toMatchObject({
+      id: 'storyteller',
+      isStoryteller: true,
+      name: 'Storyteller',
+      position: { x: 300, y: 200 },
+      seat: -1,
+    });
+  });
+
+  it('retains or removes the storyteller with its player references during edits', () => {
+    const game: Game = {
+      activeDay: 1,
+      conversations: [
+        {
+          createdAt: '2026-07-07T00:00:00.000Z',
+          day: 1,
+          id: 'conversation-1',
+          initiatorId: 'storyteller',
+          participantIds: ['storyteller', 'alice'],
+        },
+      ],
+      createdAt: '2026-07-07T00:00:00.000Z',
+      id: 'game-1',
+      mapHeight: 400,
+      mapWidth: 600,
+      players: [
+        { id: 'app-user', name: 'Keeper', seat: 0 },
+        { id: 'alice', name: 'Alice', seat: 1 },
+        {
+          id: 'storyteller',
+          isStoryteller: true,
+          name: 'Storyteller',
+          position: { x: 300, y: 200 },
+          seat: -1,
+        },
+      ],
+      updatedAt: '2026-07-07T00:00:00.000Z',
+    };
+    const storyteller = {
+      createdAt: game.createdAt,
+      id: 'storyteller',
+      name: 'Storyteller',
+    };
+    useGameStore.setState({ games: [game], friends: [storyteller] });
+
+    useGameStore
+      .getState()
+      .updateGamePlayers('game-1', [{ id: 'alice', name: 'Alice' }], storyteller);
+
+    expect(useGameStore.getState().games[0].players[2]).toEqual(game.players[2]);
+    expect(useGameStore.getState().games[0].conversations).toEqual(game.conversations);
+
+    useGameStore.getState().updateGamePlayers('game-1', [{ id: 'alice', name: 'Alice' }]);
+
+    expect(useGameStore.getState().games[0].players).not.toContainEqual(
+      expect.objectContaining({ isStoryteller: true }),
+    );
+    expect(useGameStore.getState().games[0].conversations).toEqual([]);
+  });
+});
+
 describe('migrateV2ToV3', () => {
   it('converts friend notes to saved notes and strips notes from friends', () => {
     const game: Game = {

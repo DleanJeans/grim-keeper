@@ -41,6 +41,20 @@ describe('game transfer', () => {
     expect(parseGameTransfer(JSON.stringify(lostTransfer)).data.game.result).toBe('lost');
   });
 
+  it('round trips the storyteller player marker and position', () => {
+    const game = createGame({ storytellerId: 'storyteller' });
+    const transfer = parseGameTransfer(createGameTransfer(game, [script]));
+
+    expect(transfer.data.game.players).toContainEqual(
+      expect.objectContaining({
+        id: 'storyteller',
+        isStoryteller: true,
+        position: { x: 450, y: 300 },
+        seat: -1,
+      }),
+    );
+  });
+
   it('rejects an invalid game result', () => {
     const transfer = JSON.parse(createGameTransfer(createGame(), [script]));
     transfer.data.game.result = 'draw';
@@ -79,10 +93,14 @@ describe('game transfer', () => {
     const game = createGame({
       aliceId: 'source-alice',
       bobId: 'source-bob',
+      storytellerId: 'source-storyteller',
     });
     const source = parseGameTransfer(createGameTransfer(game, [script]));
     const data = createData({
-      friends: [{ createdAt: game.createdAt, id: 'alice', name: 'Alice' }],
+      friends: [
+        { createdAt: game.createdAt, id: 'alice', name: 'Alice' },
+        { createdAt: game.createdAt, id: 'storyteller', name: 'Storyteller' },
+      ],
       scripts: [script],
     });
 
@@ -90,12 +108,18 @@ describe('game transfer', () => {
     const imported = result.games[0];
 
     expect(result.scripts).toHaveLength(1);
-    expect(imported.players.map((player) => player.id)).toEqual([APP_USER_ID, 'alice', 'bob']);
+    expect(imported.players.map((player) => player.id)).toEqual([
+      APP_USER_ID,
+      'alice',
+      'bob',
+      'storyteller',
+    ]);
+    expect(imported.players[3]).toMatchObject({ isStoryteller: true, name: 'Storyteller' });
     expect(imported.players[0].name).toBe('Keeper');
     expect(imported.conversations[0].participantIds).toEqual([APP_USER_ID, 'alice', 'bob']);
     expect(imported.conversations[0].initiatorId).toBe('alice');
     expect(imported.playerDayNotes?.[0].playerId).toBe('alice');
-    expect(result.friends.map((friend) => friend.name)).toEqual(['Alice', 'Bob']);
+    expect(result.friends.map((friend) => friend.name)).toEqual(['Alice', 'Storyteller', 'Bob']);
   });
 
   it('reuses a matching remote script and fills an empty placeholder', () => {
@@ -139,17 +163,30 @@ function createGame({
   bobId = 'bob',
   result,
   script: gameScript = script,
+  storytellerId,
 }: {
   aliceId?: string;
   bobId?: string;
   result?: Game['result'];
   script?: StoredScript;
+  storytellerId?: string;
 } = {}): Game {
   const createdAt = '2026-08-18T00:00:00.000Z';
   const players = [
     { id: APP_USER_ID, name: 'Laptop Keeper', seat: 0 },
     { id: aliceId, name: 'Alice', seat: 1 },
     { id: bobId, name: 'Bob', seat: 2 },
+    ...(storytellerId
+      ? [
+          {
+            id: storytellerId,
+            isStoryteller: true,
+            name: 'Storyteller',
+            position: { x: 450, y: 300 },
+            seat: -1,
+          },
+        ]
+      : []),
   ];
 
   return {

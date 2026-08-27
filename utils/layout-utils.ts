@@ -116,7 +116,18 @@ export function getPlayerMapPosition(
     return clampTokenPosition(player.position, mapWidth, mapHeight, resolvedTokenSize);
   }
 
-  const sortedPlayers = [...players].sort((first, second) => first.seat - second.seat);
+  if (player.isStoryteller) {
+    return clampTokenPosition(
+      { x: mapWidth / 2, y: mapHeight / 2 },
+      mapWidth,
+      mapHeight,
+      resolvedTokenSize,
+    );
+  }
+
+  const sortedPlayers = players
+    .filter((candidate) => !candidate.isStoryteller)
+    .sort((first, second) => first.seat - second.seat);
   const index = sortedPlayers.findIndex((candidate) => candidate.id === player.id);
   const inset = resolvedTokenSize / 2;
   const left = Math.min(inset, mapWidth / 2);

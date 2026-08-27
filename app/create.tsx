@@ -46,13 +46,14 @@ export default function CreateRoute() {
     scriptIdParam ?? null,
   );
   const [selectedLoricIds, setSelectedLoricIds] = useState<string[]>([]);
+  const [draftSelectedStorytellerId, setDraftSelectedStorytellerId] = useState<string | null>(null);
   const draftGameId = useRef<string | null>(null);
   const editingGame = gameIdParam ? games.find((game) => game.id === gameIdParam) : undefined;
   const isEditing = Boolean(editingGame);
   const players =
     editingGame && draftGameId.current !== editingGame.id
       ? editingGame.players
-          .filter((player) => player.id !== APP_USER_ID)
+          .filter((player) => player.id !== APP_USER_ID && !player.isStoryteller)
           .map(({ id, name }) => ({ id, name }))
       : draftPlayers;
   const fixedPlayerName =
@@ -69,13 +70,22 @@ export default function CreateRoute() {
   const selectedScript = availableScripts.find((script) => script.id === selectedScriptId);
   const mapWidth = getDefaultMapWidth(viewportWidth);
   const mapHeight = getDefaultMapHeight(mapWidth, viewportHeight);
-  const selectedNames = useMemo(
-    () => [fixedPlayerName, ...players.map((player) => player.name)],
-    [fixedPlayerName, players],
-  );
   const friends = useMemo(
     () => getFriendSummaries(games, storedFriends, appUserName),
     [appUserName, games, storedFriends],
+  );
+  const selectedStoryteller = friends.find((friend) => friend.id === draftSelectedStorytellerId);
+  const seatedNames = useMemo(
+    () => [fixedPlayerName, ...players.map((player) => player.name)],
+    [fixedPlayerName, players],
+  );
+  const selectedNames = useMemo(
+    () => [...seatedNames, ...(selectedStoryteller ? [selectedStoryteller.name] : [])],
+    [seatedNames, selectedStoryteller],
+  );
+  const storytellerFriends = useMemo(
+    () => friends.filter((friend) => !hasDuplicatePlayerName(seatedNames, friend.name)),
+    [friends, seatedNames],
   );
   const playerOrderKey = useMemo(() => players.map((player) => player.id).join('|'), [players]);
   const playerIndexes = useMemo(
@@ -103,8 +113,11 @@ export default function CreateRoute() {
       draftGameId.current = editingGame.id;
       setDraftPlayers(
         editingGame.players
-          .filter((player) => player.id !== APP_USER_ID)
+          .filter((player) => player.id !== APP_USER_ID && !player.isStoryteller)
           .map(({ id, name }) => ({ id, name })),
+      );
+      setDraftSelectedStorytellerId(
+        editingGame.players.find((player) => player.isStoryteller)?.id ?? null,
       );
     }
   }, [editingGame]);
@@ -179,7 +192,7 @@ export default function CreateRoute() {
     Keyboard.dismiss();
 
     if (isEditing && editingGame) {
-      updateGamePlayers(editingGame.id, players);
+      updateGamePlayers(editingGame.id, players, selectedStoryteller);
       setGameScript(editingGame.id, selectedScript);
       setGameLorics(
         editingGame.id,
@@ -195,6 +208,7 @@ export default function CreateRoute() {
       mapWidth,
       playerNames: players.map((player) => player.name),
       script: selectedScript,
+      storyteller: selectedStoryteller,
     });
     router.replace({ pathname: '/game/[id]', params: { id: game.id } });
   }
@@ -276,6 +290,7 @@ export default function CreateRoute() {
               onFocusName={() => setNameFocused(true)}
               onSelectFriend={handleSelectFriend}
               onSelectScript={setDraftSelectedScriptId}
+              onSelectStoryteller={(friendId) => setDraftSelectedStorytellerId(friendId ?? null)}
               lorics={roleCatalog.filter((role) => role.team?.toLocaleLowerCase() === 'loric')}
               onSelectLorics={setSelectedLoricIds}
               onStart={handleStart}
@@ -283,6 +298,8 @@ export default function CreateRoute() {
               scripts={availableScripts}
               selectedScriptId={selectedScriptId}
               selectedLoricIds={selectedLoricIds}
+              selectedStorytellerId={draftSelectedStorytellerId}
+              storytellers={storytellerFriends}
             />
           }
           ListHeaderComponentStyle={styles.listHeader}

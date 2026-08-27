@@ -17,6 +17,43 @@ describe('data transfer', () => {
     expect(parseBackup(createBackup(data))).toEqual(data);
   });
 
+  it('round trips storyteller players and remaps their friend IDs', () => {
+    const game: Game = {
+      activeDay: 1,
+      conversations: [],
+      createdAt: '2026-08-03T00:00:00.000Z',
+      id: 'game-1',
+      mapHeight: 400,
+      mapWidth: 600,
+      players: [
+        { id: APP_USER_ID, name: 'Keeper', seat: 0 },
+        {
+          id: 'player-storyteller',
+          isStoryteller: true,
+          name: 'Storyteller',
+          position: { x: 300, y: 200 },
+          seat: -1,
+        },
+      ],
+      updatedAt: '2026-08-03T00:00:00.000Z',
+    };
+    const friends = [{ createdAt: game.createdAt, id: 'storyteller', name: 'Storyteller' }];
+
+    const backup = JSON.parse(createBackup({ ...data, friends, games: [game] }));
+
+    expect(backup.data.games[0].players[1]).toMatchObject({
+      id: 'storyteller',
+      isStoryteller: true,
+      position: { x: 300, y: 200 },
+      seat: -1,
+    });
+    expect(parseBackup(JSON.stringify(backup)).games[0].players[1]).toMatchObject({
+      id: 'storyteller',
+      isStoryteller: true,
+      name: 'Storyteller',
+    });
+  });
+
   it('uses friend IDs for players and remaps player references', () => {
     const friends = [
       { id: 'alice', name: 'Alice', createdAt: '2026-08-03T00:00:00.000Z' },
