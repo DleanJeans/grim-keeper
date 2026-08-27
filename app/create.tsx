@@ -18,7 +18,11 @@ import { TitleHeader } from '@/components/title-header';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { hasDuplicatePlayerName, normalizePlayerName } from '@/utils/conversation-utils';
-import { getFriendSummaries, sortStorytellerSummaries } from '@/utils/friend-utils';
+import {
+  getFriendSummaries,
+  sortFriendSummaries,
+  sortStorytellerSummaries,
+} from '@/utils/friend-utils';
 import { getDefaultMapHeight, getDefaultMapWidth } from '@/utils/layout-utils';
 import { APP_USER_ID } from '@/utils/object-id';
 import { DESKTOP_CONTENT_MAX_WIDTH } from '@/utils/responsive-utils';
@@ -37,6 +41,7 @@ export default function CreateRoute() {
   const setGameLorics = useGameStore((state) => state.setGameLorics);
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const storedFriends = useGameStore((state) => state.friends);
+  const savedNotes = useGameStore((state) => state.savedNotes);
   const { height: viewportHeight, width: viewportWidth } = useWindowDimensions();
   const inputRef = useRef<RNTextInput>(null);
   const [name, setName] = useState('');
@@ -71,8 +76,8 @@ export default function CreateRoute() {
   const mapWidth = getDefaultMapWidth(viewportWidth);
   const mapHeight = getDefaultMapHeight(mapWidth, viewportHeight);
   const friends = useMemo(
-    () => getFriendSummaries(games, storedFriends, appUserName),
-    [appUserName, games, storedFriends],
+    () => sortFriendSummaries(getFriendSummaries(games, storedFriends, appUserName), savedNotes),
+    [appUserName, games, savedNotes, storedFriends],
   );
   const selectedStoryteller = friends.find((friend) => friend.id === draftSelectedStorytellerId);
   const seatedNames = useMemo(
