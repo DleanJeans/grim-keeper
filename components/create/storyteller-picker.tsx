@@ -104,7 +104,8 @@ export function StorytellerPicker({ friends, onSelect, selectedFriendId }: Story
                           {friend.name}
                         </Text>
                         <Text selectable style={styles.optionDescription}>
-                          {friend.gamesPlayed} {friend.gamesPlayed === 1 ? 'game' : 'games'}
+                          {friend.gamesStorytold} {friend.gamesStorytold === 1 ? 'game' : 'games'}{' '}
+                          as storyteller
                         </Text>
                       </View>
                       {selected ? <Check color={colors.primary} size={18} strokeWidth={3} /> : null}

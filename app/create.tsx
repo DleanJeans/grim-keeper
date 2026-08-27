@@ -18,7 +18,7 @@ import { TitleHeader } from '@/components/title-header';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { hasDuplicatePlayerName, normalizePlayerName } from '@/utils/conversation-utils';
-import { getFriendSummaries } from '@/utils/friend-utils';
+import { getFriendSummaries, sortStorytellerSummaries } from '@/utils/friend-utils';
 import { getDefaultMapHeight, getDefaultMapWidth } from '@/utils/layout-utils';
 import { APP_USER_ID } from '@/utils/object-id';
 import { DESKTOP_CONTENT_MAX_WIDTH } from '@/utils/responsive-utils';
@@ -84,7 +84,10 @@ export default function CreateRoute() {
     [seatedNames, selectedStoryteller],
   );
   const storytellerFriends = useMemo(
-    () => friends.filter((friend) => !hasDuplicatePlayerName(seatedNames, friend.name)),
+    () =>
+      sortStorytellerSummaries(
+        friends.filter((friend) => !hasDuplicatePlayerName(seatedNames, friend.name)),
+      ),
     [friends, seatedNames],
   );
   const playerOrderKey = useMemo(() => players.map((player) => player.id).join('|'), [players]);

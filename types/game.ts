@@ -150,6 +150,7 @@ export type Friend = {
 
 export type FriendSummary = Friend & {
   gamesPlayed: number;
+  gamesStorytold: number;
 };
 
 export type ConversationRow = {

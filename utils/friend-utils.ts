@@ -16,12 +16,13 @@ export function getFriendSummaries(
     const key = name.toLocaleLowerCase();
 
     if (name && key !== excludedKey) {
-      summaries.set(key, { ...friend, name, gamesPlayed: 0 });
+      summaries.set(key, { ...friend, name, gamesPlayed: 0, gamesStorytold: 0 });
     }
   }
 
   for (const game of games) {
     const gameFriendKeys = new Set<string>();
+    const gameStorytellerKeys = new Set<string>();
 
     for (const player of game.players) {
       const name = normalizePlayerName(player.name);
@@ -37,6 +38,9 @@ export function getFriendSummaries(
       }
 
       gameFriendKeys.add(key);
+      if (player.isStoryteller) {
+        gameStorytellerKeys.add(key);
+      }
 
       if (!summaries.has(key)) {
         summaries.set(key, {
@@ -47,6 +51,7 @@ export function getFriendSummaries(
           name,
           createdAt: game.createdAt,
           gamesPlayed: 0,
+          gamesStorytold: 0,
         });
       }
     }
@@ -56,6 +61,14 @@ export function getFriendSummaries(
 
       if (summary) {
         summary.gamesPlayed += 1;
+      }
+    }
+
+    for (const key of gameStorytellerKeys) {
+      const summary = summaries.get(key);
+
+      if (summary) {
+        summary.gamesStorytold += 1;
       }
     }
   }
@@ -77,6 +90,16 @@ export function sortFriendSummaries(friends: FriendSummary[], savedNotes: SavedN
       getNotesForPlayer(savedNotes, first.name).length;
     return (
       notesDifference || first.name.localeCompare(second.name, undefined, { sensitivity: 'base' })
+    );
+  });
+}
+
+export function sortStorytellerSummaries(friends: FriendSummary[]) {
+  return [...friends].sort((first, second) => {
+    const gamesDifference = second.gamesStorytold - first.gamesStorytold;
+
+    return (
+      gamesDifference || first.name.localeCompare(second.name, undefined, { sensitivity: 'base' })
     );
   });
 }

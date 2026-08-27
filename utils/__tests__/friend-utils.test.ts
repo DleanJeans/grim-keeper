@@ -4,6 +4,7 @@ import {
   getFriendSummaries,
   hasFriendName,
   sortFriendSummaries,
+  sortStorytellerSummaries,
 } from '@/utils/friend-utils';
 
 const games: Game[] = [
@@ -96,5 +97,31 @@ describe('friend utils', () => {
     expect(
       sortFriendSummaries(getFriendSummaries(games, []), savedNotes).map((friend) => friend.name),
     ).toEqual(['Alice', 'Cora', 'Ben']);
+  });
+
+  it('counts and sorts friends by storyteller games', () => {
+    const storytellerGames = games.map((game, index) => ({
+      ...game,
+      players: [
+        ...game.players.map((player) =>
+          player.name.trim().toLocaleLowerCase() === 'alice' ||
+          (index === 0 && player.name === 'Ben')
+            ? { ...player, isStoryteller: true }
+            : player,
+        ),
+      ],
+    }));
+    const summaries = getFriendSummaries(storytellerGames, []);
+
+    expect(summaries).toEqual([
+      expect.objectContaining({ name: 'Alice', gamesStorytold: 2 }),
+      expect.objectContaining({ name: 'Ben', gamesStorytold: 1 }),
+      expect.objectContaining({ name: 'Cora', gamesStorytold: 0 }),
+    ]);
+    expect(sortStorytellerSummaries(summaries).map((friend) => friend.name)).toEqual([
+      'Alice',
+      'Ben',
+      'Cora',
+    ]);
   });
 });
