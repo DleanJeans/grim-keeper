@@ -1397,7 +1397,7 @@ function synchronizeDeadVoteUsage(game: Game): Game {
     if (conversation.kind !== 'nomination') continue;
     for (const voterId of conversation.voterIds ?? []) {
       const voter = game.players.find((player) => player.id === voterId);
-      if (voter?.death && voter.death.day <= conversation.day) {
+      if (voter?.death && voter.death.day < conversation.day) {
         const revived =
           voter.revive &&
           voter.revive.day >= voter.death.day &&

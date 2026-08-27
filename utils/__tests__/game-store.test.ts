@@ -238,6 +238,71 @@ describe('addPlayer', () => {
   });
 });
 
+describe('dead vote usage', () => {
+  const game: Game = {
+    activeDay: 2,
+    conversations: [
+      {
+        createdAt: '2026-07-07T00:00:00.000Z',
+        day: 2,
+        id: 'nomination-day-2',
+        initiatorId: 'alice',
+        kind: 'nomination',
+        participantIds: ['alice', 'bob'],
+        voterIds: ['bob'],
+      },
+      {
+        createdAt: '2026-07-08T00:00:00.000Z',
+        day: 3,
+        id: 'nomination-day-3',
+        initiatorId: 'alice',
+        kind: 'nomination',
+        participantIds: ['alice', 'bob'],
+        voterIds: [],
+      },
+    ],
+    createdAt: '2026-07-07T00:00:00.000Z',
+    id: 'game-1',
+    players: [
+      { id: 'app-user', name: 'You', seat: 0 },
+      { id: 'alice', name: 'Alice', seat: 1 },
+      { id: 'bob', name: 'Bob', seat: 2 },
+    ],
+    updatedAt: '2026-07-07T00:00:00.000Z',
+  };
+
+  afterEach(() => {
+    useGameStore.setState({ games: [] });
+  });
+
+  it('keeps the dead vote when a player votes on their execution day', () => {
+    useGameStore.setState({ games: [game] });
+
+    useGameStore.getState().setPlayerDeath('game-1', 'bob', {
+      day: 2,
+      kind: 'execution',
+      updatedAt: '2026-07-08T00:00:00.000Z',
+    });
+
+    expect(useGameStore.getState().games[0].players[2].deadVoteUsed).toBeUndefined();
+  });
+
+  it('consumes and restores the dead vote for a later-day vote', () => {
+    useGameStore.setState({ games: [game] });
+    useGameStore.getState().setPlayerDeath('game-1', 'bob', {
+      day: 2,
+      kind: 'execution',
+      updatedAt: '2026-07-08T00:00:00.000Z',
+    });
+
+    useGameStore.getState().updateNominationVotes('game-1', 'nomination-day-3', ['bob']);
+    expect(useGameStore.getState().games[0].players[2].deadVoteUsed).toBe(true);
+
+    useGameStore.getState().deleteConversation('game-1', 'nomination-day-3');
+    expect(useGameStore.getState().games[0].players[2].deadVoteUsed).toBeUndefined();
+  });
+});
+
 describe('storyteller players', () => {
   afterEach(() => {
     useGameStore.setState({ games: [], friends: [] });
