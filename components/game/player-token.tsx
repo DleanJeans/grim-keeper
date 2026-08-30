@@ -282,6 +282,7 @@ export function PlayerToken({
                   ? Colors.textDeath
                   : Colors.textDefault
             }
+            isStoryteller={player.isStoryteller}
             name={player.name}
             roles={visibleRoles}
           />
@@ -337,10 +338,12 @@ export function PlayerToken({
 
 function PlayerTokenContent({
   color,
+  isStoryteller,
   name,
   roles,
 }: {
   color: string;
+  isStoryteller?: boolean;
   name: string;
   roles: Role[];
 }) {
@@ -349,8 +352,22 @@ function PlayerTokenContent({
   return (
     <>
       {roleDetails}
+      {isStoryteller ? <PlayerTokenLabel color={color} /> : null}
       <PlayerTokenName color={color} name={name} />
     </>
+  );
+}
+
+function PlayerTokenLabel({ color }: { color: string }) {
+  return (
+    <Text
+      adjustsFontSizeToFit
+      minimumFontScale={0.8}
+      numberOfLines={1}
+      style={[styles.storytellerLabel, getStorytellerLabelColorStyle(color)]}
+    >
+      Storyteller
+    </Text>
   );
 }
 
@@ -431,3 +448,29 @@ function PlayerTokenEdgeBadge({
     </View>
   );
 }
+
+function getStorytellerLabelColorStyle(color: string) {
+  if (color === Colors.textDeath) {
+    return styles.storytellerLabelDeath;
+  }
+
+  if (color === Colors.textDragReady) {
+    return styles.storytellerLabelDragReady;
+  }
+
+  return styles.storytellerLabelDefault;
+}
+
+const styles = StyleSheet.create({
+  storytellerLabel: {
+    fontSize: 8,
+    fontWeight: '900',
+    lineHeight: 9,
+    maxWidth: '100%',
+    marginBottom: 1,
+    textAlign: 'center',
+  },
+  storytellerLabelDeath: { color: Colors.textDeath },
+  storytellerLabelDefault: { color: Colors.textDefault },
+  storytellerLabelDragReady: { color: Colors.textDragReady },
+});
