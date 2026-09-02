@@ -6,6 +6,7 @@ import { Text } from '@/components/text';
 import { getNotesForPlayer, useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { FriendSummary } from '@/types/game';
+import type { GameStats } from '@/utils/game-utils';
 import { getGameStats } from '@/utils/game-utils';
 
 type FriendRowProps = {
@@ -20,7 +21,7 @@ export function FriendRow({ friend }: FriendRowProps) {
   const notesLabel = notesCount > 0 ? `${notesCount} ${notesCount === 1 ? 'note' : 'notes'}` : null;
   const metadata = notesLabel ? `${gamesLabel} · ${notesLabel}` : gamesLabel;
   const gameStats = getGameStats(games, friend.id);
-  const stats = formatFriendStats(gameStats.winRate, gameStats.goodWinRate, gameStats.evilWinRate);
+  const stats = formatFriendStats(gameStats);
 
   return (
     <Pressable
@@ -48,12 +49,18 @@ export function FriendRow({ friend }: FriendRowProps) {
   );
 }
 
-function formatFriendStats(
-  winRate: number | undefined,
-  goodWinRate: number | undefined,
-  evilWinRate: number | undefined,
-) {
-  return `Win Rate ${formatRate(winRate)} · Good ${formatRate(goodWinRate)} · Evil ${formatRate(evilWinRate)}`;
+function formatFriendStats({
+  completedGames,
+  evilCompletedGames,
+  evilWinRate,
+  evilWins,
+  goodCompletedGames,
+  goodWinRate,
+  goodWins,
+  winRate,
+  wins,
+}: GameStats) {
+  return `Win rate ${formatRate(winRate)} (${wins}/${completedGames}) · Good ${formatRate(goodWinRate)} (${goodWins}/${goodCompletedGames}) · Evil ${formatRate(evilWinRate)} (${evilWins}/${evilCompletedGames})`;
 }
 
 function formatRate(rate: number | undefined) {
