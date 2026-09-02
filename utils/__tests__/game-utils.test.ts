@@ -140,11 +140,15 @@ describe('getGameStats', () => {
   it('returns an empty win rate when no games have a result', () => {
     expect(getGameStats([])).toEqual({
       completedGames: 0,
+      evilCompletedGames: 0,
       evilGames: 0,
+      evilCompletedSideRate: undefined,
       evilSideRate: undefined,
       evilWins: 0,
       evilWinRate: undefined,
+      goodCompletedGames: 0,
       goodGames: 0,
+      goodCompletedSideRate: undefined,
       goodSideRate: undefined,
       goodWins: 0,
       goodWinRate: undefined,
@@ -163,11 +167,15 @@ describe('getGameStats', () => {
       ]),
     ).toEqual({
       completedGames: 2,
+      evilCompletedGames: 0,
       evilGames: 0,
+      evilCompletedSideRate: undefined,
       evilSideRate: undefined,
       evilWins: 0,
       evilWinRate: undefined,
+      goodCompletedGames: 0,
       goodGames: 0,
+      goodCompletedSideRate: undefined,
       goodSideRate: undefined,
       goodWins: 0,
       goodWinRate: undefined,
@@ -184,11 +192,15 @@ describe('getGameStats', () => {
     const activeGoodGame = makeAlignedGame('townsfolk');
 
     expect(getGameStats([goodGame, evilGame, travelerGame, activeGoodGame])).toMatchObject({
+      evilCompletedGames: 1,
       evilGames: 1,
+      evilCompletedSideRate: 50,
       evilSideRate: 33,
       evilWins: 0,
       evilWinRate: 0,
+      goodCompletedGames: 1,
       goodGames: 2,
+      goodCompletedSideRate: 50,
       goodSideRate: 67,
       goodWins: 1,
       goodWinRate: 100,

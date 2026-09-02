@@ -4,11 +4,15 @@ import { getEffectiveRoleForPlayer, getRoleAlignment } from '@/utils/role-utils'
 
 export type GameStats = {
   completedGames: number;
+  evilCompletedGames: number;
   evilGames: number;
+  evilCompletedSideRate: number | undefined;
   evilSideRate: number | undefined;
   evilWins: number;
   evilWinRate: number | undefined;
+  goodCompletedGames: number;
   goodGames: number;
+  goodCompletedSideRate: number | undefined;
   goodSideRate: number | undefined;
   goodWins: number;
   goodWinRate: number | undefined;
@@ -99,13 +103,19 @@ export function getGameStats(games: Game[]): GameStats {
     }
   }
 
+  const completedAlignmentGames = goodCompletedGames + evilCompletedGames;
+
   return {
     completedGames,
+    evilCompletedGames,
     evilGames,
+    evilCompletedSideRate: getPercentage(evilCompletedGames, completedAlignmentGames),
     evilSideRate: getPercentage(evilGames, goodGames + evilGames),
     evilWins,
     evilWinRate: getPercentage(evilWins, evilCompletedGames),
+    goodCompletedGames,
     goodGames,
+    goodCompletedSideRate: getPercentage(goodCompletedGames, completedAlignmentGames),
     goodSideRate: getPercentage(goodGames, goodGames + evilGames),
     goodWins,
     goodWinRate: getPercentage(goodWins, goodCompletedGames),

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
+import { useState } from 'react';
 import type { StyleProp, TextStyle } from 'react-native';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
 import { ViewAllStatsButton } from '@/components/view-all-stats-button';
@@ -13,38 +14,71 @@ const TOP_CHARACTERS_LIMIT = 5;
 
 export function HomeGameStats() {
   const games = useGameStore((state) => state.games);
+  const [showWinRateDetails, setShowWinRateDetails] = useState(false);
+  const [showAllGames, setShowAllGames] = useState(false);
   const {
+    completedGames,
+    evilCompletedGames,
+    evilCompletedSideRate,
     evilGames,
     evilSideRate,
     evilWins,
     evilWinRate,
+    goodCompletedGames,
+    goodCompletedSideRate,
     goodGames,
     goodSideRate,
     goodWins,
     goodWinRate,
     totalGames,
     winRate,
+    wins,
   } = getGameStats(games);
   const topCharacters = getCharacterStats(games).slice(0, TOP_CHARACTERS_LIMIT);
 
   return (
     <View style={styles.container}>
       <View style={styles.stats}>
-        <StatCard label="Win Rate">
+        <StatCard
+          accessibilityHint={
+            showWinRateDetails
+              ? 'Press to show only the total win rate.'
+              : 'Press to show total wins and games with results.'
+          }
+          label="Win Rate"
+          onPress={() => setShowWinRateDetails((value) => !value)}
+        >
           <Text selectable style={styles.value}>
-            {formatRate(winRate)}
+            {showWinRateDetails ? `${wins} / ${completedGames}` : formatRate(winRate)}
           </Text>
           <AlignmentLabels />
           <AlignmentWinRates evil={formatRate(evilWinRate)} good={formatRate(goodWinRate)} />
-          <AlignmentGameValues evil={String(evilWins)} good={String(goodWins)} />
+          <AlignmentGameValues
+            evil={showWinRateDetails ? `${evilWins} / ${evilCompletedGames}` : String(evilWins)}
+            good={showWinRateDetails ? `${goodWins} / ${goodCompletedGames}` : String(goodWins)}
+          />
         </StatCard>
-        <StatCard label="Total Games">
+        <StatCard
+          accessibilityHint={
+            showAllGames
+              ? 'Press to show only games with results.'
+              : 'Press to include games without results.'
+          }
+          label={showAllGames ? 'Total Games' : 'Total Games with Results'}
+          onPress={() => setShowAllGames((value) => !value)}
+        >
           <Text selectable style={styles.value}>
-            {totalGames}
+            {showAllGames ? totalGames : completedGames}
           </Text>
           <AlignmentLabels />
-          <AlignmentWinRates evil={formatRate(evilSideRate)} good={formatRate(goodSideRate)} />
-          <AlignmentGameValues evil={String(evilGames)} good={String(goodGames)} />
+          <AlignmentWinRates
+            evil={formatRate(showAllGames ? evilSideRate : evilCompletedSideRate)}
+            good={formatRate(showAllGames ? goodSideRate : goodCompletedSideRate)}
+          />
+          <AlignmentGameValues
+            evil={String(showAllGames ? evilGames : evilCompletedGames)}
+            good={String(showAllGames ? goodGames : goodCompletedGames)}
+          />
         </StatCard>
       </View>
       <StatCard label="Top Characters" right={<ViewAllStatsButton />}>
@@ -122,18 +156,21 @@ function AlignmentGameValues({ evil, good }: { evil: string; good: string }) {
 }
 
 function StatCard({
+  accessibilityHint,
   children,
   label,
+  onPress,
   right,
 }: {
+  accessibilityHint?: string;
   children: ReactNode;
   label: string;
+  onPress?: () => void;
   right?: ReactNode;
 }) {
   const hasAction = Boolean(right);
-
-  return (
-    <View style={styles.card}>
+  const content = (
+    <>
       <View style={[styles.cardHeader, hasAction && styles.cardHeaderWithAction]}>
         <Text selectable style={[styles.label, hasAction && styles.labelWithAction]}>
           {label}
@@ -141,7 +178,23 @@ function StatCard({
         {right}
       </View>
       {children}
-    </View>
+    </>
+  );
+
+  if (!onPress) {
+    return <View style={styles.card}>{content}</View>;
+  }
+
+  return (
+    <Pressable
+      accessibilityHint={accessibilityHint}
+      accessibilityLabel={label}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+    >
+      {content}
+    </Pressable>
   );
 }
 
@@ -189,6 +242,9 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 4,
     padding: 14,
+  },
+  cardPressed: {
+    backgroundColor: colors.surfacePressed,
   },
   characterCount: {
     color: colors.text,
