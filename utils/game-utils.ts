@@ -63,7 +63,11 @@ export function getLastDayWithData(game: Game): number {
   return Math.max(1, lastDay);
 }
 
-export function getGameStats(games: Game[]): GameStats {
+export function getGameStats(games: Game[], playerId = APP_USER_ID): GameStats {
+  const playerGames =
+    playerId === APP_USER_ID
+      ? games
+      : games.filter((game) => game.players.some((player) => player.id === playerId));
   let completedGames = 0;
   let evilGames = 0;
   let evilWins = 0;
@@ -73,7 +77,7 @@ export function getGameStats(games: Game[]): GameStats {
   let goodCompletedGames = 0;
   let wins = 0;
 
-  for (const game of games) {
+  for (const game of playerGames) {
     const hasResult = game.result !== undefined;
 
     if (hasResult) {
@@ -83,7 +87,7 @@ export function getGameStats(games: Game[]): GameStats {
       }
     }
 
-    const alignment = getGameAlignment(game);
+    const alignment = getGameAlignment(game, playerId);
     if (alignment === 'g') {
       goodGames += 1;
       if (hasResult) {
@@ -119,7 +123,7 @@ export function getGameStats(games: Game[]): GameStats {
     goodSideRate: getPercentage(goodGames, goodGames + evilGames),
     goodWins,
     goodWinRate: getPercentage(goodWins, goodCompletedGames),
-    totalGames: games.length,
+    totalGames: playerGames.length,
     winRate: completedGames === 0 ? undefined : Math.round((wins / completedGames) * 100),
     wins,
   };
@@ -171,11 +175,11 @@ export function getCharacterStats(games: Game[], playerId = APP_USER_ID): Charac
     );
 }
 
-function getGameAlignment(game: Game) {
-  const appUser = game.players.find((player) => player.id === APP_USER_ID);
+function getGameAlignment(game: Game, playerId: string) {
+  const player = game.players.find((candidate) => candidate.id === playerId);
   const role =
-    appUser && game.script
-      ? getEffectiveRoleForPlayer(appUser, game.script.roles, game.activeDay).role
+    player && game.script
+      ? getEffectiveRoleForPlayer(player, game.script.roles, game.activeDay).role
       : null;
 
   return role ? getRoleAlignment(role) : undefined;

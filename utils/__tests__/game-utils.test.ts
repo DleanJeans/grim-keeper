@@ -206,6 +206,34 @@ describe('getGameStats', () => {
       goodWinRate: 100,
     });
   });
+
+  it('limits friend stats to games where the friend played', () => {
+    const friendGoodGame = makeAlignedGame('townsfolk', 'won', 'friend-1');
+    const friendEvilGame = makeAlignedGame('demon', 'lost', 'friend-1');
+    const friendActiveGame = makeAlignedGame('demon', undefined, 'friend-1');
+    const unrelatedGame = makeAlignedGame('townsfolk', 'won', 'other-friend');
+
+    expect(
+      getGameStats([friendGoodGame, friendEvilGame, friendActiveGame, unrelatedGame], 'friend-1'),
+    ).toMatchObject({
+      completedGames: 2,
+      evilCompletedGames: 1,
+      evilGames: 2,
+      evilCompletedSideRate: 50,
+      evilSideRate: 67,
+      evilWins: 0,
+      evilWinRate: 0,
+      goodCompletedGames: 1,
+      goodGames: 1,
+      goodCompletedSideRate: 50,
+      goodSideRate: 33,
+      goodWins: 1,
+      goodWinRate: 100,
+      totalGames: 3,
+      winRate: 50,
+      wins: 1,
+    });
+  });
 });
 
 describe('getCharacterStats', () => {

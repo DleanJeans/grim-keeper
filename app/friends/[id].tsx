@@ -7,6 +7,7 @@ import {
   FriendNameInputRow,
   FriendNameSaveButton,
 } from '@/components/friends/friend-name-editor';
+import { GameStatsCards } from '@/components/game-stats-cards';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { SavedNotes } from '@/components/saved-notes';
 import { Text } from '@/components/text';
@@ -126,6 +127,8 @@ export default function FriendDetailRoute() {
               That name is already in use.
             </Text>
           ) : null}
+
+          <GameStatsCards games={games} playerId={friend.id} />
 
           {notes.length ? (
             <View style={{ gap: 6 }}>

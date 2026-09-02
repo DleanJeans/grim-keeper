@@ -1,87 +1,24 @@
-import type { ReactNode } from 'react';
-import { useState } from 'react';
-import type { StyleProp, TextStyle } from 'react-native';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { GameStatsCards } from '@/components/game-stats-cards';
 import { RoleIcon } from '@/components/role-icon';
+import { StatsCard } from '@/components/stats-card';
 import { Text } from '@/components/text';
 import { ViewAllStatsButton } from '@/components/view-all-stats-button';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Role } from '@/types/game';
-import { getCharacterStats, getGameStats } from '@/utils/game-utils';
+import { getCharacterStats } from '@/utils/game-utils';
 
 const TOP_CHARACTERS_LIMIT = 5;
 
 export function HomeGameStats() {
   const games = useGameStore((state) => state.games);
-  const [showWinRateDetails, setShowWinRateDetails] = useState(false);
-  const [showAllGames, setShowAllGames] = useState(false);
-  const {
-    completedGames,
-    evilCompletedGames,
-    evilCompletedSideRate,
-    evilGames,
-    evilSideRate,
-    evilWins,
-    evilWinRate,
-    goodCompletedGames,
-    goodCompletedSideRate,
-    goodGames,
-    goodSideRate,
-    goodWins,
-    goodWinRate,
-    totalGames,
-    winRate,
-    wins,
-  } = getGameStats(games);
   const topCharacters = getCharacterStats(games).slice(0, TOP_CHARACTERS_LIMIT);
 
   return (
     <View style={styles.container}>
-      <View style={styles.stats}>
-        <StatCard
-          accessibilityHint={
-            showWinRateDetails
-              ? 'Press to show only the total win rate.'
-              : 'Press to show total wins and games with results.'
-          }
-          label="Win Rate"
-          onPress={() => setShowWinRateDetails((value) => !value)}
-        >
-          <Text selectable style={styles.value}>
-            {showWinRateDetails ? `${wins} / ${completedGames}` : formatRate(winRate)}
-          </Text>
-          <AlignmentLabels />
-          <AlignmentWinRates evil={formatRate(evilWinRate)} good={formatRate(goodWinRate)} />
-          <AlignmentGameValues
-            evil={showWinRateDetails ? `${evilWins} / ${evilCompletedGames}` : String(evilWins)}
-            good={showWinRateDetails ? `${goodWins} / ${goodCompletedGames}` : String(goodWins)}
-          />
-        </StatCard>
-        <StatCard
-          accessibilityHint={
-            showAllGames
-              ? 'Press to show only games with results.'
-              : 'Press to include games without results.'
-          }
-          label={showAllGames ? 'Total Games' : 'Total Games with Results'}
-          onPress={() => setShowAllGames((value) => !value)}
-        >
-          <Text selectable style={styles.value}>
-            {showAllGames ? totalGames : completedGames}
-          </Text>
-          <AlignmentLabels />
-          <AlignmentWinRates
-            evil={formatRate(showAllGames ? evilSideRate : evilCompletedSideRate)}
-            good={formatRate(showAllGames ? goodSideRate : goodCompletedSideRate)}
-          />
-          <AlignmentGameValues
-            evil={String(showAllGames ? evilGames : evilCompletedGames)}
-            good={String(showAllGames ? goodGames : goodCompletedGames)}
-          />
-        </StatCard>
-      </View>
-      <StatCard label="Top Characters" right={<ViewAllStatsButton />}>
+      <GameStatsCards games={games} />
+      <StatsCard label="Top Characters" right={<ViewAllStatsButton />}>
         {topCharacters.length > 0 ? (
           topCharacters.map(({ count, role }) => (
             <TopCharacterRow count={count} key={role.id} role={role} />
@@ -91,110 +28,8 @@ export function HomeGameStats() {
             —
           </Text>
         )}
-      </StatCard>
+      </StatsCard>
     </View>
-  );
-}
-
-function formatRate(rate: number | undefined) {
-  return rate === undefined ? '—' : `${rate}%`;
-}
-
-function AlignmentLabels() {
-  return (
-    <View style={styles.alignmentRow}>
-      <Text selectable style={[styles.alignmentLabel, styles.goodValue]}>
-        Good
-      </Text>
-      <Text selectable style={[styles.alignmentLabel, styles.evilValue]}>
-        Evil
-      </Text>
-    </View>
-  );
-}
-
-type AlignmentRowProps = {
-  evil: string;
-  good: string;
-  separatorStyle: StyleProp<TextStyle>;
-  valueStyle: StyleProp<TextStyle>;
-};
-
-function AlignmentRow({ evil, good, valueStyle }: AlignmentRowProps) {
-  return (
-    <View style={styles.alignmentRow}>
-      <Text selectable style={[valueStyle, styles.goodValue]}>
-        {good}
-      </Text>
-      <Text selectable style={[valueStyle, styles.evilValue]}>
-        {evil}
-      </Text>
-    </View>
-  );
-}
-
-function AlignmentWinRates({ evil, good }: { evil: string; good: string }) {
-  return (
-    <AlignmentRow
-      evil={evil}
-      good={good}
-      separatorStyle={styles.rateSeparator}
-      valueStyle={styles.rateValue}
-    />
-  );
-}
-
-function AlignmentGameValues({ evil, good }: { evil: string; good: string }) {
-  return (
-    <AlignmentRow
-      evil={evil}
-      good={good}
-      separatorStyle={styles.countSeparator}
-      valueStyle={styles.countValue}
-    />
-  );
-}
-
-function StatCard({
-  accessibilityHint,
-  children,
-  label,
-  onPress,
-  right,
-}: {
-  accessibilityHint?: string;
-  children: ReactNode;
-  label: string;
-  onPress?: () => void;
-  right?: ReactNode;
-}) {
-  const hasAction = Boolean(right);
-  const content = (
-    <>
-      <View style={[styles.cardHeader, hasAction && styles.cardHeaderWithAction]}>
-        <Text selectable style={[styles.label, hasAction && styles.labelWithAction]}>
-          {label}
-        </Text>
-        {right}
-      </View>
-      {children}
-    </>
-  );
-
-  if (!onPress) {
-    return <View style={styles.card}>{content}</View>;
-  }
-
-  return (
-    <Pressable
-      accessibilityHint={accessibilityHint}
-      accessibilityLabel={label}
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-    >
-      {content}
-    </Pressable>
   );
 }
 
@@ -215,37 +50,6 @@ function TopCharacterRow({ count, role }: { count: number; role: Role }) {
 }
 
 const styles = StyleSheet.create({
-  alignmentRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  alignmentLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  cardHeader: {
-    alignItems: 'center',
-    minHeight: 22,
-    width: '100%',
-  },
-  cardHeaderWithAction: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 8,
-    borderWidth: 1,
-    flex: 1,
-    gap: 4,
-    padding: 14,
-  },
-  cardPressed: {
-    backgroundColor: colors.surfacePressed,
-  },
   characterCount: {
     color: colors.text,
     fontSize: 18,
@@ -277,55 +81,6 @@ const styles = StyleSheet.create({
   emptyValue: {
     color: colors.textMuted,
     fontSize: 22,
-    fontWeight: '900',
-    textAlign: 'center',
-  },
-  label: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    textAlign: 'center',
-  },
-  labelWithAction: {
-    textAlign: 'left',
-  },
-  evilValue: {
-    color: colors.danger,
-  },
-  goodValue: {
-    color: colors.roleGuess,
-  },
-  countSeparator: {
-    color: colors.textMuted,
-    fontSize: 22,
-    fontWeight: '900',
-    fontVariant: ['tabular-nums'],
-  },
-  countValue: {
-    fontSize: 22,
-    fontVariant: ['tabular-nums'],
-    fontWeight: '900',
-  },
-  rateSeparator: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  rateValue: {
-    fontSize: 14,
-    fontVariant: ['tabular-nums'],
-    fontWeight: '800',
-  },
-  stats: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  value: {
-    color: colors.text,
-    fontSize: 24,
-    fontVariant: ['tabular-nums'],
     fontWeight: '900',
     textAlign: 'center',
   },
