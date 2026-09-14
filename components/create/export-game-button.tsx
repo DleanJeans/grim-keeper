@@ -5,23 +5,24 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { Game, StoredScript } from '@/types/game';
+import type { Game, Role, StoredScript } from '@/types/game';
 import { downloadJson, shareJsonFile } from '@/utils/file-transfer';
 import { createGameTransfer } from '@/utils/game-transfer';
 
 type ExportGameButtonProps = {
   game: Game;
+  roleCatalog: Role[];
   scripts: StoredScript[];
 };
 
-export function ExportGameButton({ game, scripts }: ExportGameButtonProps) {
+export function ExportGameButton({ game, roleCatalog, scripts }: ExportGameButtonProps) {
   const showDialog = useAppDialog();
   const [isExporting, setIsExporting] = useState(false);
 
   async function handleExport() {
     try {
       setIsExporting(true);
-      const json = createGameTransfer(game, scripts);
+      const json = createGameTransfer(game, scripts, roleCatalog);
       const filename = `grim-keeper--${game.id}.json`;
 
       if (process.env.EXPO_OS === 'web') {

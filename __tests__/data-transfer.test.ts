@@ -43,7 +43,10 @@ describe('data transfer', () => {
       scriptId: 'sushi-buffet',
       sushiRoleIds: [],
     });
-    expect(restored.games[0].script).toEqual(script);
+    expect(restored.games[0].script).toEqual({
+      ...script,
+      roles: [{ id: 'empath', name: 'Empath' }],
+    });
   });
 
   it('round trips storyteller players and remaps their friend IDs', () => {
@@ -426,6 +429,41 @@ describe('data transfer', () => {
     ]);
     expect(restored.games[0]).toMatchObject({ scriptId: downloadedScript.id });
     expect(restored.games[0].script).toBeUndefined();
+  });
+
+  it('exports official roles in portable scripts as IDs', () => {
+    const loricRole: Role = {
+      ability: 'A loric ability.',
+      edition: 'loric',
+      id: 'loric_role',
+      name: 'Loric Role',
+      team: 'loric',
+    };
+    const fabledRole: Role = {
+      ability: 'A fabled ability.',
+      edition: 'fabled',
+      id: 'fabled_role',
+      name: 'Fabled Role',
+      team: 'fabled',
+    };
+    const customRole: Role = { edition: 'homebrew', id: 'custom_role', name: 'Custom Role' };
+    const script: StoredScript = {
+      author: 'Homebrew Author',
+      id: 'custom-script',
+      name: 'Custom Script',
+      roles: [loricRole, fabledRole, customRole],
+      updatedAt: '2026-08-03T00:00:00.000Z',
+      version: '1',
+    };
+
+    const backup = JSON.parse(createBackup({ ...data, scripts: [script] }));
+
+    expect(backup.data.scripts[0].roles).toEqual(['loric_role', 'fabled_role', customRole]);
+    expect(parseBackup(JSON.stringify(backup)).scripts[0]?.roles).toEqual([
+      { id: 'loric_role', name: 'Loric Role' },
+      { id: 'fabled_role', name: 'Fabled Role' },
+      customRole,
+    ]);
   });
 
   it('imports version 1 backups', () => {

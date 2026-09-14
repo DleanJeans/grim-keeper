@@ -3,7 +3,9 @@ import {
   normalizeRoleImagesInState,
   normalizeRoleImageUrls,
   restoreDuplicateScriptImages,
+  restoreStoredScript,
   restoreSushiBuffetScriptRoles,
+  serializeStoredScript,
   stripDuplicateScriptImages,
   stripSushiBuffetScriptRoles,
 } from '@/utils/script-storage';
@@ -144,5 +146,49 @@ describe('script persistence image handling', () => {
       sushiRoles.map((role) => role.id),
     );
     expect(hydratedGame.script?.roles[0]?.ability).toBe(sushiRoles[0].ability);
+  });
+
+  it('serializes canonical loric and fabled roles as IDs', () => {
+    const loricRole = {
+      ability: 'A loric ability.',
+      edition: 'loric',
+      id: 'loric_role',
+      name: 'Loric Role',
+      team: 'loric',
+    };
+    const fabledRole = {
+      ability: 'A fabled ability.',
+      edition: 'fabled',
+      id: 'fabled_role',
+      name: 'Fabled Role',
+      team: 'fabled',
+    };
+    const customRole = { edition: 'homebrew', id: 'custom_role', name: 'Custom Role' };
+    const storedScript = {
+      ...script,
+      roles: [loricRole, fabledRole, customRole],
+    };
+
+    const serialized = serializeStoredScript(storedScript, [loricRole, fabledRole]);
+
+    expect(serialized.roles).toEqual(['loric_role', 'fabled_role', customRole]);
+    expect(restoreStoredScript(serialized, [loricRole, fabledRole]).roles).toEqual(
+      storedScript.roles,
+    );
+  });
+
+  it('keeps app-local role notes in the serialized object', () => {
+    const catalogRole = {
+      ability: 'A loric ability.',
+      edition: 'loric',
+      id: 'loric_role',
+      name: 'Loric Role',
+      team: 'loric',
+    };
+    const roleWithNote = { ...catalogRole, notes: ['Keep this role in mind.'] };
+
+    expect(
+      serializeStoredScript({ ...script, roles: [roleWithNote] }, [catalogRole]).roles,
+    ).toEqual([roleWithNote]);
   });
 });

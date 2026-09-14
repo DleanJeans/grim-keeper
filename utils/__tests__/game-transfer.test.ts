@@ -54,6 +54,29 @@ describe('game transfer', () => {
     expect(transfer.data.script?.roles[0]).not.toHaveProperty('imageUrl');
   });
 
+  it('serializes official roles as IDs and restores catalog metadata on merge', () => {
+    const officialRole: Role = {
+      ability: 'An official ability.',
+      edition: 'loric',
+      id: 'loric_role',
+      name: 'Loric Role',
+      team: 'loric',
+    };
+    const officialScript = { ...script, roles: [officialRole] };
+    const game = createGame({ script: officialScript });
+    const rawTransfer = JSON.parse(createGameTransfer(game, [officialScript], [officialRole]));
+
+    expect(rawTransfer.data.game.script.roles).toEqual(['loric_role']);
+    expect(rawTransfer.data.script.roles).toEqual(['loric_role']);
+
+    const transfer = parseGameTransfer(JSON.stringify(rawTransfer));
+    expect(transfer.data.script?.roles).toEqual([{ id: 'loric_role', name: 'Loric Role' }]);
+
+    const merged = mergeGameTransfer(createData({ roleCatalog: [officialRole] }), transfer);
+    expect(merged.scripts[0]?.roles).toEqual([officialRole]);
+    expect(merged.games[0]?.script?.roles).toEqual([officialRole]);
+  });
+
   it('keeps a Sushi Buffet script game-local when transferring a game', () => {
     const sushiScript: StoredScript = {
       id: 'sushi-buffet',

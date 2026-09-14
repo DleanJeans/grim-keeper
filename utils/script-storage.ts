@@ -1,8 +1,18 @@
 import type { Game, Role, StoredScript } from '@/types/game';
-import { mergeRoleCatalogMetadata } from '@/utils/role-utils';
+import { formatRoleId, isOfficialRole, mergeRoleCatalogMetadata } from '@/utils/role-utils';
 import { SUSHI_BUFFET_SCRIPT_ID } from '@/utils/script-constants';
 
 type LegacyRole = Role & { imageUrl?: string };
+
+export type SerializedRole = Role | string;
+
+export type SerializedStoredScript = Omit<StoredScript, 'roles'> & {
+  roles: SerializedRole[];
+};
+
+export type SerializedGame = Omit<Game, 'script'> & {
+  script?: SerializedStoredScript;
+};
 
 type RoleImageState = {
   games?: Game[];
@@ -46,6 +56,65 @@ export function restoreSushiBuffetScriptRoles(games: Game[], roleCatalog: Role[]
       },
     };
   });
+}
+
+export function serializeStoredScript(
+  script: StoredScript,
+  roleCatalog: Role[] = [],
+): SerializedStoredScript {
+  return {
+    ...script,
+    roles: serializeScriptRoles(script.roles, roleCatalog),
+  };
+}
+
+export function restoreStoredScript(
+  script: SerializedStoredScript,
+  roleCatalog: Role[] = [],
+): StoredScript {
+  return normalizeStoredScriptImages({
+    ...script,
+    roles: restoreScriptRoles(script.roles, roleCatalog),
+  });
+}
+
+export function serializeScriptRoles(roles: Role[], roleCatalog: Role[] = []): SerializedRole[] {
+  const catalogById = new Map(roleCatalog.map((role) => [role.id, role]));
+
+  return roles.map((role) => {
+    const catalogRole = catalogById.get(role.id);
+    const isCanonicalOfficialRole =
+      isOfficialRole(role) || (catalogRole !== undefined && isOfficialRole(catalogRole));
+
+    if (isCanonicalOfficialRole && !hasRoleOverrides(role, catalogRole)) {
+      return role.id;
+    }
+
+    return normalizeRoleImageUrls(role);
+  });
+}
+
+export function restoreScriptRoles(roles: SerializedRole[], roleCatalog: Role[] = []): Role[] {
+  return roles.map((serializedRole) => {
+    const role =
+      typeof serializedRole === 'string'
+        ? { id: serializedRole, name: formatRoleId(serializedRole) }
+        : serializedRole;
+
+    return mergeRoleCatalogMetadata([role], roleCatalog)[0];
+  });
+}
+
+export function serializeGameScripts(games: Game[], roleCatalog: Role[] = []): SerializedGame[] {
+  return games.map((game) =>
+    game.script ? { ...game, script: serializeStoredScript(game.script, roleCatalog) } : game,
+  );
+}
+
+export function restoreGameScripts(games: SerializedGame[], roleCatalog: Role[] = []): Game[] {
+  return games.map((game) =>
+    game.script ? { ...game, script: restoreStoredScript(game.script, roleCatalog) } : game,
+  ) as Game[];
 }
 
 export function stripDuplicateScriptImages(games: Game[], scripts: StoredScript[]) {
@@ -140,4 +209,17 @@ function getRoleImages(role: Role) {
 
 function isDataImageUrl(value: string) {
   return value.startsWith('data:image/');
+}
+
+function hasRoleOverrides(role: Role, catalogRole: Role | undefined) {
+  if (role.notes?.length || !catalogRole) {
+    return Boolean(role.notes?.length);
+  }
+
+  return (
+    role.name !== catalogRole.name ||
+    (role.ability !== undefined && role.ability !== catalogRole.ability) ||
+    (role.team !== undefined && role.team !== catalogRole.team) ||
+    (role.edition !== undefined && role.edition !== catalogRole.edition)
+  );
 }

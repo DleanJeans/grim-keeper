@@ -130,6 +130,34 @@ describe('backup export integration', () => {
     ).toBe(true);
     expect(exported.data.scripts.some((script) => typeof script === 'string')).toBe(true);
     expect(exported.data.scripts.some((script) => typeof script === 'object')).toBe(true);
+    const portableScripts = new Map(
+      exported.data.scripts
+        .filter(
+          (script): script is { id: string; roles: unknown[] } =>
+            typeof script === 'object' &&
+            script !== null &&
+            'id' in script &&
+            typeof script.id === 'string' &&
+            'roles' in script &&
+            Array.isArray(script.roles),
+        )
+        .map((script) => [script.id, script]),
+    );
+    for (const scriptId of [
+      'chaoswille-v1-8-proclaimer',
+      'no-rest-for-the-wicked',
+      'repugnance-oblivion',
+    ]) {
+      expect(portableScripts.get(scriptId)?.roles.every((role) => typeof role === 'string')).toBe(
+        true,
+      );
+    }
+    expect(portableScripts.get('chaoswille-v1-8-proclaimer')?.roles).toEqual(
+      expect.arrayContaining(['tor', 'bootlegger', 'hellslibrarian']),
+    );
+    expect(
+      portableScripts.get('gavin-s-birthday')?.roles.every((role) => typeof role === 'object'),
+    ).toBe(true);
     const restored = parseBackup(output);
     expect(restored.games).toHaveLength(sourceData.games.length);
     expect(restored.games.every((game) => game.players.every((player) => player.name))).toBe(true);

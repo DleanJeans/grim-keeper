@@ -23,6 +23,18 @@ const roleEditionDirectories: Record<string, string> = {
   'trouble brewing': 'tb',
 };
 
+const officialRoleEditions = new Set([
+  'bad moon rising',
+  'bmr',
+  'carousel',
+  'fabled',
+  'loric',
+  'sects and violets',
+  'snv',
+  'tb',
+  'trouble brewing',
+]);
+
 const officialRoleMetadataById: Record<string, Pick<Role, 'edition' | 'team'>> = {
   beggar: { edition: 'tb', team: 'traveller' },
   fanggu: { edition: 'snv', team: 'demon' },
@@ -144,6 +156,10 @@ export function getRoleAlignment(role: Role): 'g' | 'e' | undefined {
 
 export function isTravelerRole(role: Role) {
   return getRoleTeam(role) === 'traveller';
+}
+
+export function isOfficialRole(role: Pick<Role, 'edition'>) {
+  return officialRoleEditions.has(role.edition?.trim().toLocaleLowerCase() ?? '');
 }
 
 export function isFlowerGirlRole(role: Role) {
@@ -860,7 +876,7 @@ function normalizeRoleNotes(value: unknown) {
   return notes.length > 0 ? notes : undefined;
 }
 
-function formatRoleId(roleId: string) {
+export function formatRoleId(roleId: string) {
   return roleId
     .replaceAll('_', ' ')
     .replaceAll('-', ' ')

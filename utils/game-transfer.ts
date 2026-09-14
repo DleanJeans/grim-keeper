@@ -18,7 +18,14 @@ import {
 } from '@/utils/object-id';
 import { mergeRoleCatalogMetadata } from '@/utils/role-utils';
 import { isSushiBuffetScript } from '@/utils/script-service';
-import { normalizeStoredScriptImages } from '@/utils/script-storage';
+import {
+  restoreGameScripts,
+  restoreStoredScript,
+  type SerializedGame,
+  type SerializedStoredScript,
+  serializeGameScripts,
+  serializeStoredScript,
+} from '@/utils/script-storage';
 
 const gameTransferFormat = 'grim-keeper-game';
 const gameTransferVersion = 1;
@@ -42,7 +49,7 @@ type GameData = {
   scripts: StoredScript[];
 };
 
-export function createGameTransfer(game: Game, scripts: StoredScript[]) {
+export function createGameTransfer(game: Game, scripts: StoredScript[], roleCatalog: Role[] = []) {
   const scriptId = game.scriptId ?? game.script?.id;
   const script = scripts.find((candidate) => candidate.id === scriptId) ?? game.script;
 
@@ -51,34 +58,21 @@ export function createGameTransfer(game: Game, scripts: StoredScript[]) {
   }
 
   const exportedGame = game.script
-    ? {
-        ...game,
-        script: {
-          ...game.script,
-          roles: normalizeStoredScriptImages(game.script).roles,
-        },
-      }
+    ? serializeGameScripts([game], roleCatalog)[0]
     : script
       ? {
           ...game,
           script: {
             ...script,
-            roles: normalizeStoredScriptImages(script).roles,
+            roles: serializeStoredScript(script, roleCatalog).roles,
           },
         }
       : game;
 
-  const transfer: GameTransfer = {
+  const transfer = {
     data: {
       game: exportedGame,
-      ...(script
-        ? {
-            script: {
-              ...script,
-              roles: normalizeStoredScriptImages(script).roles,
-            },
-          }
-        : {}),
+      ...(script ? { script: serializeStoredScript(script, roleCatalog) } : {}),
     },
     exportedAt: new Date().toISOString(),
     format: gameTransferFormat,
@@ -104,7 +98,7 @@ export function parseGameTransfer(value: string): GameTransfer {
     !isString(transfer.exportedAt) ||
     !isRecord(transfer.data) ||
     !isGame(transfer.data.game) ||
-    (transfer.data.script !== undefined && !isStoredScript(transfer.data.script))
+    (transfer.data.script !== undefined && !isSerializedStoredScript(transfer.data.script))
   ) {
     throw new Error('The game transfer is missing required Grim Keeper data.');
   }
@@ -192,15 +186,15 @@ export function mergeGameTransfer(data: GameData, transfer: GameTransfer): GameD
   };
 }
 
-function restoreGameImages(game: Game): Game {
-  return game.script ? { ...game, script: restoreScriptImages(game.script) } : game;
+function restoreGameImages(game: SerializedGame): Game {
+  return restoreGameScripts([game])[0];
 }
 
-function restoreScriptImages(script: StoredScript): StoredScript {
-  return normalizeStoredScriptImages(script);
+function restoreScriptImages(script: SerializedStoredScript): StoredScript {
+  return restoreStoredScript(script);
 }
 
-function isGame(value: unknown): value is Game {
+function isGame(value: unknown): value is SerializedGame {
   return (
     isRecord(value) &&
     isString(value.id) &&
@@ -220,11 +214,11 @@ function isGame(value: unknown): value is Game {
     Array.isArray(value.conversations) &&
     value.conversations.every(isConversation) &&
     isOptionalPlayerDayNotes(value.playerDayNotes) &&
-    (value.script === undefined || isStoredScript(value.script))
+    (value.script === undefined || isSerializedStoredScript(value.script))
   );
 }
 
-function isStoredScript(value: unknown): value is StoredScript {
+function isSerializedStoredScript(value: unknown): value is SerializedStoredScript {
   return (
     isRecord(value) &&
     isString(value.id) &&
@@ -235,7 +229,7 @@ function isStoredScript(value: unknown): value is StoredScript {
     isOptionalString(value.scriptType) &&
     isOptionalString(value.author) &&
     Array.isArray(value.roles) &&
-    value.roles.every(isRole)
+    value.roles.every((role) => isRole(role) || isString(role))
   );
 }
 

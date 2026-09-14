@@ -406,7 +406,7 @@ export default function CreateRoute() {
           ListHeaderComponentStyle={styles.listHeader}
           ListFooterComponent={
             isEditing && editingGame ? (
-              <ExportGameButton game={editingGame} scripts={scripts} />
+              <ExportGameButton game={editingGame} roleCatalog={roleCatalog} scripts={scripts} />
             ) : null
           }
           onDragEnd={({ data }) => {

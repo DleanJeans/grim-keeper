@@ -9,9 +9,14 @@ jest.mock('@/utils/web-storage', () => ({
 }));
 
 import { useGameStore } from '@/store/game-store';
-import type { Game, SavedNote, StoredScript } from '@/types/game';
+import type { Game, Role, SavedNote, StoredScript } from '@/types/game';
 import { getGameStats } from '@/utils/game-utils';
 import { getNotesForPlayer, migrateV2ToV3 } from '@/utils/saved-note-store';
+
+const persistedStorage = jest.requireMock('@/utils/web-storage').webStorage as {
+  getItem: jest.Mock;
+  setItem: jest.Mock;
+};
 
 const baseNote: Omit<SavedNote, 'playerName' | 'createdAt'> = {
   day: 1,
@@ -23,6 +28,77 @@ const baseNote: Omit<SavedNote, 'playerName' | 'createdAt'> = {
   text: 'Saw a 0.',
   updatedAt: '2026-07-17T00:00:00.000Z',
 };
+
+describe('script persistence role references', () => {
+  const officialRole: Role = {
+    ability: 'An official ability.',
+    edition: 'loric',
+    id: 'loric_role',
+    name: 'Loric Role',
+    team: 'loric',
+  };
+  const script: StoredScript = {
+    id: 'homebrew-script',
+    name: 'Homebrew Script',
+    roles: [officialRole],
+    updatedAt: '2026-09-15T00:00:00.000Z',
+    version: '1.0.0',
+  };
+  const game: Game = {
+    activeDay: 1,
+    conversations: [],
+    createdAt: '2026-09-15T00:00:00.000Z',
+    id: 'game-1',
+    players: [],
+    script: { ...script },
+    scriptId: script.id,
+    updatedAt: '2026-09-15T00:00:00.000Z',
+  };
+
+  afterEach(() => {
+    useGameStore.setState({ games: [], roleCatalog: [], scripts: [] });
+    persistedStorage.getItem.mockResolvedValue(null);
+    persistedStorage.setItem.mockClear();
+  });
+
+  it('persists official script roles as IDs in scripts and game copies', () => {
+    useGameStore.setState({ games: [game], roleCatalog: [officialRole], scripts: [script] });
+
+    const latestValue = persistedStorage.setItem.mock.calls.at(-1)?.[1];
+    expect(typeof latestValue).toBe('string');
+
+    const persisted = JSON.parse(latestValue as string);
+    expect(persisted.version).toBe(13);
+    expect(persisted.state.scripts[0].roles).toEqual(['loric_role']);
+    expect(persisted.state.games[0].script.roles).toEqual(['loric_role']);
+  });
+
+  it('migrates existing full official roles when loading the previous store version', async () => {
+    persistedStorage.setItem.mockClear();
+    persistedStorage.getItem.mockResolvedValueOnce(
+      JSON.stringify({
+        state: {
+          appUserName: 'You',
+          friends: [],
+          games: [game],
+          roleCatalog: [officialRole],
+          savedNotes: [],
+          scripts: [script],
+        },
+        version: 12,
+      }),
+    );
+
+    await useGameStore.persist.rehydrate();
+
+    expect(useGameStore.getState().scripts[0]?.roles).toEqual([officialRole]);
+    const migratedValue = persistedStorage.setItem.mock.calls.at(-1)?.[1];
+    const migrated = JSON.parse(migratedValue as string);
+    expect(migrated.version).toBe(13);
+    expect(migrated.state.scripts[0].roles).toEqual(['loric_role']);
+    expect(migrated.state.games[0].script.roles).toEqual(['loric_role']);
+  });
+});
 
 describe('getNotesForPlayer', () => {
   it('returns only notes whose player name matches after normalization', () => {

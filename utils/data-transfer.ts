@@ -10,28 +10,20 @@ import {
   mapGamePlayerIdsToFriendIds,
   mapSavedNoteIds,
 } from '@/utils/object-id';
+import { isOfficialRole } from '@/utils/role-utils';
 import { isSushiBuffetScript } from '@/utils/script-service';
 import {
   normalizeRoleImagesInState,
   normalizeRoleImageUrls,
-  normalizeStoredScriptImages,
+  restoreStoredScript,
+  type SerializedStoredScript,
+  serializeStoredScript,
 } from '@/utils/script-storage';
 
 const backupFormat = 'grim-keeper-backup';
 const backupVersion = 2;
 const legacyBackupVersion = 1;
 const officialScriptAuthor = 'The Pandemonium Institute';
-const officialRoleEditions = new Set([
-  'bad moon rising',
-  'bmr',
-  'carousel',
-  'fabled',
-  'loric',
-  'sects and violets',
-  'snv',
-  'tb',
-  'trouble brewing',
-]);
 
 type Backup = {
   data: ExportedGameData;
@@ -60,7 +52,7 @@ type ExportedGameData = Omit<GameData, 'games' | 'scripts'> & {
   scripts: ExportedScript[];
 };
 
-type ExportedScript = StoredScript | string;
+type ExportedScript = SerializedStoredScript | string;
 
 export function createBackup(data: GameData) {
   const exportedData = normalizeForExport(data);
@@ -98,7 +90,7 @@ export function parseBackup(value: string): GameData {
 
 function normalizeForExport(data: GameData): ExportedGameData {
   const scripts: ExportedScript[] = data.scripts.map((script) =>
-    isPortableScript(script) ? normalizeStoredScriptImages(script) : script.id,
+    isPortableScript(script) ? serializeStoredScript(script, data.roleCatalog) : script.id,
   );
   const roleCatalog = data.roleCatalog
     .filter((role) => !isOfficialRole(role))
@@ -136,7 +128,9 @@ function normalizeForExport(data: GameData): ExportedGameData {
     }
 
     if (!scriptsById.has(script.id)) {
-      scripts.push(isPortableScript(script) ? normalizeStoredScriptImages(script) : script.id);
+      scripts.push(
+        isPortableScript(script) ? serializeStoredScript(script, data.roleCatalog) : script.id,
+      );
       scriptsById.set(script.id, script);
     }
   }
@@ -189,12 +183,12 @@ function exportGame(game: Game, scriptsById: Map<string, StoredScript>): Exporte
 }
 
 function restoreExportedData(data: ExportedGameData): GameData {
+  const roleCatalog = data.roleCatalog.map(normalizeRoleImageUrls);
   const storedScripts = data.scripts.map((script) =>
     typeof script === 'string'
       ? createScriptPlaceholder(script)
-      : normalizeStoredScriptImages(script),
+      : restoreStoredScript(script, roleCatalog),
   );
-  const roleCatalog = data.roleCatalog.map(normalizeRoleImageUrls);
   const scriptsById = new Map(
     storedScripts.filter((script) => script.roles.length > 0).map((script) => [script.id, script]),
   );
@@ -291,10 +285,6 @@ function createScriptPlaceholder(id: string): StoredScript {
   };
 }
 
-function isOfficialRole(role: Role) {
-  return officialRoleEditions.has(role.edition?.trim().toLocaleLowerCase() ?? '');
-}
-
 function sameRoleIds(first: Role[], second: Role[]) {
   return (
     first.length === second.length && first.every((role, index) => role.id === second[index]?.id)
@@ -318,7 +308,7 @@ function isGameData(value: unknown): value is GameData {
     Array.isArray(value.savedNotes) &&
     value.savedNotes.every(isSavedNote) &&
     Array.isArray(value.scripts) &&
-    value.scripts.every(isStoredScript)
+    value.scripts.every(isRuntimeStoredScript)
   );
 }
 
@@ -335,7 +325,7 @@ function isExportedGameData(value: unknown): value is ExportedGameData {
     Array.isArray(value.savedNotes) &&
     value.savedNotes.every(isSavedNote) &&
     Array.isArray(value.scripts) &&
-    value.scripts.every((script) => typeof script === 'string' || isStoredScript(script))
+    value.scripts.every((script) => typeof script === 'string' || isSerializedStoredScript(script))
   );
 }
 
@@ -347,7 +337,7 @@ function isRole(value: unknown): value is Role {
   return isRecord(value) && isString(value.id) && isString(value.name);
 }
 
-function isStoredScript(value: unknown): value is StoredScript {
+function isRuntimeStoredScript(value: unknown): value is StoredScript {
   return (
     isRecord(value) &&
     isString(value.id) &&
@@ -356,6 +346,18 @@ function isStoredScript(value: unknown): value is StoredScript {
     isString(value.updatedAt) &&
     Array.isArray(value.roles) &&
     value.roles.every(isRole)
+  );
+}
+
+function isSerializedStoredScript(value: unknown): value is SerializedStoredScript {
+  return (
+    isRecord(value) &&
+    isString(value.id) &&
+    isString(value.name) &&
+    isString(value.version) &&
+    isString(value.updatedAt) &&
+    Array.isArray(value.roles) &&
+    value.roles.every((role) => isRole(role) || isString(role))
   );
 }
 
