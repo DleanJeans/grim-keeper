@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Role, StoredScript } from '@/types/game';
-import { isCustomScript } from '@/utils/script-image-utils';
+import { formatScriptSize, getScriptSizeBytes, isCustomScript } from '@/utils/script-image-utils';
 
 import { CustomScriptImageControls } from './custom-script-image-controls';
 import { ScriptRoleEditor } from './script-role-editor';
@@ -53,18 +53,21 @@ export function ScriptCard({
             roles
           </Text>
           {custom ? (
-            <View accessibilityLabel="Custom script" style={styles.customTag}>
-              <Text selectable style={styles.customTagText}>
-                Custom
+            <>
+              <View accessibilityLabel="Custom script" style={styles.customTag}>
+                <Text selectable style={styles.customTagText}>
+                  Custom
+                </Text>
+              </View>
+              <Text selectable style={styles.metadata}>
+                {formatScriptSize(getScriptSizeBytes(script))}
               </Text>
-            </View>
+            </>
           ) : null}
         </View>
       </View>
 
-      {custom ? (
-        <CustomScriptImageControls onUpdate={onUpdate} script={script} showControls={editing} />
-      ) : null}
+      {custom && editing ? <CustomScriptImageControls onUpdate={onUpdate} script={script} /> : null}
 
       {editing ? (
         <ScriptRoleEditor onChange={onUpdate} roleCatalog={roleCatalog} script={script} />

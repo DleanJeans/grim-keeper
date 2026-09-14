@@ -19,14 +19,9 @@ const MAX_TARGET_HEIGHT = 4096;
 type CustomScriptImageControlsProps = {
   onUpdate: (script: StoredScript) => void;
   script: StoredScript;
-  showControls: boolean;
 };
 
-export function CustomScriptImageControls({
-  onUpdate,
-  script,
-  showControls,
-}: CustomScriptImageControlsProps) {
+export function CustomScriptImageControls({ onUpdate, script }: CustomScriptImageControlsProps) {
   const showDialog = useAppDialog();
   const [targetHeightText, setTargetHeightText] = useState(DEFAULT_TARGET_HEIGHT);
   const [isResizing, setIsResizing] = useState(false);
@@ -70,65 +65,58 @@ export function CustomScriptImageControls({
 
   return (
     <View style={styles.container}>
-      <Text selectable style={styles.sizeText}>
-        Script size: {formatScriptSize(scriptSizeBytes)}
-      </Text>
-      {showControls ? (
-        <>
-          <View style={styles.controls}>
-            <View style={styles.inputGroup}>
-              <Text selectable style={styles.label}>
-                Image height (px)
-              </Text>
-              <TextInput
-                accessibilityLabel="Resize image height in pixels"
-                editable={!isResizing}
-                keyboardType="number-pad"
-                maxLength={4}
-                onChangeText={setTargetHeightText}
-                placeholder={DEFAULT_TARGET_HEIGHT}
-                placeholderTextColor={colors.textSubtle}
-                value={targetHeightText}
-                style={styles.input}
-              />
-            </View>
-            <Pressable
-              accessibilityLabel={`Resize ${script.name} images`}
-              accessibilityRole="button"
-              disabled={isResizing || !hasImages || targetHeight === undefined}
-              onPress={() => void handleResize()}
-              style={({ pressed }) => [
-                styles.button,
-                pressed && styles.buttonPressed,
-                (isResizing || !hasImages || targetHeight === undefined) && styles.buttonDisabled,
-              ]}
-            >
-              {isResizing ? (
-                <LoaderCircle color={colors.onDisabled} size={16} strokeWidth={2.4} />
-              ) : (
-                <ImageDown color={colors.text} size={16} strokeWidth={2.4} />
-              )}
-              <Text
-                style={[
-                  styles.buttonLabel,
-                  (isResizing || !hasImages || targetHeight === undefined) &&
-                    styles.buttonLabelDisabled,
-                ]}
-              >
-                {isResizing ? 'Resizing…' : 'Resize images'}
-              </Text>
-            </Pressable>
-          </View>
-          {inputError ? (
-            <Text selectable style={styles.errorText}>
-              Enter a whole number from 1 to {MAX_TARGET_HEIGHT}.
-            </Text>
-          ) : !hasImages ? (
-            <Text selectable style={styles.hintText}>
-              No embedded images to resize.
-            </Text>
-          ) : null}
-        </>
+      <View style={styles.controls}>
+        <View style={styles.inputGroup}>
+          <Text selectable style={styles.label}>
+            Image height (px)
+          </Text>
+          <TextInput
+            accessibilityLabel="Resize image height in pixels"
+            editable={!isResizing}
+            keyboardType="number-pad"
+            maxLength={4}
+            onChangeText={setTargetHeightText}
+            placeholder={DEFAULT_TARGET_HEIGHT}
+            placeholderTextColor={colors.textSubtle}
+            value={targetHeightText}
+            style={styles.input}
+          />
+        </View>
+        <Pressable
+          accessibilityLabel={`Resize ${script.name} images`}
+          accessibilityRole="button"
+          disabled={isResizing || !hasImages || targetHeight === undefined}
+          onPress={() => void handleResize()}
+          style={({ pressed }) => [
+            styles.button,
+            pressed && styles.buttonPressed,
+            (isResizing || !hasImages || targetHeight === undefined) && styles.buttonDisabled,
+          ]}
+        >
+          {isResizing ? (
+            <LoaderCircle color={colors.onDisabled} size={16} strokeWidth={2.4} />
+          ) : (
+            <ImageDown color={colors.text} size={16} strokeWidth={2.4} />
+          )}
+          <Text
+            style={[
+              styles.buttonLabel,
+              (isResizing || !hasImages || targetHeight === undefined) &&
+                styles.buttonLabelDisabled,
+            ]}
+          >
+            {isResizing ? 'Resizing…' : 'Resize images'}
+          </Text>
+        </Pressable>
+      </View>
+      {inputError ? (
+        <Text selectable style={styles.errorText}>
+          Enter a whole number from 1 to {MAX_TARGET_HEIGHT}.
+        </Text>
+      ) : !hasImages ? (
+        <Text selectable style={styles.hintText}>
+          No embedded images to resize.
+        </Text>
       ) : null}
     </View>
   );
@@ -223,9 +211,5 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 12,
     fontWeight: '800',
-  },
-  sizeText: {
-    color: colors.textMuted,
-    fontSize: 13,
   },
 });
