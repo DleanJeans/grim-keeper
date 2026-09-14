@@ -67,11 +67,11 @@ export function ScriptCard({
         </View>
       </View>
 
-      {custom && editing ? <CustomScriptImageControls onUpdate={onUpdate} script={script} /> : null}
-
       {editing ? (
         <ScriptRoleEditor onChange={onUpdate} roleCatalog={roleCatalog} script={script} />
       ) : null}
+
+      {custom && editing ? <CustomScriptImageControls onUpdate={onUpdate} script={script} /> : null}
 
       <View style={styles.actions}>
         {canSelect ? (
