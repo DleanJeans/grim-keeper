@@ -1,4 +1,4 @@
-import { Check, Search, Users, X } from 'lucide-react-native';
+import { Check, ChevronDown, Search, Users, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
@@ -21,6 +21,7 @@ export function FriendPlayerPicker({
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [draftSelectedFriendIds, setDraftSelectedFriendIds] = useState<string[]>([]);
+  const [selectedFriendsExpanded, setSelectedFriendsExpanded] = useState(false);
   const selectedFriendIdSet = useMemo(
     () => new Set(draftSelectedFriendIds),
     [draftSelectedFriendIds],
@@ -42,19 +43,32 @@ export function FriendPlayerPicker({
         (!normalizedQuery || friend.name.toLocaleLowerCase().includes(normalizedQuery)),
     );
   }, [friends, searchQuery, selectedFriendIdSet]);
-  const visibleFriends = [...selectedFriends, ...unselectedFriends];
+  const hasSearchQuery = searchQuery.trim().length > 0;
+  const selectedFriendsCollapsed =
+    hasSearchQuery && !selectedFriendsExpanded && selectedFriends.length > 0;
+  const visibleFriends = selectedFriendsCollapsed
+    ? unselectedFriends
+    : [...selectedFriends, ...unselectedFriends];
+  const selectedFriendsSummary = `${selectedFriends.length} ${selectedFriends.length === 1 ? 'friend' : 'friends'} selected: ${selectedFriends.map((friend) => friend.name).join(', ')}`;
 
   function openPicker() {
     setDraftSelectedFriendIds(
       selectedFriendIds.filter((friendId) => friends.some((friend) => friend.id === friendId)),
     );
     setSearchQuery('');
+    setSelectedFriendsExpanded(false);
     setOpen(true);
   }
 
   function closePicker() {
     setOpen(false);
     setSearchQuery('');
+    setSelectedFriendsExpanded(false);
+  }
+
+  function handleSearchChange(query: string) {
+    setSearchQuery(query);
+    setSelectedFriendsExpanded(false);
   }
 
   function handleDone() {
@@ -143,7 +157,7 @@ export function FriendPlayerPicker({
                 accessibilityLabel="Search friends"
                 autoCapitalize="none"
                 autoCorrect={false}
-                onChangeText={setSearchQuery}
+                onChangeText={handleSearchChange}
                 placeholder="Search friends"
                 placeholderTextColor={colors.textSubtle}
                 returnKeyType="search"
@@ -159,6 +173,31 @@ export function FriendPlayerPicker({
               showsVerticalScrollIndicator
               style={styles.scroll}
             >
+              {selectedFriendsCollapsed ? (
+                <Animated.View
+                  key="selected-friends-summary"
+                  layout={LinearTransition.duration(220)}
+                >
+                  <Pressable
+                    accessibilityHint="Shows all selected friends"
+                    accessibilityLabel={`Expand selected friends: ${selectedFriendsSummary}`}
+                    accessibilityRole="button"
+                    onPress={() => setSelectedFriendsExpanded(true)}
+                    style={({ pressed }) => [
+                      styles.option,
+                      styles.optionSelected,
+                      pressed && styles.buttonPressed,
+                    ]}
+                  >
+                    <View style={styles.optionText}>
+                      <Text selectable style={styles.optionName}>
+                        {selectedFriendsSummary}
+                      </Text>
+                    </View>
+                    <ChevronDown color={colors.primary} size={18} strokeWidth={2.5} />
+                  </Pressable>
+                </Animated.View>
+              ) : null}
               {visibleFriends.length > 0 ? (
                 visibleFriends.map((friend) => {
                   const selected = selectedFriendIdSet.has(friend.id);
@@ -207,7 +246,7 @@ export function FriendPlayerPicker({
                     </Animated.View>
                   );
                 })
-              ) : (
+              ) : selectedFriendsCollapsed ? null : (
                 <Text selectable style={styles.emptyText}>
                   {friends.length === 0
                     ? 'Add a friend before choosing players.'
