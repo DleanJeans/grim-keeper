@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   searchInput: { color: colors.text, flex: 1, fontSize: 16, paddingVertical: 10 },
-  scroll: { minHeight: 120 },
+  scroll: { flex: 1, minHeight: 120 },
   selectionBadge: {
     alignItems: 'center',
     backgroundColor: colors.primary,
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     gap: 12,
-    maxHeight: '82%',
+    height: '100%',
     padding: 16,
   },
   title: { color: colors.text, fontSize: 18, fontWeight: '900' },
