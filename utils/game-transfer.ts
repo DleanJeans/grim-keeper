@@ -18,7 +18,7 @@ import {
 } from '@/utils/object-id';
 import { mergeRoleCatalogMetadata } from '@/utils/role-utils';
 import { isSushiBuffetScript } from '@/utils/script-service';
-import { restoreRedundantRoleImageUrl, stripRedundantRoleImageUrl } from '@/utils/script-storage';
+import { normalizeStoredScriptImages } from '@/utils/script-storage';
 
 const gameTransferFormat = 'grim-keeper-game';
 const gameTransferVersion = 1;
@@ -55,7 +55,7 @@ export function createGameTransfer(game: Game, scripts: StoredScript[]) {
         ...game,
         script: {
           ...game.script,
-          roles: game.script.roles.map(stripRedundantRoleImageUrl),
+          roles: normalizeStoredScriptImages(game.script).roles,
         },
       }
     : script
@@ -63,7 +63,7 @@ export function createGameTransfer(game: Game, scripts: StoredScript[]) {
           ...game,
           script: {
             ...script,
-            roles: script.roles.map(stripRedundantRoleImageUrl),
+            roles: normalizeStoredScriptImages(script).roles,
           },
         }
       : game;
@@ -75,7 +75,7 @@ export function createGameTransfer(game: Game, scripts: StoredScript[]) {
         ? {
             script: {
               ...script,
-              roles: script.roles.map(stripRedundantRoleImageUrl),
+              roles: normalizeStoredScriptImages(script).roles,
             },
           }
         : {}),
@@ -197,10 +197,7 @@ function restoreGameImages(game: Game): Game {
 }
 
 function restoreScriptImages(script: StoredScript): StoredScript {
-  return {
-    ...script,
-    roles: script.roles.map(restoreRedundantRoleImageUrl),
-  };
+  return normalizeStoredScriptImages(script);
 }
 
 function isGame(value: unknown): value is Game {

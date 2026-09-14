@@ -29,6 +29,31 @@ describe('game transfer', () => {
     expect(transfer.data.script).toEqual(script);
   });
 
+  it('migrates legacy imageUrl values when importing a game transfer', () => {
+    const legacyRole = {
+      ...role,
+      imageUrl: 'data:image/png;base64,legacy',
+    };
+    const legacyScript = { ...script, roles: [legacyRole] as Role[] };
+    const rawTransfer = {
+      data: {
+        game: createGame({ script: legacyScript }),
+        script: legacyScript,
+      },
+      exportedAt: '2026-08-18T00:00:00.000Z',
+      format: 'grim-keeper-game',
+      version: 1,
+    };
+
+    const transfer = parseGameTransfer(JSON.stringify(rawTransfer));
+
+    expect(transfer.data.script?.roles[0]).toEqual({
+      ...role,
+      imageUrls: ['data:image/png;base64,legacy'],
+    });
+    expect(transfer.data.script?.roles[0]).not.toHaveProperty('imageUrl');
+  });
+
   it('keeps a Sushi Buffet script game-local when transferring a game', () => {
     const sushiScript: StoredScript = {
       id: 'sushi-buffet',

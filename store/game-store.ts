@@ -58,6 +58,7 @@ import {
 } from '@/utils/saved-note-store';
 import { SUSHI_BUFFET_SCRIPT_ID } from '@/utils/script-constants';
 import {
+  normalizeRoleImagesInState,
   restoreDuplicateScriptImages,
   restoreSushiBuffetScriptRoles,
   stripDuplicateScriptImages,
@@ -1355,10 +1356,10 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'grim-keeper-game-store-v1',
-      version: 11,
+      version: 12,
       storage: createJSONStorage(() => (Platform.OS === 'web' ? webStorage : localStorage)),
       migrate: (persistedState, version) => {
-        if (!persistedState || version >= 11) {
+        if (!persistedState || version >= 12) {
           return persistedState as Partial<GameState> | undefined;
         }
 
@@ -1366,15 +1367,21 @@ export const useGameStore = create<GameState>()(
           friends?: Array<Friend & { notes?: Array<string | LegacyFriendNote> }>;
         };
 
+        if (version >= 11) {
+          return normalizeRoleImagesInState(state);
+        }
+
         const v3State =
           version < 2 ? migrateV1ToV3(state) : version < 3 ? migrateV2ToV3(state) : state;
         const v4State =
           version < 4 ? migratePlayerDayNotes(v3State as Partial<GameState>) : v3State;
         const migratedState = migrateObjectIds(v4State) as Partial<GameState>;
-        return migratedState;
+        return normalizeRoleImagesInState(migratedState);
       },
       merge: (persistedState, currentState) => {
-        const state = persistedState as Partial<GameState> | undefined;
+        const state = normalizeRoleImagesInState(
+          (persistedState as Partial<GameState> | undefined) ?? {},
+        );
         const roleCatalog = state?.roleCatalog ?? currentState.roleCatalog;
         const scripts = (state?.scripts ?? currentState.scripts).map((script) => ({
           ...script,

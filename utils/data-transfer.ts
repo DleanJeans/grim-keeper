@@ -11,7 +11,11 @@ import {
   mapSavedNoteIds,
 } from '@/utils/object-id';
 import { isSushiBuffetScript } from '@/utils/script-service';
-import { restoreRedundantRoleImageUrl, stripRedundantRoleImageUrl } from '@/utils/script-storage';
+import {
+  normalizeRoleImagesInState,
+  normalizeRoleImageUrls,
+  normalizeStoredScriptImages,
+} from '@/utils/script-storage';
 
 const backupFormat = 'grim-keeper-backup';
 const backupVersion = 2;
@@ -82,7 +86,7 @@ export function parseBackup(value: string): GameData {
       throw new Error('The backup is missing required Grim Keeper data.');
     }
 
-    return backup.data;
+    return normalizeRoleImagesInState(backup.data);
   }
 
   if (backup.version !== backupVersion || !isExportedGameData(backup.data)) {
@@ -94,13 +98,11 @@ export function parseBackup(value: string): GameData {
 
 function normalizeForExport(data: GameData): ExportedGameData {
   const scripts: ExportedScript[] = data.scripts.map((script) =>
-    isPortableScript(script)
-      ? { ...script, roles: script.roles.map(stripRedundantRoleImageUrl) }
-      : script.id,
+    isPortableScript(script) ? normalizeStoredScriptImages(script) : script.id,
   );
   const roleCatalog = data.roleCatalog
     .filter((role) => !isOfficialRole(role))
-    .map(stripRedundantRoleImageUrl);
+    .map(normalizeRoleImageUrls);
   const scriptsById = new Map(data.scripts.map((script) => [script.id, script]));
   const friends = addMissingFriendsForGames(data.friends, data.games, data.appUserName);
   const usedNoteIds: string[] = [];
@@ -134,11 +136,7 @@ function normalizeForExport(data: GameData): ExportedGameData {
     }
 
     if (!scriptsById.has(script.id)) {
-      scripts.push(
-        isPortableScript(script)
-          ? { ...script, roles: script.roles.map(stripRedundantRoleImageUrl) }
-          : script.id,
-      );
+      scripts.push(isPortableScript(script) ? normalizeStoredScriptImages(script) : script.id);
       scriptsById.set(script.id, script);
     }
   }
@@ -194,9 +192,9 @@ function restoreExportedData(data: ExportedGameData): GameData {
   const storedScripts = data.scripts.map((script) =>
     typeof script === 'string'
       ? createScriptPlaceholder(script)
-      : { ...script, roles: script.roles.map(restoreRedundantRoleImageUrl) },
+      : normalizeStoredScriptImages(script),
   );
-  const roleCatalog = data.roleCatalog.map(restoreRedundantRoleImageUrl);
+  const roleCatalog = data.roleCatalog.map(normalizeRoleImageUrls);
   const scriptsById = new Map(
     storedScripts.filter((script) => script.roles.length > 0).map((script) => [script.id, script]),
   );

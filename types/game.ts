@@ -17,7 +17,6 @@ export type Role = {
   team?: string;
   edition?: string;
   imageSource?: ImageSourcePropType;
-  imageUrl?: string;
   imageUrls?: string[];
 };
 

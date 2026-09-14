@@ -58,7 +58,7 @@ const GENERIC_CHARACTER_TYPES = [
 export const GENERIC_CHARACTER_TYPE_ROLES: Role[] = GENERIC_CHARACTER_TYPES.map(
   (characterType) => ({
     id: `generic_${characterType.toLowerCase()}`,
-    imageUrl: `${BOTC_ROLE_ICON_BASE_URL}/generic/${characterType.toLowerCase()}.webp`,
+    imageUrls: [`${BOTC_ROLE_ICON_BASE_URL}/generic/${characterType.toLowerCase()}.webp`],
     name: characterType,
     team: characterType.toLowerCase(),
   }),
@@ -154,20 +154,21 @@ export function isFlowerGirlRole(role: Role) {
 }
 
 export function getTravelerClaimRoles(role: Role): Role[] {
+  const goodImageUrl = getRoleIconUrlForAlignment(role, 'g');
+  const evilImageUrl = getRoleIconUrlForAlignment(role, 'e');
+
   return [
     {
       ...role,
       id: `${role.id}_good`,
-      imageUrl: getRoleIconUrlForAlignment(role, 'g'),
-      imageUrls: undefined,
+      ...(goodImageUrl ? { imageUrls: [goodImageUrl] } : {}),
       name: `Good ${role.name}`,
       team: 'traveller',
     },
     {
       ...role,
       id: `${role.id}_evil`,
-      imageUrl: getRoleIconUrlForAlignment(role, 'e'),
-      imageUrls: undefined,
+      ...(evilImageUrl ? { imageUrls: [evilImageUrl] } : {}),
       name: `Evil ${role.name}`,
       team: 'traveller',
     },
@@ -631,7 +632,6 @@ export function mergeRoleCatalogMetadata(roles: Role[], catalog: Role[]): Role[]
       ability: role.ability ?? catalogRole.ability,
       edition: role.edition ?? catalogRole.edition,
       imageSource: role.imageSource ?? catalogRole.imageSource,
-      imageUrl: catalogRole.imageUrl ?? role.imageUrl,
       imageUrls: catalogRole.imageUrls ?? role.imageUrls,
       name: role.name || catalogRole.name,
       notes: role.notes ?? catalogRole.notes,
@@ -685,8 +685,7 @@ export function parseRoleIconCatalog(content: string): Role[] {
     return {
       edition,
       id,
-      imageUrl: imageUrls.length === 1 ? imageUrls[0] : undefined,
-      imageUrls: imageUrls.length > 1 ? imageUrls : undefined,
+      ...(imageUrls.length > 0 ? { imageUrls } : {}),
       name: formatRoleId(id),
     };
   });
@@ -785,7 +784,9 @@ function normalizeRole(item: unknown, catalogById: Map<string, Role>): Role | un
   const catalogRole = catalogById.get(id);
   const imageUrls = catalogRole
     ? catalogRole.imageUrls
-    : (normalizeImageUrls(candidate.image) ?? normalizeImageUrls(candidate.imageUrl));
+    : (normalizeImageUrls(candidate.image) ??
+      normalizeImageUrls(candidate.imageUrls) ??
+      normalizeImageUrls(candidate.imageUrl));
   const role: Role = {
     ability: (typeof candidate.ability === 'string' && candidate.ability) || catalogRole?.ability,
     id,
@@ -796,23 +797,15 @@ function normalizeRole(item: unknown, catalogById: Map<string, Role>): Role | un
     notes: normalizeRoleNotes(candidate.notes) ?? catalogRole?.notes,
     team: (typeof candidate.team === 'string' && candidate.team) || catalogRole?.team,
     edition: (typeof candidate.edition === 'string' && candidate.edition) || catalogRole?.edition,
-    imageUrl: catalogRole
-      ? catalogRole.imageUrl
-      : imageUrls?.length === 1
-        ? imageUrls[0]
-        : undefined,
+    ...(imageUrls ? { imageUrls } : {}),
   };
-
-  if (imageUrls) {
-    role.imageUrls = imageUrls;
-  }
 
   return role;
 }
 
 function getRoleImageUrl(role: Role, alignment?: 'g' | 'e') {
   if (!role.imageUrls?.length) {
-    return role.imageUrl;
+    return undefined;
   }
 
   if (role.imageUrls.length === 1) {

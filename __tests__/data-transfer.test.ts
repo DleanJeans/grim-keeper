@@ -367,7 +367,6 @@ describe('data transfer', () => {
   it('exports imported scripts fully and BotC scripts as IDs', () => {
     const role: Role = {
       id: 'imp',
-      imageUrl: 'https://example.com/imp.webp',
       imageUrls: ['https://example.com/imp.webp'],
       name: 'Imp',
     };
@@ -415,14 +414,7 @@ describe('data transfer', () => {
       }),
     );
 
-    expect(backup.data.scripts).toEqual([
-      {
-        ...importedScript,
-        roles: [{ ...role, imageUrl: undefined }],
-      },
-      downloadedScript.id,
-      officialScript.id,
-    ]);
+    expect(backup.data.scripts).toEqual([importedScript, downloadedScript.id, officialScript.id]);
     expect(backup.data.games[0]).toMatchObject({ scriptId: downloadedScript.id });
     expect(backup.data.games[0].script).toBeUndefined();
 
@@ -445,5 +437,48 @@ describe('data transfer', () => {
     });
 
     expect(parseBackup(legacyBackup)).toEqual(data);
+  });
+
+  it('migrates legacy imageUrl values in version 1 backups', () => {
+    const legacyBackup = JSON.stringify({
+      data: {
+        ...data,
+        roleCatalog: [
+          {
+            id: 'legacy-role',
+            imageUrl: 'data:image/png;base64,legacy',
+            name: 'Legacy Role',
+          },
+        ],
+        scripts: [
+          {
+            id: 'legacy-script',
+            name: 'Legacy Script',
+            roles: [
+              {
+                id: 'legacy-role',
+                imageUrl: 'data:image/png;base64,legacy',
+                name: 'Legacy Role',
+              },
+            ],
+            updatedAt: '2026-08-03T00:00:00.000Z',
+            version: '1',
+          },
+        ],
+      },
+      exportedAt: '2026-08-03T00:00:00.000Z',
+      format: 'grim-keeper-backup',
+      version: 1,
+    });
+
+    const restored = parseBackup(legacyBackup);
+
+    expect(restored.roleCatalog[0]).toEqual({
+      id: 'legacy-role',
+      imageUrls: ['data:image/png;base64,legacy'],
+      name: 'Legacy Role',
+    });
+    expect(restored.scripts[0]?.roles[0]).toEqual(restored.roleCatalog[0]);
+    expect(restored.roleCatalog[0]).not.toHaveProperty('imageUrl');
   });
 });

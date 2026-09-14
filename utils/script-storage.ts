@@ -2,6 +2,14 @@ import type { Game, Role, StoredScript } from '@/types/game';
 import { mergeRoleCatalogMetadata } from '@/utils/role-utils';
 import { SUSHI_BUFFET_SCRIPT_ID } from '@/utils/script-constants';
 
+type LegacyRole = Role & { imageUrl?: string };
+
+type RoleImageState = {
+  games?: Game[];
+  roleCatalog?: Role[];
+  scripts?: StoredScript[];
+};
+
 export function stripSushiBuffetScriptRoles(games: Game[]) {
   return games.map((game) => {
     const script = game.script;
@@ -86,42 +94,50 @@ export function restoreDuplicateScriptImages(games: Game[], scripts: StoredScrip
   });
 }
 
-export function stripRedundantRoleImageUrl(role: Role): Role {
-  if (role.imageUrls?.length === 1 && role.imageUrls[0] === role.imageUrl) {
-    const { imageUrl: _imageUrl, ...roleWithoutImageUrl } = role;
-    return roleWithoutImageUrl;
-  }
+export function normalizeRoleImageUrls(role: LegacyRole): Role {
+  const { imageUrl, imageUrls, ...roleWithoutImageUrl } = role;
+  const normalizedImageUrls = imageUrls?.length ? imageUrls : imageUrl ? [imageUrl] : undefined;
 
-  return role;
+  return {
+    ...roleWithoutImageUrl,
+    ...(normalizedImageUrls ? { imageUrls: normalizedImageUrls } : {}),
+  };
 }
 
-export function restoreRedundantRoleImageUrl(role: Role): Role {
-  if (role.imageUrl === undefined && role.imageUrls?.length === 1) {
-    return { ...role, imageUrl: role.imageUrls[0] };
-  }
+export function normalizeStoredScriptImages(script: StoredScript): StoredScript {
+  return {
+    ...script,
+    roles: script.roles.map(normalizeRoleImageUrls),
+  };
+}
 
-  return role;
+export function normalizeGameScriptImages(game: Game): Game {
+  return game.script ? { ...game, script: normalizeStoredScriptImages(game.script) } : game;
+}
+
+export function normalizeRoleImagesInState<T extends RoleImageState>(state: T): T {
+  return {
+    ...state,
+    ...(state.games ? { games: state.games.map(normalizeGameScriptImages) } : {}),
+    ...(state.roleCatalog ? { roleCatalog: state.roleCatalog.map(normalizeRoleImageUrls) } : {}),
+    ...(state.scripts ? { scripts: state.scripts.map(normalizeStoredScriptImages) } : {}),
+  } as T;
 }
 
 function stripRoleImages(role: Role): Role {
-  const { imageUrl, imageUrls, ...roleWithoutImages } = role;
-  const remainingImageUrl = isDataImageUrl(imageUrl) ? undefined : imageUrl;
+  const { imageUrls, ...roleWithoutImages } = role;
   const remainingImageUrls = imageUrls?.filter((image) => !isDataImageUrl(image));
 
   return {
     ...roleWithoutImages,
-    ...(remainingImageUrl ? { imageUrl: remainingImageUrl } : {}),
     ...(remainingImageUrls?.length ? { imageUrls: remainingImageUrls } : {}),
   };
 }
 
 function getRoleImages(role: Role) {
-  return {
-    ...(role.imageUrl ? { imageUrl: role.imageUrl } : {}),
-    ...(role.imageUrls?.length ? { imageUrls: role.imageUrls } : {}),
-  };
+  return role.imageUrls?.length ? { imageUrls: role.imageUrls } : {};
 }
 
-function isDataImageUrl(value: string | undefined) {
-  return value?.startsWith('data:image/') ?? false;
+function isDataImageUrl(value: string) {
+  return value.startsWith('data:image/');
 }

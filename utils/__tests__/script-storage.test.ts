@@ -1,10 +1,10 @@
 import type { Game, StoredScript } from '@/types/game';
 import {
+  normalizeRoleImagesInState,
+  normalizeRoleImageUrls,
   restoreDuplicateScriptImages,
-  restoreRedundantRoleImageUrl,
   restoreSushiBuffetScriptRoles,
   stripDuplicateScriptImages,
-  stripRedundantRoleImageUrl,
   stripSushiBuffetScriptRoles,
 } from '@/utils/script-storage';
 
@@ -16,7 +16,6 @@ const script: StoredScript = {
   roles: [
     {
       id: 'custom_role',
-      imageUrl: dataImage,
       imageUrls: [dataImage, 'https://example.com/evil.webp'],
       name: 'Custom Role',
     },
@@ -54,20 +53,53 @@ const sushiGame: Game = {
 };
 
 describe('script persistence image handling', () => {
-  it('strips and restores a redundant single role image URL', () => {
-    const role = {
-      id: 'custom_role',
-      imageUrl: dataImage,
-      imageUrls: [dataImage],
-      name: 'Custom Role',
-    };
-
-    expect(stripRedundantRoleImageUrl(role)).toEqual({
+  it('normalizes legacy imageUrl values without retaining the legacy field', () => {
+    expect(
+      normalizeRoleImageUrls({
+        id: 'custom_role',
+        imageUrl: dataImage,
+        name: 'Custom Role',
+      }),
+    ).toEqual({
       id: 'custom_role',
       imageUrls: [dataImage],
       name: 'Custom Role',
     });
-    expect(restoreRedundantRoleImageUrl(stripRedundantRoleImageUrl(role))).toEqual(role);
+
+    expect(
+      normalizeRoleImageUrls({
+        id: 'custom_role',
+        imageUrl: dataImage,
+        imageUrls: ['https://example.com/role.webp'],
+        name: 'Custom Role',
+      }),
+    ).toEqual({
+      id: 'custom_role',
+      imageUrls: ['https://example.com/role.webp'],
+      name: 'Custom Role',
+    });
+  });
+
+  it('normalizes legacy images across persisted scripts, catalogs, and game copies', () => {
+    const legacyRole = {
+      id: 'legacy_role',
+      imageUrl: dataImage,
+      name: 'Legacy Role',
+    };
+    const legacyScript = { ...script, roles: [legacyRole] as StoredScript['roles'] };
+    const state = normalizeRoleImagesInState({
+      games: [{ ...game, script: legacyScript }],
+      roleCatalog: [legacyRole],
+      scripts: [legacyScript],
+    });
+
+    expect(state.roleCatalog?.[0]).toEqual({
+      id: 'legacy_role',
+      imageUrls: [dataImage],
+      name: 'Legacy Role',
+    });
+    expect(state.scripts?.[0]?.roles[0]).toEqual(state.roleCatalog?.[0]);
+    expect(state.games?.[0]?.script?.roles[0]).toEqual(state.roleCatalog?.[0]);
   });
 
   it('strips duplicate data images from games but keeps external URLs', () => {

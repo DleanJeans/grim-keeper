@@ -60,7 +60,7 @@ describe('script image utilities', () => {
       roles: [
         {
           id: 'custom-role',
-          imageUrl: 'data:image/png;base64,encoded',
+          imageUrls: ['data:image/png;base64,encoded'],
           name: 'Custom Role',
         },
       ],
@@ -72,7 +72,11 @@ describe('script image utilities', () => {
       hasEmbeddedScriptImages(
         createScript({
           roles: [
-            { id: 'remote-role', imageUrl: 'https://example.com/role.png', name: 'Remote Role' },
+            {
+              id: 'remote-role',
+              imageUrls: ['https://example.com/role.png'],
+              name: 'Remote Role',
+            },
           ],
         }),
       ),
@@ -94,13 +98,12 @@ describe('script image utilities', () => {
       roles: [
         {
           id: 'png-role',
-          imageUrl: sharedPng,
           imageUrls: [sharedPng, 'https://example.com/role.png'],
           name: 'PNG Role',
         },
         {
           id: 'jpeg-role',
-          imageUrl: 'data:image/jpeg;base64,jpeg',
+          imageUrls: ['data:image/jpeg;base64,jpeg'],
           name: 'JPEG Role',
         },
       ],
@@ -123,13 +126,12 @@ describe('script image utilities', () => {
     expect(resizedScript.roles).toEqual([
       {
         id: 'png-role',
-        imageUrl: 'data:image/png;base64,png-data',
         imageUrls: ['data:image/png;base64,png-data', 'https://example.com/role.png'],
         name: 'PNG Role',
       },
       {
         id: 'jpeg-role',
-        imageUrl: 'data:image/jpeg;base64,jpeg-data',
+        imageUrls: ['data:image/jpeg;base64,jpeg-data'],
         name: 'JPEG Role',
       },
     ]);
@@ -145,7 +147,7 @@ describe('script image utilities', () => {
     await expect(
       resizeScriptImages(
         createScript({
-          roles: [{ id: 'role', imageUrl: 'data:image/png;base64,encoded', name: 'Role' }],
+          roles: [{ id: 'role', imageUrls: ['data:image/png;base64,encoded'], name: 'Role' }],
         }),
         100,
       ),

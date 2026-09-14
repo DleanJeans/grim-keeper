@@ -268,9 +268,13 @@ describe('role utilities', () => {
   });
 
   it('provides generic character type role references with lowercase icon URLs', () => {
-    expect(GENERIC_CHARACTER_TYPE_ROLES.map(({ imageUrl, name }) => ({ imageUrl, name }))).toEqual(
+    expect(
+      GENERIC_CHARACTER_TYPE_ROLES.map(({ imageUrls, name }) => ({ imageUrls, name })),
+    ).toEqual(
       ['Demon', 'Evil', 'Good', 'Minion', 'Outsider', 'Townsfolk', 'Traveller'].map((name) => ({
-        imageUrl: `https://release.botc.app/resources/characters/generic/${name.toLowerCase()}.webp`,
+        imageUrls: [
+          `https://release.botc.app/resources/characters/generic/${name.toLowerCase()}.webp`,
+        ],
         name,
       })),
     );
@@ -294,7 +298,7 @@ describe('role utilities', () => {
     ]);
     expect(
       GENERIC_CHARACTER_TYPE_ROLE_REFERENCES.filter(({ name }) => name.startsWith('Traveler')).map(
-        ({ imageUrl }) => imageUrl,
+        ({ imageUrls }) => imageUrls?.[0],
       ),
     ).toEqual([
       'https://release.botc.app/resources/characters/generic/traveller.webp',
@@ -485,7 +489,7 @@ describe('role utilities', () => {
         {
           edition: 'snv',
           id: 'fanggu',
-          imageUrl: 'https://release.botc.app/resources/characters/snv/fanggu_g.webp',
+          imageUrls: ['https://release.botc.app/resources/characters/snv/fanggu_g.webp'],
           name: 'Fang Gu',
           team: 'demon',
         },
@@ -520,7 +524,7 @@ describe('role utilities', () => {
     const traveler = {
       edition: 'carousel',
       id: 'baron',
-      imageUrl: 'https://release.botc.app/resources/characters/carousel/baron_n.webp',
+      imageUrls: ['https://release.botc.app/resources/characters/carousel/baron_n.webp'],
       name: 'Baron',
       team: 'traveller',
     };
@@ -531,12 +535,12 @@ describe('role utilities', () => {
     );
     expect(good).toMatchObject({
       id: 'baron_good',
-      imageUrl: 'https://release.botc.app/resources/characters/carousel/baron_g.webp',
+      imageUrls: ['https://release.botc.app/resources/characters/carousel/baron_g.webp'],
       name: 'Good Baron',
     });
     expect(evil).toMatchObject({
       id: 'baron_evil',
-      imageUrl: 'https://release.botc.app/resources/characters/carousel/baron_e.webp',
+      imageUrls: ['https://release.botc.app/resources/characters/carousel/baron_e.webp'],
       name: 'Evil Baron',
     });
   });
@@ -560,7 +564,7 @@ describe('role utilities', () => {
     ).toEqual([
       expect.objectContaining({
         id: 'baron_evil',
-        imageUrl: 'https://release.botc.app/resources/characters/carousel/baron_e.webp',
+        imageUrls: ['https://release.botc.app/resources/characters/carousel/baron_e.webp'],
         name: 'Evil Baron',
       }),
     ]);
@@ -588,6 +592,27 @@ describe('role utilities', () => {
     expect(getRoleIconUrl(evil)).toBe('https://example.com/traveler-evil.webp');
   });
 
+  it('normalizes legacy single imageUrl imports into imageUrls', () => {
+    const [role] = mergeScriptRoles(
+      [
+        {
+          id: 'legacy_role',
+          imageUrl: 'https://example.com/legacy.webp',
+          name: 'Legacy Role',
+        },
+      ],
+      [],
+    );
+
+    expect(role).toEqual({
+      id: 'legacy_role',
+      imageUrls: ['https://example.com/legacy.webp'],
+      name: 'Legacy Role',
+      team: undefined,
+      edition: undefined,
+    });
+  });
+
   it('merges script ids with official role metadata and ignores _meta', () => {
     const roles = mergeScriptRoles(
       [
@@ -605,7 +630,6 @@ describe('role utilities', () => {
         name: 'Custom Role',
         team: undefined,
         edition: undefined,
-        imageUrl: undefined,
       },
     ]);
   });

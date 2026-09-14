@@ -38,10 +38,6 @@ export async function resizeScriptImages(script: StoredScript, targetHeight: num
   const resizedImages = new Map<string, Promise<string>>();
   const roles = await Promise.all(
     script.roles.map(async (role) => {
-      const nextImageUrl =
-        role.imageUrl === undefined
-          ? undefined
-          : await resizeImageUrl(role.imageUrl, targetHeight, resizedImages);
       const nextImageUrls = role.imageUrls
         ? await Promise.all(
             role.imageUrls.map((imageUrl) => resizeImageUrl(imageUrl, targetHeight, resizedImages)),
@@ -50,7 +46,6 @@ export async function resizeScriptImages(script: StoredScript, targetHeight: num
 
       return {
         ...role,
-        ...(role.imageUrl !== undefined ? { imageUrl: nextImageUrl } : {}),
         ...(nextImageUrls ? { imageUrls: nextImageUrls } : {}),
       };
     }),
@@ -60,9 +55,7 @@ export async function resizeScriptImages(script: StoredScript, targetHeight: num
 }
 
 function getRoleImageUrls(role: Role) {
-  return [role.imageUrl, ...(role.imageUrls ?? [])].filter(
-    (imageUrl): imageUrl is string => imageUrl !== undefined,
-  );
+  return role.imageUrls ?? [];
 }
 
 function isDataImageUrl(value: string) {
@@ -73,18 +66,8 @@ function resizeImageUrl(
   imageUrl: string,
   targetHeight: number,
   resizedImages: Map<string, Promise<string>>,
-): Promise<string>;
-function resizeImageUrl(
-  imageUrl: undefined,
-  targetHeight: number,
-  resizedImages: Map<string, Promise<string>>,
-): Promise<undefined>;
-function resizeImageUrl(
-  imageUrl: string | undefined,
-  targetHeight: number,
-  resizedImages: Map<string, Promise<string>>,
-): Promise<string | undefined> {
-  if (!imageUrl || !isDataImageUrl(imageUrl)) {
+): Promise<string> {
+  if (!isDataImageUrl(imageUrl)) {
     return Promise.resolve(imageUrl);
   }
 
