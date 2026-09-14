@@ -84,6 +84,14 @@ export function FriendPlayerPicker({
     );
   }
 
+  function handleFriendPress(friendId: string) {
+    if (hasSearchQuery && !selectedFriendIdSet.has(friendId)) {
+      setSearchQuery('');
+      setSelectedFriendsExpanded(false);
+    }
+    toggleFriend(friendId);
+  }
+
   const selectionSummary =
     selectedFriendIds.length === 0
       ? 'No friends selected'
@@ -214,7 +222,7 @@ export function FriendPlayerPicker({
                             : `Select ${friend.name} as the next player`
                         }
                         accessibilityRole="button"
-                        onPress={() => toggleFriend(friend.id)}
+                        onPress={() => handleFriendPress(friend.id)}
                         style={({ pressed }) => [
                           styles.option,
                           selected && styles.optionSelected,
