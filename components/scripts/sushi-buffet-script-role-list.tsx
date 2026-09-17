@@ -1,11 +1,20 @@
 import { Search } from 'lucide-react-native';
-import { type ReactElement, useMemo, useState } from 'react';
+import { type ReactElement, useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { ScriptRoleList } from '@/components/scripts/script-role-list';
+import { ScriptRoleList, type ScriptRoleSortMode } from '@/components/scripts/script-role-list';
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Player, Role } from '@/types/game';
 import { getReferencedRoleIdsForDayOrPrevious } from '@/utils/role-utils';
+
+const ROLE_TEAM_FILTERS = [
+  { label: 'Townsfolks', team: 'townsfolk' },
+  { label: 'Outsiders', team: 'outsider' },
+  { label: 'Minions', team: 'minion' },
+  { label: 'Demons', team: 'demon' },
+] as const;
+
+type SushiBuffetRoleTeam = (typeof ROLE_TEAM_FILTERS)[number]['team'];
 
 export function SushiBuffetScriptRoleList({
   activeDay,
@@ -24,6 +33,7 @@ export function SushiBuffetScriptRoleList({
 }) {
   const [onlyReferencedRoles, setOnlyReferencedRoles] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTeam, setSelectedTeam] = useState<SushiBuffetRoleTeam>('townsfolk');
   const referencedRoleIds = useMemo(
     () => new Set(getReferencedRoleIdsForDayOrPrevious(players, activeDay, roles)),
     [activeDay, players, roles],
@@ -41,10 +51,17 @@ export function SushiBuffetScriptRoleList({
       return matchesSearch && matchesReferencedFilter;
     });
   }, [onlyReferencedRoles, referencedRoleIds, roles, searchQuery]);
+  const roleFilter = useCallback(
+    (nextRoles: Role[], sortMode: ScriptRoleSortMode) =>
+      sortMode === 'night-order'
+        ? nextRoles
+        : nextRoles.filter((role) => role.team?.toLocaleLowerCase() === selectedTeam),
+    [selectedTeam],
+  );
 
   return (
     <ScriptRoleList
-      header={
+      header={(sortMode: ScriptRoleSortMode) => (
         <View style={styles.headerContent}>
           {header}
           <View style={styles.filters}>
@@ -61,16 +78,57 @@ export function SushiBuffetScriptRoleList({
               value={searchQuery}
             />
           </View>
+          {sortMode === 'current-split' ? (
+            <View accessibilityRole="tablist" style={styles.tabs}>
+              {ROLE_TEAM_FILTERS.map(({ label, team }) => (
+                <SushiBuffetRoleTeamTab
+                  key={team}
+                  label={label}
+                  onPress={() => setSelectedTeam(team)}
+                  selected={selectedTeam === team}
+                />
+              ))}
+            </View>
+          ) : null}
           <SushiBuffetRoleFilterToggle
             onToggle={() => setOnlyReferencedRoles(!onlyReferencedRoles)}
             selected={onlyReferencedRoles}
           />
         </View>
-      }
+      )}
+      roleFilter={roleFilter}
       roleCatalog={roleCatalog}
       roles={filteredRoles}
       scriptId={scriptId}
     />
+  );
+}
+
+function SushiBuffetRoleTeamTab({
+  label,
+  onPress,
+  selected,
+}: {
+  label: string;
+  onPress: () => void;
+  selected: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityLabel={`Show ${label.toLocaleLowerCase()} roles`}
+      accessibilityRole="tab"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.tab,
+        pressed && styles.tabPressed,
+        selected && styles.tabSelected,
+      ]}
+    >
+      <Text selectable style={[styles.tabText, selected && styles.tabTextSelected]}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -120,6 +178,38 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 42,
     paddingVertical: 10,
+  },
+  tab: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 42,
+    paddingHorizontal: 4,
+  },
+  tabPressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  tabSelected: {
+    backgroundColor: colors.inputText,
+  },
+  tabText: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  tabTextSelected: {
+    color: colors.onPrimary,
+  },
+  tabs: {
+    backgroundColor: colors.inputBackground,
+    borderColor: colors.inputBorder,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 4,
+    overflow: 'hidden',
+    padding: 4,
   },
   toggleButton: {
     alignItems: 'center',

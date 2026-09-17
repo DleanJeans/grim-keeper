@@ -27,21 +27,25 @@ const ROLE_SECTIONS = [
   { label: 'Demon', team: 'demon' },
 ] as const;
 
-type ScriptRoleSortMode = 'current-split' | 'night-order';
+export type ScriptRoleSortMode = 'current-split' | 'night-order';
 type ScriptRoleNightTab = 'first-night' | 'other-night';
 type ScriptRoleRow = ScriptRoleEntry[];
 type ScriptRoleSection = {
   data: ScriptRoleRow[];
   title: string;
 };
+export type ScriptRoleHeader = ReactElement | ((sortMode: ScriptRoleSortMode) => ReactElement);
+type ScriptRoleFilter = (roles: Role[], sortMode: ScriptRoleSortMode) => Role[];
 
 export function ScriptRoleList({
   header,
+  roleFilter,
   roleCatalog,
   roles,
   scriptId,
 }: {
-  header: ReactElement;
+  header: ScriptRoleHeader;
+  roleFilter?: ScriptRoleFilter;
   roleCatalog: Role[];
   roles: Role[];
   scriptId: string;
@@ -85,9 +89,13 @@ export function ScriptRoleList({
     };
   }, []);
 
+  const visibleRoles = useMemo(
+    () => (roleFilter ? roleFilter(roles, sortMode) : roles),
+    [roleFilter, roles, sortMode],
+  );
   const roleEntries = useMemo(
-    () => getScriptRoleEntries(roles, roleCatalog, savedNotes),
-    [roleCatalog, roles, savedNotes],
+    () => getScriptRoleEntries(visibleRoles, roleCatalog, savedNotes),
+    [roleCatalog, savedNotes, visibleRoles],
   );
   const supportedRoleEntries = useMemo(
     () =>
@@ -153,7 +161,7 @@ export function ScriptRoleList({
       ListHeaderComponent={
         <View style={styles.listHeader}>
           <ScriptRoleListHeader
-            header={header}
+            header={typeof header === 'function' ? header(sortMode) : header}
             notesOnly={notesOnly}
             nightTab={nightTab}
             onNotesOnlyChange={setNotesOnly}
@@ -193,7 +201,7 @@ export function ScriptRoleList({
                     })
                   }
                   role={entry.role}
-                  roles={roles}
+                  roles={visibleRoles}
                   scriptId={scriptId}
                   showNotes={showNotes}
                   twoColumns={sortMode === 'current-split' && twoColumns && !showNotes}
