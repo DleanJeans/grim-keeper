@@ -1,7 +1,9 @@
 import type { Player, PlayerPosition } from '@/types/game';
 import { DESKTOP_CONTENT_MAX_WIDTH } from '@/utils/responsive-utils';
 
-export const defaultTokenSize = 68;
+export const defaultTokenSize = 90;
+export const defaultMapWidth = 500;
+export const defaultMapHeight = 500;
 export const minTokenSize = 40;
 export const maxTokenSize = 100;
 export const tokenSizeStep = 2;
@@ -59,13 +61,6 @@ export function getDefaultMapHeight(mapWidth: number, viewportHeight: number) {
 
 export function getMapScale(availableWidth: number, mapWidth: number) {
   return Math.max(0.01, availableWidth / Math.max(1, mapWidth));
-}
-
-export function getDefaultTokenSize(playerCount: number, mapWidth: number, mapHeight: number) {
-  const perimeter = 2 * (Math.max(1, mapWidth) + Math.max(1, mapHeight));
-  const slots = Math.max(1, playerCount);
-
-  return getTokenSize(Math.round(perimeter / slots));
 }
 
 export function scalePlayerMapPositions(

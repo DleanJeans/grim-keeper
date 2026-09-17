@@ -1,13 +1,7 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TextInput as RNTextInput } from 'react-native';
-import {
-  Keyboard,
-  KeyboardAvoidingView,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { Keyboard, KeyboardAvoidingView, StyleSheet, View } from 'react-native';
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import { CreateFormHeader } from '@/components/create/create-form-header';
 import { CreateHeaderDoneButton } from '@/components/create/create-header-done-button';
@@ -25,7 +19,7 @@ import {
   sortFriendSummaries,
   sortStorytellerSummaries,
 } from '@/utils/friend-utils';
-import { getDefaultMapHeight, getDefaultMapWidth } from '@/utils/layout-utils';
+import { defaultMapHeight, defaultMapWidth } from '@/utils/layout-utils';
 import { APP_USER_ID } from '@/utils/object-id';
 import { DESKTOP_CONTENT_MAX_WIDTH } from '@/utils/responsive-utils';
 import { SUSHI_BUFFET_SCRIPT_ID } from '@/utils/script-constants';
@@ -48,7 +42,6 @@ export default function CreateRoute() {
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const storedFriends = useGameStore((state) => state.friends);
   const savedNotes = useGameStore((state) => state.savedNotes);
-  const { height: viewportHeight, width: viewportWidth } = useWindowDimensions();
   const inputRef = useRef<RNTextInput>(null);
   const [name, setName] = useState('');
   const [nameFocused, setNameFocused] = useState(false);
@@ -102,8 +95,8 @@ export default function CreateRoute() {
     ? sushiBuffetScript
     : availableScripts.find((script) => script.id === selectedScriptId);
   const sushiSelectionKey = `${editingGame?.id ?? 'new'}:${selectedScriptId ?? 'none'}`;
-  const mapWidth = getDefaultMapWidth(viewportWidth);
-  const mapHeight = getDefaultMapHeight(mapWidth, viewportHeight);
+  const mapWidth = defaultMapWidth;
+  const mapHeight = defaultMapHeight;
   const friends = useMemo(
     () => sortFriendSummaries(getFriendSummaries(games, storedFriends, appUserName), savedNotes),
     [appUserName, games, savedNotes, storedFriends],

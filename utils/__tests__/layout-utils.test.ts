@@ -3,9 +3,11 @@ import {
   clampMapHeight,
   clampMapWidth,
   clampTokenPosition,
+  defaultMapHeight,
+  defaultMapWidth,
+  defaultTokenSize,
   getDefaultMapHeight,
   getDefaultMapWidth,
-  getDefaultTokenSize,
   getLegacyMapHeight,
   getMapScale,
   getNextMapDimension,
@@ -48,10 +50,11 @@ describe('layout utils', () => {
     expect(getMapScale(175, 350)).toBe(0.5);
   });
 
-  it('sizes new-game tokens from the map perimeter and player count', () => {
-    expect(getDefaultTokenSize(20, 400, 300)).toBe(70);
-    expect(getDefaultTokenSize(20, 200, 200)).toBe(40);
-    expect(getDefaultTokenSize(4, 400, 300)).toBe(100);
+  it('uses the requested new-game defaults', () => {
+    expect(defaultMapWidth).toBe(500);
+    expect(defaultMapHeight).toBe(500);
+    expect(defaultTokenSize).toBe(90);
+    expect(getTokenSize()).toBe(90);
   });
 
   it('clamps token sizes to the supported range', () => {
@@ -90,14 +93,14 @@ describe('layout utils', () => {
     const positions = players.map((player) => getPlayerMapPosition(player, players, 268, 200));
 
     expect(positions).toEqual([
-      { x: 134, y: 166 },
-      { x: 51, y: 166 },
-      { x: 34, y: 100 },
-      { x: 51, y: 34 },
-      { x: 134, y: 34 },
-      { x: 217, y: 34 },
-      { x: 234, y: 100 },
-      { x: 217, y: 166 },
+      { x: 134, y: 155 },
+      { x: 62, y: 155 },
+      { x: 45, y: 100 },
+      { x: 62, y: 45 },
+      { x: 134, y: 45 },
+      { x: 206, y: 45 },
+      { x: 223, y: 100 },
+      { x: 206, y: 155 },
     ]);
   });
 

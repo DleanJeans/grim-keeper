@@ -32,7 +32,6 @@ import { type GameTransfer, mergeGameTransfer } from '@/utils/game-transfer';
 import {
   clampMapHeight,
   clampTokenPosition,
-  getDefaultTokenSize,
   getTokenSize,
   resolveTokenCollisions,
 } from '@/utils/layout-utils';
@@ -361,11 +360,7 @@ export const useGameStore = create<GameState>()(
         });
         const normalizedMapWidth = Math.max(1, Math.round(mapWidth));
         const normalizedMapHeight = clampMapHeight(mapHeight);
-        const tokenSize = getDefaultTokenSize(
-          players.length,
-          normalizedMapWidth,
-          normalizedMapHeight,
-        );
+        const tokenSize = getTokenSize();
         const game: Game = {
           id: createGameId(
             script?.name,
