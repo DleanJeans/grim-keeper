@@ -4,43 +4,43 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { ScriptRoleList } from '@/components/scripts/script-role-list';
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { Role } from '@/types/game';
-
-const ROLE_TEAM_FILTERS = [
-  { label: 'Townsfolks', team: 'townsfolk' },
-  { label: 'Outsiders', team: 'outsider' },
-  { label: 'Minions', team: 'minion' },
-  { label: 'Demons', team: 'demon' },
-] as const;
-
-type SushiBuffetRoleTeam = (typeof ROLE_TEAM_FILTERS)[number]['team'];
+import type { Player, Role } from '@/types/game';
+import { getReferencedRoleIdsForDayOrPrevious } from '@/utils/role-utils';
 
 export function SushiBuffetScriptRoleList({
+  activeDay,
   header,
+  players,
   roleCatalog,
   roles,
   scriptId,
 }: {
+  activeDay: number;
   header: ReactElement;
+  players: Player[];
   roleCatalog: Role[];
   roles: Role[];
   scriptId: string;
 }) {
+  const [onlyReferencedRoles, setOnlyReferencedRoles] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTeam, setSelectedTeam] = useState<SushiBuffetRoleTeam>('townsfolk');
+  const referencedRoleIds = useMemo(
+    () => new Set(getReferencedRoleIdsForDayOrPrevious(players, activeDay, roles)),
+    [activeDay, players, roles],
+  );
   const filteredRoles = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
 
     return roles.filter((role) => {
-      const matchesTeam = role.team?.toLocaleLowerCase() === selectedTeam;
       const matchesSearch =
         !normalizedQuery ||
         role.name.toLocaleLowerCase().includes(normalizedQuery) ||
         role.id.toLocaleLowerCase().includes(normalizedQuery);
+      const matchesReferencedFilter = !onlyReferencedRoles || referencedRoleIds.has(role.id);
 
-      return matchesTeam && matchesSearch;
+      return matchesSearch && matchesReferencedFilter;
     });
-  }, [roles, searchQuery, selectedTeam]);
+  }, [onlyReferencedRoles, referencedRoleIds, roles, searchQuery]);
 
   return (
     <ScriptRoleList
@@ -61,16 +61,10 @@ export function SushiBuffetScriptRoleList({
               value={searchQuery}
             />
           </View>
-          <View accessibilityRole="tablist" style={styles.tabs}>
-            {ROLE_TEAM_FILTERS.map(({ label, team }) => (
-              <SushiBuffetRoleTeamTab
-                key={team}
-                label={label}
-                onPress={() => setSelectedTeam(team)}
-                selected={selectedTeam === team}
-              />
-            ))}
-          </View>
+          <SushiBuffetRoleFilterToggle
+            onToggle={() => setOnlyReferencedRoles(!onlyReferencedRoles)}
+            selected={onlyReferencedRoles}
+          />
         </View>
       }
       roleCatalog={roleCatalog}
@@ -80,29 +74,27 @@ export function SushiBuffetScriptRoleList({
   );
 }
 
-function SushiBuffetRoleTeamTab({
-  label,
-  onPress,
+function SushiBuffetRoleFilterToggle({
+  onToggle,
   selected,
 }: {
-  label: string;
-  onPress: () => void;
+  onToggle: () => void;
   selected: boolean;
 }) {
   return (
     <Pressable
-      accessibilityLabel={`Show ${label.toLocaleLowerCase()} roles`}
-      accessibilityRole="tab"
-      accessibilityState={{ selected }}
-      onPress={onPress}
+      accessibilityLabel="Only referenced roles"
+      accessibilityRole="switch"
+      accessibilityState={{ checked: selected }}
+      onPress={onToggle}
       style={({ pressed }) => [
-        styles.tab,
-        pressed && styles.tabPressed,
-        selected && styles.tabSelected,
+        styles.toggleButton,
+        pressed && styles.toggleButtonPressed,
+        selected && styles.toggleButtonSelected,
       ]}
     >
-      <Text selectable style={[styles.tabText, selected && styles.tabTextSelected]}>
-        {label}
+      <Text selectable style={[styles.toggleText, selected && styles.toggleTextSelected]}>
+        Only referenced roles
       </Text>
     </Pressable>
   );
@@ -129,36 +121,29 @@ const styles = StyleSheet.create({
     minHeight: 42,
     paddingVertical: 10,
   },
-  tab: {
+  toggleButton: {
     alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-    minHeight: 42,
-    paddingHorizontal: 4,
-  },
-  tabPressed: {
-    backgroundColor: colors.surfacePressed,
-  },
-  tabSelected: {
-    backgroundColor: colors.inputText,
-  },
-  tabText: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  tabTextSelected: {
-    color: colors.onPrimary,
-  },
-  tabs: {
-    backgroundColor: colors.inputBackground,
-    borderColor: colors.inputBorder,
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.borderStrong,
     borderRadius: 8,
     borderWidth: 1,
-    flexDirection: 'row',
-    gap: 4,
-    overflow: 'hidden',
-    padding: 4,
+    justifyContent: 'center',
+    minHeight: 42,
+    paddingHorizontal: 12,
+  },
+  toggleButtonPressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  toggleButtonSelected: {
+    backgroundColor: colors.inputText,
+    borderColor: colors.inputText,
+  },
+  toggleText: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  toggleTextSelected: {
+    color: colors.onPrimary,
   },
 });

@@ -446,6 +446,24 @@ export function getRoleDisplayForMode(
   return assignment ? getRoleDisplayFromAssignment(assignment, roles) : EMPTY_ROLE_DISPLAY;
 }
 
+export function getReferencedRoleIdsForDayOrPrevious(
+  players: Player[],
+  day: number,
+  roles: Role[],
+) {
+  const roleIds = new Set<string>();
+
+  for (const player of players) {
+    for (const mode of ['claim', 'confirm', 'rumor', 'guess'] as const) {
+      for (const roleId of getRoleDisplayForMode(player, players, day, roles, mode).roleIds) {
+        roleIds.add(roleId);
+      }
+    }
+  }
+
+  return [...roleIds];
+}
+
 export function getRoleDisplayForModes(
   player: Player,
   players: Player[],

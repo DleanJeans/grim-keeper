@@ -46,7 +46,9 @@ export default function ScriptDetailRoute() {
       />
       {isSushiBuffet ? (
         <SushiBuffetScriptRoleList
+          activeDay={sushiBuffetGame?.activeDay ?? 0}
           header={<ScriptDetailHeader script={script} visibleRoleCount={roles.length} />}
+          players={sushiBuffetGame?.players ?? []}
           roleCatalog={roleCatalog}
           roles={roles}
           scriptId={script.id}

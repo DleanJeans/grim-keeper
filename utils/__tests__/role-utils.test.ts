@@ -8,6 +8,7 @@ import {
   getKillerRoleOptions,
   getLatestRumorMapDisplaysForDayOrPrevious,
   getPlayerRoleBucket,
+  getReferencedRoleIdsForDayOrPrevious,
   getRoleAssignmentForDay,
   getRoleDisplayForDayOrPrevious,
   getRoleDisplayForMode,
@@ -360,6 +361,96 @@ describe('role utilities', () => {
       'empath',
       'soldier',
       'imp',
+    ]);
+  });
+
+  it('collects carried-forward referenced roles from every assignment kind', () => {
+    const players = [
+      {
+        id: 'subject',
+        name: 'Subject',
+        seat: 0,
+        roleAssignments: [
+          {
+            day: 1,
+            kind: 'claim' as const,
+            roleIds: ['empath'],
+            updatedAt: '2026-07-14T00:00:00.000Z',
+          },
+          {
+            day: 2,
+            kind: 'claim' as const,
+            roleIds: ['soldier'],
+            updatedAt: '2026-07-14T00:01:00.000Z',
+          },
+          {
+            day: 1,
+            kind: 'confirm' as const,
+            roleIds: ['imp'],
+            updatedAt: '2026-07-14T00:02:00.000Z',
+          },
+          {
+            day: 3,
+            kind: 'guess' as const,
+            roleIds: ['poisoner'],
+            updatedAt: '2026-07-14T00:03:00.000Z',
+          },
+        ],
+      },
+      {
+        id: 'other',
+        name: 'Other',
+        seat: 1,
+        roleAssignments: [
+          {
+            day: 2,
+            kind: 'claim' as const,
+            roleIds: ['soldier', 'ravenkeeper'],
+            updatedAt: '2026-07-14T00:04:00.000Z',
+          },
+          {
+            day: 1,
+            kind: 'confirm' as const,
+            roleIds: ['drunk'],
+            updatedAt: '2026-07-14T00:05:00.000Z',
+          },
+          {
+            day: 1,
+            kind: 'rumor' as const,
+            roleIds: ['chef'],
+            subjectPlayerId: 'subject',
+            updatedAt: '2026-07-14T00:06:00.000Z',
+          },
+          {
+            day: 2,
+            kind: 'rumor' as const,
+            roleIds: ['fortune_teller'],
+            subjectPlayerId: 'subject',
+            updatedAt: '2026-07-14T00:07:00.000Z',
+          },
+          {
+            day: 1,
+            kind: 'guess' as const,
+            roleIds: ['ravenkeeper'],
+            updatedAt: '2026-07-14T00:08:00.000Z',
+          },
+          {
+            day: 3,
+            kind: 'rumor' as const,
+            roleIds: ['undertaker'],
+            subjectPlayerId: 'subject',
+            updatedAt: '2026-07-14T00:09:00.000Z',
+          },
+        ],
+      },
+    ];
+
+    expect(getReferencedRoleIdsForDayOrPrevious(players, 2, [])).toEqual([
+      'soldier',
+      'imp',
+      'fortune_teller',
+      'ravenkeeper',
+      'drunk',
     ]);
   });
 
