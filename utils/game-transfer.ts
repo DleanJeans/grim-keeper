@@ -17,10 +17,12 @@ import {
   mapGamePlayerIdsToFriendIds,
 } from '@/utils/object-id';
 import { mergeRoleCatalogMetadata } from '@/utils/role-utils';
+import { SUSHI_BUFFET_SCRIPT_ID } from '@/utils/script-constants';
 import { isSushiBuffetScript } from '@/utils/script-service';
 import {
   restoreGameScripts,
   restoreStoredScript,
+  restoreSushiBuffetScriptRoles,
   type SerializedGame,
   type SerializedStoredScript,
   serializeGameScripts,
@@ -52,27 +54,34 @@ type GameData = {
 export function createGameTransfer(game: Game, scripts: StoredScript[], roleCatalog: Role[] = []) {
   const scriptId = game.scriptId ?? game.script?.id;
   const script = scripts.find((candidate) => candidate.id === scriptId) ?? game.script;
+  const isBuiltInSushi = scriptId === SUSHI_BUFFET_SCRIPT_ID || isSushiBuffetScript(script);
 
-  if (scriptId && !script) {
+  if (scriptId && !script && !isBuiltInSushi) {
     throw new Error('The script used by this game is not available to export.');
   }
 
   const exportedGame = game.script
     ? serializeGameScripts([game], roleCatalog)[0]
-    : script
+    : isBuiltInSushi && script
       ? {
           ...game,
-          script: {
-            ...script,
-            roles: serializeStoredScript(script, roleCatalog).roles,
-          },
+          scriptId: game.scriptId ?? script.id,
+          scriptRoleIds: script.roles.map((role) => role.id),
         }
-      : game;
+      : script && !isBuiltInSushi
+        ? {
+            ...game,
+            script: {
+              ...script,
+              roles: serializeStoredScript(script, roleCatalog).roles,
+            },
+          }
+        : game;
 
   const transfer = {
     data: {
       game: exportedGame,
-      ...(script ? { script: serializeStoredScript(script, roleCatalog) } : {}),
+      ...(script && !isBuiltInSushi ? { script: serializeStoredScript(script, roleCatalog) } : {}),
     },
     exportedAt: new Date().toISOString(),
     format: gameTransferFormat,
@@ -105,11 +114,11 @@ export function parseGameTransfer(value: string): GameTransfer {
 
   const gameScriptId = transfer.data.game.scriptId ?? transfer.data.game.script?.id;
 
-  if (gameScriptId && !transfer.data.script) {
+  if (gameScriptId && gameScriptId !== SUSHI_BUFFET_SCRIPT_ID && !transfer.data.script) {
     throw new Error('The game transfer is missing the script used by this game.');
   }
 
-  const game = restoreGameImages(transfer.data.game);
+  const game = restoreSushiBuffetScriptRoles([restoreGameImages(transfer.data.game)], [])[0];
   const script = transfer.data.script ? restoreScriptImages(transfer.data.script) : undefined;
 
   return {
@@ -121,12 +130,13 @@ export function parseGameTransfer(value: string): GameTransfer {
 }
 
 export function mergeGameTransfer(data: GameData, transfer: GameTransfer): GameData {
-  const importedGame = transfer.data.game;
+  const importedGame = restoreSushiBuffetScriptRoles([transfer.data.game], data.roleCatalog)[0];
   const importedScript = transfer.data.script;
   const portableBuiltInScript = importedScript && isSushiBuffetScript(importedScript);
+  const existingScripts = data.scripts.filter((script) => !isSushiBuffetScript(script));
   const existingScript =
     importedScript && !portableBuiltInScript
-      ? data.scripts.find(
+      ? existingScripts.find(
           (script) =>
             script.id === importedScript.id ||
             (importedScript.remoteId !== undefined && script.remoteId === importedScript.remoteId),
@@ -174,9 +184,9 @@ export function mergeGameTransfer(data: GameData, transfer: GameTransfer): GameD
   const game = mapGamePlayerIdsToFriendIds(gameWithLocalAppUser, friends, data.appUserName);
   const scripts = storedScript
     ? existingScript
-      ? data.scripts.map((script) => (script.id === existingScript.id ? storedScript : script))
-      : [...data.scripts, storedScript]
-    : data.scripts;
+      ? existingScripts.map((script) => (script.id === existingScript.id ? storedScript : script))
+      : [...existingScripts, storedScript]
+    : existingScripts;
 
   return {
     ...data,

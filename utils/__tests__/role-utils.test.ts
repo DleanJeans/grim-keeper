@@ -1,5 +1,6 @@
 import {
   canRoleKill,
+  formatRoleId,
   GENERIC_CHARACTER_TYPE_ROLE_REFERENCES,
   GENERIC_CHARACTER_TYPE_ROLES,
   getAssignedRoleIdsForDay,
@@ -31,6 +32,38 @@ import {
 } from '@/utils/role-utils';
 
 describe('role utilities', () => {
+  it('formats official role IDs with canonical names', () => {
+    expect(
+      Object.fromEntries(
+        [
+          ['devilsadvocate', "Devil's Advocate"],
+          ['bountyhunter', 'Bounty Hunter'],
+          ['highpriestess', 'High Priestess'],
+          ['villageidiot', 'Village Idiot'],
+          ['tealady', 'Tea Lady'],
+          ['pithag', 'Pit-Hag'],
+          ['scarletwoman', 'Scarlet Woman'],
+          ['alhadikhia', 'Al-Hadikhia'],
+          ['fortuneteller', 'Fortune Teller'],
+          ['eviltwin', 'Evil Twin'],
+          ['hellslibrarian', "Hell's Librarian"],
+        ].map(([id]) => [id, formatRoleId(id)]),
+      ),
+    ).toEqual({
+      alhadikhia: 'Al-Hadikhia',
+      bountyhunter: 'Bounty Hunter',
+      devilsadvocate: "Devil's Advocate",
+      eviltwin: 'Evil Twin',
+      fortuneteller: 'Fortune Teller',
+      hellslibrarian: "Hell's Librarian",
+      highpriestess: 'High Priestess',
+      pithag: 'Pit-Hag',
+      scarletwoman: 'Scarlet Woman',
+      tealady: 'Tea Lady',
+      villageidiot: 'Village Idiot',
+    });
+  });
+
   it('only displays the requested individual mode', () => {
     const roles = [
       { id: 'empath', name: 'Empath', team: 'townsfolk' },

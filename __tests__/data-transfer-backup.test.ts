@@ -43,6 +43,7 @@ describe('backup export integration', () => {
           lorics?: unknown[];
           script?: unknown;
           scriptId?: string;
+          scriptRoleIds?: string[];
           scriptRoleOverrides?: unknown[];
         }>;
         roleCatalog: Array<{ edition?: string }>;
@@ -57,6 +58,15 @@ describe('backup export integration', () => {
 
     expect(exported.version).toBe(2);
     expect(exported.data.roleCatalog).toEqual([]);
+    expect(
+      exported.data.scripts.some(
+        (script) =>
+          typeof script === 'object' &&
+          script !== null &&
+          'id' in script &&
+          script.id === 'sushi-buffet',
+      ),
+    ).toBe(false);
     expect(exported.data.games.filter((game) => game.scriptId)).not.toHaveLength(0);
     expect(exported.data.games.every((game) => game.script === undefined)).toBe(true);
     expect(
@@ -155,6 +165,23 @@ describe('backup export integration', () => {
     expect(portableScripts.get('chaoswille-v1-8-proclaimer')?.roles).toEqual(
       expect.arrayContaining(['tor', 'bootlegger', 'hellslibrarian']),
     );
+    expect(portableScripts.get('chaoswille-v1-8-proclaimer')?.roles).toEqual(
+      expect.arrayContaining(['bountyhunter', 'fortuneteller', 'eviltwin']),
+    );
+    expect(portableScripts.get('repugnance-oblivion')?.roles).toEqual(
+      expect.arrayContaining(['devilsadvocate']),
+    );
+    expect(portableScripts.get('no-rest-for-the-wicked')?.roles).toEqual(
+      expect.arrayContaining([
+        'bountyhunter',
+        'highpriestess',
+        'villageidiot',
+        'tealady',
+        'pithag',
+        'scarletwoman',
+        'alhadikhia',
+      ]),
+    );
     expect(
       portableScripts.get('gavin-s-birthday')?.roles.every((role) => typeof role === 'object'),
     ).toBe(true);
@@ -176,5 +203,39 @@ describe('backup export integration', () => {
         ),
       ),
     ).toBe(true);
+    for (const [scriptId, roleNames] of Object.entries({
+      'chaoswille-v1-8-proclaimer': {
+        bountyhunter: 'Bounty Hunter',
+        eviltwin: 'Evil Twin',
+        fortuneteller: 'Fortune Teller',
+        hellslibrarian: "Hell's Librarian",
+      },
+      'no-rest-for-the-wicked': {
+        alhadikhia: 'Al-Hadikhia',
+        bountyhunter: 'Bounty Hunter',
+        highpriestess: 'High Priestess',
+        pithag: 'Pit-Hag',
+        scarletwoman: 'Scarlet Woman',
+        tealady: 'Tea Lady',
+        villageidiot: 'Village Idiot',
+      },
+      'repugnance-oblivion': { devilsadvocate: "Devil's Advocate" },
+    })) {
+      const restoredScript = restored.scripts.find((script) => script.id === scriptId);
+      for (const [roleId, name] of Object.entries(roleNames)) {
+        expect(restoredScript?.roles.find((role) => role.id === roleId)?.name).toBe(name);
+      }
+    }
+    const sourceSushiGames = sourceData.games.filter((game) => game.scriptId === 'sushi-buffet');
+    const restoredSushiGames = restored.games.filter((game) => game.scriptId === 'sushi-buffet');
+    expect(restoredSushiGames).toHaveLength(sourceSushiGames.length);
+    for (const sourceGame of sourceSushiGames) {
+      const restoredGame = restoredSushiGames.find((game) => game.id === sourceGame.id);
+      expect(restoredGame?.sushiRoleIds).toEqual(sourceGame.sushiRoleIds);
+      expect(restoredGame?.script?.id).toBe('sushi-buffet');
+      expect(restoredGame?.script?.roles.map((role) => role.id)).toEqual(
+        sourceGame.script?.roles.map((role) => role.id),
+      );
+    }
   });
 });

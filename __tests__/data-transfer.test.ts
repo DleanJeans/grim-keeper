@@ -37,16 +37,54 @@ describe('data transfer', () => {
       updatedAt: '2026-08-03T00:00:00.000Z',
     };
 
-    const restored = parseBackup(createBackup({ ...data, games: [game] }));
+    const backup = JSON.parse(createBackup({ ...data, games: [game] }));
+    const restored = parseBackup(JSON.stringify(backup));
 
+    expect(backup.data.scripts).toEqual([]);
+    expect(backup.data.games[0]).not.toHaveProperty('script');
+    expect(backup.data.games[0].scriptRoleIds).toEqual(['empath']);
     expect(restored.games[0]).toMatchObject({
       scriptId: 'sushi-buffet',
       sushiRoleIds: [],
     });
-    expect(restored.games[0].script).toEqual({
-      ...script,
+    expect(restored.games[0].script).toMatchObject({
+      id: 'sushi-buffet',
+      name: 'Sushi Buffet',
       roles: [{ id: 'empath', name: 'Empath' }],
     });
+  });
+
+  it('reads legacy Sushi Buffet script records without restoring them to the collection', () => {
+    const game: Game = {
+      activeDay: 1,
+      conversations: [],
+      createdAt: '2026-08-03T00:00:00.000Z',
+      id: 'sushi-game',
+      players: [],
+      scriptId: 'sushi-buffet',
+      sushiRoleIds: ['empath'],
+      updatedAt: '2026-08-03T00:00:00.000Z',
+    };
+    const legacyBackup = JSON.parse(createBackup({ ...data, games: [game] }));
+    legacyBackup.data.scripts = [
+      {
+        id: 'sushi-buffet',
+        name: 'Sushi Buffet',
+        roles: ['empath'],
+        updatedAt: '2026-08-03T00:00:00.000Z',
+        version: '1.0.0',
+      },
+    ];
+    legacyBackup.data.games[0] = {
+      ...legacyBackup.data.games[0],
+      scriptId: 'sushi-buffet',
+      scriptRoleIds: ['empath'],
+    };
+
+    const restored = parseBackup(JSON.stringify(legacyBackup));
+
+    expect(restored.scripts).toEqual([]);
+    expect(restored.games[0].script?.roles).toEqual([{ id: 'empath', name: 'Empath' }]);
   });
 
   it('round trips storyteller players and remaps their friend IDs', () => {

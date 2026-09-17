@@ -68,9 +68,38 @@ describe('script persistence role references', () => {
     expect(typeof latestValue).toBe('string');
 
     const persisted = JSON.parse(latestValue as string);
-    expect(persisted.version).toBe(13);
+    expect(persisted.version).toBe(14);
     expect(persisted.state.scripts[0].roles).toEqual(['loric_role']);
     expect(persisted.state.games[0].script.roles).toEqual(['loric_role']);
+  });
+
+  it('omits Sushi Buffet from persisted scripts and game copies', () => {
+    const sushiScript: StoredScript = {
+      id: 'sushi-buffet',
+      name: 'Sushi Buffet',
+      roles: [officialRole],
+      updatedAt: '2026-09-15T00:00:00.000Z',
+      version: '1.0.0',
+    };
+    const sushiGame = {
+      ...game,
+      script: sushiScript,
+      scriptId: sushiScript.id,
+      sushiRoleIds: [officialRole.id],
+    };
+
+    useGameStore.setState({
+      games: [sushiGame],
+      roleCatalog: [officialRole],
+      scripts: [sushiScript],
+    });
+
+    const latestValue = persistedStorage.setItem.mock.calls.at(-1)?.[1];
+    const persisted = JSON.parse(latestValue as string);
+
+    expect(persisted.state.scripts).toEqual([]);
+    expect(persisted.state.games[0]).not.toHaveProperty('script');
+    expect(persisted.state.games[0].scriptRoleIds).toEqual([officialRole.id]);
   });
 
   it('migrates existing full official roles when loading the previous store version', async () => {
@@ -94,9 +123,51 @@ describe('script persistence role references', () => {
     expect(useGameStore.getState().scripts[0]?.roles).toEqual([officialRole]);
     const migratedValue = persistedStorage.setItem.mock.calls.at(-1)?.[1];
     const migrated = JSON.parse(migratedValue as string);
-    expect(migrated.version).toBe(13);
+    expect(migrated.version).toBe(14);
     expect(migrated.state.scripts[0].roles).toEqual(['loric_role']);
     expect(migrated.state.games[0].script.roles).toEqual(['loric_role']);
+  });
+
+  it('migrates legacy Sushi records out of persisted script collections', async () => {
+    const sushiScript: StoredScript = {
+      id: 'sushi-buffet',
+      name: 'Sushi Buffet',
+      roles: [officialRole],
+      updatedAt: '2026-09-15T00:00:00.000Z',
+      version: '1.0.0',
+    };
+    const sushiGame = {
+      ...game,
+      script: sushiScript,
+      scriptId: sushiScript.id,
+      sushiRoleIds: [officialRole.id],
+    };
+
+    persistedStorage.setItem.mockClear();
+    persistedStorage.getItem.mockResolvedValueOnce(
+      JSON.stringify({
+        state: {
+          appUserName: 'You',
+          friends: [],
+          games: [sushiGame],
+          roleCatalog: [officialRole],
+          savedNotes: [],
+          scripts: [sushiScript],
+        },
+        version: 13,
+      }),
+    );
+
+    await useGameStore.persist.rehydrate();
+
+    expect(useGameStore.getState().scripts).toEqual([]);
+    expect(useGameStore.getState().games[0]?.script?.roles).toEqual([officialRole]);
+    const migratedValue = persistedStorage.setItem.mock.calls.at(-1)?.[1];
+    const migrated = JSON.parse(migratedValue as string);
+    expect(migrated.version).toBe(14);
+    expect(migrated.state.scripts).toEqual([]);
+    expect(migrated.state.games[0]).not.toHaveProperty('script');
+    expect(migrated.state.games[0].scriptRoleIds).toEqual([officialRole.id]);
   });
 });
 

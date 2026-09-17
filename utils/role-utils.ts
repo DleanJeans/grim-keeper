@@ -46,6 +46,37 @@ const officialRoleMetadataById: Record<string, Pick<Role, 'edition' | 'team'>> =
   thief: { edition: 'tb', team: 'traveller' },
 };
 
+const roleNameOverrides: Record<string, string> = {
+  alhadikhia: 'Al-Hadikhia',
+  bigwig: 'Big Wig',
+  bonecollector: 'Bone Collector',
+  bountyhunter: 'Bounty Hunter',
+  cultleader: 'Cult Leader',
+  deusexfiasco: 'Deus ex Fiasco',
+  devils_advocate: "Devil's Advocate",
+  devilsadvocate: "Devil's Advocate",
+  eviltwin: 'Evil Twin',
+  fanggu: 'Fang Gu',
+  fortuneteller: 'Fortune Teller',
+  godofug: 'God of Ug',
+  hellslibrarian: "Hell's Librarian",
+  highpriestess: 'High Priestess',
+  lilmonsta: "Lil' Monsta",
+  lordoftyphon: 'Lord of Typhon',
+  nodashii: 'No Dashii',
+  organgrinder: 'Organ Grinder',
+  pithag: 'Pit-Hag',
+  plaguedoctor: 'Plague Doctor',
+  poppygrower: 'Poppy Grower',
+  scarletwoman: 'Scarlet Woman',
+  snakecharmer: 'Snake Charmer',
+  spiritofivory: 'Spirit of Ivory',
+  stormcatcher: 'Storm Catcher',
+  tealady: 'Tea Lady',
+  towncrier: 'Town Crier',
+  villageidiot: 'Village Idiot',
+};
+
 const alignedGoodTeams = new Set(['outsider', 'townsfolk']);
 const alignedEvilTeams = new Set(['demon', 'minion']);
 
@@ -667,7 +698,7 @@ export function mergeRoleCatalogMetadata(roles: Role[], catalog: Role[]): Role[]
       edition: role.edition ?? catalogRole.edition,
       imageSource: role.imageSource ?? catalogRole.imageSource,
       imageUrls: catalogRole.imageUrls ?? role.imageUrls,
-      name: role.name || catalogRole.name,
+      name: isGeneratedRoleName(role) ? catalogRole.name : role.name || catalogRole.name,
       notes: role.notes ?? catalogRole.notes,
       team: role.team ?? catalogRole.team,
     };
@@ -834,6 +865,10 @@ function normalizeRole(item: unknown, catalogById: Map<string, Role>): Role | un
     ...(imageUrls ? { imageUrls } : {}),
   };
 
+  if (isGeneratedRoleName(role)) {
+    role.name = catalogRole?.name ?? formatRoleId(id);
+  }
+
   return role;
 }
 
@@ -894,7 +929,15 @@ function normalizeRoleNotes(value: unknown) {
   return notes.length > 0 ? notes : undefined;
 }
 
+export function isGeneratedRoleName(role: Pick<Role, 'id' | 'name'>) {
+  return role.name === formatRoleId(role.id) || role.name === formatBasicRoleId(role.id);
+}
+
 export function formatRoleId(roleId: string) {
+  return roleNameOverrides[roleId] ?? formatBasicRoleId(roleId);
+}
+
+function formatBasicRoleId(roleId: string) {
   return roleId
     .replaceAll('_', ' ')
     .replaceAll('-', ' ')

@@ -68,7 +68,6 @@ import {
   serializeGameScripts,
   serializeStoredScript,
   stripDuplicateScriptImages,
-  stripSushiBuffetScriptRoles,
 } from '@/utils/script-storage';
 import { webStorage } from '@/utils/web-storage';
 
@@ -420,6 +419,10 @@ export const useGameStore = create<GameState>()(
         return game;
       },
       saveScript: (script) => {
+        if (script.id === SUSHI_BUFFET_SCRIPT_ID) {
+          return;
+        }
+
         set((state) => {
           const normalizedScript = {
             ...script,
@@ -470,6 +473,10 @@ export const useGameStore = create<GameState>()(
         });
       },
       updateScript: (script) => {
+        if (script.id === SUSHI_BUFFET_SCRIPT_ID) {
+          return;
+        }
+
         set((state) => ({
           games: updateGamesWithScript(state.games, script, state.roleCatalog),
           scripts: state.scripts.map((existingScript) =>
@@ -544,10 +551,12 @@ export const useGameStore = create<GameState>()(
       setRoleCatalog: (roles) => {
         set((state) => {
           const roleCatalog = mergeRoleNotes(dedupeRoles(roles), state.roleCatalog);
-          const scripts = state.scripts.map((script) => ({
-            ...script,
-            roles: mergeRoleCatalogMetadata(script.roles, roleCatalog),
-          }));
+          const scripts = state.scripts
+            .filter((script) => script.id !== SUSHI_BUFFET_SCRIPT_ID)
+            .map((script) => ({
+              ...script,
+              roles: mergeRoleCatalogMetadata(script.roles, roleCatalog),
+            }));
           const games = restoreSushiBuffetScriptRoles(
             state.games.map((game) =>
               game.script
@@ -1359,7 +1368,13 @@ export const useGameStore = create<GameState>()(
       },
       importData: (data) => {
         const migratedData = migrateObjectIds(data) as GameData;
-        set(migratedData);
+        const roleCatalog = migratedData.roleCatalog.map(normalizeRoleImageUrls);
+        set({
+          ...migratedData,
+          games: restoreSushiBuffetScriptRoles(migratedData.games, roleCatalog),
+          roleCatalog,
+          scripts: migratedData.scripts.filter((script) => script.id !== SUSHI_BUFFET_SCRIPT_ID),
+        });
       },
       importGameTransfer: (transfer) => {
         set((state) => mergeGameTransfer(state, transfer));
@@ -1367,7 +1382,7 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'grim-keeper-game-store-v1',
-      version: 13,
+      version: 14,
       storage: createJSONStorage(() => (Platform.OS === 'web' ? webStorage : localStorage)),
       migrate: (persistedState, version) => {
         if (!persistedState) {
@@ -1396,9 +1411,9 @@ export const useGameStore = create<GameState>()(
         const roleCatalog = (state.roleCatalog ?? currentState.roleCatalog).map(
           normalizeRoleImageUrls,
         );
-        const scripts = (state?.scripts ?? currentState.scripts).map((script) =>
-          restoreStoredScript(script, roleCatalog),
-        );
+        const scripts = (state?.scripts ?? currentState.scripts)
+          .filter((script) => script.id !== SUSHI_BUFFET_SCRIPT_ID)
+          .map((script) => restoreStoredScript(script, roleCatalog));
         const restoredGames = restoreGameScripts(
           (state?.games ?? currentState.games) as SerializedGame[],
           roleCatalog,
@@ -1430,12 +1445,14 @@ export const useGameStore = create<GameState>()(
         appUserName: state.appUserName,
         friends: state.friends,
         games: serializeGameScripts(
-          stripDuplicateScriptImages(stripSushiBuffetScriptRoles(state.games), state.scripts),
+          stripDuplicateScriptImages(state.games, state.scripts),
           state.roleCatalog,
         ),
         roleCatalog: state.roleCatalog,
         savedNotes: state.savedNotes,
-        scripts: state.scripts.map((script) => serializeStoredScript(script, state.roleCatalog)),
+        scripts: state.scripts
+          .filter((script) => script.id !== SUSHI_BUFFET_SCRIPT_ID)
+          .map((script) => serializeStoredScript(script, state.roleCatalog)),
       }),
     },
   ),
@@ -1447,8 +1464,12 @@ export function getGameById(games: Game[], gameId: string | undefined) {
 
 function compactPersistedState(state: PersistedGameState): PersistedGameState {
   const roleCatalog = state.roleCatalog?.map(normalizeRoleImageUrls) ?? [];
-  const scripts = state.scripts?.map((script) => restoreStoredScript(script, roleCatalog));
-  const games = state.games ? restoreGameScripts(state.games, roleCatalog) : undefined;
+  const scripts = state.scripts
+    ?.filter((script) => script.id !== SUSHI_BUFFET_SCRIPT_ID)
+    .map((script) => restoreStoredScript(script, roleCatalog));
+  const games = state.games
+    ? restoreSushiBuffetScriptRoles(restoreGameScripts(state.games, roleCatalog), roleCatalog)
+    : undefined;
 
   return {
     ...state,
@@ -1461,7 +1482,7 @@ function compactPersistedState(state: PersistedGameState): PersistedGameState {
     ...(games
       ? {
           games: serializeGameScripts(
-            stripDuplicateScriptImages(stripSushiBuffetScriptRoles(games), scripts ?? []),
+            stripDuplicateScriptImages(games, scripts ?? []),
             roleCatalog,
           ),
         }

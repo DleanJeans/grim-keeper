@@ -11,11 +11,13 @@ import {
   mapSavedNoteIds,
 } from '@/utils/object-id';
 import { isOfficialRole } from '@/utils/role-utils';
-import { isSushiBuffetScript } from '@/utils/script-service';
+import { isSushiBuffetScript, SUSHI_BUFFET_SCRIPT_ID } from '@/utils/script-service';
 import {
   normalizeRoleImagesInState,
   normalizeRoleImageUrls,
+  restoreGameScripts,
   restoreStoredScript,
+  restoreSushiBuffetScriptRoles,
   type SerializedStoredScript,
   serializeStoredScript,
 } from '@/utils/script-storage';
@@ -78,7 +80,7 @@ export function parseBackup(value: string): GameData {
       throw new Error('The backup is missing required Grim Keeper data.');
     }
 
-    return normalizeRoleImagesInState(backup.data);
+    return restoreLegacyData(backup.data);
   }
 
   if (backup.version !== backupVersion || !isExportedGameData(backup.data)) {
@@ -89,13 +91,14 @@ export function parseBackup(value: string): GameData {
 }
 
 function normalizeForExport(data: GameData): ExportedGameData {
-  const scripts: ExportedScript[] = data.scripts.map((script) =>
+  const storedScripts = data.scripts.filter((script) => !isSushiBuffetScript(script));
+  const scripts: ExportedScript[] = storedScripts.map((script) =>
     isPortableScript(script) ? serializeStoredScript(script, data.roleCatalog) : script.id,
   );
   const roleCatalog = data.roleCatalog
     .filter((role) => !isOfficialRole(role))
     .map(normalizeRoleImageUrls);
-  const scriptsById = new Map(data.scripts.map((script) => [script.id, script]));
+  const scriptsById = new Map(storedScripts.map((script) => [script.id, script]));
   const friends = addMissingFriendsForGames(data.friends, data.games, data.appUserName);
   const usedNoteIds: string[] = [];
   const games = data.games.map((game) => {
@@ -124,6 +127,10 @@ function normalizeForExport(data: GameData): ExportedGameData {
   for (const game of games) {
     const script = game.script;
     if (!script) {
+      continue;
+    }
+
+    if (isSushiBuffetScript(script)) {
       continue;
     }
 
@@ -163,6 +170,14 @@ function exportGame(game: Game, scriptsById: Map<string, StoredScript>): Exporte
     return gameWithoutScriptReference;
   }
 
+  if (isSushiBuffetScript(script)) {
+    return {
+      ...gameWithoutScriptReference,
+      scriptId: script.id,
+      scriptRoleIds: script.roles.map((role) => role.id),
+    };
+  }
+
   const storedScript = scriptsById.get(script.id);
   const scriptRoleIds =
     storedScript && sameRoleIds(script.roles, storedScript.roles)
@@ -184,11 +199,13 @@ function exportGame(game: Game, scriptsById: Map<string, StoredScript>): Exporte
 
 function restoreExportedData(data: ExportedGameData): GameData {
   const roleCatalog = data.roleCatalog.map(normalizeRoleImageUrls);
-  const storedScripts = data.scripts.map((script) =>
+  const restoredScripts = data.scripts.map((script) =>
     typeof script === 'string'
       ? createScriptPlaceholder(script)
       : restoreStoredScript(script, roleCatalog),
   );
+  const legacySushiScript = restoredScripts.find(isSushiBuffetScript);
+  const storedScripts = restoredScripts.filter((script) => !isSushiBuffetScript(script));
   const scriptsById = new Map(
     storedScripts.filter((script) => script.roles.length > 0).map((script) => [script.id, script]),
   );
@@ -198,64 +215,85 @@ function restoreExportedData(data: ExportedGameData): GameData {
   for (const role of roleCatalog) {
     rolesById.set(role.id, role);
   }
-  for (const script of storedScripts) {
+  for (const script of restoredScripts) {
     for (const role of script.roles) {
       rolesById.set(role.id, role);
     }
   }
 
+  const games = data.games.map((game) => {
+    const { lorics, scriptId, scriptRoleIds, scriptRoleOverrides, ...gameWithoutScript } = game;
+    const gameWithoutScriptReference = {
+      ...gameWithoutScript,
+      conversations: gameWithoutScript.conversations.map((conversation) => ({
+        ...conversation,
+        kind: conversation.kind ?? 'interaction',
+        initiatorId: conversation.initiatorId ?? conversation.participantIds[0] ?? '',
+      })),
+      players: gameWithoutScript.players.map((player) => ({
+        ...player,
+        name:
+          player.id === APP_USER_ID
+            ? data.appUserName
+            : (friendNamesById.get(player.id) ?? player.name ?? 'Unknown Player'),
+      })),
+      ...(lorics !== undefined ? { lorics: getRoleIds(lorics) } : {}),
+    };
+    const script =
+      scriptId === SUSHI_BUFFET_SCRIPT_ID
+        ? legacySushiScript
+        : scriptId
+          ? scriptsById.get(scriptId)
+          : undefined;
+
+    if (!script) {
+      return {
+        ...gameWithoutScriptReference,
+        ...(scriptId ? { scriptId } : {}),
+        ...(scriptRoleIds ? { scriptRoleIds } : {}),
+        ...(scriptRoleOverrides?.length
+          ? { scriptRoleOverrides: getRoleIds(scriptRoleOverrides) }
+          : {}),
+      };
+    }
+
+    const overrideRoleIds = getRoleIds(scriptRoleOverrides);
+    const roles = scriptRoleIds
+      ? scriptRoleIds.flatMap((roleId) => {
+          const role = rolesById.get(roleId);
+          return role ? [role] : [];
+        })
+      : script.roles;
+
+    return {
+      ...gameWithoutScriptReference,
+      ...(scriptId ? { scriptId } : {}),
+      ...(scriptRoleIds?.length ? { scriptRoleIds } : {}),
+      ...(overrideRoleIds.length ? { scriptRoleOverrides: overrideRoleIds } : {}),
+      script: { ...script, roles: [...roles] },
+    };
+  });
+
   return {
     ...data,
     roleCatalog,
     scripts: storedScripts,
-    games: data.games.map((game) => {
-      const { lorics, scriptId, scriptRoleIds, scriptRoleOverrides, ...gameWithoutScript } = game;
-      const gameWithoutScriptReference = {
-        ...gameWithoutScript,
-        conversations: gameWithoutScript.conversations.map((conversation) => ({
-          ...conversation,
-          kind: conversation.kind ?? 'interaction',
-          initiatorId: conversation.initiatorId ?? conversation.participantIds[0] ?? '',
-        })),
-        players: gameWithoutScript.players.map((player) => ({
-          ...player,
-          name:
-            player.id === APP_USER_ID
-              ? data.appUserName
-              : (friendNamesById.get(player.id) ?? player.name ?? 'Unknown Player'),
-        })),
-        ...(lorics !== undefined ? { lorics: getRoleIds(lorics) } : {}),
-      };
-      const script = scriptId ? scriptsById.get(scriptId) : undefined;
-
-      if (!script) {
-        return {
-          ...gameWithoutScriptReference,
-          ...(scriptId ? { scriptId } : {}),
-          ...(scriptRoleIds ? { scriptRoleIds } : {}),
-          ...(scriptRoleOverrides?.length
-            ? { scriptRoleOverrides: getRoleIds(scriptRoleOverrides) }
-            : {}),
-        };
-      }
-
-      const overrideRoleIds = getRoleIds(scriptRoleOverrides);
-      const roles = scriptRoleIds
-        ? scriptRoleIds.flatMap((roleId) => {
-            const role = rolesById.get(roleId);
-            return role ? [role] : [];
-          })
-        : script.roles;
-
-      return {
-        ...gameWithoutScriptReference,
-        ...(scriptId ? { scriptId } : {}),
-        ...(scriptRoleIds?.length ? { scriptRoleIds } : {}),
-        ...(overrideRoleIds.length ? { scriptRoleOverrides: overrideRoleIds } : {}),
-        script: { ...script, roles: [...roles] },
-      };
-    }),
+    games: restoreSushiBuffetScriptRoles(games, roleCatalog),
   };
+}
+
+function restoreLegacyData(data: GameData): GameData {
+  const normalizedData = normalizeRoleImagesInState(data);
+  const roleCatalog = normalizedData.roleCatalog.map(normalizeRoleImageUrls);
+  const scripts = normalizedData.scripts
+    .filter((script) => !isSushiBuffetScript(script))
+    .map((script) => restoreStoredScript(script, roleCatalog));
+  const games = restoreSushiBuffetScriptRoles(
+    restoreGameScripts(normalizedData.games, roleCatalog),
+    roleCatalog,
+  );
+
+  return { ...normalizedData, games, roleCatalog, scripts };
 }
 
 function isImportedScript(script: StoredScript) {
@@ -267,7 +305,7 @@ function isImportedScript(script: StoredScript) {
 }
 
 function isPortableScript(script: StoredScript) {
-  return isImportedScript(script) || isSushiBuffetScript(script);
+  return isImportedScript(script);
 }
 
 function createScriptPlaceholder(id: string): StoredScript {

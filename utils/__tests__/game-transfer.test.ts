@@ -77,7 +77,7 @@ describe('game transfer', () => {
     expect(merged.games[0]?.script?.roles).toEqual([officialRole]);
   });
 
-  it('keeps a Sushi Buffet script game-local when transferring a game', () => {
+  it('omits Sushi Buffet from the transfer script payload and rebuilds it in the game', () => {
     const sushiScript: StoredScript = {
       id: 'sushi-buffet',
       name: 'Sushi Buffet',
@@ -86,7 +86,13 @@ describe('game transfer', () => {
       version: '1.0.0',
     };
     const game = createGame({ script: sushiScript });
-    const transfer = parseGameTransfer(createGameTransfer({ ...game, sushiRoleIds: [] }, []));
+    const rawTransfer = JSON.parse(createGameTransfer({ ...game, sushiRoleIds: [] }, []));
+
+    expect(rawTransfer.data).not.toHaveProperty('script');
+    expect(rawTransfer.data.game).not.toHaveProperty('script');
+    expect(rawTransfer.data.game.scriptRoleIds).toEqual(['custom-role', 'beggar']);
+
+    const transfer = parseGameTransfer(JSON.stringify(rawTransfer));
     const result = mergeGameTransfer(createData(), transfer);
 
     expect(result.scripts).toEqual([]);
@@ -94,7 +100,40 @@ describe('game transfer', () => {
       scriptId: 'sushi-buffet',
       sushiRoleIds: [],
     });
-    expect(result.games[0].script).toEqual(sushiScript);
+    expect(result.games[0].script).toMatchObject({
+      id: 'sushi-buffet',
+      name: 'Sushi Buffet',
+      roles: [
+        { id: 'custom-role', name: 'Custom Role' },
+        { id: 'beggar', name: 'Beggar' },
+      ],
+    });
+  });
+
+  it('reads a legacy Sushi Buffet transfer without adding a stored script', () => {
+    const sushiScript: StoredScript = {
+      id: 'sushi-buffet',
+      name: 'Sushi Buffet',
+      roles: [role],
+      updatedAt: '2026-08-18T00:00:00.000Z',
+      version: '1.0.0',
+    };
+    const game = createGame({ script: sushiScript });
+    const legacyTransfer = {
+      data: { game, script: sushiScript },
+      exportedAt: '2026-08-18T00:00:00.000Z',
+      format: 'grim-keeper-game',
+      version: 1,
+    };
+
+    const result = mergeGameTransfer(
+      createData(),
+      parseGameTransfer(JSON.stringify(legacyTransfer)),
+    );
+
+    expect(result.scripts).toEqual([]);
+    expect(result.games[0].script?.id).toBe('sushi-buffet');
+    expect(result.games[0].script?.roles).toEqual([role]);
   });
 
   it('round trips won and lost results and omits an unset result', () => {

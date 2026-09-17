@@ -3,11 +3,12 @@ import {
   normalizeRoleImagesInState,
   normalizeRoleImageUrls,
   restoreDuplicateScriptImages,
+  restoreGameScripts,
   restoreStoredScript,
   restoreSushiBuffetScriptRoles,
+  serializeGameScripts,
   serializeStoredScript,
   stripDuplicateScriptImages,
-  stripSushiBuffetScriptRoles,
 } from '@/utils/script-storage';
 
 const dataImage = 'data:image/png;base64,encoded-image';
@@ -126,26 +127,46 @@ describe('script persistence image handling', () => {
     expect(stripDuplicateScriptImages([game], [])).toEqual([game]);
   });
 
-  it('stores the smaller Sushi Buffet role set', () => {
-    const [storedGame] = stripSushiBuffetScriptRoles([sushiGame]);
+  it('omits the Sushi Buffet script and stores its role IDs on the game', () => {
+    const [storedGame] = serializeGameScripts([sushiGame]);
 
-    expect(storedGame.script?.roles.map((role) => role.id)).toEqual(['imp']);
+    expect(storedGame).not.toHaveProperty('script');
+    expect(storedGame.scriptRoleIds).toEqual(sushiRoles.map((role) => role.id));
+    expect(storedGame.sushiRoleIds).toEqual(sushiGame.sushiRoleIds);
   });
 
-  it('stores enabled Sushi Buffet roles when they are the smaller set', () => {
-    const [storedGame] = stripSushiBuffetScriptRoles([{ ...sushiGame, sushiRoleIds: ['empath'] }]);
-
-    expect(storedGame.script?.roles.map((role) => role.id)).toEqual(['empath']);
-  });
-
-  it('restores the full Sushi Buffet script from the role catalog', () => {
-    const [storedGame] = stripSushiBuffetScriptRoles([sushiGame]);
-    const [hydratedGame] = restoreSushiBuffetScriptRoles([storedGame], sushiRoles);
+  it('restores a missing Sushi Buffet script from compact role IDs', () => {
+    const [storedGame] = serializeGameScripts([sushiGame]);
+    const [hydratedGame] = restoreSushiBuffetScriptRoles(
+      restoreGameScripts([storedGame]),
+      sushiRoles,
+    );
 
     expect(hydratedGame.script?.roles.map((role) => role.id)).toEqual(
       sushiRoles.map((role) => role.id),
     );
     expect(hydratedGame.script?.roles[0]?.ability).toBe(sushiRoles[0].ability);
+  });
+
+  it('normalizes generated official names and keeps hydrated role references compact', () => {
+    const role = {
+      edition: 'bmr',
+      id: 'devilsadvocate',
+      name: 'Devilsadvocate',
+      team: 'minion',
+    };
+    const serialized = serializeStoredScript({ ...script, roles: [role] });
+
+    expect(serialized.roles).toEqual(['devilsadvocate']);
+    expect(restoreStoredScript(serialized).roles).toEqual([
+      { id: 'devilsadvocate', name: "Devil's Advocate" },
+    ]);
+    expect(
+      serializeStoredScript({
+        ...script,
+        roles: [{ id: 'devilsadvocate', name: "Devil's Advocate" }],
+      }).roles,
+    ).toEqual(['devilsadvocate']);
   });
 
   it('serializes canonical loric and fabled roles as IDs', () => {
