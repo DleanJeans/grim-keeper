@@ -187,7 +187,7 @@ function getGameAlignment(game: Game, playerId: string) {
   return role ? getRoleAlignment(role) : undefined;
 }
 
-function getGameResultForPlayer(game: Game, playerId: string): GameResult | undefined {
+export function getGameResultForPlayer(game: Game, playerId: string): GameResult | undefined {
   if (game.result === undefined || playerId === APP_USER_ID) {
     return game.result;
   }

@@ -7,6 +7,7 @@ import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Game, GameResult, Player, Role, StoredScript } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
+import { getGameResultForPlayer } from '@/utils/game-utils';
 import { APP_USER_ID } from '@/utils/object-id';
 import {
   getRoleAssignmentForDay,
@@ -56,6 +57,7 @@ function FriendGameRow({ entry }: { entry: GameEntry }) {
   const { game, playerId, claimedRoleIds, playedRoleIds } = entry;
   const scriptName = game.script?.name ?? 'Untitled game';
   const formattedDate = formatGameDate(game.createdAt);
+  const result = getGameResultForPlayer(game, playerId);
   const roles = game.script?.roles ?? [];
   const claimedRoles = getRolesByIds(claimedRoleIds, roles);
   const playedRoles = getRolesByIds(playedRoleIds, roles);
@@ -68,7 +70,7 @@ function FriendGameRow({ entry }: { entry: GameEntry }) {
       onPress={() => router.push({ pathname: '/game/[id]', params: { id: game.id, playerId } })}
       style={({ pressed }) => [
         styles.gameButton,
-        getResultStyle(game.result),
+        getResultStyle(result),
         pressed && styles.pressed,
       ]}
     >
