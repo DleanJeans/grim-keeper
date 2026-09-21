@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
 import { useMemo } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { RoleReference } from '@/components/role-reference';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { Game, Player, Role, StoredScript } from '@/types/game';
+import type { Game, GameResult, Player, Role, StoredScript } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
 import { APP_USER_ID } from '@/utils/object-id';
 import {
@@ -66,14 +66,11 @@ function FriendGameRow({ entry }: { entry: GameEntry }) {
       accessibilityLabel={`${scriptName}, ${formattedDate}`}
       accessibilityRole="button"
       onPress={() => router.push({ pathname: '/game/[id]', params: { id: game.id, playerId } })}
-      style={({ pressed }) => ({
-        backgroundColor: pressed ? colors.surfacePressed : colors.surface,
-        borderColor: colors.border,
-        borderRadius: 8,
-        borderWidth: 1,
-        gap: 8,
-        padding: 12,
-      })}
+      style={({ pressed }) => [
+        styles.gameButton,
+        getResultStyle(game.result),
+        pressed && styles.pressed,
+      ]}
     >
       <View style={{ gap: 2 }}>
         <Text selectable style={{ color: colors.text, fontSize: 15, fontWeight: '800' }}>
@@ -260,3 +257,37 @@ function formatGameDate(createdAt: string) {
     year: 'numeric',
   }).format(date);
 }
+
+function getResultStyle(result?: GameResult) {
+  if (result === 'won') {
+    return styles.won;
+  }
+
+  if (result === 'lost') {
+    return styles.lost;
+  }
+
+  return undefined;
+}
+
+const styles = StyleSheet.create({
+  gameButton: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 8,
+    padding: 12,
+  },
+  lost: {
+    backgroundColor: colors.dangerSurface,
+    borderColor: colors.danger,
+  },
+  pressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  won: {
+    backgroundColor: colors.successSurface,
+    borderColor: colors.successBorder,
+  },
+});
