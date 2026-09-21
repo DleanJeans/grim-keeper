@@ -78,11 +78,12 @@ export function getGameStats(games: Game[], playerId = APP_USER_ID): GameStats {
   let wins = 0;
 
   for (const game of playerGames) {
-    const hasResult = game.result !== undefined;
+    const result = getGameResultForPlayer(game, playerId);
+    const hasResult = result !== undefined;
 
     if (hasResult) {
       completedGames += 1;
-      if (game.result === 'won') {
+      if (result === 'won') {
         wins += 1;
       }
     }
@@ -92,7 +93,7 @@ export function getGameStats(games: Game[], playerId = APP_USER_ID): GameStats {
       goodGames += 1;
       if (hasResult) {
         goodCompletedGames += 1;
-        if (game.result === 'won') {
+        if (result === 'won') {
           goodWins += 1;
         }
       }
@@ -100,7 +101,7 @@ export function getGameStats(games: Game[], playerId = APP_USER_ID): GameStats {
       evilGames += 1;
       if (hasResult) {
         evilCompletedGames += 1;
-        if (game.result === 'won') {
+        if (result === 'won') {
           evilWins += 1;
         }
       }
@@ -154,9 +155,10 @@ export function getCharacterStats(games: Game[], playerId = APP_USER_ID): Charac
     };
     character.count += 1;
 
-    if (game.result !== undefined) {
+    const result = getGameResultForPlayer(game, playerId);
+    if (result !== undefined) {
       character.completedGames += 1;
-      if (game.result === 'won') {
+      if (result === 'won') {
         character.wins += 1;
       }
     }
@@ -183,6 +185,20 @@ function getGameAlignment(game: Game, playerId: string) {
       : null;
 
   return role ? getRoleAlignment(role) : undefined;
+}
+
+function getGameResultForPlayer(game: Game, playerId: string): GameResult | undefined {
+  if (game.result === undefined || playerId === APP_USER_ID) {
+    return game.result;
+  }
+
+  const playerAlignment = getGameAlignment(game, playerId);
+  const appUserAlignment = getGameAlignment(game, APP_USER_ID);
+  if (!playerAlignment || !appUserAlignment || playerAlignment === appUserAlignment) {
+    return game.result;
+  }
+
+  return game.result === 'won' ? 'lost' : 'won';
 }
 
 function getPercentage(value: number, total: number) {

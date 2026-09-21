@@ -207,8 +207,8 @@ describe('getGameStats', () => {
     });
   });
 
-  it('limits friend stats to games where the friend played', () => {
-    const friendGoodGame = makeAlignedGame('townsfolk', 'won', 'friend-1');
+  it('calculates friend results from the friend alignment', () => {
+    const friendGoodGame = makeAlignedGame('townsfolk', 'lost', 'friend-1');
     const friendEvilGame = makeAlignedGame('demon', 'lost', 'friend-1');
     const friendActiveGame = makeAlignedGame('demon', undefined, 'friend-1');
     const unrelatedGame = makeAlignedGame('townsfolk', 'won', 'other-friend');
@@ -221,14 +221,14 @@ describe('getGameStats', () => {
       evilGames: 2,
       evilCompletedSideRate: 50,
       evilSideRate: 67,
-      evilWins: 0,
-      evilWinRate: 0,
+      evilWins: 1,
+      evilWinRate: 100,
       goodCompletedGames: 1,
       goodGames: 1,
       goodCompletedSideRate: 50,
       goodSideRate: 33,
-      goodWins: 1,
-      goodWinRate: 100,
+      goodWins: 0,
+      goodWinRate: 0,
       totalGames: 3,
       winRate: 50,
       wins: 1,
@@ -278,6 +278,18 @@ describe('getCharacterStats', () => {
       },
     ]);
   });
+
+  it('calculates friend character results from the friend alignment', () => {
+    expect(getCharacterStats([makeAlignedGame('demon', 'lost', 'friend-1')], 'friend-1')).toEqual([
+      {
+        completedGames: 1,
+        count: 1,
+        role: { id: 'demon-role', name: 'demon', team: 'demon' },
+        winRate: 100,
+        wins: 1,
+      },
+    ]);
+  });
 });
 
 function makeAlignedGame(
@@ -285,30 +297,53 @@ function makeAlignedGame(
   result?: 'lost' | 'won',
   playerId = APP_USER_ID,
 ): Game {
-  const roleId = `${team}-role`;
+  const appUserTeam = playerId === APP_USER_ID ? team : 'townsfolk';
+  const players = [
+    makePlayer({
+      id: APP_USER_ID,
+      roleAssignments: [
+        {
+          day: 1,
+          kind: 'confirm',
+          roleIds: [`${appUserTeam}-role`],
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ],
+    }),
+  ];
 
-  return makeGame({
-    id: `${team}-${result}`,
-    players: [
-      {
+  if (playerId !== APP_USER_ID) {
+    players.push(
+      makePlayer({
         id: playerId,
-        name: 'Alice',
+        name: 'Friend',
         roleAssignments: [
           {
             day: 1,
             kind: 'confirm',
-            roleIds: [roleId],
+            roleIds: [`${team}-role`],
             updatedAt: '2026-01-01T00:00:00.000Z',
           },
         ],
-        seat: 0,
-      },
-    ],
+        seat: 1,
+      }),
+    );
+  }
+
+  const roleTeams = [...new Set([appUserTeam, team])];
+
+  return makeGame({
+    id: `${team}-${result}`,
+    players,
     result,
     script: {
       id: `${team}-script`,
       name: `${team} script`,
-      roles: [{ id: roleId, name: team, team }],
+      roles: roleTeams.map((roleTeam) => ({
+        id: `${roleTeam}-role`,
+        name: roleTeam,
+        team: roleTeam,
+      })),
       updatedAt: '2026-01-01T00:00:00.000Z',
       version: '1',
     },
