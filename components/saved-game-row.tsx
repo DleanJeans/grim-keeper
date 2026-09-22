@@ -15,11 +15,16 @@ type SavedGameRowProps = {
 
 export function SavedGameRow({ game, onDelete }: SavedGameRowProps) {
   const resultStyles = getResultStyles(game.result);
+  const gameTitle = game.script?.name ?? formatGameDate(game.createdAt);
+  const gameDays = getLastDayWithData(game);
+  const playerCountLabel = `${game.players.length} ${game.players.length === 1 ? 'player' : 'players'}`;
+  const dayCountLabel = `${gameDays} ${gameDays === 1 ? 'day' : 'days'}`;
 
   return (
     <View style={[styles.container, resultStyles.container]}>
       <View style={styles.row}>
         <Pressable
+          accessibilityLabel={`Open ${gameTitle}, ${playerCountLabel}, ${dayCountLabel}${game.result ? `, ${formatResult(game.result)}` : ''}`}
           accessibilityRole="button"
           onPress={() => router.push({ pathname: '/game/[id]', params: { id: game.id } })}
           style={({ pressed }) => [
@@ -32,7 +37,7 @@ export function SavedGameRow({ game, onDelete }: SavedGameRowProps) {
             <View style={styles.titleGroup}>
               <View style={styles.titleRow}>
                 <Text selectable style={styles.title}>
-                  {game.script?.name ?? formatGameDate(game.createdAt)}
+                  {gameTitle}
                 </Text>
                 {game.result ? <GameResultBadge result={game.result} /> : null}
               </View>
@@ -43,14 +48,14 @@ export function SavedGameRow({ game, onDelete }: SavedGameRowProps) {
               ) : null}
             </View>
             <Text selectable style={styles.metadata}>
-              {game.players.length} players - {getLastDayWithData(game)} days
+              {playerCountLabel} · {dayCountLabel}
             </Text>
             {game.script ? <SavedGameRolesRow game={game} /> : null}
           </View>
         </Pressable>
 
         <Pressable
-          accessibilityLabel="Delete saved game"
+          accessibilityLabel={`Delete ${gameTitle}`}
           accessibilityRole="button"
           onPress={() => onDelete(game.id)}
           style={({ pressed }) => [
