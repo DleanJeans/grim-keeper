@@ -1,6 +1,6 @@
 import { ChevronDown, Search, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { TravelerRoleAlignmentButton } from '@/components/game/notes-tab/traveler-role-alignment-button';
 import { TravelerRoleOption } from '@/components/game/notes-tab/traveler-role-option';
@@ -107,7 +107,10 @@ export function TravelerRolePicker({
         transparent
         visible={pickerOpen}
       >
-        <View style={styles.overlay}>
+        <KeyboardAvoidingView
+          behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
+          style={styles.overlay}
+        >
           <Pressable
             accessibilityLabel="Close traveler character picker"
             accessibilityRole="button"
@@ -182,7 +185,7 @@ export function TravelerRolePicker({
               )}
             </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
       {selectedTravelerRole ? (
         <TravelerRoleAlignmentButton

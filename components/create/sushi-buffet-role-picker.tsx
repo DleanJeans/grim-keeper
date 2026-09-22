@@ -1,6 +1,6 @@
 import { Check, ChevronDown, Search, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { RoleReference } from '@/components/role-reference';
 import { Text, TextInput } from '@/components/text';
@@ -74,7 +74,10 @@ export function SushiBuffetRolePicker({
       </Pressable>
 
       <Modal animationType="slide" onRequestClose={closePicker} transparent visible={open}>
-        <View style={styles.backdrop}>
+        <KeyboardAvoidingView
+          behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
+          style={styles.backdrop}
+        >
           <Pressable
             accessibilityLabel="Close Sushi Buffet role picker"
             accessibilityRole="button"
@@ -161,7 +164,7 @@ export function SushiBuffetRolePicker({
               )}
             </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );

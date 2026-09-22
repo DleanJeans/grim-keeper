@@ -1,6 +1,6 @@
 import { Minus, Plus, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Pressable, StyleSheet, View } from 'react-native';
 
 import { RoleIcon } from '@/components/role-icon';
 import { Text, TextInput } from '@/components/text';
@@ -67,7 +67,10 @@ export function CharacterTypeCountEditor({
       </Pressable>
 
       <Modal animationType="slide" onRequestClose={closeEditor} transparent visible={editorOpen}>
-        <View style={styles.backdrop}>
+        <KeyboardAvoidingView
+          behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
+          style={styles.backdrop}
+        >
           <Pressable
             accessibilityLabel="Close starting character editor"
             accessibilityRole="button"
@@ -165,7 +168,7 @@ export function CharacterTypeCountEditor({
               </Pressable>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </>
   );

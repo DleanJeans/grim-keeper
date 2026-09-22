@@ -1,6 +1,6 @@
 import { Check, ChevronDown, Search, Users, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 
 import { Text, TextInput } from '@/components/text';
@@ -131,7 +131,10 @@ export function FriendPlayerPicker({
       </Pressable>
 
       <Modal animationType="slide" onRequestClose={closePicker} transparent visible={open}>
-        <View style={styles.backdrop}>
+        <KeyboardAvoidingView
+          behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
+          style={styles.backdrop}
+        >
           <Pressable
             accessibilityLabel="Cancel choosing friends"
             accessibilityRole="button"
@@ -289,7 +292,7 @@ export function FriendPlayerPicker({
               </Pressable>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </>
   );
