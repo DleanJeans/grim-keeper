@@ -1,5 +1,5 @@
 import { createContext, type ReactNode, use, useCallback, useMemo, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
@@ -42,7 +42,10 @@ export function AppDialogProvider({ children }: { children: ReactNode }) {
     <AppDialogContext value={contextValue}>
       {children}
       <Modal animationType="fade" onRequestClose={dismiss} transparent visible={dialog !== null}>
-        <View style={styles.backdrop}>
+        <KeyboardAvoidingView
+          behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
+          style={styles.backdrop}
+        >
           <View accessibilityRole="alert" style={styles.dialog}>
             <View style={styles.content}>
               <Text selectable style={styles.title}>
@@ -80,7 +83,7 @@ export function AppDialogProvider({ children }: { children: ReactNode }) {
               ))}
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </AppDialogContext>
   );
