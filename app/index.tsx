@@ -51,13 +51,13 @@ export default function HomeRoute() {
       />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        style={{ backgroundColor: colors.background, flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 40 }}
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
       >
         <ResponsiveContent style={styles.content}>
           <AppUserNameCard appUserName={appUserName} onSave={setAppUserName} />
 
-          <View style={{ flexDirection: 'row', gap: 12 }}>
+          <View style={styles.primaryActions}>
             <HomeActionButton icon="plus" label="New Game" onPress={() => router.push('/create')} />
             <HomeActionButton
               count={friends.length}
@@ -74,28 +74,17 @@ export default function HomeRoute() {
             onPress={() => router.push('/scripts')}
           />
 
-          <View style={{ gap: 12 }}>
+          <View style={styles.gamesSection}>
             <HomeGameStats />
 
-            <Text
-              selectable
-              style={{ color: colors.text, fontSize: 22, fontWeight: '800', textAlign: 'center' }}
-            >
-              Previous games
+            <Text selectable style={styles.sectionTitle}>
+              Saved games
             </Text>
 
             {games.length === 0 ? (
-              <View
-                style={{
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  padding: 16,
-                }}
-              >
-                <Text selectable style={{ color: colors.textMuted, fontSize: 16, lineHeight: 22 }}>
-                  No games yet.
+              <View style={styles.emptyState}>
+                <Text selectable style={styles.emptyStateText}>
+                  No games saved yet. Start a new game to see it here.
                 </Text>
               </View>
             ) : (
@@ -114,6 +103,64 @@ const styles = StyleSheet.create({
   content: {
     gap: 24,
     padding: 20,
+  },
+  emptyState: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 16,
+  },
+  emptyStateText: {
+    color: colors.textMuted,
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  gamesSection: {
+    gap: 12,
+  },
+  homeActionButton: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    borderCurve: 'continuous',
+    flex: 1,
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+    minHeight: 48,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  homeActionButtonLabel: {
+    color: colors.onPrimary,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  homeActionButtonPressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  homeActionCount: {
+    color: colors.onPrimary,
+    fontSize: 14,
+    fontVariant: ['tabular-nums'],
+  },
+  primaryActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  scroll: {
+    backgroundColor: colors.background,
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  sectionTitle: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '800',
+    textAlign: 'center',
   },
 });
 
@@ -136,26 +183,11 @@ function HomeActionButton({
       accessibilityLabel={label}
       accessibilityValue={count === undefined ? undefined : { text: String(count) }}
       onPress={onPress}
-      style={({ pressed }) => ({
-        alignItems: 'center',
-        backgroundColor: pressed ? colors.surfacePressed : colors.primary,
-        borderRadius: 8,
-        borderCurve: 'continuous',
-        flex: 1,
-        flexDirection: 'row',
-        gap: 8,
-        justifyContent: 'center',
-        paddingHorizontal: 14,
-        paddingVertical: 14,
-      })}
+      style={({ pressed }) => [styles.homeActionButton, pressed && styles.homeActionButtonPressed]}
     >
       <Icon color={colors.onPrimary} size={18} strokeWidth={2.7} />
-      <Text style={{ color: colors.onPrimary, fontSize: 16, fontWeight: '800' }}>{label}</Text>
-      {count === undefined ? null : (
-        <Text style={{ color: colors.onPrimary, fontSize: 14, fontVariant: ['tabular-nums'] }}>
-          {count}
-        </Text>
-      )}
+      <Text style={styles.homeActionButtonLabel}>{label}</Text>
+      {count === undefined ? null : <Text style={styles.homeActionCount}>{count}</Text>}
     </Pressable>
   );
 }
