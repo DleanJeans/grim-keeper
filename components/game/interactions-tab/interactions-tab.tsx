@@ -56,13 +56,15 @@ export function InteractionsTab() {
         </View>
       ) : null}
 
-      <View style={tabBarContainer}>
+      <View accessibilityRole="tablist" style={tabBarContainer}>
         {interactionSubtabs.map((tab) => {
           const active = subtab === tab.value;
           return (
             <Pressable
               key={tab.value}
-              accessibilityRole="button"
+              accessibilityLabel={`Show ${tab.label.toLocaleLowerCase()}`}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
               onPress={() => setSubtab(tab.value)}
               style={tabBarButtonStyle(active, 1)}
             >

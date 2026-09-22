@@ -114,6 +114,7 @@ export function tabBarButtonStyle(active: boolean, flex: number): ViewStyle {
     flexDirection: 'row',
     gap: 4,
     justifyContent: 'center',
+    minHeight: 44,
     paddingVertical: 10,
   };
 }

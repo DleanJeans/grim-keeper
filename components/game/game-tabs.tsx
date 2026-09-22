@@ -29,13 +29,15 @@ function renderGameTabIcon(tab: GameTab, color: string) {
 export function GameTabs() {
   const { activeTab, setActiveTab, exitMapModes } = useGameRouteContext();
   return (
-    <View style={tabBarContainer}>
+    <View accessibilityRole="tablist" style={tabBarContainer}>
       {gameTabs.map((tab) => {
         const active = activeTab === tab.value;
         return (
           <Pressable
             key={tab.value}
-            accessibilityRole="button"
+            accessibilityLabel={`Show ${tab.label.toLocaleLowerCase()}`}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: active }}
             onPress={() => {
               exitMapModes();
               setActiveTab(tab.value);
