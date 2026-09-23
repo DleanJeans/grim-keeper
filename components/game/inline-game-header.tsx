@@ -79,9 +79,11 @@ export function InlineGameHeader({
             />
           ) : null}
         </View>
-        <View style={styles.slot}>
-          {djEnabled ? <DjGameButton gameId={activeGame.id} /> : null}
-        </View>
+        {djEnabled ? (
+          <View style={styles.djSlot}>
+            <DjGameButton gameId={activeGame.id} />
+          </View>
+        ) : null}
         <FullscreenButton />
       </View>
     </Animated.View>
@@ -95,6 +97,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: -8,
     width: 36,
+  },
+  djSlot: {
+    alignItems: 'center',
+    width: 32,
   },
   header: {
     backgroundColor: colors.background,

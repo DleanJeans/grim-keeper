@@ -13,6 +13,7 @@ export function DjGameButton({ gameId }: DjGameButtonProps) {
     <Pressable
       accessibilityLabel="Open DJ mode"
       accessibilityRole="button"
+      hitSlop={8}
       onPress={() => router.push({ pathname: '/dj/[id]', params: { id: gameId } })}
       style={({ pressed }) => [styles.button, pressed && styles.pressed]}
     >
@@ -24,9 +25,9 @@ export function DjGameButton({ gameId }: DjGameButtonProps) {
 const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
-    height: 36,
+    height: 32,
     justifyContent: 'center',
-    minWidth: 36,
+    width: 32,
   },
   pressed: {
     opacity: 0.65,
