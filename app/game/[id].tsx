@@ -11,6 +11,7 @@ import { ActiveGameTab } from '@/components/game/active-game-tab';
 import { CharacterTypeCountEditor } from '@/components/game/character-type-counts';
 import { DayCount } from '@/components/game/day-count';
 import { DayEditLockButton } from '@/components/game/day-edit-lock-button';
+import { DjGameButton } from '@/components/game/dj-game-button';
 import { GameMap } from '@/components/game/game-map';
 import {
   type GameRouteContextValue,
@@ -963,7 +964,6 @@ export default function GameRoute() {
         <View style={styles.body}>
           <InlineGameHeader
             activeGame={activeGame}
-            djEnabled={djEnabled}
             headerTranslateY={gameHeaderTranslateY}
             onResultChange={(result) => setGameResult(activeGame.id, result)}
           />
@@ -1038,12 +1038,15 @@ export default function GameRoute() {
             </View>
           ) : null}
 
-          <View style={styles.fab}>
-            <RevealRolesButton
-              onRevealRolesChange={setShowRoles}
-              showRoles={showRoles}
-              variant="icon"
-            />
+          <View pointerEvents="box-none" style={styles.fabStack}>
+            {djEnabled ? <DjGameButton gameId={activeGame.id} /> : null}
+            <View style={styles.fab}>
+              <RevealRolesButton
+                onRevealRolesChange={setShowRoles}
+                showRoles={showRoles}
+                variant="icon"
+              />
+            </View>
           </View>
         </View>
       </GameRouteProvider>
@@ -1058,12 +1061,15 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   fab: {
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+  },
+  fabStack: {
+    alignItems: 'center',
     bottom: 32,
-    elevation: 4,
+    gap: 12,
     pointerEvents: 'box-none',
     position: 'absolute',
     right: 16,
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
   },
   dayAndCountsRow: {
     alignItems: 'center',

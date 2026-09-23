@@ -6,7 +6,6 @@ import Animated, { type SharedValue, useAnimatedStyle } from 'react-native-reani
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FullscreenButton } from '@/components/fullscreen-button';
-import { DjGameButton } from '@/components/game/dj-game-button';
 import { EditGameButton } from '@/components/game/edit-game-button';
 import { GameResultButton } from '@/components/game/game-result-button';
 import { ViewScriptButton } from '@/components/game/view-script-button';
@@ -24,14 +23,12 @@ export const INLINE_GAME_HEADER_HEIGHT = ROW_HEIGHT + TOP_MARGIN + VISUAL_GAP;
 
 type InlineGameHeaderProps = {
   activeGame: Game;
-  djEnabled?: boolean;
   headerTranslateY: SharedValue<number>;
   onResultChange: (result?: GameResult) => void;
 };
 
 export function InlineGameHeader({
   activeGame,
-  djEnabled = false,
   headerTranslateY,
   onResultChange,
 }: InlineGameHeaderProps) {
@@ -94,11 +91,6 @@ export function InlineGameHeader({
             />
           ) : null}
         </View>
-        {djEnabled ? (
-          <View style={styles.djSlot}>
-            <DjGameButton gameId={activeGame.id} />
-          </View>
-        ) : null}
         <FullscreenButton />
       </View>
     </Animated.View>
@@ -112,10 +104,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: -8,
     width: 36,
-  },
-  djSlot: {
-    alignItems: 'center',
-    width: 32,
   },
   header: {
     backgroundColor: colors.background,

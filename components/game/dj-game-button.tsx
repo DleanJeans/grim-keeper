@@ -25,11 +25,15 @@ export function DjGameButton({ gameId }: DjGameButtonProps) {
 const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
-    height: 32,
+    backgroundColor: colors.surface,
+    borderColor: colors.borderStrong,
+    borderRadius: 28,
+    borderWidth: 1,
+    height: 56,
     justifyContent: 'center',
-    width: 32,
+    width: 56,
   },
   pressed: {
-    opacity: 0.65,
+    backgroundColor: colors.surfacePressed,
   },
 });
