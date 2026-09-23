@@ -29,13 +29,13 @@ export function DjSongRow({ gameId, labels, onRemove, songUrl }: DjSongRowProps)
 
   return (
     <View style={styles.row}>
+      {labels?.length ? (
+        <Text numberOfLines={2} selectable style={styles.labels}>
+          For: {labels.join(' · ')}
+        </Text>
+      ) : null}
       <DjSongMetadata songUrl={songUrl} />
       <View style={styles.actions}>
-        {labels?.length ? (
-          <Text numberOfLines={2} selectable style={styles.labels}>
-            {labels.join(' · ')}
-          </Text>
-        ) : null}
         <View style={styles.stats}>
           <MoreHorizontal color={colors.textMuted} size={15} strokeWidth={2.3} />
           <Text style={styles.statsText}>
