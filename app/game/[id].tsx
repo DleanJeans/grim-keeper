@@ -1038,7 +1038,7 @@ export default function GameRoute() {
             </View>
           ) : null}
 
-          <View pointerEvents="box-none" style={styles.fabStack}>
+          <View style={styles.fabStack}>
             {djEnabled ? <DjGameButton gameId={activeGame.id} /> : null}
             <View style={styles.fab}>
               <RevealRolesButton
