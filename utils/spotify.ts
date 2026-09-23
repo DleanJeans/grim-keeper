@@ -217,23 +217,6 @@ export async function queueSpotifySong(songUrl: string) {
     throw new SpotifyError('unauthorized', 'Authorize Spotify to add this song to your queue.');
   }
 
-  const profileResponse = await fetch('https://api.spotify.com/v1/me', {
-    headers: { Authorization: `Bearer ${auth.accessToken}` },
-  });
-  if (profileResponse.status === 401) {
-    removeStorage(SPOTIFY_AUTH_KEY);
-    throw new SpotifyError(
-      'unauthorized',
-      'Your Spotify authorization expired. Please authorize again.',
-    );
-  }
-  if (profileResponse.ok) {
-    const profile: unknown = await profileResponse.json();
-    if (isRecord(profile) && profile.product !== 'premium') {
-      throw new SpotifyError('premium', 'Spotify queueing requires a Premium account.');
-    }
-  }
-
   const response = await fetch(
     `https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(spotifySong.uri)}`,
     { headers: { Authorization: `Bearer ${auth.accessToken}` }, method: 'POST' },

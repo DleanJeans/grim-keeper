@@ -1,4 +1,9 @@
-import { parseSpotifySong, parseYouTubeVideoId, resolveDjSongMetadata } from '@/utils/spotify';
+import {
+  parseSpotifySong,
+  parseYouTubeVideoId,
+  queueSpotifySong,
+  resolveDjSongMetadata,
+} from '@/utils/spotify';
 
 describe('DJ provider parsing', () => {
   it('parses Spotify track and episode URLs and URIs', () => {
@@ -51,5 +56,58 @@ describe('DJ provider parsing', () => {
       provider: 'spotify',
       title: 'A song',
     });
+  });
+});
+
+describe('Spotify queueing', () => {
+  const originalClientId = process.env.EXPO_PUBLIC_SPOTIFY_CLIENT_ID;
+  const originalExpoOs = process.env.EXPO_OS;
+  const originalFetch = globalThis.fetch;
+  const originalWindow = globalThis.window;
+  const storage = new Map<string, string>();
+
+  beforeEach(() => {
+    process.env.EXPO_OS = 'web';
+    process.env.EXPO_PUBLIC_SPOTIFY_CLIENT_ID = 'client-id';
+    storage.clear();
+    storage.set(
+      'grim-keeper-spotify-auth-v1',
+      JSON.stringify({ accessToken: 'access-token', expiresAt: Date.now() + 60_000 }),
+    );
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: {
+        localStorage: {
+          getItem: (key: string) => storage.get(key) ?? null,
+          removeItem: (key: string) => storage.delete(key),
+          setItem: (key: string, value: string) => storage.set(key, value),
+        },
+      },
+    });
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    process.env.EXPO_PUBLIC_SPOTIFY_CLIENT_ID = originalClientId;
+    process.env.EXPO_OS = originalExpoOs;
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: originalWindow,
+    });
+  });
+
+  it('uses the queue endpoint without requiring a subscription profile lookup', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({ ok: true, status: 204 });
+    globalThis.fetch = fetchMock;
+
+    await expect(
+      queueSpotifySong('https://open.spotify.com/track/track1'),
+    ).resolves.toBeUndefined();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.spotify.com/v1/me/player/queue?uri=spotify%3Atrack%3Atrack1',
+      { headers: { Authorization: 'Bearer access-token' }, method: 'POST' },
+    );
   });
 });
