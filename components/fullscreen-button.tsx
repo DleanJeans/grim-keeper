@@ -3,10 +3,11 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 
 import { colors } from '@/theme/colors';
+import { canUseWebFullscreen, requestWebFullscreen } from '@/utils/web-fullscreen';
 
 export function FullscreenButton() {
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const supported = process.env.EXPO_OS === 'web' && document.fullscreenEnabled;
+  const supported = canUseWebFullscreen();
 
   useEffect(() => {
     if (!supported) {
@@ -19,10 +20,14 @@ export function FullscreenButton() {
   }, [supported]);
 
   async function toggleFullscreen() {
+    if (!supported) {
+      return;
+    }
+
     if (document.fullscreenElement) {
       await document.exitFullscreen();
     } else {
-      await document.documentElement.requestFullscreen();
+      await requestWebFullscreen();
     }
   }
 

@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { AutoFullscreen } from '@/components/auto-fullscreen';
 import { AppDialogProvider } from '@/components/dialog/app-dialog-provider';
 import { GameHeader } from '@/components/game-header';
 import { PwaHead } from '@/components/pwa-head';
@@ -92,6 +93,7 @@ export default function RootLayout() {
       <ThemeProvider value={grimKeeperTheme}>
         <AppDialogProvider>
           <PwaHead />
+          <AutoFullscreen />
           <OfficialScriptsLoader />
           <Stack
             screenOptions={{
