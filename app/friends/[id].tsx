@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { DjSongSection } from '@/components/dj/dj-song-section';
 import { FriendGamesList } from '@/components/friends/friend-games-list';
 import {
   FriendNameEditToggle,
@@ -13,6 +14,7 @@ import { SavedNotes } from '@/components/saved-notes';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
 import { ViewAllStatsButton } from '@/components/view-all-stats-button';
+import { useDjStore } from '@/store/dj-store';
 import { getNotesForPlayer, useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { normalizePlayerName } from '@/utils/conversation-utils';
@@ -28,6 +30,8 @@ export default function FriendDetailRoute() {
   const scripts = useGameStore((state) => state.scripts);
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const renameFriend = useGameStore((state) => state.renameFriend);
+  const remapDjFriendTarget = useDjStore((state) => state.remapFriendTarget);
+  const djEnabled = useDjStore((state) => state.enabled);
   const friends = useMemo(
     () => getFriendSummaries(games, storedFriends, appUserName),
     [appUserName, games, storedFriends],
@@ -62,6 +66,7 @@ export default function FriendDetailRoute() {
     if (normalizedName && normalizedName !== friend.name) {
       const renamedFriendId = renameFriend(friend.id, friend.name, normalizedName);
       if (renamedFriendId) {
+        remapDjFriendTarget(friend.id, renamedFriendId);
         router.replace({
           pathname: '/friends/[id]',
           params: { id: renamedFriendId },
@@ -129,6 +134,10 @@ export default function FriendDetailRoute() {
           ) : null}
 
           <GameStatsCards games={games} playerId={friend.id} />
+
+          {djEnabled ? (
+            <DjSongSection editable target={{ id: friend.id, type: 'friend' }} title="DJ songs" />
+          ) : null}
 
           {notes.length ? (
             <View style={{ gap: 6 }}>

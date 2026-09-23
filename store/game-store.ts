@@ -183,7 +183,7 @@ type GameState = GameData & {
   setAppUserName: (name: string) => void;
   clearData: () => void;
   importData: (data: GameData) => void;
-  importGameTransfer: (transfer: GameTransfer) => void;
+  importGameTransfer: (transfer: GameTransfer) => string | undefined;
 };
 
 type PersistedGameState = Omit<Partial<GameState>, 'games' | 'scripts'> & {
@@ -1372,7 +1372,13 @@ export const useGameStore = create<GameState>()(
         });
       },
       importGameTransfer: (transfer) => {
-        set((state) => mergeGameTransfer(state, transfer));
+        let importedGameId: string | undefined;
+        set((state) => {
+          const nextState = mergeGameTransfer(state, transfer);
+          importedGameId = nextState.games[0]?.id;
+          return nextState;
+        });
+        return importedGameId;
       },
     }),
     {

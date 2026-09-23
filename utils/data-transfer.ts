@@ -1,5 +1,7 @@
 import type { GameData } from '@/store/game-store';
+import type { DjData } from '@/types/dj';
 import type { Conversation, Game, Player, Role, StoredScript } from '@/types/game';
+import { isDjTargetType, normalizeSongUrl, restoreDjData, serializeDjData } from '@/utils/dj-utils';
 import { isGameResult } from '@/utils/game-utils';
 import {
   APP_USER_ID,
@@ -23,7 +25,8 @@ import {
 } from '@/utils/script-storage';
 
 const backupFormat = 'grim-keeper-backup';
-const backupVersion = 2;
+const backupVersion = 3;
+const previousBackupVersion = 2;
 const legacyBackupVersion = 1;
 const officialScriptAuthor = 'The Pandemonium Institute';
 
@@ -33,6 +36,8 @@ type Backup = {
   format: typeof backupFormat;
   version: typeof backupVersion;
 };
+
+export type BackupGameData = GameData & { dj?: DjData };
 
 type ExportedPlayer = Omit<Player, 'name'> & { name?: string };
 
@@ -50,13 +55,14 @@ type ExportedGame = Omit<Game, 'conversations' | 'players' | 'script'> & {
 };
 
 type ExportedGameData = Omit<GameData, 'games' | 'scripts'> & {
+  dj?: DjData;
   games: ExportedGame[];
   scripts: ExportedScript[];
 };
 
 type ExportedScript = SerializedStoredScript | string;
 
-export function createBackup(data: GameData) {
+export function createBackup(data: BackupGameData) {
   const exportedData = normalizeForExport(data);
   const backup: Backup = {
     data: exportedData,
@@ -68,7 +74,7 @@ export function createBackup(data: GameData) {
   return JSON.stringify(backup);
 }
 
-export function parseBackup(value: string): GameData {
+export function parseBackup(value: string): BackupGameData {
   const backup: unknown = JSON.parse(value);
 
   if (!isRecord(backup) || backup.format !== backupFormat) {
@@ -83,14 +89,19 @@ export function parseBackup(value: string): GameData {
     return restoreLegacyData(backup.data);
   }
 
-  if (backup.version !== backupVersion || !isExportedGameData(backup.data)) {
+  if (
+    (backup.version !== previousBackupVersion && backup.version !== backupVersion) ||
+    !isExportedGameData(backup.data)
+  ) {
     throw new Error('The backup is missing required Grim Keeper data.');
   }
 
   return restoreExportedData(backup.data);
 }
 
-function normalizeForExport(data: GameData): ExportedGameData {
+function normalizeForExport(data: BackupGameData): ExportedGameData {
+  const { dj, ...gameData } = data;
+  const serializedDj = serializeDjData(dj);
   const storedScripts = data.scripts.filter((script) => !isSushiBuffetScript(script));
   const scripts: ExportedScript[] = storedScripts.map((script) =>
     isPortableScript(script) ? serializeStoredScript(script, data.roleCatalog) : script.id,
@@ -143,12 +154,13 @@ function normalizeForExport(data: GameData): ExportedGameData {
   }
 
   return {
-    ...data,
+    ...gameData,
     friends,
     games: games.map((game) => exportGame(game, scriptsById)),
     roleCatalog,
     savedNotes,
     scripts,
+    ...(serializedDj ? { dj: serializedDj } : {}),
   };
 }
 
@@ -197,7 +209,8 @@ function exportGame(game: Game, scriptsById: Map<string, StoredScript>): Exporte
   };
 }
 
-function restoreExportedData(data: ExportedGameData): GameData {
+function restoreExportedData(data: ExportedGameData): BackupGameData {
+  const { dj, ...gameData } = data;
   const roleCatalog = data.roleCatalog.map(normalizeRoleImageUrls);
   const restoredScripts = data.scripts.map((script) =>
     typeof script === 'string'
@@ -275,14 +288,15 @@ function restoreExportedData(data: ExportedGameData): GameData {
   });
 
   return {
-    ...data,
+    ...gameData,
     roleCatalog,
     scripts: storedScripts,
     games: restoreSushiBuffetScriptRoles(games, roleCatalog),
+    ...(dj ? { dj: restoreDjData(dj) } : {}),
   };
 }
 
-function restoreLegacyData(data: GameData): GameData {
+function restoreLegacyData(data: GameData): BackupGameData {
   const normalizedData = normalizeRoleImagesInState(data);
   const roleCatalog = normalizedData.roleCatalog.map(normalizeRoleImageUrls);
   const scripts = normalizedData.scripts
@@ -363,7 +377,38 @@ function isExportedGameData(value: unknown): value is ExportedGameData {
     Array.isArray(value.savedNotes) &&
     value.savedNotes.every(isSavedNote) &&
     Array.isArray(value.scripts) &&
-    value.scripts.every((script) => typeof script === 'string' || isSerializedStoredScript(script))
+    value.scripts.every(
+      (script) => typeof script === 'string' || isSerializedStoredScript(script),
+    ) &&
+    (!('dj' in value) || isDjData(value.dj))
+  );
+}
+
+function isDjData(value: unknown): value is DjData {
+  return (
+    isRecord(value) &&
+    typeof value.enabled === 'boolean' &&
+    Array.isArray(value.playlists) &&
+    value.playlists.every(
+      (playlist) =>
+        isRecord(playlist) &&
+        isRecord(playlist.target) &&
+        isString(playlist.target.id) &&
+        isDjTargetType(playlist.target.type) &&
+        (playlist.target.type !== 'general' || playlist.target.id === 'general') &&
+        isStringArray(playlist.songUrls) &&
+        playlist.songUrls.every((songUrl) => normalizeSongUrl(songUrl) !== undefined),
+    ) &&
+    Array.isArray(value.sessions) &&
+    value.sessions.every(
+      (session) =>
+        isRecord(session) &&
+        isString(session.gameId) &&
+        isString(session.songUrl) &&
+        normalizeSongUrl(session.songUrl) !== undefined &&
+        isFiniteNumber(session.playedCount) &&
+        isFiniteNumber(session.approvalScore),
+    )
   );
 }
 

@@ -1,9 +1,11 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { DjSongSection } from '@/components/dj/dj-song-section';
 import { ScriptRoleList } from '@/components/scripts/script-role-list';
 import { SushiBuffetScriptRoleList } from '@/components/scripts/sushi-buffet-script-role-list';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
+import { useDjStore } from '@/store/dj-store';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Game, StoredScript } from '@/types/game';
@@ -14,6 +16,7 @@ export default function ScriptDetailRoute() {
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const scripts = useGameStore((state) => state.scripts);
   const games = useGameStore((state) => state.games);
+  const djEnabled = useDjStore((state) => state.enabled);
   const isSushiBuffet = isSushiBuffetScript({ id });
   const sushiBuffetGame = isSushiBuffet ? games.find((game) => game.id === gameId) : undefined;
   const script = isSushiBuffet ? sushiBuffetGame?.script : scripts.find((item) => item.id === id);
@@ -47,7 +50,13 @@ export default function ScriptDetailRoute() {
       {isSushiBuffet ? (
         <SushiBuffetScriptRoleList
           activeDay={sushiBuffetGame?.activeDay ?? 0}
-          header={<ScriptDetailHeader script={script} visibleRoleCount={roles.length} />}
+          header={
+            <ScriptDetailHeader
+              djEnabled={djEnabled}
+              script={script}
+              visibleRoleCount={roles.length}
+            />
+          }
           players={sushiBuffetGame?.players ?? []}
           roleCatalog={roleCatalog}
           roles={roles}
@@ -55,7 +64,13 @@ export default function ScriptDetailRoute() {
         />
       ) : (
         <ScriptRoleList
-          header={<ScriptDetailHeader script={script} visibleRoleCount={roles.length} />}
+          header={
+            <ScriptDetailHeader
+              djEnabled={djEnabled}
+              script={script}
+              visibleRoleCount={roles.length}
+            />
+          }
           roleCatalog={roleCatalog}
           roles={roles}
           scriptId={script.id}
@@ -66,17 +81,24 @@ export default function ScriptDetailRoute() {
 }
 
 function ScriptDetailHeader({
+  djEnabled,
   script,
   visibleRoleCount,
 }: {
+  djEnabled: boolean;
   script: StoredScript;
   visibleRoleCount: number;
 }) {
   return (
-    <Text selectable style={{ color: colors.textMuted, fontSize: 14, textAlign: 'center' }}>
-      {script.author ? `${script.author} · ` : ''}v{script.version} · {visibleRoleCount}
-      {isSushiBuffetScript(script) ? ` of ${script.roles.length} roles enabled` : ' roles'}
-    </Text>
+    <View style={styles.headerContent}>
+      <Text selectable style={styles.headerText}>
+        {script.author ? `${script.author} · ` : ''}v{script.version} · {visibleRoleCount}
+        {isSushiBuffetScript(script) ? ` of ${script.roles.length} roles enabled` : ' roles'}
+      </Text>
+      {djEnabled ? (
+        <DjSongSection editable target={{ id: script.id, type: 'script' }} title="DJ songs" />
+      ) : null}
+    </View>
   );
 }
 
@@ -84,3 +106,14 @@ function getEnabledSushiRoles(script: StoredScript, game?: Game) {
   const enabledRoleIds = new Set(game?.sushiRoleIds ?? script.roles.map((role) => role.id));
   return script.roles.filter((role) => enabledRoleIds.has(role.id));
 }
+
+const styles = StyleSheet.create({
+  headerContent: {
+    gap: 14,
+  },
+  headerText: {
+    color: colors.textMuted,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+});

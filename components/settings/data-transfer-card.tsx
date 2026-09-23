@@ -4,15 +4,15 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { Text } from '@/components/text';
-import type { GameData } from '@/store/game-store';
+import { useDjStore } from '@/store/dj-store';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import { createBackup, parseBackup } from '@/utils/data-transfer';
+import { type BackupGameData, createBackup, parseBackup } from '@/utils/data-transfer';
 import { getBackupStats } from '@/utils/data-transfer-stats';
 import { downloadJson, getJsonFilename, shareJsonFile } from '@/utils/file-transfer';
 
 type SelectedBackup = {
-  data: GameData;
+  data: BackupGameData;
   name: string;
   size: number;
 };
@@ -23,11 +23,13 @@ export function DataTransferCard() {
   const [isExporting, setIsExporting] = useState(false);
   const [selectedBackup, setSelectedBackup] = useState<SelectedBackup | null>(null);
   const importData = useGameStore((state) => state.importData);
+  const importDjData = useDjStore((state) => state.importData);
 
   async function exportData() {
     try {
       setIsExporting(true);
       const state = useGameStore.getState();
+      const dj = useDjStore.getState();
       const json = createBackup({
         appUserName: state.appUserName,
         friends: state.friends,
@@ -35,6 +37,7 @@ export function DataTransferCard() {
         roleCatalog: state.roleCatalog,
         savedNotes: state.savedNotes,
         scripts: state.scripts,
+        dj,
       });
 
       if (process.env.EXPO_OS === 'web') {
@@ -71,8 +74,10 @@ export function DataTransferCard() {
     }
   }
 
-  function completeImport(data: Parameters<typeof importData>[0]) {
-    importData(data);
+  function completeImport(data: BackupGameData) {
+    const { dj, ...gameData } = data;
+    importData(gameData);
+    importDjData(dj);
     setBackupText('');
     setSelectedBackup(null);
 

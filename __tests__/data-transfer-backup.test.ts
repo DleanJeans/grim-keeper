@@ -56,7 +56,7 @@ describe('backup export integration', () => {
 
     writeFileSync(outputPath, output);
 
-    expect(exported.version).toBe(2);
+    expect(exported.version).toBe(3);
     expect(exported.data.roleCatalog).toEqual([]);
     expect(
       exported.data.scripts.some(

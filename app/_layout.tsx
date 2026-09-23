@@ -9,6 +9,7 @@ import { GameHeader } from '@/components/game-header';
 import { PwaHead } from '@/components/pwa-head';
 import { OfficialScriptsLoader } from '@/components/scripts/official-scripts-loader';
 import { useAppFonts } from '@/hooks/use-app-fonts';
+import { useDjStore } from '@/store/dj-store';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 
@@ -46,19 +47,36 @@ const grimKeeperTheme = {
 
 export default function RootLayout() {
   const fontsReady = useAppFonts();
-  const [storeHydrated, setStoreHydrated] = useState(() => useGameStore.persist.hasHydrated());
+  const [storeHydrated, setStoreHydrated] = useState(
+    () => useGameStore.persist.hasHydrated() && useDjStore.persist.hasHydrated(),
+  );
 
   useEffect(() => {
     if (storeHydrated) {
       return;
     }
 
-    if (useGameStore.persist.hasHydrated()) {
+    if (useGameStore.persist.hasHydrated() && useDjStore.persist.hasHydrated()) {
       setStoreHydrated(true);
       return;
     }
 
-    return useGameStore.persist.onFinishHydration(() => setStoreHydrated(true));
+    let gameReady = useGameStore.persist.hasHydrated();
+    let djReady = useDjStore.persist.hasHydrated();
+    const updateReady = () => {
+      gameReady = useGameStore.persist.hasHydrated();
+      djReady = useDjStore.persist.hasHydrated();
+      if (gameReady && djReady) {
+        setStoreHydrated(true);
+      }
+    };
+    const unsubscribeGame = useGameStore.persist.onFinishHydration(updateReady);
+    const unsubscribeDj = useDjStore.persist.onFinishHydration(updateReady);
+
+    return () => {
+      unsubscribeGame();
+      unsubscribeDj();
+    };
   }, [storeHydrated]);
 
   if (!fontsReady || !storeHydrated) {
@@ -109,6 +127,8 @@ export default function RootLayout() {
             <Stack.Screen name="scripts/[id]" options={{ title: 'Script' }} />
             <Stack.Screen name="role-notes" options={{ title: 'Role Notes' }} />
             <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+            <Stack.Screen name="dj/[id]" options={{ title: 'DJ' }} />
+            <Stack.Screen name="dj-callback" options={{ headerShown: false, title: 'Spotify' }} />
             <Stack.Screen name="save-note-for-future" options={{ title: 'Save Note for Future' }} />
             <Stack.Screen name="game/[id]" options={{ title: 'Game' }} />
           </Stack>

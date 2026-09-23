@@ -1,11 +1,13 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { DjSongSection } from '@/components/dj/dj-song-section';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { RoleIcon } from '@/components/role-icon';
 import { RoleWikiLink } from '@/components/role-wiki-link';
 import { SavedNotes } from '@/components/saved-notes';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
+import { useDjStore } from '@/store/dj-store';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { SavedNote } from '@/types/game';
@@ -17,6 +19,7 @@ export default function RoleNotesScreen() {
   const savedNotes = useGameStore((state) => state.savedNotes);
   const games = useGameStore((state) => state.games);
   const scripts = useGameStore((state) => state.scripts);
+  const djEnabled = useDjStore((state) => state.enabled);
   const script = scripts.find((item) => item.id === scriptId);
   const game = games.find((item) => (item.scriptId ?? item.script?.id) === scriptId);
   const scriptRole = script?.roles.find((role) => role.id === roleId);
@@ -84,6 +87,10 @@ export default function RoleNotesScreen() {
           </Text>
 
           <RoleWikiLink roleName={role.name} />
+
+          {djEnabled ? (
+            <DjSongSection editable target={{ id: role.id, type: 'character' }} title="DJ songs" />
+          ) : null}
 
           {hasNotes ? (
             <SavedNotes

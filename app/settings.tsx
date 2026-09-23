@@ -2,26 +2,36 @@ import { Stack } from 'expo-router';
 import { Trash2 } from 'lucide-react-native';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
+import { DjSettingsCard } from '@/components/dj/dj-settings-card';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { AppVersionInfo } from '@/components/settings/app-version-info';
 import { DataTransferCard } from '@/components/settings/data-transfer-card';
 import { GameTransferCard } from '@/components/settings/game-transfer-card';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
+import { useDjStore } from '@/store/dj-store';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 
 export default function SettingsRoute() {
   const showDialog = useAppDialog();
   const clearData = useGameStore((state) => state.clearData);
+  const clearDjData = useDjStore((state) => state.clearData);
 
   function confirmClearData() {
     showDialog(
       'Clear all data?',
-      'This removes all games, friends, notes, and downloaded scripts from this device.',
+      'This removes all games, friends, notes, downloaded scripts, and DJ data from this device.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Clear data', style: 'destructive', onPress: clearData },
+        {
+          text: 'Clear data',
+          style: 'destructive',
+          onPress: () => {
+            clearData();
+            clearDjData();
+          },
+        },
       ],
     );
   }
@@ -37,6 +47,7 @@ export default function SettingsRoute() {
         style={styles.screen}
       >
         <ResponsiveContent style={styles.content}>
+          <DjSettingsCard />
           <GameTransferCard />
           <DataTransferCard />
           <Pressable

@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { Text } from '@/components/text';
+import { useDjStore } from '@/store/dj-store';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { pickJsonFile } from '@/utils/file-transfer';
@@ -12,6 +13,7 @@ import { parseGameTransfer } from '@/utils/game-transfer';
 export function GameTransferCard() {
   const showDialog = useAppDialog();
   const importGameTransfer = useGameStore((state) => state.importGameTransfer);
+  const importSession = useDjStore((state) => state.importSession);
   const [isImporting, setIsImporting] = useState(false);
 
   async function handleImport() {
@@ -43,7 +45,8 @@ export function GameTransferCard() {
   }
 
   function completeImport(transfer: Parameters<typeof importGameTransfer>[0]) {
-    importGameTransfer(transfer);
+    const importedGameId = importGameTransfer(transfer);
+    importSession(transfer.dj?.sessions, importedGameId ?? transfer.data.game.id);
     showDialog('Game imported', 'The game was added to this device.');
   }
 

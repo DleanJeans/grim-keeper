@@ -355,7 +355,7 @@ describe('data transfer', () => {
       createBackup({ ...data, games: [game], scripts: [script], roleCatalog: [role] }),
     );
 
-    expect(backup.version).toBe(2);
+    expect(backup.version).toBe(3);
     expect(backup.data.games[0]).toMatchObject({ scriptId: 'script-1' });
     expect(backup.data.games[0].script).toBeUndefined();
     expect(parseBackup(JSON.stringify(backup)).games[0]).toMatchObject({

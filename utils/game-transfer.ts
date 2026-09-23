@@ -1,3 +1,4 @@
+import type { DjData, DjSessionSong } from '@/types/dj';
 import type {
   Conversation,
   Friend,
@@ -9,6 +10,7 @@ import type {
   SavedNote,
   StoredScript,
 } from '@/types/game';
+import { normalizeSongUrl } from '@/utils/dj-utils';
 import { isGameResult } from '@/utils/game-utils';
 import {
   APP_USER_ID,
@@ -30,16 +32,20 @@ import {
 } from '@/utils/script-storage';
 
 const gameTransferFormat = 'grim-keeper-game';
-const gameTransferVersion = 1;
+const gameTransferVersion = 2;
+const legacyGameTransferVersion = 1;
 
 export type GameTransfer = {
   data: {
     game: Game;
     script?: StoredScript;
   };
+  dj?: {
+    sessions: DjSessionSong[];
+  };
   exportedAt: string;
   format: typeof gameTransferFormat;
-  version: typeof gameTransferVersion;
+  version: 1 | typeof gameTransferVersion;
 };
 
 type GameData = {
@@ -51,7 +57,12 @@ type GameData = {
   scripts: StoredScript[];
 };
 
-export function createGameTransfer(game: Game, scripts: StoredScript[], roleCatalog: Role[] = []) {
+export function createGameTransfer(
+  game: Game,
+  scripts: StoredScript[],
+  roleCatalog: Role[] = [],
+  djData?: DjData,
+) {
   const scriptId = game.scriptId ?? game.script?.id;
   const script = scripts.find((candidate) => candidate.id === scriptId) ?? game.script;
   const isBuiltInSushi = scriptId === SUSHI_BUFFET_SCRIPT_ID || isSushiBuffetScript(script);
@@ -78,11 +89,13 @@ export function createGameTransfer(game: Game, scripts: StoredScript[], roleCata
           }
         : game;
 
+  const sessionRows = djData?.sessions.filter((session) => session.gameId === game.id);
   const transfer = {
     data: {
       game: exportedGame,
       ...(script && !isBuiltInSushi ? { script: serializeStoredScript(script, roleCatalog) } : {}),
     },
+    ...(sessionRows?.length ? { dj: { sessions: sessionRows } } : {}),
     exportedAt: new Date().toISOString(),
     format: gameTransferFormat,
     version: gameTransferVersion,
@@ -103,11 +116,12 @@ export function parseGameTransfer(value: string): GameTransfer {
   if (
     !isRecord(transfer) ||
     transfer.format !== gameTransferFormat ||
-    transfer.version !== gameTransferVersion ||
+    (transfer.version !== legacyGameTransferVersion && transfer.version !== gameTransferVersion) ||
     !isString(transfer.exportedAt) ||
     !isRecord(transfer.data) ||
     !isGame(transfer.data.game) ||
-    (transfer.data.script !== undefined && !isSerializedStoredScript(transfer.data.script))
+    (transfer.data.script !== undefined && !isSerializedStoredScript(transfer.data.script)) ||
+    (transfer.dj !== undefined && !isDjTransferData(transfer.dj))
   ) {
     throw new Error('The game transfer is missing required Grim Keeper data.');
   }
@@ -123,9 +137,10 @@ export function parseGameTransfer(value: string): GameTransfer {
 
   return {
     data: { game, ...(script ? { script } : {}) },
+    ...(transfer.dj ? { dj: transfer.dj } : {}),
     exportedAt: transfer.exportedAt,
     format: gameTransferFormat,
-    version: gameTransferVersion,
+    version: transfer.version,
   };
 }
 
@@ -284,6 +299,22 @@ function isConversation(value: unknown): value is Conversation {
     isOptionalString(value.bigWigPlayerId) &&
     isOptionalString(value.kind) &&
     isString(value.createdAt)
+  );
+}
+
+function isDjTransferData(value: unknown): value is { sessions: DjSessionSong[] } {
+  return (
+    isRecord(value) &&
+    Array.isArray(value.sessions) &&
+    value.sessions.every(
+      (session) =>
+        isRecord(session) &&
+        isString(session.gameId) &&
+        isString(session.songUrl) &&
+        normalizeSongUrl(session.songUrl) !== undefined &&
+        isFiniteNumber(session.playedCount) &&
+        isFiniteNumber(session.approvalScore),
+    )
   );
 }
 

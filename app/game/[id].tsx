@@ -28,6 +28,7 @@ import { RevealRolesButton } from '@/components/game/reveal-roles-button';
 import { RoleDisplayModes } from '@/components/game/role-display-modes';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { Text } from '@/components/text';
+import { useDjStore } from '@/store/dj-store';
 import { getGameById, useGameStore } from '@/store/game-store';
 import type {
   KillAttribution,
@@ -95,6 +96,7 @@ export default function GameRoute() {
   const setTokenSize = useGameStore((state) => state.setTokenSize);
   const setCharacterTypeCounts = useGameStore((state) => state.setCharacterTypeCounts);
   const setGameResult = useGameStore((state) => state.setGameResult);
+  const djEnabled = useDjStore((state) => state.enabled);
   const [activeTab, setActiveTab] = useState<GameTab>('interactions');
   const [trackingMode, setTrackingMode] = useState<TrackingMode | null>(null);
   const [votingNominationId, setVotingNominationId] = useState<string | null>(null);
@@ -961,6 +963,7 @@ export default function GameRoute() {
         <View style={styles.body}>
           <InlineGameHeader
             activeGame={activeGame}
+            djEnabled={djEnabled}
             headerTranslateY={gameHeaderTranslateY}
             onResultChange={(result) => setGameResult(activeGame.id, result)}
           />
