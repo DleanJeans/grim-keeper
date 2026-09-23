@@ -9,6 +9,10 @@ export function canUseWebFullscreen() {
   );
 }
 
+export function isWebFullscreenActive() {
+  return canUseWebFullscreen() && document.fullscreenElement !== null;
+}
+
 export function requestWebFullscreen() {
   if (!canUseWebFullscreen() || document.fullscreenElement) {
     return Promise.resolve();

@@ -1,11 +1,12 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { type ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { ActiveGameTab } from '@/components/game/active-game-tab';
 import { CharacterTypeCountEditor } from '@/components/game/character-type-counts';
@@ -29,6 +30,7 @@ import { RevealRolesButton } from '@/components/game/reveal-roles-button';
 import { RoleDisplayModes } from '@/components/game/role-display-modes';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { Text } from '@/components/text';
+import { useWebFullscreen } from '@/hooks/use-web-fullscreen';
 import { useDjStore } from '@/store/dj-store';
 import { getGameById, useGameStore } from '@/store/game-store';
 import type {
@@ -75,6 +77,8 @@ export default function GameRoute() {
     tab?: string;
   }>();
   const { height, width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const isFullscreen = useWebFullscreen();
   const showDialog = useAppDialog();
   const games = useGameStore((state) => state.games);
   const setPlayerDeath = useGameStore((state) => state.setPlayerDeath);
@@ -128,6 +132,10 @@ export default function GameRoute() {
   ]);
   const [showRoles, setShowRoles] = useState(false);
   const [dayEditLocked, setDayEditLocked] = useState(false);
+  const scrollContentStyle = useMemo(
+    () => createScrollContentStyle(isFullscreen ? insets.top : 0),
+    [insets.top, isFullscreen],
+  );
   const game = getGameById(games, id);
   const lastDayWithData = game ? getLastDayWithData(game) : 1;
 
@@ -974,7 +982,7 @@ export default function GameRoute() {
             ref={scrollViewRef}
             scrollEventThrottle={16}
             style={styles.scroll}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={scrollContentStyle}
           >
             <ResponsiveContent style={styles.gameContent}>
               <GameMap />
@@ -1054,6 +1062,17 @@ export default function GameRoute() {
   );
 }
 
+function createScrollContentStyle(topInset: number) {
+  return StyleSheet.create({
+    scrollContent: {
+      gap: 20,
+      paddingBottom: 132,
+      paddingHorizontal: 20,
+      paddingTop: INLINE_GAME_HEADER_HEIGHT + topInset,
+    },
+  }).scrollContent;
+}
+
 const styles = StyleSheet.create({
   body: {
     backgroundColor: '#0b1120',
@@ -1084,12 +1103,6 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flex: 1,
-  },
-  scrollContent: {
-    gap: 20,
-    paddingHorizontal: 20,
-    paddingBottom: 132,
-    paddingTop: INLINE_GAME_HEADER_HEIGHT,
   },
   selectingBar: {
     backgroundColor: '#111827',

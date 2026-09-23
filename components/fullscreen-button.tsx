@@ -1,23 +1,13 @@
 import { Maximize, Minimize } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 
+import { useWebFullscreen } from '@/hooks/use-web-fullscreen';
 import { colors } from '@/theme/colors';
 import { canUseWebFullscreen, requestWebFullscreen } from '@/utils/web-fullscreen';
 
 export function FullscreenButton() {
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const isFullscreen = useWebFullscreen();
   const supported = canUseWebFullscreen();
-
-  useEffect(() => {
-    if (!supported) {
-      return;
-    }
-
-    const updateFullscreen = () => setIsFullscreen(document.fullscreenElement !== null);
-    document.addEventListener('fullscreenchange', updateFullscreen);
-    return () => document.removeEventListener('fullscreenchange', updateFullscreen);
-  }, [supported]);
 
   async function toggleFullscreen() {
     if (!supported) {
