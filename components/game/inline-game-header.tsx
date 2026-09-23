@@ -100,10 +100,10 @@ export function InlineGameHeader({
 const styles = StyleSheet.create({
   backButton: {
     alignItems: 'center',
-    height: 36,
+    height: 48,
     justifyContent: 'center',
     marginLeft: -8,
-    width: 36,
+    width: 48,
   },
   header: {
     backgroundColor: colors.background,

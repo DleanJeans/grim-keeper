@@ -53,9 +53,9 @@ export function FullscreenButton() {
 const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
-    height: 36,
+    height: 48,
     justifyContent: 'center',
-    width: 36,
+    width: 48,
   },
   pressed: {
     opacity: 0.65,
