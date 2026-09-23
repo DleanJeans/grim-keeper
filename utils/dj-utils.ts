@@ -21,6 +21,23 @@ export type DjGameSong = {
 
 export const GENERAL_DJ_TARGET: DjTarget = { id: 'general', type: 'general' };
 
+const TRACKING_QUERY_PARAMS = new Set([
+  'dclid',
+  'fbclid',
+  'feature',
+  'gclid',
+  'igshid',
+  'mc_cid',
+  'mc_eid',
+  'msclkid',
+  'pp',
+  'si',
+  'share_id',
+  'share_source',
+  'spm',
+  'trk',
+]);
+
 export function createEmptyDjData(): DjData {
   return { enabled: false, playlists: [], sessions: [] };
 }
@@ -41,7 +58,18 @@ export function normalizeSongUrl(value: string): string | undefined {
 
   try {
     const url = new URL(trimmed);
-    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : undefined;
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return undefined;
+    }
+
+    for (const key of [...url.searchParams.keys()]) {
+      const normalizedKey = key.toLowerCase();
+      if (normalizedKey.startsWith('utm_') || TRACKING_QUERY_PARAMS.has(normalizedKey)) {
+        url.searchParams.delete(key);
+      }
+    }
+
+    return url.toString();
   } catch {
     return undefined;
   }

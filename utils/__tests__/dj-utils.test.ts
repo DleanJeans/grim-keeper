@@ -6,6 +6,7 @@ import {
   getDjGameSources,
   getDjSongStats,
   getDjSongsForSources,
+  normalizeSongUrl,
   recordDjPlayed,
   remapDjFriendTarget,
   serializeDjData,
@@ -16,11 +17,22 @@ const role: Role = { id: 'fortune-teller', name: 'Fortune Teller', team: 'townsf
 const friend: Friend = { createdAt: '2026-09-01T00:00:00.000Z', id: 'alice', name: 'Alice' };
 
 describe('DJ data helpers', () => {
+  it('removes common tracking query parameters while preserving song parameters', () => {
+    expect(
+      normalizeSongUrl(
+        'https://open.spotify.com/track/song-1?si=shared&utm_source=copy_link&context=spotify%3Aalbum%3A1',
+      ),
+    ).toBe('https://open.spotify.com/track/song-1?context=spotify%3Aalbum%3A1');
+    expect(
+      normalizeSongUrl('https://www.youtube.com/watch?v=video-1&si=shared&feature=shared&t=42'),
+    ).toBe('https://www.youtube.com/watch?v=video-1&t=42');
+  });
+
   it('normalizes URLs, deduplicates songs, and removes an empty playlist', () => {
     const target = { id: 'alice', type: 'friend' as const };
     let playlists: DjPlaylist[] = [];
 
-    playlists = addDjSong(playlists, target, ' https://example.com/song ');
+    playlists = addDjSong(playlists, target, ' https://example.com/song?utm_source=copy_link ');
     playlists = addDjSong(playlists, target, 'https://example.com/song');
 
     expect(playlists).toEqual([{ songUrls: ['https://example.com/song'], target }]);
