@@ -10,6 +10,7 @@ import {
   recordDjPlayed,
   remapDjFriendTarget,
   serializeDjData,
+  unmarkDjPlayed,
 } from '@/utils/dj-utils';
 import { APP_USER_ID } from '@/utils/object-id';
 
@@ -84,6 +85,17 @@ describe('DJ data helpers', () => {
       gameCount: 2,
       playedCount: 3,
     });
+  });
+
+  it('unmarks a played song and clears its approval state for that game', () => {
+    let sessions: DjSessionSong[] = [];
+    sessions = recordDjPlayed(sessions, 'game-1', 'https://example.com/song');
+    sessions = adjustDjApproval(sessions, 'game-1', 'https://example.com/song', 1);
+    sessions = recordDjPlayed(sessions, 'game-2', 'https://example.com/song');
+
+    expect(unmarkDjPlayed(sessions, 'game-1', 'https://example.com/song')).toEqual([
+      { approvalScore: 0, gameId: 'game-2', playedCount: 1, songUrl: 'https://example.com/song' },
+    ]);
   });
 
   it('aggregates game sources and merges duplicate songs with source labels', () => {

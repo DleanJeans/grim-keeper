@@ -166,6 +166,17 @@ export function recordDjPlayed(sessions: DjSessionSong[], gameId: string, songUr
   return [...sessions, { approvalScore: 0, gameId, playedCount: 1, songUrl: normalizedUrl }];
 }
 
+export function unmarkDjPlayed(sessions: DjSessionSong[], gameId: string, songUrl: string) {
+  const normalizedUrl = normalizeSongUrl(songUrl);
+  if (!normalizedUrl) {
+    return sessions;
+  }
+
+  return sessions.filter(
+    (session) => !(session.gameId === gameId && session.songUrl === normalizedUrl),
+  );
+}
+
 export function adjustDjApproval(
   sessions: DjSessionSong[],
   gameId: string,

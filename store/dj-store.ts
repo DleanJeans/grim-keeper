@@ -13,6 +13,7 @@ import {
   removeDjSong,
   restoreDjData,
   serializeDjData,
+  unmarkDjPlayed,
 } from '@/utils/dj-utils';
 import { webStorage } from '@/utils/web-storage';
 
@@ -26,6 +27,7 @@ type DjState = DjData & {
   remapFriendTarget: (oldId: string, newId: string) => void;
   removeSong: (target: DjTarget, songUrl: string) => void;
   setEnabled: (enabled: boolean) => void;
+  unmarkPlayed: (gameId: string, songUrl: string) => void;
 };
 
 const emptyDjData = createEmptyDjData();
@@ -60,6 +62,8 @@ export const useDjStore = create<DjState>()(
       removeSong: (target, songUrl) =>
         set((state) => ({ playlists: removeDjSong(state.playlists, target, songUrl) })),
       setEnabled: (enabled) => set({ enabled }),
+      unmarkPlayed: (gameId, songUrl) =>
+        set((state) => ({ sessions: unmarkDjPlayed(state.sessions, gameId, songUrl) })),
     }),
     {
       name: 'grim-keeper-dj-store-v1',

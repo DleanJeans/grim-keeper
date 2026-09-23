@@ -19,6 +19,7 @@ export function DjSongRow({ gameId, labels, onRemove, songUrl }: DjSongRowProps)
   const sessions = useDjStore((state) => state.sessions);
   const adjustApproval = useDjStore((state) => state.adjustApproval);
   const recordPlayed = useDjStore((state) => state.recordPlayed);
+  const unmarkPlayed = useDjStore((state) => state.unmarkPlayed);
   const session = gameId ? getDjSessionSong(sessions, gameId, songUrl) : undefined;
   const stats = getDjSongStats(sessions, songUrl);
   const canApprove = !!session?.playedCount;
@@ -49,8 +50,10 @@ export function DjSongRow({ gameId, labels, onRemove, songUrl }: DjSongRowProps)
           {gameId ? (
             <SongActionButton
               disabled={false}
-              label={session?.playedCount ? 'Played again' : 'Mark played'}
-              onPress={() => recordPlayed(gameId, songUrl)}
+              label={session?.playedCount ? 'Unmark played' : 'Mark played'}
+              onPress={() =>
+                session?.playedCount ? unmarkPlayed(gameId, songUrl) : recordPlayed(gameId, songUrl)
+              }
             />
           ) : null}
           {gameId ? (
