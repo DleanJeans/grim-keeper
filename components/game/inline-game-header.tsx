@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { type SharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,9 +17,10 @@ import { goBackOrHome } from '@/utils/navigation-utils';
 // Visual gap between the bottom of the header and the first content item.
 // Combined with the row height to compute the total reserved space the scroll
 // content needs to stay below the absolutely-positioned header.
-const ROW_HEIGHT = 40;
+const ROW_HEIGHT = 60;
+const TOP_MARGIN = 8;
 const VISUAL_GAP = 20;
-export const INLINE_GAME_HEADER_HEIGHT = ROW_HEIGHT + VISUAL_GAP;
+export const INLINE_GAME_HEADER_HEIGHT = ROW_HEIGHT + TOP_MARGIN + VISUAL_GAP;
 
 type InlineGameHeaderProps = {
   activeGame: Game;
@@ -34,15 +36,28 @@ export function InlineGameHeader({
   onResultChange,
 }: InlineGameHeaderProps) {
   const insets = useSafeAreaInsets();
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: headerTranslateY.value }],
   }));
+  useEffect(() => {
+    if (process.env.EXPO_OS !== 'web' || typeof document === 'undefined') {
+      return;
+    }
+
+    const updateFullscreen = () => setIsFullscreen(document.fullscreenElement !== null);
+    updateFullscreen();
+    document.addEventListener('fullscreenchange', updateFullscreen);
+    return () => document.removeEventListener('fullscreenchange', updateFullscreen);
+  }, []);
+
   const gameScriptId = activeGame.scriptId ?? activeGame.script?.id;
+  const topPadding = isFullscreen ? 0 : insets.top + TOP_MARGIN;
   return (
     <Animated.View
       style={[
         styles.header,
-        { paddingTop: insets.top, height: insets.top + ROW_HEIGHT },
+        { paddingTop: topPadding, height: topPadding + ROW_HEIGHT },
         animatedStyle,
       ]}
     >
