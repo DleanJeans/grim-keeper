@@ -2,6 +2,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { DjCurrentSong } from '@/components/dj/dj-current-song';
 import { type DjSongListItem, DjSongSection } from '@/components/dj/dj-song-section';
 import { DjUrlEntry } from '@/components/dj/dj-url-entry';
 import { ResponsiveContent } from '@/components/responsive-content';
@@ -96,6 +97,7 @@ export default function DjRoute() {
             </View>
           ) : (
             <>
+              <DjCurrentSong gameId={game.id} />
               <View style={styles.generalEditor}>
                 <Text selectable style={styles.sectionTitle}>
                   General

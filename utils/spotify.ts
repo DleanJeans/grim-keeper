@@ -25,20 +25,21 @@ type SpotifyAuth = {
 type SpotifyPendingAuthorization = {
   codeVerifier: string;
   returnPath: string;
-  songUrl: string;
+  songUrl?: string;
   state: string;
 };
 
 const SPOTIFY_AUTH_KEY = 'grim-keeper-spotify-auth-v1';
 const SPOTIFY_PENDING_KEY = 'grim-keeper-spotify-pending-v1';
 const SPOTIFY_RESULT_KEY = 'grim-keeper-spotify-result-v1';
-const SPOTIFY_SCOPE = 'user-modify-playback-state';
+const SPOTIFY_SCOPE = 'user-modify-playback-state user-read-playback-state';
 
 export class SpotifyError extends Error {
   readonly kind:
     | 'configuration'
     | 'device'
     | 'premium'
+    | 'permission'
     | 'rate-limit'
     | 'unauthorized'
     | 'unsupported';
@@ -161,15 +162,71 @@ export function getSpotifyRedirectUri() {
   return `${window.location.origin}/dj-callback`;
 }
 
-export async function startSpotifyAuthorization(songUrl: string) {
+export async function getCurrentlyPlayingSpotifySong() {
+  if (!isWeb()) {
+    throw new SpotifyError(
+      'unsupported',
+      'Current Spotify playback is available in the web app only.',
+    );
+  }
+
+  const auth = await getValidSpotifyAuth();
+  if (!auth) {
+    throw new SpotifyError('unauthorized', 'Connect Spotify to see the currently playing song.');
+  }
+
+  const response = await fetch(
+    'https://api.spotify.com/v1/me/player?additional_types=track%2Cepisode',
+    { headers: { Authorization: `Bearer ${auth.accessToken}` } },
+  );
+  if (response.status === 204) {
+    return undefined;
+  }
+  if (response.ok) {
+    let value: unknown;
+    try {
+      value = await response.json();
+    } catch {
+      throw new SpotifyError('device', 'Spotify returned an invalid current playback response.');
+    }
+
+    if (!isRecord(value) || !isRecord(value.item)) {
+      return undefined;
+    }
+
+    const type = value.item.type;
+    const id = value.item.id;
+    if ((type !== 'track' && type !== 'episode') || !isString(id)) {
+      return undefined;
+    }
+
+    return `https://open.spotify.com/${type}/${id}`;
+  }
+  if (response.status === 401) {
+    removeStorage(SPOTIFY_AUTH_KEY);
+    throw new SpotifyError('unauthorized', 'Your Spotify authorization expired. Please reconnect.');
+  }
+  if (response.status === 403) {
+    throw new SpotifyError(
+      'permission',
+      'Reconnect Spotify to allow GrimKeeper to read your current playback.',
+    );
+  }
+  if (response.status === 429) {
+    throw new SpotifyError('rate-limit', 'Spotify is rate-limiting requests. Try again shortly.');
+  }
+
+  throw new SpotifyError('device', 'Spotify could not read the current playback.');
+}
+
+export async function startSpotifyAuthorization(songUrl?: string) {
   if (!isWeb()) {
     throw new SpotifyError('unsupported', 'Spotify queueing is available in the web app only.');
   }
 
   const clientId = getSpotifyClientId();
   const redirectUri = getSpotifyRedirectUri();
-  const spotifySong = parseSpotifySong(songUrl);
-  if (!spotifySong) {
+  if (songUrl && !parseSpotifySong(songUrl)) {
     throw new SpotifyError('unsupported', 'Only Spotify tracks and episodes can be queued.');
   }
   if (!clientId || !redirectUri) {
@@ -184,8 +241,8 @@ export async function startSpotifyAuthorization(songUrl: string) {
   const pending: SpotifyPendingAuthorization = {
     codeVerifier,
     returnPath: `${window.location.pathname}${window.location.search}`,
-    songUrl,
     state,
+    ...(songUrl ? { songUrl } : {}),
   };
   writeStorage(SPOTIFY_PENDING_KEY, pending);
   const challenge = await createCodeChallenge(codeVerifier);

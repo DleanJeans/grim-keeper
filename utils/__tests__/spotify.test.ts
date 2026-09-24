@@ -1,4 +1,5 @@
 import {
+  getCurrentlyPlayingSpotifySong,
   parseSpotifySong,
   parseYouTubeVideoId,
   queueSpotifySong,
@@ -109,5 +110,34 @@ describe('Spotify queueing', () => {
       'https://api.spotify.com/v1/me/player/queue?uri=spotify%3Atrack%3Atrack1',
       { headers: { Authorization: 'Bearer access-token' }, method: 'POST' },
     );
+  });
+
+  it('returns the currently playing Spotify track as a normalized song URL', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      json: async () => ({ item: { id: 'track1', type: 'track' } }),
+      ok: true,
+      status: 200,
+    });
+    globalThis.fetch = fetchMock;
+
+    await expect(getCurrentlyPlayingSpotifySong()).resolves.toBe(
+      'https://open.spotify.com/track/track1',
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.spotify.com/v1/me/player?additional_types=track%2Cepisode',
+      { headers: { Authorization: 'Bearer access-token' } },
+    );
+  });
+
+  it('returns no song when Spotify has no active playback', async () => {
+    globalThis.fetch = jest.fn().mockResolvedValue({ ok: false, status: 204 });
+
+    await expect(getCurrentlyPlayingSpotifySong()).resolves.toBeUndefined();
+  });
+
+  it('reports when current playback permission must be granted again', async () => {
+    globalThis.fetch = jest.fn().mockResolvedValue({ ok: false, status: 403 });
+
+    await expect(getCurrentlyPlayingSpotifySong()).rejects.toMatchObject({ kind: 'permission' });
   });
 });
