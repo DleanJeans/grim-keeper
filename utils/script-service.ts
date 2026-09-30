@@ -125,6 +125,7 @@ export function createHomebrewScript(
   value: string,
   catalog: Role[],
   existingId?: string,
+  fallbackName?: string,
 ): StoredScript {
   let content: unknown;
 
@@ -141,11 +142,12 @@ export function createHomebrewScript(
   const metadata = content.find(
     (item): item is Record<string, unknown> => isRecord(item) && item.id === '_meta',
   );
-  if (!metadata) {
+  const scriptMetadata = metadata ?? (getOptionalText(fallbackName) ? {} : undefined);
+  if (!scriptMetadata) {
     throw new Error('The script JSON is missing a _meta entry.');
   }
 
-  const name = getOptionalText(metadata.name);
+  const name = getOptionalText(scriptMetadata.name) ?? getOptionalText(fallbackName);
   if (!name) {
     throw new Error('The script metadata needs a name.');
   }
@@ -155,7 +157,7 @@ export function createHomebrewScript(
     throw new Error('The script does not contain any usable roles.');
   }
 
-  const author = getOptionalText(metadata.author);
+  const author = getOptionalText(scriptMetadata.author);
 
   return {
     id: existingId ?? createScriptId({ author, name }, []),

@@ -144,7 +144,13 @@ export default function ScriptsRoute() {
   async function handleUploadFile(file: File) {
     try {
       const catalog = await getUsableRoleCatalog();
-      const uploadedScript = createHomebrewScript(await file.text(), catalog);
+      const fallbackName = file.name.replace(/\.json$/i, '');
+      const uploadedScript = createHomebrewScript(
+        await file.text(),
+        catalog,
+        undefined,
+        fallbackName,
+      );
       const existingScript = scripts.find(
         (script) =>
           script.remoteId === undefined &&
