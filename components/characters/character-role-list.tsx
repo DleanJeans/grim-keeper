@@ -1,25 +1,37 @@
 import { Search } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { CharacterTeamFilterButton } from '@/components/characters/character-team-filter-button';
 import { ScriptRoleList } from '@/components/scripts/script-role-list';
 import { Text, TextInput } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 
+const ROLE_TEAM_FILTERS = [
+  { label: 'Townsfolk', team: 'townsfolk' },
+  { label: 'Outsider', team: 'outsider' },
+  { label: 'Minion', team: 'minion' },
+  { label: 'Demon', team: 'demon' },
+] as const;
+
+type CharacterRoleTeam = (typeof ROLE_TEAM_FILTERS)[number]['team'];
+
 export function CharacterRoleList() {
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTeam, setSelectedTeam] = useState<CharacterRoleTeam | null>(null);
   const filteredRoles = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
 
     return roleCatalog.filter(
       (role) =>
-        !normalizedQuery ||
-        role.name.toLocaleLowerCase().includes(normalizedQuery) ||
-        role.id.toLocaleLowerCase().includes(normalizedQuery) ||
-        role.ability?.toLocaleLowerCase().includes(normalizedQuery),
+        (selectedTeam === null || role.team?.toLocaleLowerCase() === selectedTeam) &&
+        (!normalizedQuery ||
+          role.name.toLocaleLowerCase().includes(normalizedQuery) ||
+          role.id.toLocaleLowerCase().includes(normalizedQuery) ||
+          role.ability?.toLocaleLowerCase().includes(normalizedQuery)),
     );
-  }, [roleCatalog, searchQuery]);
+  }, [roleCatalog, searchQuery, selectedTeam]);
 
   return (
     <ScriptRoleList
@@ -41,6 +53,20 @@ export function CharacterRoleList() {
               style={styles.searchInput}
               value={searchQuery}
             />
+          </View>
+          <View
+            accessibilityLabel="Filter characters by team"
+            accessibilityRole="toolbar"
+            style={styles.teamFilters}
+          >
+            {ROLE_TEAM_FILTERS.map(({ label, team }) => (
+              <CharacterTeamFilterButton
+                key={team}
+                label={label}
+                onPress={() => setSelectedTeam(selectedTeam === team ? null : team)}
+                selected={selectedTeam === team}
+              />
+            ))}
           </View>
         </View>
       }
@@ -76,5 +102,15 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 42,
     paddingVertical: 10,
+  },
+  teamFilters: {
+    backgroundColor: colors.inputBackground,
+    borderColor: colors.inputBorder,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 4,
+    overflow: 'hidden',
+    padding: 4,
   },
 });
