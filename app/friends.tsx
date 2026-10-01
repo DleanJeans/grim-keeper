@@ -1,9 +1,10 @@
 import { Stack } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { FriendNameForm } from '@/components/friends/friend-name-form';
 import { FriendRow } from '@/components/friends/friend-row';
+import { FriendSearch } from '@/components/friends/friend-search';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
@@ -11,7 +12,12 @@ import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { getFriendSummaries, sortFriendSummaries } from '@/utils/friend-utils';
 
+type FriendListEmptyStateProps = {
+  message: string;
+};
+
 export default function FriendsRoute() {
+  const [searchText, setSearchText] = useState('');
   const appUserName = useGameStore((state) => state.appUserName);
   const games = useGameStore((state) => state.games);
   const storedFriends = useGameStore((state) => state.friends);
@@ -21,32 +27,50 @@ export default function FriendsRoute() {
     () => sortFriendSummaries(getFriendSummaries(games, storedFriends, appUserName), savedNotes),
     [appUserName, games, savedNotes, storedFriends],
   );
+  const visibleFriends = useMemo(() => {
+    const normalizedSearchText = searchText.trim().toLocaleLowerCase();
+    return normalizedSearchText
+      ? friends.filter((friend) => friend.name.toLocaleLowerCase().includes(normalizedSearchText))
+      : friends;
+  }, [friends, searchText]);
 
   return (
     <>
       <Stack.Screen options={{ header: () => <TitleHeader title="Friends" />, title: 'Friends' }} />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps="handled"
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
         <ResponsiveContent style={styles.contentContainer}>
           <FriendNameForm friends={friends} onAddFriend={addFriend} />
+          {friends.length > 0 ? (
+            <FriendSearch onChangeText={setSearchText} value={searchText} />
+          ) : null}
 
           <View style={styles.friendList}>
             {friends.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text selectable style={styles.emptyStateText}>
-                  No friends yet.
-                </Text>
-              </View>
+              <FriendListEmptyState message="No friends yet." />
+            ) : visibleFriends.length === 0 ? (
+              <FriendListEmptyState message="No friends match your search." />
             ) : (
-              friends.map((friend) => <FriendRow friend={friend} key={friend.id} />)
+              visibleFriends.map((friend) => <FriendRow friend={friend} key={friend.id} />)
             )}
           </View>
         </ResponsiveContent>
       </ScrollView>
     </>
+  );
+}
+
+function FriendListEmptyState({ message }: FriendListEmptyStateProps) {
+  return (
+    <View style={styles.emptyState}>
+      <Text selectable style={styles.emptyStateText}>
+        {message}
+      </Text>
+    </View>
   );
 }
 
