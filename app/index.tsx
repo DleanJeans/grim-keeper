@@ -1,5 +1,5 @@
 import { router, Stack } from 'expo-router';
-import { Plus, ScrollText, Users } from 'lucide-react-native';
+import { Plus, ScrollText, UserRound, Users } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -67,12 +67,19 @@ export default function HomeRoute() {
             />
           </View>
 
-          <HomeActionButton
-            count={scripts.length}
-            icon="scripts"
-            label="Scripts"
-            onPress={() => router.push('/scripts')}
-          />
+          <View style={styles.primaryActions}>
+            <HomeActionButton
+              count={scripts.length}
+              icon="scripts"
+              label="Scripts"
+              onPress={() => router.push('/scripts')}
+            />
+            <HomeActionButton
+              icon="characters"
+              label="Characters"
+              onPress={() => router.push('/characters')}
+            />
+          </View>
 
           <View style={styles.gamesSection}>
             <HomeGameStats />
@@ -171,11 +178,18 @@ function HomeActionButton({
   count,
 }: {
   count?: number;
-  icon: 'plus' | 'scripts' | 'users';
+  icon: 'plus' | 'scripts' | 'users' | 'characters';
   label: string;
   onPress: () => void;
 }) {
-  const Icon = icon === 'plus' ? Plus : icon === 'scripts' ? ScrollText : Users;
+  const Icon =
+    icon === 'plus'
+      ? Plus
+      : icon === 'scripts'
+        ? ScrollText
+        : icon === 'characters'
+          ? UserRound
+          : Users;
 
   return (
     <Pressable

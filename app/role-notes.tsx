@@ -14,7 +14,7 @@ import type { SavedNote } from '@/types/game';
 import { GENERIC_CHARACTER_TYPE_ROLE_REFERENCES, GENERIC_KILLER_ROLES } from '@/utils/role-utils';
 
 export default function RoleNotesScreen() {
-  const { roleId, scriptId } = useLocalSearchParams<{ roleId: string; scriptId: string }>();
+  const { roleId, scriptId } = useLocalSearchParams<{ roleId: string; scriptId?: string }>();
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const savedNotes = useGameStore((state) => state.savedNotes);
   const games = useGameStore((state) => state.games);

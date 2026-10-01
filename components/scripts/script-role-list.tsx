@@ -39,16 +39,18 @@ type ScriptRoleFilter = (roles: Role[], sortMode: ScriptRoleSortMode) => Role[];
 
 export function ScriptRoleList({
   header,
+  includeOtherTeams = false,
   roleFilter,
   roleCatalog,
   roles,
   scriptId,
 }: {
   header: ScriptRoleHeader;
+  includeOtherTeams?: boolean;
   roleFilter?: ScriptRoleFilter;
   roleCatalog: Role[];
   roles: Role[];
-  scriptId: string;
+  scriptId?: string;
 }) {
   const savedNotes = useGameStore((state) => state.savedNotes);
   const [sortMode, setSortMode] = useState<ScriptRoleSortMode>('current-split');
@@ -99,10 +101,12 @@ export function ScriptRoleList({
   );
   const supportedRoleEntries = useMemo(
     () =>
-      roleEntries.filter((entry) =>
-        ROLE_SECTIONS.some(({ team }) => entry.role.team?.toLocaleLowerCase() === team),
-      ),
-    [roleEntries],
+      includeOtherTeams
+        ? roleEntries
+        : roleEntries.filter((entry) =>
+            ROLE_SECTIONS.some(({ team }) => entry.role.team?.toLocaleLowerCase() === team),
+          ),
+    [includeOtherTeams, roleEntries],
   );
   const visibleRoleEntries = useMemo(
     () =>
@@ -138,14 +142,55 @@ export function ScriptRoleList({
       ];
     }
 
-    return ROLE_SECTIONS.map(({ label, team }) => ({
+    const sections = ROLE_SECTIONS.map(({ label, team }) => ({
       data: chunkEntries(
         visibleRoleEntries.filter((entry) => entry.role.team?.toLocaleLowerCase() === team),
         twoColumns && !showNotes ? 2 : 1,
       ),
       title: label,
-    })).filter(({ data }) => data.length > 0);
-  }, [nightSheet, nightTab, showNotes, sortMode, twoColumns, visibleRoleEntries]);
+    }));
+
+    if (includeOtherTeams) {
+      const additionalTeams = [
+        ...new Set(
+          visibleRoleEntries
+            .map(({ role }) => role.team?.trim().toLocaleLowerCase())
+            .filter((team): team is string => Boolean(team))
+            .filter((team) => !ROLE_SECTIONS.some((section) => section.team === team)),
+        ),
+      ].sort();
+
+      sections.push(
+        ...additionalTeams.map((team) => ({
+          data: chunkEntries(
+            visibleRoleEntries.filter(
+              (entry) => entry.role.team?.trim().toLocaleLowerCase() === team,
+            ),
+            twoColumns && !showNotes ? 2 : 1,
+          ),
+          title: formatTeamLabel(team),
+        })),
+      );
+
+      const rolesWithoutTeam = visibleRoleEntries.filter(({ role }) => !role.team?.trim());
+      if (rolesWithoutTeam.length > 0) {
+        sections.push({
+          data: chunkEntries(rolesWithoutTeam, twoColumns && !showNotes ? 2 : 1),
+          title: 'Other',
+        });
+      }
+    }
+
+    return sections.filter(({ data }) => data.length > 0);
+  }, [
+    includeOtherTeams,
+    nightSheet,
+    nightTab,
+    showNotes,
+    sortMode,
+    twoColumns,
+    visibleRoleEntries,
+  ]);
 
   return (
     <SectionList
@@ -197,7 +242,7 @@ export function ScriptRoleList({
                   onPress={() =>
                     router.push({
                       pathname: '/role-notes',
-                      params: { roleId: entry.role.id, scriptId },
+                      params: { roleId: entry.role.id, ...(scriptId ? { scriptId } : {}) },
                     })
                   }
                   role={entry.role}
@@ -413,6 +458,12 @@ function getScriptRoleRowKey(row: ScriptRoleRow) {
   return row[0]?.role.id ?? 'empty-role-row';
 }
 
+function formatTeamLabel(team: string) {
+  return team === 'traveller'
+    ? 'Traveller'
+    : team.replace(/\b\w/g, (letter) => letter.toLocaleUpperCase());
+}
+
 function ScriptRoleListHeader({
   header,
   nightTab,
@@ -614,7 +665,7 @@ function ScriptRoleDetail({
   onPress: () => void;
   role: Role;
   roles: Role[];
-  scriptId: string;
+  scriptId?: string;
   showNotes: boolean;
   twoColumns: boolean;
 }) {
