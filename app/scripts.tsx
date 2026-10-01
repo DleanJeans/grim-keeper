@@ -6,6 +6,7 @@ import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { RemoteScriptCard } from '@/components/scripts/remote-script-card';
 import { ScriptCard } from '@/components/scripts/script-card';
+import { ScriptPasteImporter } from '@/components/scripts/script-paste-importer';
 import { UploadScriptButton } from '@/components/scripts/upload-script-button';
 import { Text, TextInput } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
@@ -143,25 +144,36 @@ export default function ScriptsRoute() {
 
   async function handleUploadFile(file: File) {
     try {
-      const catalog = await getUsableRoleCatalog();
       const fallbackName = file.name.replace(/\.json$/i, '');
-      const uploadedScript = createHomebrewScript(
-        await file.text(),
-        catalog,
-        undefined,
-        fallbackName,
-      );
-      const existingScript = scripts.find(
-        (script) =>
-          script.remoteId === undefined &&
-          script.name === uploadedScript.name &&
-          script.author === uploadedScript.author,
-      );
-
-      saveScript(existingScript ? { ...uploadedScript, id: existingScript.id } : uploadedScript);
-      showDialog('Upload complete', `${uploadedScript.name} is ready to use.`);
+      const name = await importScriptJson(await file.text(), fallbackName);
+      showDialog('Upload complete', `${name} is ready to use.`);
     } catch (error) {
       showDialog('Could not upload script', getErrorMessage(error));
+    }
+  }
+
+  async function importScriptJson(value: string, fallbackName?: string) {
+    const catalog = await getUsableRoleCatalog();
+    const uploadedScript = createHomebrewScript(value, catalog, undefined, fallbackName);
+    const existingScript = scripts.find(
+      (script) =>
+        script.remoteId === undefined &&
+        script.name === uploadedScript.name &&
+        script.author === uploadedScript.author,
+    );
+
+    saveScript(existingScript ? { ...uploadedScript, id: existingScript.id } : uploadedScript);
+    return uploadedScript.name;
+  }
+
+  async function handleImportPastedScript(value: string, fallbackName?: string) {
+    try {
+      const name = await importScriptJson(value, fallbackName);
+      showDialog('Import complete', `${name} is ready to use.`);
+      return true;
+    } catch (error) {
+      showDialog('Could not import script', getErrorMessage(error));
+      return false;
     }
   }
 
@@ -205,9 +217,11 @@ export default function ScriptsRoute() {
         }}
       />
       <ScrollView
+        automaticallyAdjustKeyboardInsets
         contentInsetAdjustmentBehavior="automatic"
         style={{ backgroundColor: colors.background, flex: 1 }}
         contentContainerStyle={{ paddingBottom: 40 }}
+        keyboardShouldPersistTaps="handled"
       >
         <ResponsiveContent style={styles.content}>
           <View style={{ gap: 6 }}>
@@ -220,14 +234,15 @@ export default function ScriptsRoute() {
                 textAlign: 'center',
               }}
             >
-              Download scripts from BotC Scripts or upload a homebrew JSON file, then add or remove
-              roles before using them in a game.
+              Download scripts from BotC Scripts, upload or paste a homebrew JSON script, then add
+              or remove roles before using it in a game.
             </Text>
           </View>
 
           {process.env.EXPO_OS === 'web' ? (
             <UploadScriptButton onFileSelected={handleUploadFile} />
           ) : null}
+          <ScriptPasteImporter onImport={handleImportPastedScript} />
 
           <SavedScriptsSection
             canSelect={isSelectingForGame}
