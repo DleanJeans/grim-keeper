@@ -30,6 +30,10 @@ export function CustomScriptImageControls({ onUpdate, script }: CustomScriptImag
   const targetHeight = parseTargetHeight(targetHeightText);
   const inputError = targetHeightText.length > 0 && targetHeight === undefined;
 
+  if (!hasImages) {
+    return null;
+  }
+
   async function handleResize() {
     if (!targetHeight || !hasImages) {
       return;
@@ -85,12 +89,12 @@ export function CustomScriptImageControls({ onUpdate, script }: CustomScriptImag
         <Pressable
           accessibilityLabel={`Resize ${script.name} images`}
           accessibilityRole="button"
-          disabled={isResizing || !hasImages || targetHeight === undefined}
+          disabled={isResizing || targetHeight === undefined}
           onPress={() => void handleResize()}
           style={({ pressed }) => [
             styles.button,
             pressed && styles.buttonPressed,
-            (isResizing || !hasImages || targetHeight === undefined) && styles.buttonDisabled,
+            (isResizing || targetHeight === undefined) && styles.buttonDisabled,
           ]}
         >
           {isResizing ? (
@@ -101,8 +105,7 @@ export function CustomScriptImageControls({ onUpdate, script }: CustomScriptImag
           <Text
             style={[
               styles.buttonLabel,
-              (isResizing || !hasImages || targetHeight === undefined) &&
-                styles.buttonLabelDisabled,
+              (isResizing || targetHeight === undefined) && styles.buttonLabelDisabled,
             ]}
           >
             {isResizing ? 'Resizing…' : 'Resize images'}
@@ -112,10 +115,6 @@ export function CustomScriptImageControls({ onUpdate, script }: CustomScriptImag
       {inputError ? (
         <Text selectable style={styles.errorText}>
           Enter a whole number from 1 to {MAX_TARGET_HEIGHT}.
-        </Text>
-      ) : !hasImages ? (
-        <Text selectable style={styles.hintText}>
-          No embedded images to resize.
         </Text>
       ) : null}
     </View>
@@ -185,11 +184,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: colors.danger,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  hintText: {
-    color: colors.textMuted,
     fontSize: 12,
     lineHeight: 17,
   },
