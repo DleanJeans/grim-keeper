@@ -13,6 +13,19 @@ import { KillButton } from './kill-button';
 import { ReviveButton } from './revive-button';
 import { UndoDeathButton } from './undo-death-button';
 
+const DAY_KILL_ROLE_IDS = new Set([
+  'bigwig',
+  'slayer',
+  'harpy',
+  'witch',
+  'cerenovus',
+  'psychopath',
+  'golem',
+  'moonchild',
+  'tinker',
+  'yaggababble',
+]);
+
 /**
  * Composed death-action panel for the Deaths tab — Execute / Kill /
  * Undo Death in one row, Revive in a second row. Operates on the player
@@ -24,6 +37,7 @@ export function FocusedDeathActionPanel() {
     focusedPlayer,
     focusedPlayerIsDead,
     activePhase,
+    game,
     handleReviveFocusedPlayer: onRevive,
     handleSetFocusedPlayerDeath: onSetDeath,
     handleUndoFocusedPlayerDeath: onUndoDeath,
@@ -33,7 +47,11 @@ export function FocusedDeathActionPanel() {
     return null;
   }
 
-  if (!focusedPlayerIsDead && showKillAttribution && activePhase === 'night') {
+  const canKillDuringDay =
+    game.script?.roles.some((role) => DAY_KILL_ROLE_IDS.has(role.id)) ?? false;
+  const canShowKillAttribution = activePhase === 'night' || canKillDuringDay;
+
+  if (!focusedPlayerIsDead && showKillAttribution && canShowKillAttribution) {
     return (
       <KillAttributionPanel
         onCancel={() => setShowKillAttribution(false)}
@@ -69,10 +87,18 @@ export function FocusedDeathActionPanel() {
       ) : (
         <View style={innerActionRow}>
           {activePhase === 'day' ? (
-            <ExecuteButton
-              onPress={() => onSetDeath('execution')}
-              playerName={focusedPlayer.name}
-            />
+            <>
+              <ExecuteButton
+                onPress={() => onSetDeath('execution')}
+                playerName={focusedPlayer.name}
+              />
+              {canKillDuringDay ? (
+                <KillButton
+                  onPress={() => setShowKillAttribution(true)}
+                  playerName={focusedPlayer.name}
+                />
+              ) : null}
+            </>
           ) : (
             <KillButton
               onPress={() => setShowKillAttribution(true)}
