@@ -7,7 +7,7 @@ import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Player, PlayerDeath, PlayerRevive, Role } from '@/types/game';
 import type { GamePhasePosition } from '@/utils/game-phase-utils';
-import { getEventPhaseIndex, getPhaseIndex } from '@/utils/game-phase-utils';
+import { getDeathPhase, getEventPhaseIndex, getPhaseIndex } from '@/utils/game-phase-utils';
 
 export type DeathLogEntry = {
   death: PlayerDeath;
@@ -53,13 +53,13 @@ export function DeathLogRow({
   const isDeath = 'death' in entry;
   const isExecution = isDeath && entry.death.kind === 'execution';
   const eventDay = isDeath ? entry.death.day : entry.revive.day;
-  const eventPhase = isDeath && entry.death.kind === 'night' ? 'night' : 'day';
+  const eventPhase = isDeath ? getDeathPhase(entry.death) : 'day';
   const isActiveEvent = getEventPhaseIndex(eventDay, eventPhase) === getPhaseIndex(activePosition);
   const accent = !isDeath ? reviveColor : isExecution ? executionColor : nightColor;
   const Icon = !isDeath ? HeartPulse : isExecution ? FlameKindling : Skull;
   const actionLabel = !isDeath ? 'Revived' : isExecution ? 'Executed' : 'Killed';
-  const labelDay = isDeath && !isExecution ? eventDay + startingNight - 1 : eventDay;
-  const dayLabel = `${!isDeath ? 'R' : isExecution ? 'D' : 'N'}${labelDay}`;
+  const labelDay = eventPhase === 'night' ? eventDay + startingNight - 1 : eventDay;
+  const dayLabel = `${!isDeath ? 'R' : eventPhase === 'day' ? 'D' : 'N'}${labelDay}`;
 
   return (
     <View

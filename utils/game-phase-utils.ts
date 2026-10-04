@@ -95,6 +95,9 @@ export function getLatestPhaseWithData(game: Game): GamePhasePosition {
     : getPhasePositionAtIndex(latestPhaseIndex);
 }
 
-export function getDeathPhase(death: { kind: 'execution' | 'night' }): GamePhase {
-  return death.kind === 'night' ? 'night' : 'day';
+export function getDeathPhase(death: {
+  kind: 'execution' | 'night';
+  killerRoleIds?: string[];
+}): GamePhase {
+  return death.kind === 'execution' || death.killerRoleIds?.includes('witch') ? 'day' : 'night';
 }

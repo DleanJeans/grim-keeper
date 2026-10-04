@@ -1,5 +1,5 @@
 import type { Conversation, GamePhase, Player } from '@/types/game';
-import { getEventPhaseIndex, getPhaseIndex } from '@/utils/game-phase-utils';
+import { getDeathPhase, getEventPhaseIndex, getPhaseIndex } from '@/utils/game-phase-utils';
 
 export function isPlayerCurrentlyDead(
   player: Player,
@@ -11,10 +11,7 @@ export function isPlayerCurrentlyDead(
   }
 
   const activePhaseIndex = getPhaseIndex({ activeDay, activePhase });
-  const deathPhaseIndex = getEventPhaseIndex(
-    player.death.day,
-    player.death.kind === 'night' ? 'night' : 'day',
-  );
+  const deathPhaseIndex = getEventPhaseIndex(player.death.day, getDeathPhase(player.death));
 
   if (deathPhaseIndex > activePhaseIndex) {
     return false;
@@ -47,10 +44,7 @@ export function hasDeadVoteAvailable(
   }
 
   const activePhaseIndex = getPhaseIndex({ activeDay, activePhase });
-  const deathPhaseIndex = getEventPhaseIndex(
-    player.death.day,
-    player.death.kind === 'night' ? 'night' : 'day',
-  );
+  const deathPhaseIndex = getEventPhaseIndex(player.death.day, getDeathPhase(player.death));
   const revivePhaseIndex = player.revive ? getEventPhaseIndex(player.revive.day, 'day') : undefined;
 
   return !conversations.some((conversation) => {

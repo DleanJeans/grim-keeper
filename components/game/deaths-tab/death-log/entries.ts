@@ -1,6 +1,6 @@
 import type { Player, PlayerDeath, PlayerRevive } from '@/types/game';
 import type { GamePhasePosition } from '@/utils/game-phase-utils';
-import { getEventPhaseIndex, getPhaseIndex } from '@/utils/game-phase-utils';
+import { getDeathPhase, getEventPhaseIndex, getPhaseIndex } from '@/utils/game-phase-utils';
 
 import type { DeathLogEntry, ReviveLogEntry } from './row';
 
@@ -15,10 +15,7 @@ export function collectLogEntries(
         return false;
       }
 
-      return (
-        getEventPhaseIndex(player.death.day, player.death.kind === 'night' ? 'night' : 'day') <=
-        activePhaseIndex
-      );
+      return getEventPhaseIndex(player.death.day, getDeathPhase(player.death)) <= activePhaseIndex;
     })
     .map((player) => ({ death: player.death, player }));
 
@@ -37,13 +34,10 @@ export function collectLogEntries(
     const secondDay = 'death' in second ? second.death.day : second.revive.day;
     const firstIsRevive = 'revive' in first;
     const secondIsRevive = 'revive' in second;
-    const firstPhase = 'death' in first ? first.death.kind : 'day';
-    const secondPhase = 'death' in second ? second.death.kind : 'day';
-    const firstPhaseIndex = getEventPhaseIndex(firstDay, firstPhase === 'night' ? 'night' : 'day');
-    const secondPhaseIndex = getEventPhaseIndex(
-      secondDay,
-      secondPhase === 'night' ? 'night' : 'day',
-    );
+    const firstPhase = 'death' in first ? getDeathPhase(first.death) : 'day';
+    const secondPhase = 'death' in second ? getDeathPhase(second.death) : 'day';
+    const firstPhaseIndex = getEventPhaseIndex(firstDay, firstPhase);
+    const secondPhaseIndex = getEventPhaseIndex(secondDay, secondPhase);
 
     return (
       firstPhaseIndex - secondPhaseIndex ||
