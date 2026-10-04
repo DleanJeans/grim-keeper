@@ -43,7 +43,6 @@ import type {
 import {
   getDayCutoffForPhase,
   getGameActivePhase,
-  getGameStartingNight,
   getLatestPhaseWithData,
   getPhaseIndex,
   getPhaseLabel,
@@ -90,6 +89,7 @@ export default function GameRoute() {
   const isFullscreen = useWebFullscreen();
   const showDialog = useAppDialog();
   const games = useGameStore((state) => state.games);
+  const startingNight = useGameStore((state) => state.defaultStartingNight);
   const setPlayerDeath = useGameStore((state) => state.setPlayerDeath);
   const setPlayerRevive = useGameStore((state) => state.setPlayerRevive);
   const setPlayerRoleAssignment = useGameStore((state) => state.setPlayerRoleAssignment);
@@ -149,7 +149,6 @@ export default function GameRoute() {
   );
   const game = getGameById(games, id);
   const lastDayWithData = game ? getLastDayWithData(game) : 1;
-  const startingNight = game ? getGameStartingNight(game) : 1;
   const activePhase = game ? getGameActivePhase(game) : 'day';
   const phasePosition = game ? { activeDay: game.activeDay, activePhase } : null;
   const activePhaseIndex = phasePosition ? getPhaseIndex(phasePosition) : 0;

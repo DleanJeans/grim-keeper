@@ -8,7 +8,8 @@ import { VoteConfirmActions } from '@/components/game/noms-tab/vote-confirm-acti
 import { NotesTab } from '@/components/game/notes-tab/notes-tab';
 
 export function ActiveGameTab() {
-  const { activeTab, game, trackingMode, votingNominationId } = useGameRouteContext();
+  const { activeTab, game, startingNight, trackingMode, votingNominationId } =
+    useGameRouteContext();
 
   if (activeTab === 'nominations') {
     return (
@@ -32,7 +33,7 @@ export function ActiveGameTab() {
           activePhase={game.activePhase ?? 'day'}
           players={game.players}
           script={game.script}
-          startingNight={game.startingNight ?? 1}
+          startingNight={startingNight}
         />
       </>
     );

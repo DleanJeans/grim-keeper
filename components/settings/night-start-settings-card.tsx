@@ -16,11 +16,11 @@ export function NightStartSettingsCard() {
           Start at Night 0
         </Text>
         <Text selectable style={styles.description}>
-          New games start at Night 0 when on, or Night 1 when off.
+          Use Night 0 labels across all games, including saved games.
         </Text>
       </View>
       <Switch
-        accessibilityLabel="Start new games at Night 0"
+        accessibilityLabel="Show Night 0 labels for all games"
         accessibilityRole="switch"
         accessibilityState={{ checked: startsAtNightZero }}
         onValueChange={(enabled) => setDefaultStartingNight(enabled ? 0 : 1)}
