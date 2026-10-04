@@ -12,6 +12,7 @@ import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Player, PlayerRoleAssignment, Role } from '@/types/game';
+import { getPhaseLabel } from '@/utils/game-phase-utils';
 import {
   GENERIC_CHARACTER_TYPE_ROLE_REFERENCES,
   getRoleDisplayForDayOrPrevious,
@@ -29,7 +30,8 @@ const GENERIC_ASSIGNMENT_ROLES = GENERIC_CHARACTER_TYPE_ROLE_REFERENCES.filter((
 
 export function RoleAssignmentActions() {
   const {
-    activeDayCutoff,
+    activeDay,
+    activePhase,
     focusedPlayer,
     game,
     handleCancelRoleAssignment,
@@ -42,6 +44,7 @@ export function RoleAssignmentActions() {
     roleAssignmentKind,
     roleAssignmentRoleIds,
     showRoles,
+    startingNight,
   } = useGameRouteContext();
   const roleCatalog = useGameStore((state) => state.roleCatalog);
 
@@ -60,8 +63,9 @@ export function RoleAssignmentActions() {
   const regularRoles = assignmentRoles.filter((role) => !isTravelerRole(role));
   const confirmedRoleDisplay = getRoleDisplayForDayOrPrevious(
     focusedPlayer.roleAssignments?.filter((assignment) => assignment.kind === 'confirm'),
-    activeDayCutoff,
+    activeDay,
     game.script.roles,
+    activePhase,
   );
   const confirmedTravelerRole = confirmedRoleDisplay.roles.find(isTravelerRole);
   const confirmedTravelerBaseRole = confirmedTravelerRole
@@ -72,7 +76,7 @@ export function RoleAssignmentActions() {
     : [];
   const isTravelerClaim = roleAssignmentKind === 'claim' && !!confirmedTravelerRole;
   const roleOwnerNames = showRoles
-    ? getRoleOwnerNamesForDay(players, activeDayCutoff, selectableRoles)
+    ? getRoleOwnerNamesForDay(players, activeDay, selectableRoles, activePhase)
     : undefined;
   const rumorSubject = rumorSubjectPlayerId
     ? (players.find((player) => player.id === rumorSubjectPlayerId) ?? null)
@@ -145,7 +149,7 @@ export function RoleAssignmentActions() {
                 />
               </View>
               <Text selectable style={{ color: colors.textMuted, fontSize: 13 }}>
-                Day {game.activeDay}
+                {getPhaseLabel({ activeDay, activePhase }, startingNight)}
               </Text>
             </View>
           )}

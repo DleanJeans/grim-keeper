@@ -8,7 +8,8 @@ import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { RoleReferenceNoteLine } from '@/components/role-reference-note-line';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { Player, PlayerDayNoteEntry } from '@/types/game';
+import type { GamePhase, Player, PlayerDayNoteEntry } from '@/types/game';
+import { getPhaseLabel } from '@/utils/game-phase-utils';
 import {
   getRoleAssignmentForDay,
   getRolesByIds,
@@ -18,43 +19,51 @@ import {
 export function DayNoteRow({
   player,
   day,
+  phase,
   notes,
 }: {
   player: Player;
   day: number;
+  phase: GamePhase;
   notes: PlayerDayNoteEntry[];
 }) {
   const {
     addingNewNote,
     noteEditingNoteId,
     noteEditorDay,
+    noteEditorPhase,
     noteEditorPlayerId,
     game,
+    startingNight,
     showRoles,
     handleDeleteRumor: onDeleteRumor,
     handleStartAddNote: onAddNote,
     handleStartEditNote: onEditNote,
   } = useGameRouteContext();
 
-  const isEditingRow = noteEditorDay === day && noteEditorPlayerId === player.id;
+  const isEditingRow =
+    noteEditorDay === day && noteEditorPhase === phase && noteEditorPlayerId === player.id;
   const roleAssignment = showRoles
-    ? getRoleAssignmentForDay(player.roleAssignments, day)
+    ? getRoleAssignmentForDay(player.roleAssignments, day, undefined, phase)
     : undefined;
   const roles =
     roleAssignment && game.script ? getRolesByIds(roleAssignment.roleIds, game.script.roles) : [];
   const guessAssignment = showRoles
-    ? getRoleAssignmentForDay(player.roleAssignments, day, 'guess')
+    ? getRoleAssignmentForDay(player.roleAssignments, day, 'guess', phase)
     : undefined;
   const guessedRoles =
     guessAssignment && game.script ? getRolesByIds(guessAssignment.roleIds, game.script.roles) : [];
   const rumorAboutThisPlayer =
     showRoles && game.script
-      ? getRumorAboutPlayerForDay(game.players, player.id, day, game.script.roles)
+      ? getRumorAboutPlayerForDay(game.players, player.id, day, game.script.roles, phase)
       : [];
   const ownRumor =
     showRoles && game.script && player.roleAssignments
       ? player.roleAssignments.filter(
-          (assignment) => assignment.kind === 'rumor' && assignment.day === day,
+          (assignment) =>
+            assignment.kind === 'rumor' &&
+            assignment.day === day &&
+            (assignment.phase ?? 'day') === phase,
         )
       : [];
   const playersById = new Map(game.players.map((candidate) => [candidate.id, candidate]));
@@ -62,12 +71,17 @@ export function DayNoteRow({
   return (
     <View style={styles.row}>
       <View style={styles.rowHeader}>
-        <PlayerNameWithRole player={player} textStyle={styles.rowPlayerName} />
+        <PlayerNameWithRole
+          day={day}
+          phase={phase}
+          player={player}
+          textStyle={styles.rowPlayerName}
+        />
         <Pressable
-          accessibilityLabel={`Add day ${day} note for ${player.name}`}
+          accessibilityLabel={`Add ${getPhaseLabel({ activeDay: day, activePhase: phase }, startingNight)} note for ${player.name}`}
           accessibilityRole="button"
           hitSlop={8}
-          onPress={() => onAddNote(player.id, day)}
+          onPress={() => onAddNote(player.id, day, phase)}
           style={styles.addNoteButton}
         >
           <Plus color={colors.textMuted} size={14} strokeWidth={2.5} />
@@ -102,11 +116,12 @@ export function DayNoteRow({
           return (
             <PlayerNoteRoleAssignment
               day={day}
+              phase={phase}
               kind="rumor"
-              key={`own-rumor-${rumor.subjectPlayerId}-${day}`}
+              key={`own-rumor-${rumor.subjectPlayerId}-${day}-${phase}`}
               roles={rumorRoles}
               scriptId={game.script?.id}
-              onDelete={() => onDeleteRumor(player.id, day)}
+              onDelete={() => onDeleteRumor(player.id, day, phase)}
               source={player}
               subject={subject}
             />
@@ -116,11 +131,12 @@ export function DayNoteRow({
         {rumorAboutThisPlayer.map((rumor) => (
           <PlayerNoteRoleAssignment
             day={day}
+            phase={phase}
             kind="rumor"
-            key={`rumor-${rumor.sourcePlayer.id}-${day}`}
+            key={`rumor-${rumor.sourcePlayer.id}-${day}-${phase}`}
             roles={rumor.roles}
             scriptId={game.script?.id}
-            onDelete={() => onDeleteRumor(rumor.sourcePlayer.id, day)}
+            onDelete={() => onDeleteRumor(rumor.sourcePlayer.id, day, phase)}
             showSource
             source={rumor.sourcePlayer}
             subject={player}
@@ -129,13 +145,14 @@ export function DayNoteRow({
 
         {notes.map((note) =>
           isEditingRow && noteEditingNoteId === note.id ? (
-            <PlayerDayNoteEditor day={day} key={note.id} player={player} />
+            <PlayerDayNoteEditor day={day} phase={phase} key={note.id} player={player} />
           ) : (
             <RoleReferenceNoteLine
               day={day}
+              phase={phase}
               game={game}
               key={note.id}
-              onEdit={() => onEditNote(player.id, day, note.id)}
+              onEdit={() => onEditNote(player.id, day, note.id, phase)}
               playerId={player.id}
               playerName={player.name}
               players={game.players}
@@ -146,7 +163,9 @@ export function DayNoteRow({
             />
           ),
         )}
-        {isEditingRow && addingNewNote ? <PlayerDayNoteEditor day={day} player={player} /> : null}
+        {isEditingRow && addingNewNote ? (
+          <PlayerDayNoteEditor day={day} phase={phase} player={player} />
+        ) : null}
       </View>
     </View>
   );

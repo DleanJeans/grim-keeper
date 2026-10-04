@@ -9,7 +9,7 @@ import { gameStyles } from '@/components/game/styles';
 import { RoleReference } from '@/components/role-reference';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { Player, Role } from '@/types/game';
+import type { GamePhase, Player, Role } from '@/types/game';
 
 const badgeColors = colors.playerTokenEdgeBadge;
 
@@ -40,9 +40,17 @@ type RumorPlayerActivity = {
 
 export type PlayerActivity = StandardPlayerActivity | RumorPlayerActivity;
 
-export function PlayerActivityRow({ activity, day }: { activity: PlayerActivity; day: number }) {
+export function PlayerActivityRow({
+  activity,
+  day,
+  phase = 'day',
+}: {
+  activity: PlayerActivity;
+  day: number;
+  phase?: GamePhase;
+}) {
   if (activity.kind === 'rumor') {
-    return <RumorActivityRow activity={activity} day={day} />;
+    return <RumorActivityRow activity={activity} day={day} phase={phase} />;
   }
 
   const color = getActivityColor(activity.kind);
@@ -58,6 +66,7 @@ export function PlayerActivityRow({ activity, day }: { activity: PlayerActivity;
           {index > 0 ? <Text style={styles.separator}>,</Text> : null}
           <PlayerNameWithRole
             day={day}
+            phase={phase}
             player={player}
             textStyle={styles.playerName}
             variant="note"
@@ -74,7 +83,15 @@ export function PlayerActivityRow({ activity, day }: { activity: PlayerActivity;
   );
 }
 
-function RumorActivityRow({ activity, day }: { activity: RumorPlayerActivity; day: number }) {
+function RumorActivityRow({
+  activity,
+  day,
+  phase,
+}: {
+  activity: RumorPlayerActivity;
+  day: number;
+  phase: GamePhase;
+}) {
   const showDialog = useAppDialog();
 
   function handleDeletePress() {
@@ -100,6 +117,7 @@ function RumorActivityRow({ activity, day }: { activity: RumorPlayerActivity; da
             <Text style={styles.preposition}>from</Text>
             <PlayerNameWithRole
               day={day}
+              phase={phase}
               player={activity.source}
               textStyle={styles.playerName}
               variant="note"
@@ -109,6 +127,7 @@ function RumorActivityRow({ activity, day }: { activity: RumorPlayerActivity; da
         ) : null}
         <PlayerNameWithRole
           day={day}
+          phase={phase}
           player={activity.subject}
           textStyle={styles.playerName}
           variant="note"

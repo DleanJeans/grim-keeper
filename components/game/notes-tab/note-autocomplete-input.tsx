@@ -13,7 +13,7 @@ import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { RoleIcon } from '@/components/role-icon';
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { Game, Player, Role } from '@/types/game';
+import type { Game, GamePhase, Player, Role } from '@/types/game';
 import {
   applyNoteAutocompleteSuggestion,
   getCursorAfterTextChange,
@@ -28,6 +28,7 @@ type NoteSuggestion =
 export function NoteAutocompleteInput({
   accessibilityLabel,
   day,
+  phase,
   game,
   onChangeText,
   placeholder,
@@ -37,6 +38,7 @@ export function NoteAutocompleteInput({
 }: {
   accessibilityLabel: string;
   day: number;
+  phase: GamePhase;
   game: Game;
   onChangeText: (text: string) => void;
   placeholder: string;
@@ -112,6 +114,7 @@ export function NoteAutocompleteInput({
       />
       <NoteSuggestionDropdown
         day={day}
+        phase={phase}
         game={game}
         onSelect={handleSelectSuggestion}
         suggestions={popoverVisible ? suggestions : allSuggestions}
@@ -161,12 +164,14 @@ function getNoteSuggestions(players: Player[], roles: Role[], query: string | un
 
 function NoteSuggestionDropdown({
   day,
+  phase,
   game,
   onSelect,
   suggestions,
   visible,
 }: {
   day: number;
+  phase: GamePhase;
   game: Game;
   onSelect: (suggestion: NoteSuggestion) => void;
   suggestions: NoteSuggestion[];
@@ -190,6 +195,7 @@ function NoteSuggestionDropdown({
           {suggestion.kind === 'player' ? (
             <PlayerNameWithRole
               day={day}
+              phase={phase}
               game={game}
               player={suggestion.player}
               iconSize={20}

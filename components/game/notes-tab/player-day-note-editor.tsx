@@ -5,25 +5,37 @@ import { useGameRouteContext } from '@/components/game/game-route-context';
 import { NoteAutocompleteInput } from '@/components/game/notes-tab/note-autocomplete-input';
 import { innerActionRow } from '@/components/game/styles';
 import { colors } from '@/theme/colors';
-import type { Player } from '@/types/game';
+import type { GamePhase, Player } from '@/types/game';
+import { getPhaseLabel } from '@/utils/game-phase-utils';
 
-export function PlayerDayNoteEditor({ day, player }: { day: number; player: Player }) {
-  const { game, handleSaveNoteEdit, noteDraft, setNoteDraft } = useGameRouteContext();
+export function PlayerDayNoteEditor({
+  day,
+  phase,
+  player,
+}: {
+  day: number;
+  phase: GamePhase;
+  player: Player;
+}) {
+  const { game, handleSaveNoteEdit, noteDraft, setNoteDraft, startingNight } =
+    useGameRouteContext();
+  const phaseLabel = getPhaseLabel({ activeDay: day, activePhase: phase }, startingNight);
 
   return (
     <View style={innerActionRow}>
       <NoteAutocompleteInput
-        accessibilityLabel={`Day ${day} note for ${player.name}`}
+        accessibilityLabel={`${phaseLabel} note for ${player.name}`}
         day={day}
+        phase={phase}
         game={game}
         onChangeText={setNoteDraft}
-        placeholder={`What did ${player.name} say?`}
+        placeholder={`What happened during ${phaseLabel}?`}
         placeholderTextColor={colors.inputPlaceholder}
         style={styles.noteInput}
         value={noteDraft}
       />
       <Pressable
-        accessibilityLabel={`Save day ${day} note for ${player.name}`}
+        accessibilityLabel={`Save ${phaseLabel} note for ${player.name}`}
         accessibilityRole="button"
         onPress={handleSaveNoteEdit}
         style={saveButtonStyle}

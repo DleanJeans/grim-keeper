@@ -16,7 +16,7 @@ import { RoleReference } from '@/components/role-reference';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import type { Game, Player, Role } from '@/types/game';
+import type { Game, GamePhase, Player, Role } from '@/types/game';
 import { GENERIC_CHARACTER_TYPE_ROLE_REFERENCES } from '@/utils/role-utils';
 import { getPlayerNameMatches, getRoleNameMatches } from '@/utils/saved-note-utils';
 
@@ -24,6 +24,7 @@ const SINGLE_LINE_CONTENT_HEIGHT = 24;
 
 export function RoleReferenceNoteLine({
   day,
+  phase,
   game,
   onEdit,
   playerId,
@@ -36,6 +37,7 @@ export function RoleReferenceNoteLine({
   text,
 }: {
   day?: number;
+  phase?: GamePhase;
   game?: Game;
   onEdit?: () => void;
   playerId?: string;
@@ -110,6 +112,7 @@ export function RoleReferenceNoteLine({
       ) : (
         <PlayerNameWithRole
           day={day}
+          phase={phase}
           game={game}
           key={`player-${match.player.id}-${match.start}`}
           player={match.player}

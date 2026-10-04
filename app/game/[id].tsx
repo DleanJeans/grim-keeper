@@ -34,6 +34,7 @@ import { useWebFullscreen } from '@/hooks/use-web-fullscreen';
 import { useDjStore } from '@/store/dj-store';
 import { getGameById, useGameStore } from '@/store/game-store';
 import type {
+  GamePhase,
   KillAttribution,
   PlayerPosition,
   PlayerRoleAssignment,
@@ -121,6 +122,7 @@ export default function GameRoute() {
   const [noteDraft, setNoteDraft] = useState('');
   const [noteEditor, setNoteEditor] = useState<{
     day: number;
+    phase: GamePhase;
     noteId: string | null;
     playerId: string;
   } | null>(null);
@@ -367,9 +369,12 @@ export default function GameRoute() {
   const travelerPlayerIds = new Set(
     countedPlayers
       .filter((player) =>
-        getRolesForDayOrPrevious(player.roleAssignments, activeDayCutoff, gameRoles).some(
-          isTravelerRole,
-        ),
+        getRolesForDayOrPrevious(
+          player.roleAssignments,
+          activeGame.activeDay,
+          gameRoles,
+          activePhase,
+        ).some(isTravelerRole),
       )
       .map((player) => player.id),
   );
@@ -379,22 +384,23 @@ export default function GameRoute() {
   ).length;
   const alivePlayerCount = nonTravelerPlayers.length - deadPlayerCount;
   const travelerPlayerCount = travelerPlayerIds.size;
-  function runDayEdit(edit: () => void, day = recordDay) {
+  function runDayEdit(edit: () => void, day = recordDay, phase = activePhase) {
     const isHistoricalDay = day < lastDayWithData && day !== recordDay;
-    const isHistoricalPhase = activePhaseIndex < latestPhaseIndex;
+    const targetPosition = { activeDay: day, activePhase: phase };
+    const isHistoricalPhase = getPhaseIndex(targetPosition) < latestPhaseIndex;
     const requiresConfirmation = isHistoricalDay || isHistoricalPhase;
-    if (!dayEditLocked && (!requiresConfirmation || day === recordDay)) {
+    if (!dayEditLocked && (!requiresConfirmation || (day === recordDay && phase === activePhase))) {
       edit();
       return;
     }
 
     showDialog(
       requiresConfirmation
-        ? `Edit ${getPhaseLabel(activePosition, startingNight)}?`
+        ? `Edit ${getPhaseLabel(targetPosition, startingNight)}?`
         : 'Day editing locked',
       requiresConfirmation
-        ? `${getPhaseLabel(activePosition, startingNight)} is earlier than the latest phase with data. Changes may affect later game state.`
-        : `${getPhaseLabel(activePosition, startingNight)} is locked. Unlock it to continue editing.`,
+        ? `${getPhaseLabel(targetPosition, startingNight)} is earlier than the latest phase with data. Changes may affect later game state.`
+        : `${getPhaseLabel(targetPosition, startingNight)} is locked. Unlock it to continue editing.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -715,6 +721,7 @@ export default function GameRoute() {
       focusedPlayer.roleAssignments,
       activeGame.activeDay,
       kind,
+      activePhase,
     );
     const currentRoleIds = currentAssignment?.roleIds ?? [];
     const travelerRoleIds = new Set(
@@ -805,14 +812,19 @@ export default function GameRoute() {
       roleAssignmentKind,
       roleIds,
       roleAssignmentKind === 'rumor' ? (rumorSubjectPlayerId ?? undefined) : undefined,
+      activePhase,
     );
     if (!keepOpen) {
       handleCancelRoleAssignment();
     }
   }
 
-  function handleDeleteRumor(sourcePlayerId: string, day: number) {
-    runDayEdit(() => deletePlayerRoleAssignment(activeGame.id, sourcePlayerId, day, 'rumor'), day);
+  function handleDeleteRumor(sourcePlayerId: string, day: number, phase = activePhase) {
+    runDayEdit(
+      () => deletePlayerRoleAssignment(activeGame.id, sourcePlayerId, day, 'rumor', phase),
+      day,
+      phase,
+    );
   }
 
   function handleMovePlayer(playerId: string, position: PlayerPosition) {
@@ -865,25 +877,28 @@ export default function GameRoute() {
     runDayEdit(() => setPlayerDeath(activeGame.id, focusedPlayer.id, null));
   }
 
-  function handleStartEditNote(playerId: string, day: number, noteId: string) {
+  function handleStartEditNote(playerId: string, day: number, noteId: string, phase = activePhase) {
     if (!activeGame.players.some((p) => p.id === playerId)) {
       return;
     }
     const existing = activeGame.playerDayNotes
-      ?.find((entry) => entry.playerId === playerId && entry.day === day)
+      ?.find(
+        (entry) =>
+          entry.playerId === playerId && entry.day === day && (entry.phase ?? 'day') === phase,
+      )
       ?.notes.find((note) => note.id === noteId);
     if (!existing) {
       return;
     }
-    setNoteEditor({ day, noteId, playerId });
+    setNoteEditor({ day, noteId, phase, playerId });
     setNoteDraft(existing.text);
   }
 
-  function handleStartAddNote(playerId: string, day: number) {
+  function handleStartAddNote(playerId: string, day: number, phase = activePhase) {
     if (!activeGame.players.some((player) => player.id === playerId)) {
       return;
     }
-    setNoteEditor({ day, noteId: null, playerId });
+    setNoteEditor({ day, noteId: null, phase, playerId });
     setNoteDraft('');
   }
 
@@ -897,20 +912,31 @@ export default function GameRoute() {
       return;
     }
 
-    runDayEdit(() => {
-      if (noteEditor.noteId) {
-        editPlayerDayNote(
-          activeGame.id,
-          noteEditor.playerId,
-          noteEditor.day,
-          noteEditor.noteId,
-          noteDraft,
-        );
-      } else {
-        addPlayerDayNote(activeGame.id, noteEditor.playerId, noteEditor.day, noteDraft);
-      }
-      handleCancelNoteEdit();
-    }, noteEditor.day);
+    runDayEdit(
+      () => {
+        if (noteEditor.noteId) {
+          editPlayerDayNote(
+            activeGame.id,
+            noteEditor.playerId,
+            noteEditor.day,
+            noteEditor.noteId,
+            noteDraft,
+            noteEditor.phase,
+          );
+        } else {
+          addPlayerDayNote(
+            activeGame.id,
+            noteEditor.playerId,
+            noteEditor.day,
+            noteDraft,
+            noteEditor.phase,
+          );
+        }
+        handleCancelNoteEdit();
+      },
+      noteEditor.day,
+      noteEditor.phase,
+    );
   }
 
   const contextValue: GameRouteContextValue = {
@@ -945,6 +971,7 @@ export default function GameRoute() {
     noteDraft,
     noteEditingNoteId: noteEditor?.noteId ?? null,
     noteEditorDay: noteEditor?.day ?? null,
+    noteEditorPhase: noteEditor?.phase ?? null,
     noteEditorPlayerId: noteEditor?.playerId ?? null,
     addingNewNote: !!noteEditor && noteEditor.noteId === null,
     isRearrangeMode,

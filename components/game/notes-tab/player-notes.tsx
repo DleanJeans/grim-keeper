@@ -4,7 +4,7 @@ import { PlayerActivityRow } from '@/components/game/notes-tab/player-activity-r
 import { gameStyles } from '@/components/game/styles';
 import { RoleReference } from '@/components/role-reference';
 import { colors } from '@/theme/colors';
-import type { Player, Role } from '@/types/game';
+import type { GamePhase, Player, Role } from '@/types/game';
 
 type CommonProps = {
   roles: Role[];
@@ -17,6 +17,7 @@ type ClaimOrConfirmProps = CommonProps & {
 
 type RumorProps = CommonProps & {
   day: number;
+  phase?: GamePhase;
   kind: 'rumor';
   onDelete?: () => void;
   showSource?: boolean;
@@ -45,6 +46,7 @@ export function PlayerNoteRoleAssignment(props: PlayerNoteRoleAssignmentProps) {
           subject: props.subject,
         }}
         day={props.day}
+        phase={props.phase}
       />
     );
   }

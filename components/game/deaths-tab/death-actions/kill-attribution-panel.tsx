@@ -30,16 +30,8 @@ export function KillAttributionPanel({
   player,
   title = 'Kill',
 }: KillAttributionPanelProps) {
-  const {
-    activeDay,
-    activeDayCutoff,
-    activePhase,
-    focusedPlayer,
-    game,
-    players,
-    showRoles,
-    startingNight,
-  } = useGameRouteContext();
+  const { activeDay, activePhase, focusedPlayer, game, players, showRoles, startingNight } =
+    useGameRouteContext();
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const [killerRoleIds, setKillerRoleIds] = useState<string[]>(
     initialAttribution?.killerRoleIds ?? [],
@@ -101,7 +93,9 @@ export function KillAttributionPanel({
         onToggleRole={handleToggleRole}
         roles={killerRoles}
         roleOwnerNames={
-          showRoles ? getRoleOwnerNamesForDay(players, activeDayCutoff, killerRoles) : undefined
+          showRoles
+            ? getRoleOwnerNamesForDay(players, activeDay, killerRoles, activePhase)
+            : undefined
         }
         sections={killerRoleSections}
         selectedRoleIds={killerRoleIds}

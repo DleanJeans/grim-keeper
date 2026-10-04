@@ -8,12 +8,16 @@ import { NotesTabScriptPicker } from '@/components/game/notes-tab/notes-tab-scri
 import { PlayerNoteSection } from '@/components/game/notes-tab/player-note-section';
 import { RoleAssignmentActions } from '@/components/game/notes-tab/role-assignment-actions';
 import { SavedFriendNotesLink } from '@/components/game/notes-tab/saved-friend-notes-link';
+import { Text } from '@/components/text';
 import { getNotesForPlayer, useGameStore } from '@/store/game-store';
+import { colors } from '@/theme/colors';
 import { getFriendByName, getFriendSummaries } from '@/utils/friend-utils';
+import { getPhaseLabel } from '@/utils/game-phase-utils';
 import { getRoleAssignmentForDayOrPrevious, getRolesByIds } from '@/utils/role-utils';
 
 export function NotesTab() {
-  const { activeDayCutoff, focusedPlayer, game, players, showRoles } = useGameRouteContext();
+  const { activeDay, activePhase, focusedPlayer, game, players, showRoles, startingNight } =
+    useGameRouteContext();
   const savedNotes = useGameStore((state) => state.savedNotes);
   const appUserName = useGameStore((state) => state.appUserName);
   const games = useGameStore((state) => state.games);
@@ -26,8 +30,12 @@ export function NotesTab() {
   if (focusedPlayer) {
     const savedFriendNotes = getNotesForPlayer(savedNotes, focusedPlayer.name);
     const claimedRoleIds = new Set(
-      getRoleAssignmentForDayOrPrevious(focusedPlayer.roleAssignments, activeDayCutoff, 'claim')
-        ?.roleIds ?? [],
+      getRoleAssignmentForDayOrPrevious(
+        focusedPlayer.roleAssignments,
+        activeDay,
+        'claim',
+        activePhase,
+      )?.roleIds ?? [],
     );
     const claimedRoles = game.script ? getRolesByIds([...claimedRoleIds], game.script.roles) : [];
     const claimedRoleCounts = showRoles
@@ -65,7 +73,7 @@ export function NotesTab() {
   }
 
   const dayNotes = (game.playerDayNotes ?? [])
-    .filter((entry) => entry.day === activeDayCutoff)
+    .filter((entry) => entry.day === activeDay && (entry.phase ?? 'day') === activePhase)
     .slice()
     .sort((a, b) => a.playerId.localeCompare(b.playerId));
 
@@ -74,6 +82,9 @@ export function NotesTab() {
       <View style={styles.emptyContainer}>
         <NotesTabScriptPicker />
         <RoleAssignmentActions />
+        <Text style={styles.phaseHeader}>
+          {getPhaseLabel({ activeDay, activePhase }, startingNight)}
+        </Text>
       </View>
     );
   }
@@ -84,6 +95,9 @@ export function NotesTab() {
     <View style={styles.container}>
       <NotesTabScriptPicker />
       <RoleAssignmentActions />
+      <Text style={styles.phaseHeader}>
+        {getPhaseLabel({ activeDay, activePhase }, startingNight)}
+      </Text>
       {dayNotes.map((entry) => {
         const player = playerById.get(entry.playerId);
         if (!player) {
@@ -91,9 +105,10 @@ export function NotesTab() {
         }
         return (
           <DayNoteRow
-            day={activeDayCutoff}
+            day={activeDay}
             key={entry.playerId}
             notes={entry.notes}
+            phase={activePhase}
             player={player}
           />
         );
@@ -106,4 +121,11 @@ const styles = StyleSheet.create({
   container: { gap: 10 },
   emptyContainer: { gap: 10 },
   focusedContainer: { gap: 14 },
+  phaseHeader: {
+    color: colors.noteDayHeader,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
 });

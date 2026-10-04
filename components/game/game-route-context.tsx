@@ -53,6 +53,7 @@ export type GameRouteContextValue = {
   noteDraft: string;
   noteEditingNoteId: string | null;
   noteEditorDay: number | null;
+  noteEditorPhase: GamePhase | null;
   noteEditorPlayerId: string | null;
   addingNewNote: boolean;
   isRearrangeMode: boolean;
@@ -83,7 +84,7 @@ export type GameRouteContextValue = {
   handleEditNominationVotes: (nominationId: string, voterIds: string[]) => void;
   handleToggleVoterHighlights: () => void;
   handleChangePhase: (position: GamePhasePosition) => void;
-  runDayEdit: (edit: () => void, day?: number) => void;
+  runDayEdit: (edit: () => void, day?: number, phase?: GamePhase) => void;
   handleResizeMapWidth: (sizeDelta: number) => void;
   handleResizeMapHeight: (sizeDelta: number) => void;
   handleRotateTokens: (angleRadians: number) => void;
@@ -93,15 +94,15 @@ export type GameRouteContextValue = {
   handleCancelRoleAssignment: () => void;
   handleToggleRoleAssignment: (roleId: string, keepOpen?: boolean) => void;
   handleSaveRoleAssignment: (roleIds?: string[]) => void;
-  handleDeleteRumor: (sourcePlayerId: string, day: number) => void;
+  handleDeleteRumor: (sourcePlayerId: string, day: number, phase?: GamePhase) => void;
   handleSelectRumorSource: (sourcePlayerId: string) => void;
   setActiveRoleDisplayModes: (modes: RoleDisplayMode[]) => void;
   setShowRoles: (show: boolean) => void;
   handleSetFocusedPlayerDeath: (kind: 'execution' | 'night', attribution?: KillAttribution) => void;
   handleReviveFocusedPlayer: () => void;
   handleUndoFocusedPlayerDeath: () => void;
-  handleStartEditNote: (playerId: string, day: number, noteId: string) => void;
-  handleStartAddNote: (playerId: string, day: number) => void;
+  handleStartEditNote: (playerId: string, day: number, noteId: string, phase?: GamePhase) => void;
+  handleStartAddNote: (playerId: string, day: number, phase?: GamePhase) => void;
   handleCancelNoteEdit: () => void;
   handleSaveNoteEdit: () => void;
   handleDeleteConversation: (conversationId: string) => void;

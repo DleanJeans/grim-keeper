@@ -1,28 +1,38 @@
 import { StyleSheet, View } from 'react-native';
+
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { PlayerNoteRow } from '@/components/game/notes-tab/player-note-row';
 import type { Player, PlayerDayNoteEntry } from '@/types/game';
+import {
+  getEventPhaseIndex,
+  getPhaseIndex,
+  getPhasePositionAtIndex,
+} from '@/utils/game-phase-utils';
 
 export function PlayerNoteSection({ player }: { player: Player }) {
-  const { activeDayCutoff, game } = useGameRouteContext();
+  const { activeDay, activePhase, game } = useGameRouteContext();
 
-  const lastDay = activeDayCutoff;
-  const notesByDay = new Map<number, PlayerDayNoteEntry[]>();
+  const currentPhaseIndex = getPhaseIndex({ activeDay, activePhase });
+  const notesByPhase = new Map<number, PlayerDayNoteEntry[]>();
   for (const entry of game.playerDayNotes ?? []) {
     if (entry.playerId === player.id) {
-      notesByDay.set(entry.day, entry.notes);
+      notesByPhase.set(getEventPhaseIndex(entry.day, entry.phase ?? 'day'), entry.notes);
     }
   }
-  const days = Array.from({ length: lastDay }, (_, i) => lastDay - i);
-
-  if (lastDay < 1) {
-    return null;
-  }
+  const phasePositions = Array.from({ length: currentPhaseIndex + 1 }, (_, index) =>
+    getPhasePositionAtIndex(currentPhaseIndex - index),
+  );
 
   return (
     <View style={styles.section}>
-      {days.map((day) => (
-        <PlayerNoteRow key={day} day={day} notes={notesByDay.get(day)} player={player} />
+      {phasePositions.map(({ activeDay: day, activePhase: phase }) => (
+        <PlayerNoteRow
+          day={day}
+          key={`${day}-${phase}`}
+          notes={notesByPhase.get(getEventPhaseIndex(day, phase))}
+          phase={phase}
+          player={player}
+        />
       ))}
     </View>
   );

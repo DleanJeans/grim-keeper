@@ -1,11 +1,13 @@
 import unknownRoleIcon from '@/assets/role-icons/unknown.webp';
 import type {
+  GamePhase,
   Player,
   PlayerRoleAssignment,
   Role,
   RoleDisplayMode,
   StoredScript,
 } from '@/types/game';
+import { getEventPhaseIndex } from '@/utils/game-phase-utils';
 import { APP_USER_ID } from '@/utils/object-id';
 
 export const BOTC_ROLE_CATALOG_URL = 'https://release.botc.app/resources/data/roles.json';
@@ -266,8 +268,11 @@ export function getRoleAssignmentForDay(
   assignments: PlayerRoleAssignment[] | undefined,
   day: number,
   kind?: PlayerRoleAssignment['kind'],
+  phase: GamePhase = 'day',
 ) {
-  const dayAssignments = (assignments ?? []).filter((assignment) => assignment.day === day);
+  const dayAssignments = (assignments ?? []).filter(
+    (assignment) => assignment.day === day && (assignment.phase ?? 'day') === phase,
+  );
   if (kind) {
     return getLatestAssignment(dayAssignments, kind);
   }
@@ -280,10 +285,11 @@ export function getRoleAssignmentForDay(
 export function getAssignedRoleIdsForDay(
   assignments: PlayerRoleAssignment[] | undefined,
   day: number,
+  phase: GamePhase = 'day',
 ) {
   return [
-    ...(getRoleAssignmentForDay(assignments, day, 'claim')?.roleIds ?? []),
-    ...(getRoleAssignmentForDay(assignments, day, 'confirm')?.roleIds ?? []),
+    ...(getRoleAssignmentForDay(assignments, day, 'claim', phase)?.roleIds ?? []),
+    ...(getRoleAssignmentForDay(assignments, day, 'confirm', phase)?.roleIds ?? []),
   ].filter((roleId, index, roleIds) => roleIds.indexOf(roleId) === index);
 }
 
@@ -291,6 +297,7 @@ export function getRoleIdsMentionedByOtherPlayersForDay(
   players: Player[],
   excludedPlayerId: string | undefined,
   day: number,
+  phase: GamePhase = 'day',
 ) {
   const roleIds = new Set<string>();
 
@@ -300,7 +307,7 @@ export function getRoleIdsMentionedByOtherPlayersForDay(
     }
 
     for (const assignment of player.roleAssignments ?? []) {
-      if (assignment.day !== day) {
+      if (assignment.day !== day || (assignment.phase ?? 'day') !== phase) {
         continue;
       }
 
@@ -317,22 +324,30 @@ export function getRoleAssignmentForDayOrPrevious(
   assignments: PlayerRoleAssignment[] | undefined,
   day: number,
   kind: PlayerRoleAssignment['kind'],
+  phase: GamePhase = 'day',
 ) {
-  const eligibleAssignments = (assignments ?? []).filter(
-    (assignment) => assignment.kind === kind && assignment.day <= day,
-  );
-  const latestDay = Math.max(...eligibleAssignments.map((assignment) => assignment.day));
-
-  return latestDay > 0 ? getRoleAssignmentForDay(eligibleAssignments, latestDay, kind) : undefined;
+  const activePhaseIndex = getEventPhaseIndex(day, phase);
+  return (assignments ?? [])
+    .filter(
+      (assignment) =>
+        assignment.kind === kind &&
+        getEventPhaseIndex(assignment.day, assignment.phase ?? 'day') <= activePhaseIndex,
+    )
+    .reduce<PlayerRoleAssignment | undefined>(
+      (latest, assignment) =>
+        !latest || isLaterAssignment(assignment, latest) ? assignment : latest,
+      undefined,
+    );
 }
 
 export function getAssignedRoleIdsForDayOrPrevious(
   assignments: PlayerRoleAssignment[] | undefined,
   day: number,
+  phase: GamePhase = 'day',
 ) {
   return [
-    ...(getRoleAssignmentForDayOrPrevious(assignments, day, 'claim')?.roleIds ?? []),
-    ...(getRoleAssignmentForDayOrPrevious(assignments, day, 'confirm')?.roleIds ?? []),
+    ...(getRoleAssignmentForDayOrPrevious(assignments, day, 'claim', phase)?.roleIds ?? []),
+    ...(getRoleAssignmentForDayOrPrevious(assignments, day, 'confirm', phase)?.roleIds ?? []),
   ].filter((roleId, index, roleIds) => roleIds.indexOf(roleId) === index);
 }
 
@@ -340,13 +355,18 @@ export function getRoleNames(roleIds: string[], roles: Role[]) {
   return getRolesByIds(roleIds, roles).map((role) => role.name);
 }
 
-export function getRoleOwnerNamesForDay(players: Player[], day: number, roles: Role[]) {
+export function getRoleOwnerNamesForDay(
+  players: Player[],
+  day: number,
+  roles: Role[],
+  phase: GamePhase = 'day',
+) {
   const roleOwnerNames: Record<string, string[]> = Object.fromEntries(
     roles.map((role) => [role.id, []]),
   );
 
   for (const player of [...players].sort((first, second) => first.seat - second.seat)) {
-    const roleDisplay = getRoleDisplayForDayOrPrevious(player.roleAssignments, day, roles);
+    const roleDisplay = getRoleDisplayForDayOrPrevious(player.roleAssignments, day, roles, phase);
 
     for (const roleId of roleDisplay.roleIds) {
       roleOwnerNames[roleId]?.push(player.name);
@@ -386,6 +406,7 @@ export function getRumorAboutPlayerForDay(
   subjectPlayerId: string,
   day: number,
   roles: Role[],
+  phase: GamePhase = 'day',
 ): RumorAboutPlayer[] {
   const results: RumorAboutPlayer[] = [];
 
@@ -393,7 +414,7 @@ export function getRumorAboutPlayerForDay(
     if (source.id === subjectPlayerId) {
       continue;
     }
-    const rumor = getLatestRumor(source.roleAssignments, day, subjectPlayerId);
+    const rumor = getLatestRumor(source.roleAssignments, day, subjectPlayerId, phase);
     if (!rumor) {
       continue;
     }
@@ -409,15 +430,17 @@ export function getLatestRumorAboutPlayerForDayOrPrevious(
   subjectPlayerId: string,
   day: number,
   roles: Role[],
+  phase: GamePhase = 'day',
 ): RumorAboutPlayer | undefined {
   let latest: { assignment: PlayerRoleAssignment; sourcePlayer: Player } | undefined;
+  const activePhaseIndex = getEventPhaseIndex(day, phase);
 
   for (const sourcePlayer of players) {
     for (const assignment of sourcePlayer.roleAssignments ?? []) {
       if (
         assignment.kind !== 'rumor' ||
         assignment.subjectPlayerId !== subjectPlayerId ||
-        assignment.day > day
+        getEventPhaseIndex(assignment.day, assignment.phase ?? 'day') > activePhaseIndex
       ) {
         continue;
       }
@@ -443,9 +466,16 @@ export function getLatestRumorMapDisplaysForDayOrPrevious(
   players: Player[],
   day: number,
   roles: Role[],
+  phase: GamePhase = 'day',
 ): RumorMapDisplay[] {
   return players.flatMap((subjectPlayer) => {
-    const rumor = getLatestRumorAboutPlayerForDayOrPrevious(players, subjectPlayer.id, day, roles);
+    const rumor = getLatestRumorAboutPlayerForDayOrPrevious(
+      players,
+      subjectPlayer.id,
+      day,
+      roles,
+      phase,
+    );
     return rumor && rumor.sourcePlayer.id !== subjectPlayer.id ? [{ ...rumor, subjectPlayer }] : [];
   });
 }
@@ -456,10 +486,11 @@ export function getRoleDisplayForMode(
   day: number,
   roles: Role[],
   mode: RoleDisplayMode,
+  phase: GamePhase = 'day',
 ): RoleDisplay {
   if (mode === 'all') {
     for (const priorityMode of ['confirm', 'claim', 'rumor', 'guess'] as const) {
-      const roleDisplay = getRoleDisplayForMode(player, players, day, roles, priorityMode);
+      const roleDisplay = getRoleDisplayForMode(player, players, day, roles, priorityMode, phase);
       if (roleDisplay.roleIds.length > 0) {
         return roleDisplay;
       }
@@ -469,11 +500,11 @@ export function getRoleDisplayForMode(
   }
 
   if (mode === 'rumor') {
-    const rumor = getLatestRumorAboutPlayerForDayOrPrevious(players, player.id, day, roles);
+    const rumor = getLatestRumorAboutPlayerForDayOrPrevious(players, player.id, day, roles, phase);
     return rumor ? getRoleDisplayFromAssignment(rumor.assignment, roles) : EMPTY_ROLE_DISPLAY;
   }
 
-  const assignment = getRoleAssignmentForDayOrPrevious(player.roleAssignments, day, mode);
+  const assignment = getRoleAssignmentForDayOrPrevious(player.roleAssignments, day, mode, phase);
   return assignment ? getRoleDisplayFromAssignment(assignment, roles) : EMPTY_ROLE_DISPLAY;
 }
 
@@ -481,12 +512,14 @@ export function getReferencedRoleIdsForDayOrPrevious(
   players: Player[],
   day: number,
   roles: Role[],
+  phase: GamePhase = 'day',
 ) {
   const roleIds = new Set<string>();
 
   for (const player of players) {
     for (const mode of ['claim', 'confirm', 'rumor', 'guess'] as const) {
-      for (const roleId of getRoleDisplayForMode(player, players, day, roles, mode).roleIds) {
+      for (const roleId of getRoleDisplayForMode(player, players, day, roles, mode, phase)
+        .roleIds) {
         roleIds.add(roleId);
       }
     }
@@ -501,13 +534,14 @@ export function getRoleDisplayForModes(
   day: number,
   roles: Role[],
   modes: RoleDisplayMode[],
+  phase: GamePhase = 'day',
 ): RoleDisplay {
   for (const mode of ['all', 'confirm', 'claim', 'rumor', 'guess'] as const) {
     if (!modes.includes(mode)) {
       continue;
     }
 
-    const roleDisplay = getRoleDisplayForMode(player, players, day, roles, mode);
+    const roleDisplay = getRoleDisplayForMode(player, players, day, roles, mode, phase);
     if (roleDisplay.roleIds.length > 0) {
       return roleDisplay;
     }
@@ -537,8 +571,9 @@ export function getRolesForDay(
   assignments: PlayerRoleAssignment[] | undefined,
   day: number,
   roles: Role[],
+  phase: GamePhase = 'day',
 ) {
-  const assignment = getRoleAssignmentForDay(assignments, day);
+  const assignment = getRoleAssignmentForDay(assignments, day, undefined, phase);
   return getRolesForAssignment(assignment, roles);
 }
 
@@ -546,8 +581,9 @@ export function getRolesForDayOrPrevious(
   assignments: PlayerRoleAssignment[] | undefined,
   day: number,
   roles: Role[],
+  phase: GamePhase = 'day',
 ) {
-  return getRoleDisplayForDayOrPrevious(assignments, day, roles).roles;
+  return getRoleDisplayForDayOrPrevious(assignments, day, roles, phase).roles;
 }
 
 export type PlayerEffectiveRole = {
@@ -566,14 +602,25 @@ export function getEffectiveRoleForPlayer(
   player: Player,
   roles: Role[],
   activeDay: number,
+  activePhase: GamePhase = 'day',
 ): PlayerEffectiveRole {
-  const confirmed = getRoleAssignmentForDayOrPrevious(player.roleAssignments, activeDay, 'confirm');
+  const confirmed = getRoleAssignmentForDayOrPrevious(
+    player.roleAssignments,
+    activeDay,
+    'confirm',
+    activePhase,
+  );
   if (confirmed?.roleIds.length) {
     const [role] = getRolesByIds([confirmed.roleIds[0]], roles);
     return { role, kind: 'confirm' };
   }
 
-  const claimed = getRoleAssignmentForDayOrPrevious(player.roleAssignments, activeDay, 'claim');
+  const claimed = getRoleAssignmentForDayOrPrevious(
+    player.roleAssignments,
+    activeDay,
+    'claim',
+    activePhase,
+  );
   if (claimed?.roleIds.length) {
     const [role] = getRolesByIds([claimed.roleIds[0]], roles);
     return { role, kind: 'claim' };
@@ -587,12 +634,22 @@ export function getEffectiveRoleForPlayer(
  * with the app user pinned to bucket 0. Used to order the saved-game role
  * row: app user, then townsfolk, outsiders, minions, demons, then unknown.
  */
-export function getPlayerRoleBucket(player: Player, roles: Role[], activeDay: number): number {
+export function getPlayerRoleBucket(
+  player: Player,
+  roles: Role[],
+  activeDay: number,
+  activePhase: GamePhase = 'day',
+): number {
   if (player.id === APP_USER_ID) {
     return 0;
   }
 
-  const team = getEffectiveRoleForPlayer(player, roles, activeDay).role?.team?.toLocaleLowerCase();
+  const team = getEffectiveRoleForPlayer(
+    player,
+    roles,
+    activeDay,
+    activePhase,
+  ).role?.team?.toLocaleLowerCase();
   switch (team) {
     case 'townsfolk':
       return 1;
@@ -611,9 +668,10 @@ export function getRoleDisplayForDayOrPrevious(
   assignments: PlayerRoleAssignment[] | undefined,
   day: number,
   roles: Role[],
+  phase: GamePhase = 'day',
 ) {
-  const confirmedAssignment = getRoleAssignmentForDayOrPrevious(assignments, day, 'confirm');
-  const claimedAssignment = getRoleAssignmentForDayOrPrevious(assignments, day, 'claim');
+  const confirmedAssignment = getRoleAssignmentForDayOrPrevious(assignments, day, 'confirm', phase);
+  const claimedAssignment = getRoleAssignmentForDayOrPrevious(assignments, day, 'claim', phase);
   const assignment = confirmedAssignment?.roleIds.length ? confirmedAssignment : claimedAssignment;
 
   return {
@@ -790,9 +848,11 @@ function getLatestAssignment(
 }
 
 function isLaterAssignment(assignment: PlayerRoleAssignment, current: PlayerRoleAssignment) {
+  const assignmentPhaseIndex = getEventPhaseIndex(assignment.day, assignment.phase ?? 'day');
+  const currentPhaseIndex = getEventPhaseIndex(current.day, current.phase ?? 'day');
   return (
-    assignment.day > current.day ||
-    (assignment.day === current.day && assignment.updatedAt > current.updatedAt)
+    assignmentPhaseIndex > currentPhaseIndex ||
+    (assignmentPhaseIndex === currentPhaseIndex && assignment.updatedAt > current.updatedAt)
   );
 }
 
@@ -800,12 +860,14 @@ function getLatestRumor(
   assignments: PlayerRoleAssignment[] | undefined,
   day: number,
   subjectPlayerId: string,
+  phase: GamePhase,
 ) {
   return (assignments ?? [])
     .filter(
       (assignment): assignment is PlayerRoleAssignment =>
         assignment.kind === 'rumor' &&
         assignment.day === day &&
+        (assignment.phase ?? 'day') === phase &&
         assignment.subjectPlayerId === subjectPlayerId,
     )
     .reduce<PlayerRoleAssignment | undefined>(

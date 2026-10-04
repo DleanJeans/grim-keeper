@@ -66,7 +66,12 @@ export function GameMap() {
     (activeRoleDisplayModes.includes('all') || activeRoleDisplayModes.includes('rumor')) &&
     showRoles;
   const rumorMapDisplays = showRumorCurves
-    ? getLatestRumorMapDisplaysForDayOrPrevious(players, activeDayCutoff, game.script?.roles ?? [])
+    ? getLatestRumorMapDisplaysForDayOrPrevious(
+        players,
+        activeDay,
+        game.script?.roles ?? [],
+        activePhase,
+      )
     : [];
   const groupRepeats = useMemo(
     () => buildConversationGroupRepeats(conversations, activeDayCutoff),
@@ -233,7 +238,7 @@ export function GameMap() {
           return (
             <PlayerTokenForMap
               key={player.id}
-              activeDay={activeDayCutoff}
+              activeDay={activeDay}
               phaseDay={activeDay}
               activePhase={activePhase}
               activeRoleDisplayModes={activeRoleDisplayModes}
@@ -319,6 +324,7 @@ function PlayerTokenForMap({
     activeDay,
     gameRoles,
     activeRoleDisplayModes,
+    activePhase,
   );
   const deadVoteAvailable = hasDeadVoteAvailable(player, phaseDay, activePhase, conversations);
 

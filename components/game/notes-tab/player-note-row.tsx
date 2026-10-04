@@ -11,29 +11,42 @@ import { RoleReferenceNoteLine } from '@/components/role-reference-note-line';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import type { Conversation, Player, PlayerDayNoteEntry, Role } from '@/types/game';
+import type { Conversation, GamePhase, Player, PlayerDayNoteEntry, Role } from '@/types/game';
+import { getDeathPhase, getPhaseLabel } from '@/utils/game-phase-utils';
 import {
   getRoleAssignmentForDay,
   getRolesByIds,
   getRumorAboutPlayerForDay,
 } from '@/utils/role-utils';
 
+const emptyNominationActivity = {
+  bigWigPlayerIds: [],
+  nomineeIds: [],
+  nominatorIds: [],
+  votedForIds: [],
+};
+
 export function PlayerNoteRow({
   player,
   day,
+  phase,
   notes = [],
 }: {
   player: Player;
   day: number;
+  phase: GamePhase;
   notes?: PlayerDayNoteEntry[];
 }) {
   const {
     addingNewNote,
-    activeDayCutoff,
+    activeDay,
+    activePhase,
     noteEditingNoteId,
     noteEditorDay,
+    noteEditorPhase,
     noteEditorPlayerId,
     game,
+    startingNight,
     showRoles,
     handleDeleteRumor: onDeleteRumor,
     handleStartAddNote: onAddNote,
@@ -41,33 +54,38 @@ export function PlayerNoteRow({
   } = useGameRouteContext();
   const roleCatalog = useGameStore((state) => state.roleCatalog);
 
-  const isEditingRow = noteEditorDay === day && noteEditorPlayerId === player.id;
-  const isActiveDay = day === activeDayCutoff;
+  const isEditingRow =
+    noteEditorDay === day && noteEditorPhase === phase && noteEditorPlayerId === player.id;
+  const isActivePhase = day === activeDay && phase === activePhase;
   const roleAssignment = showRoles
-    ? getRoleAssignmentForDay(player.roleAssignments, day)
+    ? getRoleAssignmentForDay(player.roleAssignments, day, undefined, phase)
     : undefined;
   const roles =
     roleAssignment && game.script ? getRolesByIds(roleAssignment.roleIds, game.script.roles) : [];
   const guessAssignment = showRoles
-    ? getRoleAssignmentForDay(player.roleAssignments, day, 'guess')
+    ? getRoleAssignmentForDay(player.roleAssignments, day, 'guess', phase)
     : undefined;
   const guessedRoles =
     guessAssignment && game.script ? getRolesByIds(guessAssignment.roleIds, game.script.roles) : [];
   const rumorAboutThisPlayer =
     showRoles && game.script
-      ? getRumorAboutPlayerForDay(game.players, player.id, day, game.script.roles)
+      ? getRumorAboutPlayerForDay(game.players, player.id, day, game.script.roles, phase)
       : [];
   const ownRumor =
     showRoles && game.script && player.roleAssignments
       ? player.roleAssignments.filter(
-          (assignment) => assignment.kind === 'rumor' && assignment.day === day,
+          (assignment) =>
+            assignment.kind === 'rumor' &&
+            assignment.day === day &&
+            (assignment.phase ?? 'day') === phase,
         )
       : [];
   const playersById = new Map(game.players.map((candidate) => [candidate.id, candidate]));
-  const dayHeaderStyle = isActiveDay ? styles.noteDayHeaderActive : styles.noteDayHeader;
+  const dayHeaderStyle = isActivePhase ? styles.noteDayHeaderActive : styles.noteDayHeader;
   const activityLines = getPlayerActivityLines(
     player,
     day,
+    phase,
     game.players,
     game.conversations,
     getRolesByIds(game.lorics ?? [], roleCatalog),
@@ -76,12 +94,14 @@ export function PlayerNoteRow({
   return (
     <View style={styles.row}>
       <View style={styles.rowHeader}>
-        <Text style={dayHeaderStyle}>Day {day}</Text>
+        <Text style={dayHeaderStyle}>
+          {getPhaseLabel({ activeDay: day, activePhase: phase }, startingNight)}
+        </Text>
         <Pressable
-          accessibilityLabel={`Add day ${day} note for ${player.name}`}
+          accessibilityLabel={`Add ${getPhaseLabel({ activeDay: day, activePhase: phase }, startingNight)} note for ${player.name}`}
           accessibilityRole="button"
           hitSlop={8}
-          onPress={() => onAddNote(player.id, day)}
+          onPress={() => onAddNote(player.id, day, phase)}
           style={styles.addNoteButton}
         >
           <Plus color={colors.textMuted} size={14} strokeWidth={2.5} />
@@ -116,11 +136,12 @@ export function PlayerNoteRow({
           return (
             <PlayerNoteRoleAssignment
               day={day}
+              phase={phase}
               kind="rumor"
-              key={`own-rumor-${rumor.subjectPlayerId}-${day}`}
+              key={`own-rumor-${rumor.subjectPlayerId}-${day}-${phase}`}
               roles={rumorRoles}
               scriptId={game.script?.id}
-              onDelete={() => onDeleteRumor(player.id, day)}
+              onDelete={() => onDeleteRumor(player.id, day, phase)}
               source={player}
               subject={subject}
             />
@@ -130,11 +151,12 @@ export function PlayerNoteRow({
         {rumorAboutThisPlayer.map((rumor) => (
           <PlayerNoteRoleAssignment
             day={day}
+            phase={phase}
             kind="rumor"
-            key={`rumor-${rumor.sourcePlayer.id}-${day}`}
+            key={`rumor-${rumor.sourcePlayer.id}-${day}-${phase}`}
             roles={rumor.roles}
             scriptId={game.script?.id}
-            onDelete={() => onDeleteRumor(rumor.sourcePlayer.id, day)}
+            onDelete={() => onDeleteRumor(rumor.sourcePlayer.id, day, phase)}
             showSource
             source={rumor.sourcePlayer}
             subject={player}
@@ -142,18 +164,19 @@ export function PlayerNoteRow({
         ))}
 
         {activityLines.map((activity) => (
-          <PlayerActivityRow activity={activity} day={day} key={activity.kind} />
+          <PlayerActivityRow activity={activity} day={day} key={activity.kind} phase={phase} />
         ))}
 
         {notes.map((note) =>
           isEditingRow && noteEditingNoteId === note.id ? (
-            <PlayerDayNoteEditor day={day} key={note.id} player={player} />
+            <PlayerDayNoteEditor day={day} phase={phase} key={note.id} player={player} />
           ) : (
             <RoleReferenceNoteLine
               day={day}
+              phase={phase}
               game={game}
               key={note.id}
-              onEdit={() => onEditNote(player.id, day, note.id)}
+              onEdit={() => onEditNote(player.id, day, note.id, phase)}
               playerId={player.id}
               playerName={player.name}
               players={game.players}
@@ -164,7 +187,9 @@ export function PlayerNoteRow({
             />
           ),
         )}
-        {isEditingRow && addingNewNote ? <PlayerDayNoteEditor day={day} player={player} /> : null}
+        {isEditingRow && addingNewNote ? (
+          <PlayerDayNoteEditor day={day} phase={phase} player={player} />
+        ) : null}
       </View>
     </View>
   );
@@ -222,22 +247,26 @@ const styles = StyleSheet.create({
 function getPlayerActivityLines(
   player: Player,
   day: number,
+  phase: GamePhase,
   players: Player[],
   conversations: Conversation[],
   lorics: Role[],
 ) {
   const playersById = new Map(players.map((candidate) => [candidate.id, candidate]));
-  const killerIds =
-    player.death?.day === day
-      ? (player.death.killerPlayerIds ??
-        (player.death.killerPlayerId ? [player.death.killerPlayerId] : []))
-      : [];
-  const nominationActivity = getNominationActivity(player.id, day, conversations);
+  const death =
+    player.death?.day === day && getDeathPhase(player.death) === phase ? player.death : undefined;
+  const killerIds = death
+    ? (death.killerPlayerIds ?? (death.killerPlayerId ? [death.killerPlayerId] : []))
+    : [];
+  const nominationActivity =
+    phase === 'day'
+      ? getNominationActivity(player.id, day, conversations)
+      : emptyNominationActivity;
   const bigWig = lorics.find((role) => role.id === 'bigwig');
 
   return [
     formatActivity(
-      player.death?.kind === 'execution' ? 'death-execution' : 'death-night',
+      death?.kind === 'execution' ? 'death-execution' : 'death-night',
       'Killed',
       'by',
       killerIds,

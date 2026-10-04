@@ -296,6 +296,7 @@ function isRoleAssignment(value: unknown) {
   return (
     isRecord(value) &&
     isFiniteNumber(value.day) &&
+    isOptionalGamePhase(value.phase) &&
     isString(value.kind) &&
     isStringArray(value.roleIds) &&
     isOptionalString(value.subjectPlayerId) &&
@@ -341,6 +342,7 @@ function isPlayerDayNote(value: unknown): value is PlayerDayNote {
   return (
     isRecord(value) &&
     isFiniteNumber(value.day) &&
+    isOptionalGamePhase(value.phase) &&
     isString(value.playerId) &&
     isString(value.updatedAt) &&
     Array.isArray(value.notes) &&

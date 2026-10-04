@@ -124,18 +124,21 @@ type GameState = GameData & {
     kind: PlayerRoleAssignment['kind'],
     roleIds: string[],
     subjectPlayerId?: string,
+    phase?: PlayerRoleAssignment['phase'],
   ) => void;
   deletePlayerRoleAssignment: (
     gameId: string,
     playerId: string,
     day: number,
     kind: PlayerRoleAssignment['kind'],
+    phase?: PlayerRoleAssignment['phase'],
   ) => void;
   addPlayerDayNote: (
     gameId: string,
     playerId: string,
     day: number,
     text: string,
+    phase?: PlayerDayNote['phase'],
   ) => string | undefined;
   editPlayerDayNote: (
     gameId: string,
@@ -143,8 +146,15 @@ type GameState = GameData & {
     day: number,
     noteId: string,
     text: string,
+    phase?: PlayerDayNote['phase'],
   ) => void;
-  removePlayerDayNote: (gameId: string, playerId: string, day: number, noteId: string) => void;
+  removePlayerDayNote: (
+    gameId: string,
+    playerId: string,
+    day: number,
+    noteId: string,
+    phase?: PlayerDayNote['phase'],
+  ) => void;
   saveNoteForFutureGames: (
     playerName: string,
     roleIds: string[],
@@ -873,9 +883,18 @@ export const useGameStore = create<GameState>()(
           }),
         }));
       },
-      setPlayerRoleAssignment: (gameId, playerId, day, kind, roleIds, subjectPlayerId) => {
+      setPlayerRoleAssignment: (
+        gameId,
+        playerId,
+        day,
+        kind,
+        roleIds,
+        subjectPlayerId,
+        phase = 'day',
+      ) => {
         const assignment: PlayerRoleAssignment = {
           day,
+          phase,
           kind,
           roleIds: [...new Set(roleIds)],
           ...(kind === 'rumor' && subjectPlayerId ? { subjectPlayerId } : {}),
@@ -895,7 +914,9 @@ export const useGameStore = create<GameState>()(
                           roleAssignments: [
                             ...(player.roleAssignments ?? []).filter(
                               (existingAssignment) =>
-                                existingAssignment.day !== day || existingAssignment.kind !== kind,
+                                existingAssignment.day !== day ||
+                                (existingAssignment.phase ?? 'day') !== phase ||
+                                existingAssignment.kind !== kind,
                             ),
                             assignment,
                           ],
@@ -907,7 +928,7 @@ export const useGameStore = create<GameState>()(
           ),
         }));
       },
-      deletePlayerRoleAssignment: (gameId, playerId, day, kind) => {
+      deletePlayerRoleAssignment: (gameId, playerId, day, kind, phase = 'day') => {
         set((state) => ({
           games: state.games.map((game) =>
             game.id === gameId
@@ -919,7 +940,10 @@ export const useGameStore = create<GameState>()(
                       ? {
                           ...player,
                           roleAssignments: (player.roleAssignments ?? []).filter(
-                            (assignment) => assignment.day !== day || assignment.kind !== kind,
+                            (assignment) =>
+                              assignment.day !== day ||
+                              (assignment.phase ?? 'day') !== phase ||
+                              assignment.kind !== kind,
                           ),
                         }
                       : player,
@@ -929,7 +953,7 @@ export const useGameStore = create<GameState>()(
           ),
         }));
       },
-      addPlayerDayNote: (gameId, playerId, day, text) => {
+      addPlayerDayNote: (gameId, playerId, day, text, phase = 'day') => {
         const nextText = text.trim();
         if (!nextText) {
           return undefined;
@@ -957,17 +981,20 @@ export const useGameStore = create<GameState>()(
             return {
               ...game,
               updatedAt,
-              playerDayNotes: upsertPlayerDayNote(game.playerDayNotes, playerId, day, (notes) => [
-                ...notes,
-                newNote,
-              ]),
+              playerDayNotes: upsertPlayerDayNote(
+                game.playerDayNotes,
+                playerId,
+                day,
+                phase,
+                (notes) => [...notes, newNote],
+              ),
             };
           }),
         }));
 
         return noteId;
       },
-      editPlayerDayNote: (gameId, playerId, day, noteId, text) => {
+      editPlayerDayNote: (gameId, playerId, day, noteId, text, phase = 'day') => {
         const nextText = text.trim();
         const updatedAt = new Date().toISOString();
 
@@ -979,18 +1006,23 @@ export const useGameStore = create<GameState>()(
             return {
               ...game,
               updatedAt,
-              playerDayNotes: upsertPlayerDayNote(game.playerDayNotes, playerId, day, (notes) =>
-                nextText
-                  ? notes.map((note) =>
-                      note.id === noteId ? { ...note, text: nextText, updatedAt } : note,
-                    )
-                  : notes.filter((note) => note.id !== noteId),
+              playerDayNotes: upsertPlayerDayNote(
+                game.playerDayNotes,
+                playerId,
+                day,
+                phase,
+                (notes) =>
+                  nextText
+                    ? notes.map((note) =>
+                        note.id === noteId ? { ...note, text: nextText, updatedAt } : note,
+                      )
+                    : notes.filter((note) => note.id !== noteId),
               ),
             };
           }),
         }));
       },
-      removePlayerDayNote: (gameId, playerId, day, noteId) => {
+      removePlayerDayNote: (gameId, playerId, day, noteId, phase = 'day') => {
         const updatedAt = new Date().toISOString();
 
         set((state) => ({
@@ -1001,8 +1033,12 @@ export const useGameStore = create<GameState>()(
             return {
               ...game,
               updatedAt,
-              playerDayNotes: upsertPlayerDayNote(game.playerDayNotes, playerId, day, (notes) =>
-                notes.filter((note) => note.id !== noteId),
+              playerDayNotes: upsertPlayerDayNote(
+                game.playerDayNotes,
+                playerId,
+                day,
+                phase,
+                (notes) => notes.filter((note) => note.id !== noteId),
               ),
             };
           }),
@@ -1603,13 +1639,16 @@ function upsertPlayerDayNote(
   playerDayNotes: PlayerDayNote[] | undefined,
   playerId: string,
   day: number,
+  phase: NonNullable<PlayerDayNote['phase']>,
   updateNotes: (notes: PlayerDayNoteEntry[]) => PlayerDayNoteEntry[],
 ) {
   const existingNotes = playerDayNotes ?? [];
-  const existing = existingNotes.find((entry) => entry.playerId === playerId && entry.day === day);
+  const existing = existingNotes.find(
+    (entry) => entry.playerId === playerId && entry.day === day && (entry.phase ?? 'day') === phase,
+  );
   const notes = updateNotes(existing?.notes ?? []);
   const otherEntries = existingNotes.filter(
-    (entry) => entry.playerId !== playerId || entry.day !== day,
+    (entry) => entry.playerId !== playerId || entry.day !== day || (entry.phase ?? 'day') !== phase,
   );
 
   if (notes.length === 0) {
@@ -1620,6 +1659,7 @@ function upsertPlayerDayNote(
     ...otherEntries,
     {
       day,
+      phase,
       playerId,
       notes,
       updatedAt: new Date().toISOString(),

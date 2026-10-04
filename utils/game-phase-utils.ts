@@ -70,12 +70,12 @@ export function getLatestPhaseWithData(game: Game): GamePhasePosition {
   }
 
   for (const entry of game.playerDayNotes ?? []) {
-    include(entry.day, 'day');
+    include(entry.day, entry.phase ?? 'day');
   }
 
   for (const player of game.players) {
     for (const assignment of player.roleAssignments ?? []) {
-      include(assignment.day, 'day');
+      include(assignment.day, assignment.phase ?? 'day');
     }
 
     if (player.death) {

@@ -16,7 +16,8 @@ import {
 
 export function SushiBuffetRoleAssignmentDialog() {
   const {
-    activeDayCutoff,
+    activeDay,
+    activePhase,
     focusedPlayer,
     game,
     handleToggleRoleAssignment,
@@ -27,7 +28,7 @@ export function SushiBuffetRoleAssignmentDialog() {
   } = useGameRouteContext();
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const [searchQuery, setSearchQuery] = useState('');
-  const assignmentKey = `${focusedPlayer?.id ?? ''}:${game.activeDay}:${roleAssignmentKind ?? ''}`;
+  const assignmentKey = `${focusedPlayer?.id ?? ''}:${activeDay}:${activePhase}:${roleAssignmentKind ?? ''}`;
 
   useEffect(() => {
     if (assignmentKey) {
@@ -37,8 +38,10 @@ export function SushiBuffetRoleAssignmentDialog() {
 
   const mentionedRoleIds = useMemo(
     () =>
-      new Set(getRoleIdsMentionedByOtherPlayersForDay(players, focusedPlayer?.id, activeDayCutoff)),
-    [activeDayCutoff, focusedPlayer?.id, players],
+      new Set(
+        getRoleIdsMentionedByOtherPlayersForDay(players, focusedPlayer?.id, activeDay, activePhase),
+      ),
+    [activeDay, activePhase, focusedPlayer?.id, players],
   );
 
   const roles = useMemo(() => {
@@ -76,7 +79,7 @@ export function SushiBuffetRoleAssignmentDialog() {
     return alwaysAvailable || (normalizedQuery.length > 0 && matchesSearch);
   });
   const roleOwnerNames = showRoles
-    ? getRoleOwnerNamesForDay(players, activeDayCutoff, roles)
+    ? getRoleOwnerNamesForDay(players, activeDay, roles, activePhase)
     : undefined;
 
   return (

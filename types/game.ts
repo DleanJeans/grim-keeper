@@ -37,6 +37,8 @@ export type StoredScript = {
 
 export type PlayerRoleAssignment = {
   day: number;
+  /** Missing on older saves, which recorded role assignments during the day. */
+  phase?: GamePhase;
   kind: 'claim' | 'confirm' | 'guess' | 'rumor';
   roleIds: string[];
   /** Only set for kind === 'rumor'. Identifies the player the rumor is about. */
@@ -97,6 +99,8 @@ export type PlayerDayNoteEntry = {
 
 export type PlayerDayNote = {
   day: number;
+  /** Missing on older saves, which recorded notes during the day. */
+  phase?: GamePhase;
   playerId: string;
   notes: PlayerDayNoteEntry[];
   updatedAt: string;
