@@ -6,7 +6,7 @@ import { useGameRouteContext } from '@/components/game/game-route-context';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import type { Player, Role, StoredScript } from '@/types/game';
+import type { GamePhase, Player, Role, StartingNight, StoredScript } from '@/types/game';
 import { GENERIC_KILLER_ROLES, getRolesByIds } from '@/utils/role-utils';
 
 import { collectLogEntries } from './entries';
@@ -14,16 +14,25 @@ import { DeathLogRow, getLogEntryKey } from './row';
 
 type DeathLogProps = {
   activeDay: number;
+  activePhase: GamePhase;
   players: Player[];
   script?: StoredScript;
+  startingNight: StartingNight;
 };
 
-export function DeathLog({ activeDay, players, script }: DeathLogProps) {
+export function DeathLog({
+  activeDay,
+  activePhase,
+  players,
+  script,
+  startingNight,
+}: DeathLogProps) {
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const { game, runDayEdit } = useGameRouteContext();
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const setPlayerDeath = useGameStore((state) => state.setPlayerDeath);
-  const entries = collectLogEntries(players, activeDay);
+  const activePosition = { activeDay, activePhase };
+  const entries = collectLogEntries(players, activePosition);
   const playerById = new Map(players.map((player) => [player.id, player]));
 
   return (
@@ -50,10 +59,11 @@ export function DeathLog({ activeDay, players, script }: DeathLogProps) {
           return (
             <View key={getLogEntryKey(entry)} style={styles.entry}>
               <DeathLogRow
-                activeDay={activeDay}
+                activePosition={activePosition}
                 entry={entry}
                 killerDescription={killerDescription}
                 scriptId={script?.id}
+                startingNight={startingNight}
                 onEdit={
                   'death' in entry && entry.death.kind === 'night'
                     ? () => setEditingPlayerId(isEditing ? null : entry.player.id)

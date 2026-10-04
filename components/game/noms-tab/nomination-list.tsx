@@ -15,6 +15,8 @@ export function NominationList() {
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const {
     activeDay,
+    activeDayCutoff,
+    activePhase,
     conversations,
     focusedPlayer,
     focusedPlayerIsDead,
@@ -32,7 +34,7 @@ export function NominationList() {
   } = useGameRouteContext();
   const playerById = new Map(players.map((player) => [player.id, player]));
   const nominations = conversations.filter(
-    (conversation) => conversation.day === activeDay && conversation.kind === 'nomination',
+    (conversation) => conversation.day === activeDayCutoff && conversation.kind === 'nomination',
   );
   const voterIds = [...new Set(nominations.flatMap((nomination) => nomination.voterIds ?? []))];
   const hasFlowerGirl = game.script?.roles.some(isFlowerGirlRole) ?? false;
@@ -54,7 +56,7 @@ export function NominationList() {
 
   return (
     <View style={{ gap: 10 }}>
-      {focusedPlayer && !trackingMode && !votingNominationId ? (
+      {activePhase === 'day' && focusedPlayer && !trackingMode && !votingNominationId ? (
         <View style={innerActionRow}>
           <NominateButton
             alreadyNominatedName={focusedPlayerNomineeName}
@@ -78,13 +80,16 @@ export function NominationList() {
           }}
         >
           <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 21 }}>
-            No nominations logged for Day {activeDay}.
+            {activeDayCutoff < 1
+              ? 'No nominations logged before Day 1.'
+              : `No nominations logged for Day ${activeDayCutoff}.`}
           </Text>
         </View>
       ) : (
         nominations.map((nomination, index) => (
           <NominationRow
             activeDay={activeDay}
+            activePhase={activePhase}
             bigWig={bigWig}
             index={index}
             key={nomination.id}
@@ -122,7 +127,7 @@ export function NominationList() {
           />
         ))
       )}
-      {hasFlowerGirl ? (
+      {activePhase === 'day' && hasFlowerGirl ? (
         <HighlightVotersButton
           active={voterHighlightsActive}
           disabled={voterIds.length === 0 || !!trackingMode || !!votingNominationId}

@@ -9,6 +9,7 @@ import type {
   Conversation,
   Friend,
   Game,
+  GamePhase,
   GameResult,
   Player,
   PlayerDayNote,
@@ -19,6 +20,7 @@ import type {
   PlayerRoleAssignment,
   Role,
   SavedNote,
+  StartingNight,
   StoredScript,
 } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
@@ -28,6 +30,7 @@ import {
   getFriendSummaries,
   hasFriendName,
 } from '@/utils/friend-utils';
+import { getDeathPhase, getEventPhaseIndex, getGameStartingNight } from '@/utils/game-phase-utils';
 import { type GameTransfer, mergeGameTransfer } from '@/utils/game-transfer';
 import {
   clampMapHeight,
@@ -84,6 +87,7 @@ type CreateGameInput = {
 
 export type GameData = {
   appUserName: string;
+  defaultStartingNight?: StartingNight;
   games: Game[];
   friends: Friend[];
   roleCatalog: Role[];
@@ -92,6 +96,7 @@ export type GameData = {
 };
 
 type GameState = GameData & {
+  defaultStartingNight: StartingNight;
   addFriend: (name: string) => void;
   renameFriend: (friendId: string, currentName: string, nextName: string) => string | undefined;
   createGame: (input: CreateGameInput) => Game;
@@ -158,6 +163,8 @@ type GameState = GameData & {
   setCharacterTypeCounts: (gameId: string, counts?: CharacterTypeCounts) => void;
   setGameResult: (gameId: string, result?: GameResult) => void;
   setActiveDay: (gameId: string, day: number) => void;
+  setGamePhase: (gameId: string, day: number, phase: GamePhase) => void;
+  setDefaultStartingNight: (night: StartingNight) => void;
   updatePlayerPosition: (gameId: string, playerId: string, position: PlayerPosition) => void;
   updatePlayerPositions: (
     gameId: string,
@@ -195,6 +202,7 @@ export const useGameStore = create<GameState>()(
   persist(
     (set, get) => ({
       appUserName: 'You',
+      defaultStartingNight: 1,
       games: [],
       friends: [],
       roleCatalog: [],
@@ -325,6 +333,9 @@ export const useGameStore = create<GameState>()(
         sushiRoleIds,
       }) => {
         const now = new Date().toISOString();
+        const startingNight = getGameStartingNight({
+          startingNight: get().defaultStartingNight,
+        });
         const appUserName = normalizePlayerName(get().appUserName) || 'You';
         const appUserKey = appUserName.toLocaleLowerCase();
         const storytellerNameKey = normalizePlayerName(storyteller?.name ?? '').toLocaleLowerCase();
@@ -370,6 +381,8 @@ export const useGameStore = create<GameState>()(
           createdAt: now,
           updatedAt: now,
           activeDay: 1,
+          activePhase: 'night',
+          startingNight,
           mapWidth: normalizedMapWidth,
           mapHeight: normalizedMapHeight,
           tokenSize,
@@ -1174,12 +1187,28 @@ export const useGameStore = create<GameState>()(
               ? {
                   ...game,
                   activeDay: Math.max(1, day),
+                  activePhase: 'day',
                   updatedAt: new Date().toISOString(),
                 }
               : game,
           ),
         }));
       },
+      setGamePhase: (gameId, day, phase) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? {
+                  ...game,
+                  activeDay: Math.max(1, day),
+                  activePhase: phase,
+                  updatedAt: new Date().toISOString(),
+                }
+              : game,
+          ),
+        }));
+      },
+      setDefaultStartingNight: (night) => set({ defaultStartingNight: night === 0 ? 0 : 1 }),
       updatePlayerPosition: (gameId, playerId, position) => {
         set((state) => ({
           games: state.games.map((game) =>
@@ -1354,6 +1383,7 @@ export const useGameStore = create<GameState>()(
       clearData: () => {
         set({
           appUserName: 'You',
+          defaultStartingNight: 1,
           games: [],
           friends: [],
           roleCatalog: [],
@@ -1366,7 +1396,15 @@ export const useGameStore = create<GameState>()(
         const roleCatalog = migratedData.roleCatalog.map(normalizeRoleImageUrls);
         set({
           ...migratedData,
-          games: restoreSushiBuffetScriptRoles(migratedData.games, roleCatalog),
+          defaultStartingNight: migratedData.defaultStartingNight ?? get().defaultStartingNight,
+          games: restoreSushiBuffetScriptRoles(
+            migratedData.games.map((game) => ({
+              ...game,
+              activePhase: game.activePhase ?? 'day',
+              startingNight: game.startingNight ?? 1,
+            })),
+            roleCatalog,
+          ),
           roleCatalog,
           scripts: migratedData.scripts.filter((script) => script.id !== SUSHI_BUFFET_SCRIPT_ID),
         });
@@ -1383,7 +1421,7 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'grim-keeper-game-store-v1',
-      version: 14,
+      version: 15,
       storage: createJSONStorage(() => (Platform.OS === 'web' ? webStorage : localStorage)),
       migrate: (persistedState, version) => {
         if (!persistedState) {
@@ -1405,7 +1443,17 @@ export const useGameStore = create<GameState>()(
                 return migrateObjectIds(v4State) as Partial<GameState>;
               })();
 
-        return compactPersistedState(migratedState as PersistedGameState);
+        const phaseDefaults = {
+          ...migratedState,
+          defaultStartingNight: migratedState.defaultStartingNight === 0 ? 0 : 1,
+          games: migratedState.games?.map((game) => ({
+            ...game,
+            activePhase: game.activePhase ?? 'day',
+            startingNight: game.startingNight ?? 1,
+          })),
+        };
+
+        return compactPersistedState(phaseDefaults as PersistedGameState);
       },
       merge: (persistedState, currentState) => {
         const state = (persistedState as PersistedGameState | undefined) ?? {};
@@ -1437,6 +1485,7 @@ export const useGameStore = create<GameState>()(
         return {
           ...currentState,
           ...state,
+          defaultStartingNight: state.defaultStartingNight === 0 ? 0 : 1,
           games: restoreDuplicateScriptImages(games, scripts),
           roleCatalog,
           scripts,
@@ -1444,6 +1493,7 @@ export const useGameStore = create<GameState>()(
       },
       partialize: (state) => ({
         appUserName: state.appUserName,
+        defaultStartingNight: state.defaultStartingNight,
         friends: state.friends,
         games: serializeGameScripts(
           stripDuplicateScriptImages(state.games, state.scripts),
@@ -1522,12 +1572,20 @@ function synchronizeDeadVoteUsage(game: Game): Game {
     if (conversation.kind !== 'nomination') continue;
     for (const voterId of conversation.voterIds ?? []) {
       const voter = game.players.find((player) => player.id === voterId);
-      if (voter?.death && voter.death.day < conversation.day) {
+      if (voter?.death) {
+        const deathPhaseIndex = getEventPhaseIndex(voter.death.day, getDeathPhase(voter.death));
+        const nominationPhaseIndex = getEventPhaseIndex(conversation.day, 'day');
+        const revivePhaseIndex = voter.revive
+          ? getEventPhaseIndex(voter.revive.day, 'day')
+          : undefined;
         const revived =
-          voter.revive &&
-          voter.revive.day >= voter.death.day &&
-          voter.revive.day <= conversation.day;
-        if (!revived) usedPlayerIds.add(voterId);
+          revivePhaseIndex !== undefined &&
+          revivePhaseIndex >= deathPhaseIndex &&
+          revivePhaseIndex <= nominationPhaseIndex;
+
+        if (deathPhaseIndex < nominationPhaseIndex && !revived) {
+          usedPlayerIds.add(voterId);
+        }
       }
     }
   }

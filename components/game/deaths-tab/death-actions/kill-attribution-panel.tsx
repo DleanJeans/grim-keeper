@@ -10,6 +10,7 @@ import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { KillAttribution, Player, Role } from '@/types/game';
+import { getPhaseLabel } from '@/utils/game-phase-utils';
 import { getKillerRoleOptions, getRoleOwnerNamesForDay, getRolesByIds } from '@/utils/role-utils';
 
 type KillAttributionPanelProps = {
@@ -29,7 +30,16 @@ export function KillAttributionPanel({
   player,
   title = 'Kill',
 }: KillAttributionPanelProps) {
-  const { activeDay, focusedPlayer, game, players, showRoles } = useGameRouteContext();
+  const {
+    activeDay,
+    activeDayCutoff,
+    activePhase,
+    focusedPlayer,
+    game,
+    players,
+    showRoles,
+    startingNight,
+  } = useGameRouteContext();
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const [killerRoleIds, setKillerRoleIds] = useState<string[]>(
     initialAttribution?.killerRoleIds ?? [],
@@ -82,7 +92,8 @@ export function KillAttributionPanel({
           />
         </View>
         <Text selectable style={{ color: colors.textMuted, fontSize: 13, lineHeight: 18 }}>
-          Day {activeDay}. Optionally record who killed them and which roles were responsible.
+          {getPhaseLabel({ activeDay, activePhase }, startingNight)}. Optionally record who killed
+          them and which roles were responsible.
         </Text>
       </View>
       <RolePicker
@@ -90,7 +101,7 @@ export function KillAttributionPanel({
         onToggleRole={handleToggleRole}
         roles={killerRoles}
         roleOwnerNames={
-          showRoles ? getRoleOwnerNamesForDay(players, activeDay, killerRoles) : undefined
+          showRoles ? getRoleOwnerNamesForDay(players, activeDayCutoff, killerRoles) : undefined
         }
         sections={killerRoleSections}
         selectedRoleIds={killerRoleIds}

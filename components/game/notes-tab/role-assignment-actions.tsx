@@ -29,6 +29,7 @@ const GENERIC_ASSIGNMENT_ROLES = GENERIC_CHARACTER_TYPE_ROLE_REFERENCES.filter((
 
 export function RoleAssignmentActions() {
   const {
+    activeDayCutoff,
     focusedPlayer,
     game,
     handleCancelRoleAssignment,
@@ -59,7 +60,7 @@ export function RoleAssignmentActions() {
   const regularRoles = assignmentRoles.filter((role) => !isTravelerRole(role));
   const confirmedRoleDisplay = getRoleDisplayForDayOrPrevious(
     focusedPlayer.roleAssignments?.filter((assignment) => assignment.kind === 'confirm'),
-    game.activeDay,
+    activeDayCutoff,
     game.script.roles,
   );
   const confirmedTravelerRole = confirmedRoleDisplay.roles.find(isTravelerRole);
@@ -71,7 +72,7 @@ export function RoleAssignmentActions() {
     : [];
   const isTravelerClaim = roleAssignmentKind === 'claim' && !!confirmedTravelerRole;
   const roleOwnerNames = showRoles
-    ? getRoleOwnerNamesForDay(players, game.activeDay, selectableRoles)
+    ? getRoleOwnerNamesForDay(players, activeDayCutoff, selectableRoles)
     : undefined;
   const rumorSubject = rumorSubjectPlayerId
     ? (players.find((player) => player.id === rumorSubjectPlayerId) ?? null)

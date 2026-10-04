@@ -4,9 +4,9 @@ import { PlayerNoteRow } from '@/components/game/notes-tab/player-note-row';
 import type { Player, PlayerDayNoteEntry } from '@/types/game';
 
 export function PlayerNoteSection({ player }: { player: Player }) {
-  const { activeDay, game, lastDayWithData } = useGameRouteContext();
+  const { activeDayCutoff, game } = useGameRouteContext();
 
-  const lastDay = Math.max(lastDayWithData, activeDay);
+  const lastDay = activeDayCutoff;
   const notesByDay = new Map<number, PlayerDayNoteEntry[]>();
   for (const entry of game.playerDayNotes ?? []) {
     if (entry.playerId === player.id) {
@@ -15,7 +15,7 @@ export function PlayerNoteSection({ player }: { player: Player }) {
   }
   const days = Array.from({ length: lastDay }, (_, i) => lastDay - i);
 
-  if (lastDay === 0) {
+  if (lastDay < 1) {
     return null;
   }
 

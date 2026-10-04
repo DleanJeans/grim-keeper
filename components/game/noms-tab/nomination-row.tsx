@@ -10,11 +10,12 @@ import { NominationPlayers } from '@/components/game/noms-tab/nomination-players
 import { VoterList } from '@/components/game/noms-tab/voter-list';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { Conversation, Player, Role } from '@/types/game';
+import type { Conversation, GamePhase, Player, Role } from '@/types/game';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 
 type NominationRowProps = {
   activeDay: number;
+  activePhase: GamePhase;
   bigWig?: Role;
   index: number;
   nomination: Conversation;
@@ -29,6 +30,7 @@ type NominationRowProps = {
 
 export function NominationRow({
   activeDay,
+  activePhase,
   bigWig,
   index,
   nomination,
@@ -50,10 +52,10 @@ export function NominationRow({
   const selectedBigWigPlayer = nomination.bigWigPlayerId
     ? playerById.get(nomination.bigWigPlayerId)
     : undefined;
-  const nomineeIsDead = nominee ? isPlayerCurrentlyDead(nominee, activeDay) : false;
+  const nomineeIsDead = nominee ? isPlayerCurrentlyDead(nominee, activeDay, activePhase) : false;
   const nomineeWasExecuted = nomineeIsDead && nominee?.death?.kind === 'execution';
   const selectedBigWigPlayerIsDead = selectedBigWigPlayer
-    ? isPlayerCurrentlyDead(selectedBigWigPlayer, activeDay)
+    ? isPlayerCurrentlyDead(selectedBigWigPlayer, activeDay, activePhase)
     : false;
 
   return (
@@ -72,7 +74,7 @@ export function NominationRow({
             players={players}
             selectedPlayer={selectedBigWigPlayer}
           />
-          {selectedBigWigPlayer ? (
+          {activePhase === 'night' && selectedBigWigPlayer ? (
             <KillBigWigButton
               disabled={selectedBigWigPlayerIsDead}
               onPress={() => onKillBigWig(selectedBigWigPlayer, bigWig)}
@@ -85,7 +87,7 @@ export function NominationRow({
       <View style={styles.actions}>
         <EditVotesButton onPress={() => onEditVotes(voterIds)} voteCount={voterIds.length} />
         <View style={styles.rightActions}>
-          {nominee ? (
+          {activePhase === 'day' && nominee ? (
             nomineeWasExecuted ? (
               <UndoDeathButton
                 compact

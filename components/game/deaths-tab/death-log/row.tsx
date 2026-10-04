@@ -6,6 +6,8 @@ import { RoleReference } from '@/components/role-reference';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Player, PlayerDeath, PlayerRevive, Role } from '@/types/game';
+import type { GamePhasePosition } from '@/utils/game-phase-utils';
+import { getEventPhaseIndex, getPhaseIndex } from '@/utils/game-phase-utils';
 
 export type DeathLogEntry = {
   death: PlayerDeath;
@@ -34,31 +36,36 @@ export function getLogEntryKey(entry: DeathLogEntry | ReviveLogEntry): string {
 }
 
 export function DeathLogRow({
-  activeDay,
+  activePosition,
   entry,
   killerDescription,
   onEdit,
+  startingNight,
   scriptId,
 }: {
-  activeDay: number;
+  activePosition: GamePhasePosition;
   entry: DeathLogEntry | ReviveLogEntry;
   killerDescription?: KillerDescription;
   onEdit?: () => void;
+  startingNight: 0 | 1;
   scriptId?: string;
 }) {
   const isDeath = 'death' in entry;
   const isExecution = isDeath && entry.death.kind === 'execution';
   const eventDay = isDeath ? entry.death.day : entry.revive.day;
+  const eventPhase = isDeath && entry.death.kind === 'night' ? 'night' : 'day';
+  const isActiveEvent = getEventPhaseIndex(eventDay, eventPhase) === getPhaseIndex(activePosition);
   const accent = !isDeath ? reviveColor : isExecution ? executionColor : nightColor;
   const Icon = !isDeath ? HeartPulse : isExecution ? FlameKindling : Skull;
   const actionLabel = !isDeath ? 'Revived' : isExecution ? 'Executed' : 'Killed';
-  const dayLabel = `${!isDeath ? 'R' : isExecution ? 'D' : 'N'}${eventDay}`;
+  const labelDay = isDeath && !isExecution ? eventDay + startingNight - 1 : eventDay;
+  const dayLabel = `${!isDeath ? 'R' : isExecution ? 'D' : 'N'}${labelDay}`;
 
   return (
     <View
       style={[
         styles.row,
-        eventDay === activeDay && {
+        isActiveEvent && {
           backgroundColor: colors.surfaceRaised,
           borderColor: accent,
         },

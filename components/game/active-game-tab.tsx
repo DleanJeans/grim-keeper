@@ -27,7 +27,13 @@ export function ActiveGameTab() {
     return (
       <>
         <FocusedDeathActionPanel />
-        <DeathLog activeDay={game.activeDay} players={game.players} script={game.script} />
+        <DeathLog
+          activeDay={game.activeDay}
+          activePhase={game.activePhase ?? 'day'}
+          players={game.players}
+          script={game.script}
+          startingNight={game.startingNight ?? 1}
+        />
       </>
     );
   }

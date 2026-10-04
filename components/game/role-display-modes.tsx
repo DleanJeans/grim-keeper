@@ -23,7 +23,7 @@ const roleDisplayModes: {
 type CountedRoleDisplayMode = Exclude<RoleDisplayMode, 'all'>;
 
 export function RoleDisplayModes() {
-  const { activeDay, activeRoleDisplayModes, game, setActiveRoleDisplayModes, showRoles } =
+  const { activeDayCutoff, activeRoleDisplayModes, game, setActiveRoleDisplayModes, showRoles } =
     useGameRouteContext();
 
   if (!game.script || !showRoles) {
@@ -31,11 +31,14 @@ export function RoleDisplayModes() {
   }
 
   const roleDisplayModeCounts: Record<CountedRoleDisplayMode, number> = {
-    claim: countRoleAssignments(game.players, activeDay, 'claim'),
-    confirm: countRoleAssignments(game.players, activeDay, 'confirm'),
-    guess: countRoleAssignments(game.players, activeDay, 'guess'),
-    rumor: getLatestRumorMapDisplaysForDayOrPrevious(game.players, activeDay, game.script.roles)
-      .length,
+    claim: countRoleAssignments(game.players, activeDayCutoff, 'claim'),
+    confirm: countRoleAssignments(game.players, activeDayCutoff, 'confirm'),
+    guess: countRoleAssignments(game.players, activeDayCutoff, 'guess'),
+    rumor: getLatestRumorMapDisplaysForDayOrPrevious(
+      game.players,
+      activeDayCutoff,
+      game.script.roles,
+    ).length,
   };
 
   return (

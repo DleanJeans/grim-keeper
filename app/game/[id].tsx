@@ -39,6 +39,14 @@ import type {
   PlayerRoleAssignment,
   RoleDisplayMode,
 } from '@/types/game';
+import {
+  getDayCutoffForPhase,
+  getGameActivePhase,
+  getGameStartingNight,
+  getLatestPhaseWithData,
+  getPhaseIndex,
+  getPhaseLabel,
+} from '@/utils/game-phase-utils';
 import { getLastDayWithData } from '@/utils/game-utils';
 import {
   clampMapHeight,
@@ -97,6 +105,7 @@ export default function GameRoute() {
   const updateNominationVotes = useGameStore((state) => state.updateNominationVotes);
   const deleteConversation = useGameStore((state) => state.deleteConversation);
   const setActiveDay = useGameStore((state) => state.setActiveDay);
+  const setGamePhase = useGameStore((state) => state.setGamePhase);
   const setMapDimensions = useGameStore((state) => state.setMapDimensions);
   const setTokenSize = useGameStore((state) => state.setTokenSize);
   const setCharacterTypeCounts = useGameStore((state) => state.setCharacterTypeCounts);
@@ -138,10 +147,18 @@ export default function GameRoute() {
   );
   const game = getGameById(games, id);
   const lastDayWithData = game ? getLastDayWithData(game) : 1;
+  const startingNight = game ? getGameStartingNight(game) : 1;
+  const activePhase = game ? getGameActivePhase(game) : 'day';
+  const phasePosition = game ? { activeDay: game.activeDay, activePhase } : null;
+  const activePhaseIndex = phasePosition ? getPhaseIndex(phasePosition) : 0;
+  const activeDayCutoff = phasePosition ? getDayCutoffForPhase(phasePosition) : 1;
+  const recordDay = phasePosition?.activeDay ?? 1;
+  const latestPhase = game ? getLatestPhaseWithData(game) : null;
+  const latestPhaseIndex = latestPhase ? getPhaseIndex(latestPhase) : 0;
 
   useEffect(() => {
-    setDayEditLocked(!!game && game.activeDay < lastDayWithData);
-  }, [game, lastDayWithData]);
+    setDayEditLocked(!!game && activePhaseIndex < latestPhaseIndex);
+  }, [activePhaseIndex, game, latestPhaseIndex]);
   const viewportMapWidth = getDefaultMapWidth(width);
   const fallbackMapDimensions = useRef<{
     gameId: string;
@@ -218,22 +235,22 @@ export default function GameRoute() {
     },
   });
 
-  // Always open the saved game on its last day with data, unless a deep link
-  // requested a specific day.
+  // Open at the latest phase with data, unless a deep link requested a day.
   useEffect(() => {
     if (!game || openedGameId.current === game.id) return;
     openedGameId.current = game.id;
     const requestedDay = Number.parseInt(dayParam ?? '', 10);
     if (Number.isFinite(requestedDay) && requestedDay > 0) {
-      if (game.activeDay !== requestedDay) {
+      if (game.activeDay !== requestedDay || getGameActivePhase(game) !== 'day') {
         setActiveDay(game.id, requestedDay);
       }
       return;
     }
-    if (game.activeDay < lastDayWithData) {
-      setActiveDay(game.id, lastDayWithData);
+    const latest = getLatestPhaseWithData(game);
+    if (game.activeDay !== latest.activeDay || getGameActivePhase(game) !== latest.activePhase) {
+      setGamePhase(game.id, latest.activeDay, latest.activePhase);
     }
-  }, [dayParam, game, lastDayWithData, setActiveDay]);
+  }, [dayParam, game, setActiveDay, setGamePhase]);
 
   // Apply deep-link focus and tab on first mount.
   useEffect(() => {
@@ -274,9 +291,10 @@ export default function GameRoute() {
   }
 
   const activeGame = game;
+  const activePosition = { activeDay: activeGame.activeDay, activePhase };
   const focusedPlayer = activeGame.players.find((player) => player.id === focusedPlayerId);
   const focusedPlayerIsDead = focusedPlayer
-    ? isPlayerCurrentlyDead(focusedPlayer, activeGame.activeDay)
+    ? isPlayerCurrentlyDead(focusedPlayer, activeGame.activeDay, activePhase)
     : false;
   const highlightedPlayerIds = trackingMode
     ? selectedPlayerIds
@@ -298,8 +316,7 @@ export default function GameRoute() {
   const hideConnectionCurves = trackingMode === 'nomination' || !!votingNominationId;
   const activeTokenSize = getTokenSize(activeGame.tokenSize);
   const activeDayNominations = activeGame.conversations.filter(
-    (conversation) =>
-      conversation.day === activeGame.activeDay && conversation.kind === 'nomination',
+    (conversation) => conversation.day === activeDayCutoff && conversation.kind === 'nomination',
   );
   const nominatedPlayerIds = new Set(
     activeDayNominations.flatMap((nomination) =>
@@ -327,7 +344,13 @@ export default function GameRoute() {
     activeGame.players
       .filter(
         (player) =>
-          isPlayerCurrentlyDead(player, activeGame.activeDay) && player.deadVoteUsed === true,
+          isPlayerCurrentlyDead(player, activeGame.activeDay, activePhase) &&
+          !hasDeadVoteAvailable(
+            player,
+            activeGame.activeDay,
+            activePhase,
+            activeGame.conversations,
+          ),
       )
       .map((player) => player.id),
   );
@@ -344,7 +367,7 @@ export default function GameRoute() {
   const travelerPlayerIds = new Set(
     countedPlayers
       .filter((player) =>
-        getRolesForDayOrPrevious(player.roleAssignments, activeGame.activeDay, gameRoles).some(
+        getRolesForDayOrPrevious(player.roleAssignments, activeDayCutoff, gameRoles).some(
           isTravelerRole,
         ),
       )
@@ -352,22 +375,26 @@ export default function GameRoute() {
   );
   const nonTravelerPlayers = countedPlayers.filter((player) => !travelerPlayerIds.has(player.id));
   const deadPlayerCount = nonTravelerPlayers.filter((player) =>
-    isPlayerCurrentlyDead(player, activeGame.activeDay),
+    isPlayerCurrentlyDead(player, activeGame.activeDay, activePhase),
   ).length;
   const alivePlayerCount = nonTravelerPlayers.length - deadPlayerCount;
   const travelerPlayerCount = travelerPlayerIds.size;
-  function runDayEdit(edit: () => void, day = activeGame.activeDay) {
-    const isHistoricalDay = day < lastDayWithData;
-    if (!dayEditLocked && (!isHistoricalDay || day === activeGame.activeDay)) {
+  function runDayEdit(edit: () => void, day = recordDay) {
+    const isHistoricalDay = day < lastDayWithData && day !== recordDay;
+    const isHistoricalPhase = activePhaseIndex < latestPhaseIndex;
+    const requiresConfirmation = isHistoricalDay || isHistoricalPhase;
+    if (!dayEditLocked && (!requiresConfirmation || day === recordDay)) {
       edit();
       return;
     }
 
     showDialog(
-      isHistoricalDay ? `Edit Day ${day}?` : 'Day editing locked',
-      isHistoricalDay
-        ? `Day ${day} is not the latest day with data (Day ${lastDayWithData}). Changes may affect later game state.`
-        : `Day ${day} is locked. Unlock it to continue editing.`,
+      requiresConfirmation
+        ? `Edit ${getPhaseLabel(activePosition, startingNight)}?`
+        : 'Day editing locked',
+      requiresConfirmation
+        ? `${getPhaseLabel(activePosition, startingNight)} is earlier than the latest phase with data. Changes may affect later game state.`
+        : `${getPhaseLabel(activePosition, startingNight)} is locked. Unlock it to continue editing.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -423,8 +450,13 @@ export default function GameRoute() {
       if (
         player &&
         !selectedPlayerIds.includes(playerId) &&
-        !hasDeadVoteAvailable(player, activeGame.activeDay) &&
-        isPlayerCurrentlyDead(player, activeGame.activeDay)
+        !hasDeadVoteAvailable(
+          player,
+          activeGame.activeDay,
+          activePhase,
+          activeGame.conversations,
+        ) &&
+        isPlayerCurrentlyDead(player, activeGame.activeDay, activePhase)
       ) {
         return;
       }
@@ -464,7 +496,7 @@ export default function GameRoute() {
   }
 
   function handleStartTracking(mode: TrackingMode) {
-    if (!focusedPlayerId) {
+    if (!focusedPlayerId || activePhase !== 'day') {
       return;
     }
 
@@ -567,13 +599,13 @@ export default function GameRoute() {
     );
   }
 
-  function handleChangeDay(day: number) {
+  function handleChangePhase(day: number, phase: 'day' | 'night') {
     const selectedPlayerId = focusedPlayerId;
     handleCancelTracking();
     setHighlightedVoterIds(null);
     setFocusedPlayerId(selectedPlayerId);
     exitRearrangeMode();
-    setActiveDay(activeGame.id, day);
+    setGamePhase(activeGame.id, day, phase);
   }
 
   function handleRotateTokens(angleRadians: number) {
@@ -886,6 +918,9 @@ export default function GameRoute() {
     players: activeGame.players,
     conversations: activeGame.conversations,
     activeDay: activeGame.activeDay,
+    activeDayCutoff,
+    activePhase,
+    startingNight,
     lastDayWithData,
     activeTokenSize,
     alivePlayerCount,
@@ -937,7 +972,7 @@ export default function GameRoute() {
     handleCancelVoting,
     handleEditNominationVotes,
     handleToggleVoterHighlights,
-    handleChangeDay,
+    handleChangePhase: (position) => handleChangePhase(position.activeDay, position.activePhase),
     runDayEdit,
     handleResizeMapWidth,
     handleResizeMapHeight,
@@ -998,10 +1033,18 @@ export default function GameRoute() {
                   />
                 </View>
                 <View style={styles.centeredDayCount}>
-                  <DayCount activeDay={activeGame.activeDay} lastDayWithData={lastDayWithData} />
+                  <DayCount
+                    activeDay={activeGame.activeDay}
+                    activePhase={activePhase}
+                    lastDayWithData={lastDayWithData}
+                    startingNight={startingNight}
+                  />
                   <View style={styles.dayEditLock}>
                     <DayEditLockButton
-                      activeDay={activeGame.activeDay}
+                      phaseLabel={getPhaseLabel(
+                        { activeDay: activeGame.activeDay, activePhase },
+                        startingNight,
+                      )}
                       locked={dayEditLocked}
                       onToggle={() => setDayEditLocked((locked) => !locked)}
                     />
@@ -1022,7 +1065,12 @@ export default function GameRoute() {
                 </View>
               ) : (
                 <View key="map-mode-actions">
-                  <MapModeActions activeDay={activeGame.activeDay} onChangeDay={handleChangeDay} />
+                  <MapModeActions
+                    activeDay={activeGame.activeDay}
+                    activePhase={activePhase}
+                    onChangePhase={handleChangePhase}
+                    startingNight={startingNight}
+                  />
                 </View>
               )}
 

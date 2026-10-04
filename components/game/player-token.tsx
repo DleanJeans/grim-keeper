@@ -49,6 +49,7 @@ type PlayerTokenProps = {
   mapScale: number;
   mapWidth: number;
   confirmedRoleIds?: string[];
+  deadVoteAvailable?: boolean;
   disabled?: boolean;
   interactionMode?: boolean;
   isInitiator?: boolean;
@@ -69,6 +70,7 @@ type PlayerTokenProps = {
 
 export function PlayerToken({
   confirmedRoleIds,
+  deadVoteAvailable,
   disabled = false,
   isInitiator = false,
   isNominated = false,
@@ -299,7 +301,7 @@ export function PlayerToken({
             <DeathIcon color={deathIconColor} size={13} strokeWidth={2} />
           </PlayerTokenEdgeBadge>
         ) : null}
-        {player.death && player.deadVoteUsed !== true ? (
+        {player.death && (deadVoteAvailable ?? player.deadVoteUsed !== true) ? (
           <PlayerTokenEdgeBadge
             backgroundColor={badgeColors.deadVoteBackground}
             position={{ bottom: -2, left: -2 }}

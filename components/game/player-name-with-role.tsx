@@ -11,6 +11,7 @@ import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Game, Player } from '@/types/game';
+import { getDayCutoffForPhase } from '@/utils/game-phase-utils';
 import { getRoleDisplayForDayOrPrevious } from '@/utils/role-utils';
 
 type PlayerNameWithRoleProps = {
@@ -39,7 +40,15 @@ export function PlayerNameWithRole({
   variant = 'default',
 }: PlayerNameWithRoleProps) {
   const gameRoute = useOptionalGameRouteContext();
-  const activeDay = day ?? gameRoute?.activeDay ?? providedGame?.activeDay ?? 0;
+  const activeDay =
+    day ??
+    gameRoute?.activeDayCutoff ??
+    (providedGame
+      ? getDayCutoffForPhase({
+          activeDay: providedGame.activeDay,
+          activePhase: providedGame.activePhase ?? 'day',
+        })
+      : 0);
   const game = providedGame ?? gameRoute?.game;
   const showRoles = providedShowRoles ?? gameRoute?.showRoles ?? false;
   const script = game?.script;

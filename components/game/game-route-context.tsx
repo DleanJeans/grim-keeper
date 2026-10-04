@@ -3,12 +3,15 @@ import { createContext, useContext } from 'react';
 import type {
   Conversation,
   Game,
+  GamePhase,
   KillAttribution,
   Player,
   PlayerPosition,
   PlayerRoleAssignment,
   RoleDisplayMode,
+  StartingNight,
 } from '@/types/game';
+import type { GamePhasePosition } from '@/utils/game-phase-utils';
 
 export type GameTab = 'interactions' | 'nominations' | 'deaths' | 'notes';
 export type TrackingMode = 'interaction' | 'nomination';
@@ -19,6 +22,9 @@ export type GameRouteContextValue = {
   players: Player[];
   conversations: Conversation[];
   activeDay: number;
+  activeDayCutoff: number;
+  activePhase: GamePhase;
+  startingNight: StartingNight;
   lastDayWithData: number;
   activeTokenSize: number;
   alivePlayerCount: number;
@@ -76,7 +82,7 @@ export type GameRouteContextValue = {
   handleCancelVoting: () => void;
   handleEditNominationVotes: (nominationId: string, voterIds: string[]) => void;
   handleToggleVoterHighlights: () => void;
-  handleChangeDay: (day: number) => void;
+  handleChangePhase: (position: GamePhasePosition) => void;
   runDayEdit: (edit: () => void, day?: number) => void;
   handleResizeMapWidth: (sizeDelta: number) => void;
   handleResizeMapHeight: (sizeDelta: number) => void;

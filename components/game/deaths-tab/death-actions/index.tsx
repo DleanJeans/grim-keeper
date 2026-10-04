@@ -23,6 +23,7 @@ export function FocusedDeathActionPanel() {
   const {
     focusedPlayer,
     focusedPlayerIsDead,
+    activePhase,
     handleReviveFocusedPlayer: onRevive,
     handleSetFocusedPlayerDeath: onSetDeath,
     handleUndoFocusedPlayerDeath: onUndoDeath,
@@ -32,7 +33,7 @@ export function FocusedDeathActionPanel() {
     return null;
   }
 
-  if (!focusedPlayerIsDead && showKillAttribution) {
+  if (!focusedPlayerIsDead && showKillAttribution && activePhase === 'night') {
     return (
       <KillAttributionPanel
         onCancel={() => setShowKillAttribution(false)}
@@ -67,11 +68,17 @@ export function FocusedDeathActionPanel() {
         </View>
       ) : (
         <View style={innerActionRow}>
-          <ExecuteButton onPress={() => onSetDeath('execution')} playerName={focusedPlayer.name} />
-          <KillButton
-            onPress={() => setShowKillAttribution(true)}
-            playerName={focusedPlayer.name}
-          />
+          {activePhase === 'day' ? (
+            <ExecuteButton
+              onPress={() => onSetDeath('execution')}
+              playerName={focusedPlayer.name}
+            />
+          ) : (
+            <KillButton
+              onPress={() => setShowKillAttribution(true)}
+              playerName={focusedPlayer.name}
+            />
+          )}
         </View>
       )}
       {focusedPlayerIsDead && (

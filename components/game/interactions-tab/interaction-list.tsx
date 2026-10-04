@@ -49,7 +49,9 @@ export function InteractionList({
         }}
       >
         <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 21 }}>
-          No interactions logged for Day {activeDay}.
+          {activeDay < 1
+            ? 'No interactions logged before Day 1.'
+            : `No interactions logged for Day ${activeDay}.`}
         </Text>
       </View>
     );

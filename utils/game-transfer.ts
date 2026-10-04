@@ -32,8 +32,8 @@ import {
 } from '@/utils/script-storage';
 
 const gameTransferFormat = 'grim-keeper-game';
-const gameTransferVersion = 2;
-const legacyGameTransferVersion = 1;
+const gameTransferVersion = 3;
+const supportedGameTransferVersions = [1, 2, gameTransferVersion];
 
 export type GameTransfer = {
   data: {
@@ -45,7 +45,7 @@ export type GameTransfer = {
   };
   exportedAt: string;
   format: typeof gameTransferFormat;
-  version: 1 | typeof gameTransferVersion;
+  version: 1 | 2 | typeof gameTransferVersion;
 };
 
 type GameData = {
@@ -116,7 +116,7 @@ export function parseGameTransfer(value: string): GameTransfer {
   if (
     !isRecord(transfer) ||
     transfer.format !== gameTransferFormat ||
-    (transfer.version !== legacyGameTransferVersion && transfer.version !== gameTransferVersion) ||
+    !supportedGameTransferVersions.includes(transfer.version as number) ||
     !isString(transfer.exportedAt) ||
     !isRecord(transfer.data) ||
     !isGame(transfer.data.game) ||
@@ -132,7 +132,15 @@ export function parseGameTransfer(value: string): GameTransfer {
     throw new Error('The game transfer is missing the script used by this game.');
   }
 
-  const game = restoreSushiBuffetScriptRoles([restoreGameImages(transfer.data.game)], [])[0];
+  const restoredGame = restoreSushiBuffetScriptRoles(
+    [restoreGameImages(transfer.data.game)],
+    [],
+  )[0];
+  const game = {
+    ...restoredGame,
+    activePhase: restoredGame.activePhase ?? 'day',
+    startingNight: restoredGame.startingNight ?? 1,
+  };
   const script = transfer.data.script ? restoreScriptImages(transfer.data.script) : undefined;
 
   return {
@@ -140,12 +148,17 @@ export function parseGameTransfer(value: string): GameTransfer {
     ...(transfer.dj ? { dj: transfer.dj } : {}),
     exportedAt: transfer.exportedAt,
     format: gameTransferFormat,
-    version: transfer.version,
+    version: transfer.version as GameTransfer['version'],
   };
 }
 
 export function mergeGameTransfer(data: GameData, transfer: GameTransfer): GameData {
-  const importedGame = restoreSushiBuffetScriptRoles([transfer.data.game], data.roleCatalog)[0];
+  const restoredGame = restoreSushiBuffetScriptRoles([transfer.data.game], data.roleCatalog)[0];
+  const importedGame = {
+    ...restoredGame,
+    activePhase: restoredGame.activePhase ?? 'day',
+    startingNight: restoredGame.startingNight ?? 1,
+  };
   const importedScript = transfer.data.script;
   const portableBuiltInScript = importedScript && isSushiBuffetScript(importedScript);
   const existingScripts = data.scripts.filter((script) => !isSushiBuffetScript(script));
@@ -226,6 +239,8 @@ function isGame(value: unknown): value is SerializedGame {
     isString(value.createdAt) &&
     isString(value.updatedAt) &&
     isFiniteNumber(value.activeDay) &&
+    isOptionalGamePhase(value.activePhase) &&
+    isOptionalStartingNight(value.startingNight) &&
     isOptionalGameResult(value.result) &&
     isOptionalStringArray(value.sushiRoleIds) &&
     isOptionalFiniteNumber(value.mapWidth) &&
@@ -365,6 +380,14 @@ function isOptionalStringArray(value: unknown): value is string[] | undefined {
 
 function isOptionalGameResult(value: unknown) {
   return value === undefined || isGameResult(value);
+}
+
+function isOptionalStartingNight(value: unknown): value is 0 | 1 | undefined {
+  return value === undefined || value === 0 || value === 1;
+}
+
+function isOptionalGamePhase(value: unknown): value is 'day' | 'night' | undefined {
+  return value === undefined || value === 'day' || value === 'night';
 }
 
 function isString(value: unknown): value is string {

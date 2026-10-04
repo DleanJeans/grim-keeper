@@ -4,18 +4,18 @@ import { Pressable, StyleSheet } from 'react-native';
 import { colors } from '@/theme/colors';
 
 type DayEditLockButtonProps = {
-  activeDay: number;
+  phaseLabel: string;
   locked: boolean;
   onToggle: () => void;
 };
 
-export function DayEditLockButton({ activeDay, locked, onToggle }: DayEditLockButtonProps) {
+export function DayEditLockButton({ phaseLabel, locked, onToggle }: DayEditLockButtonProps) {
   const Icon = locked ? Lock : Unlock;
   const action = locked ? 'Unlock' : 'Lock';
 
   return (
     <Pressable
-      accessibilityLabel={`${action} editing for Day ${activeDay}`}
+      accessibilityLabel={`${action} editing for ${phaseLabel}`}
       accessibilityRole="switch"
       accessibilityState={{ checked: !locked }}
       hitSlop={8}

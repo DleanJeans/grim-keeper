@@ -9,6 +9,10 @@ export type RoleDisplayMode = 'all' | 'claim' | 'confirm' | 'guess' | 'rumor';
 
 export type GameResult = 'lost' | 'won';
 
+export type GamePhase = 'day' | 'night';
+
+export type StartingNight = 0 | 1;
+
 export type Role = {
   ability?: string;
   id: string;
@@ -119,6 +123,8 @@ export type Game = {
   createdAt: string;
   updatedAt: string;
   activeDay: number;
+  activePhase?: GamePhase;
+  startingNight?: StartingNight;
   result?: GameResult;
   mapWidth?: number;
   mapHeight?: number;

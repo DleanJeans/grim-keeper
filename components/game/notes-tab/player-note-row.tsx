@@ -29,7 +29,7 @@ export function PlayerNoteRow({
 }) {
   const {
     addingNewNote,
-    activeDay,
+    activeDayCutoff,
     noteEditingNoteId,
     noteEditorDay,
     noteEditorPlayerId,
@@ -42,7 +42,7 @@ export function PlayerNoteRow({
   const roleCatalog = useGameStore((state) => state.roleCatalog);
 
   const isEditingRow = noteEditorDay === day && noteEditorPlayerId === player.id;
-  const isActiveDay = day === activeDay;
+  const isActiveDay = day === activeDayCutoff;
   const roleAssignment = showRoles
     ? getRoleAssignmentForDay(player.roleAssignments, day)
     : undefined;

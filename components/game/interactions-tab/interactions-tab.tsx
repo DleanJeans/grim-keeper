@@ -32,7 +32,8 @@ function renderInteractionSubtabIcon(tab: InteractionSubtab, color: string) {
 
 export function InteractionsTab() {
   const {
-    activeDay,
+    activeDayCutoff,
+    activePhase,
     conversations,
     focusedPlayer,
     focusedPlayerId,
@@ -45,9 +46,9 @@ export function InteractionsTab() {
 
   return (
     <View style={{ gap: 12 }}>
-      {trackingMode === 'interaction' ? (
+      {activePhase === 'day' && trackingMode === 'interaction' ? (
         <TrackingConfirmActions />
-      ) : focusedPlayer ? (
+      ) : activePhase === 'day' && focusedPlayer ? (
         <View style={innerActionRow}>
           <InteractionButton
             onPress={() => handleStartTracking('interaction')}
@@ -77,14 +78,14 @@ export function InteractionsTab() {
 
       {subtab === 'table' ? (
         <ConversationTable
-          activeDay={activeDay}
+          activeDay={activeDayCutoff}
           conversations={conversations}
           players={players}
           selectedPlayerId={focusedPlayerId}
         />
       ) : (
         <InteractionList
-          activeDay={activeDay}
+          activeDay={activeDayCutoff}
           conversations={conversations}
           players={players}
           selectedPlayerId={focusedPlayerId}

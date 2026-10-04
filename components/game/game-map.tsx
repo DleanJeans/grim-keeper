@@ -8,10 +8,11 @@ import {
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { PlayerToken } from '@/components/game/player-token';
 import { colors } from '@/theme/colors';
-import type { Player, PlayerPosition, Role, RoleDisplayMode } from '@/types/game';
+import type { Conversation, Player, PlayerPosition, Role, RoleDisplayMode } from '@/types/game';
 import { buildConversationGroupRepeats, getConversationGroupKey } from '@/utils/conversation-utils';
+import type { GamePhasePosition } from '@/utils/game-phase-utils';
 import { getPlayerMapPosition } from '@/utils/layout-utils';
-import { isPlayerCurrentlyDead } from '@/utils/player-utils';
+import { hasDeadVoteAvailable, isPlayerCurrentlyDead } from '@/utils/player-utils';
 import {
   getLatestRumorMapDisplaysForDayOrPrevious,
   getRoleDisplayForModes,
@@ -20,6 +21,8 @@ import {
 export function GameMap() {
   const {
     activeDay,
+    activeDayCutoff,
+    activePhase,
     activeRoleDisplayModes,
     activeTab,
     conversations,
@@ -43,6 +46,7 @@ export function GameMap() {
 
   const displayMapWidth = mapWidth * mapScale;
   const displayMapHeight = mapHeight * mapScale;
+  const activePosition = { activeDay, activePhase };
 
   const positions = useMemo(
     () =>
@@ -62,19 +66,20 @@ export function GameMap() {
     (activeRoleDisplayModes.includes('all') || activeRoleDisplayModes.includes('rumor')) &&
     showRoles;
   const rumorMapDisplays = showRumorCurves
-    ? getLatestRumorMapDisplaysForDayOrPrevious(players, activeDay, game.script?.roles ?? [])
+    ? getLatestRumorMapDisplaysForDayOrPrevious(players, activeDayCutoff, game.script?.roles ?? [])
     : [];
   const groupRepeats = useMemo(
-    () => buildConversationGroupRepeats(conversations, activeDay),
-    [activeDay, conversations],
+    () => buildConversationGroupRepeats(conversations, activeDayCutoff),
+    [activeDayCutoff, conversations],
   );
   const disabledPlayerIdSet = useMemo(() => new Set(disabledPlayerIds), [disabledPlayerIds]);
   const activeDayNominations = useMemo(
     () =>
       conversations.filter(
-        (conversation) => conversation.day === activeDay && conversation.kind === 'nomination',
+        (conversation) =>
+          conversation.day === activeDayCutoff && conversation.kind === 'nomination',
       ),
-    [activeDay, conversations],
+    [activeDayCutoff, conversations],
   );
   const nominatorIds = useMemo(
     () => new Set(activeDayNominations.map((nomination) => nomination.initiatorId)),
@@ -137,7 +142,7 @@ export function GameMap() {
             conversations
               .filter(
                 (conversation) =>
-                  conversation.day === activeDay && conversation.kind !== 'nomination',
+                  conversation.day === activeDayCutoff && conversation.kind !== 'nomination',
               )
               .flatMap((conversation) => {
                 const repeat = groupRepeats.get(getConversationGroupKey(conversation));
@@ -228,11 +233,14 @@ export function GameMap() {
           return (
             <PlayerTokenForMap
               key={player.id}
-              activeDay={activeDay}
+              activeDay={activeDayCutoff}
+              phaseDay={activeDay}
+              activePhase={activePhase}
               activeRoleDisplayModes={activeRoleDisplayModes}
               activeTokenSize={activeTokenSize}
               disabled={disabledPlayerIdSet.has(player.id)}
               gameRoles={game.script?.roles ?? []}
+              conversations={conversations}
               handleMovePlayer={handleMovePlayer}
               handleSelectPlayer={handleSelectPlayer}
               highlightedPlayerIds={highlightedPlayerIds}
@@ -244,7 +252,7 @@ export function GameMap() {
               mapScale={mapScale}
               mapWidth={mapWidth}
               otherTokenPositions={otherTokenPositions}
-              player={stripFutureAndRevivedDeath(player, activeDay)}
+              player={stripFutureAndRevivedDeath(player, activePosition)}
               players={players}
               position={ownPosition}
               showRoles={showRoles}
@@ -258,10 +266,13 @@ export function GameMap() {
 
 function PlayerTokenForMap({
   activeDay,
+  phaseDay,
+  activePhase,
   activeRoleDisplayModes,
   activeTokenSize,
   disabled,
   gameRoles,
+  conversations,
   handleMovePlayer,
   handleSelectPlayer,
   highlightedPlayerIds,
@@ -279,10 +290,13 @@ function PlayerTokenForMap({
   showRoles,
 }: {
   activeDay: number;
+  phaseDay: number;
+  activePhase: GamePhasePosition['activePhase'];
   activeRoleDisplayModes: RoleDisplayMode[];
   activeTokenSize: number;
   disabled: boolean;
   gameRoles: Role[];
+  conversations: Conversation[];
   handleMovePlayer: (playerId: string, position: PlayerPosition) => void;
   handleSelectPlayer: (playerId: string) => void;
   highlightedPlayerIds: string[];
@@ -306,11 +320,13 @@ function PlayerTokenForMap({
     gameRoles,
     activeRoleDisplayModes,
   );
+  const deadVoteAvailable = hasDeadVoteAvailable(player, phaseDay, activePhase, conversations);
 
   return (
     <PlayerToken
       confirmedRoleIds={roleDisplay.kind === 'confirm' ? roleDisplay.roleIds : undefined}
       disabled={disabled}
+      deadVoteAvailable={deadVoteAvailable}
       interactionMode={interactionMode}
       isInitiator={highlightedPlayerIds[0] === player.id}
       isNominated={isNominated}
@@ -333,16 +349,12 @@ function PlayerTokenForMap({
   );
 }
 
-function stripFutureAndRevivedDeath(player: Player, activeDay: number): Player {
+function stripFutureAndRevivedDeath(player: Player, activePosition: GamePhasePosition): Player {
   if (!player.death) {
     return player;
   }
 
-  if (player.death.day > activeDay) {
-    return { ...player, death: undefined };
-  }
-
-  if (!isPlayerCurrentlyDead(player, activeDay)) {
+  if (!isPlayerCurrentlyDead(player, activePosition.activeDay, activePosition.activePhase)) {
     return { ...player, death: undefined };
   }
 

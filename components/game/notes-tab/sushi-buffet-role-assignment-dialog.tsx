@@ -16,6 +16,7 @@ import {
 
 export function SushiBuffetRoleAssignmentDialog() {
   const {
+    activeDayCutoff,
     focusedPlayer,
     game,
     handleToggleRoleAssignment,
@@ -36,8 +37,8 @@ export function SushiBuffetRoleAssignmentDialog() {
 
   const mentionedRoleIds = useMemo(
     () =>
-      new Set(getRoleIdsMentionedByOtherPlayersForDay(players, focusedPlayer?.id, game.activeDay)),
-    [focusedPlayer?.id, game.activeDay, players],
+      new Set(getRoleIdsMentionedByOtherPlayersForDay(players, focusedPlayer?.id, activeDayCutoff)),
+    [activeDayCutoff, focusedPlayer?.id, players],
   );
 
   const roles = useMemo(() => {
@@ -75,7 +76,7 @@ export function SushiBuffetRoleAssignmentDialog() {
     return alwaysAvailable || (normalizedQuery.length > 0 && matchesSearch);
   });
   const roleOwnerNames = showRoles
-    ? getRoleOwnerNamesForDay(players, game.activeDay, roles)
+    ? getRoleOwnerNamesForDay(players, activeDayCutoff, roles)
     : undefined;
 
   return (

@@ -13,7 +13,7 @@ import { getFriendByName, getFriendSummaries } from '@/utils/friend-utils';
 import { getRoleAssignmentForDayOrPrevious, getRolesByIds } from '@/utils/role-utils';
 
 export function NotesTab() {
-  const { activeDay, focusedPlayer, game, players, showRoles } = useGameRouteContext();
+  const { activeDayCutoff, focusedPlayer, game, players, showRoles } = useGameRouteContext();
   const savedNotes = useGameStore((state) => state.savedNotes);
   const appUserName = useGameStore((state) => state.appUserName);
   const games = useGameStore((state) => state.games);
@@ -26,7 +26,7 @@ export function NotesTab() {
   if (focusedPlayer) {
     const savedFriendNotes = getNotesForPlayer(savedNotes, focusedPlayer.name);
     const claimedRoleIds = new Set(
-      getRoleAssignmentForDayOrPrevious(focusedPlayer.roleAssignments, activeDay, 'claim')
+      getRoleAssignmentForDayOrPrevious(focusedPlayer.roleAssignments, activeDayCutoff, 'claim')
         ?.roleIds ?? [],
     );
     const claimedRoles = game.script ? getRolesByIds([...claimedRoleIds], game.script.roles) : [];
@@ -65,7 +65,7 @@ export function NotesTab() {
   }
 
   const dayNotes = (game.playerDayNotes ?? [])
-    .filter((entry) => entry.day === activeDay)
+    .filter((entry) => entry.day === activeDayCutoff)
     .slice()
     .sort((a, b) => a.playerId.localeCompare(b.playerId));
 
@@ -90,7 +90,12 @@ export function NotesTab() {
           return null;
         }
         return (
-          <DayNoteRow day={activeDay} key={entry.playerId} notes={entry.notes} player={player} />
+          <DayNoteRow
+            day={activeDayCutoff}
+            key={entry.playerId}
+            notes={entry.notes}
+            player={player}
+          />
         );
       })}
     </View>

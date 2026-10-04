@@ -25,8 +25,8 @@ import {
 } from '@/utils/script-storage';
 
 const backupFormat = 'grim-keeper-backup';
-const backupVersion = 3;
-const previousBackupVersion = 2;
+const backupVersion = 4;
+const supportedExportedBackupVersions = [2, 3, backupVersion];
 const legacyBackupVersion = 1;
 const officialScriptAuthor = 'The Pandemonium Institute';
 
@@ -90,7 +90,7 @@ export function parseBackup(value: string): BackupGameData {
   }
 
   if (
-    (backup.version !== previousBackupVersion && backup.version !== backupVersion) ||
+    !supportedExportedBackupVersions.includes(backup.version as number) ||
     !isExportedGameData(backup.data)
   ) {
     throw new Error('The backup is missing required Grim Keeper data.');
@@ -238,6 +238,8 @@ function restoreExportedData(data: ExportedGameData): BackupGameData {
     const { lorics, scriptId, scriptRoleIds, scriptRoleOverrides, ...gameWithoutScript } = game;
     const gameWithoutScriptReference = {
       ...gameWithoutScript,
+      activePhase: game.activePhase ?? 'day',
+      startingNight: game.startingNight ?? 1,
       conversations: gameWithoutScript.conversations.map((conversation) => ({
         ...conversation,
         kind: conversation.kind ?? 'interaction',
@@ -289,6 +291,7 @@ function restoreExportedData(data: ExportedGameData): BackupGameData {
 
   return {
     ...gameData,
+    defaultStartingNight: data.defaultStartingNight ?? 1,
     roleCatalog,
     scripts: storedScripts,
     games: restoreSushiBuffetScriptRoles(games, roleCatalog),
@@ -307,7 +310,17 @@ function restoreLegacyData(data: GameData): BackupGameData {
     roleCatalog,
   );
 
-  return { ...normalizedData, games, roleCatalog, scripts };
+  return {
+    ...normalizedData,
+    defaultStartingNight: normalizedData.defaultStartingNight ?? 1,
+    games: games.map((game) => ({
+      ...game,
+      activePhase: game.activePhase ?? 'day',
+      startingNight: game.startingNight ?? 1,
+    })),
+    roleCatalog,
+    scripts,
+  };
 }
 
 function isImportedScript(script: StoredScript) {
@@ -351,6 +364,7 @@ function isGameData(value: unknown): value is GameData {
   return (
     isRecord(value) &&
     typeof value.appUserName === 'string' &&
+    (!('defaultStartingNight' in value) || isStartingNight(value.defaultStartingNight)) &&
     Array.isArray(value.friends) &&
     value.friends.every(isFriend) &&
     Array.isArray(value.games) &&
@@ -368,6 +382,7 @@ function isExportedGameData(value: unknown): value is ExportedGameData {
   return (
     isRecord(value) &&
     typeof value.appUserName === 'string' &&
+    (!('defaultStartingNight' in value) || isStartingNight(value.defaultStartingNight)) &&
     Array.isArray(value.friends) &&
     value.friends.every(isFriend) &&
     Array.isArray(value.games) &&
@@ -477,6 +492,8 @@ function isGame(value: unknown): value is Game {
     isString(value.createdAt) &&
     isString(value.updatedAt) &&
     isFiniteNumber(value.activeDay) &&
+    isOptionalGamePhase(value.activePhase) &&
+    isOptionalStartingNight(value.startingNight) &&
     isOptionalGameResult(value.result) &&
     isOptionalStringArray(value.sushiRoleIds) &&
     Array.isArray(value.players) &&
@@ -493,6 +510,8 @@ function isExportedGame(value: unknown): value is ExportedGame {
     isString(value.createdAt) &&
     isString(value.updatedAt) &&
     isFiniteNumber(value.activeDay) &&
+    isOptionalGamePhase(value.activePhase) &&
+    isOptionalStartingNight(value.startingNight) &&
     isOptionalGameResult(value.result) &&
     isOptionalStringArray(value.sushiRoleIds) &&
     Array.isArray(value.players) &&
@@ -539,6 +558,18 @@ function isFiniteNumber(value: unknown): value is number {
 
 function isOptionalBoolean(value: unknown): value is boolean | undefined {
   return value === undefined || typeof value === 'boolean';
+}
+
+function isStartingNight(value: unknown): value is 0 | 1 {
+  return value === 0 || value === 1;
+}
+
+function isOptionalStartingNight(value: unknown): value is 0 | 1 | undefined {
+  return value === undefined || isStartingNight(value);
+}
+
+function isOptionalGamePhase(value: unknown): value is 'day' | 'night' | undefined {
+  return value === undefined || value === 'day' || value === 'night';
 }
 
 function isStringArray(value: unknown): value is string[] {
