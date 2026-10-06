@@ -1,5 +1,6 @@
 import type { Friend, Game, Player, SavedNote, StoredScript } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
+import { mapRoleInfoPlayerIds } from '@/utils/role-info-utils';
 import { SUSHI_BUFFET_SCRIPT_ID, SUSHI_BUFFET_SCRIPT_NAME } from '@/utils/script-constants';
 
 const OFFICIAL_SCRIPT_AUTHOR = 'The Pandemonium Institute';
@@ -228,6 +229,7 @@ export function mapGamePlayerIdsToFriendIds(
       ...entry,
       playerId: mapPlayerId(entry.playerId),
     })),
+    roleInfos: mapRoleInfoPlayerIds(game.roleInfos, mapPlayerId),
   };
 }
 

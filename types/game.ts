@@ -122,6 +122,16 @@ export type SavedNote = {
   updatedAt: string;
 };
 
+export type RoleInfoEntry = {
+  /** Script role whose info this entry records. */
+  roleId: string;
+  day: number;
+  phase: GamePhase;
+  /** Slot id → stored value (player id, role id, number, choice or free text). */
+  values: Record<string, string>;
+  updatedAt: string;
+};
+
 export type Game = {
   id: string;
   createdAt: string;
@@ -143,6 +153,7 @@ export type Game = {
   sushiRoleIds?: string[];
   script?: StoredScript;
   playerDayNotes?: PlayerDayNote[];
+  roleInfos?: RoleInfoEntry[];
 };
 
 export type CharacterTypeCounts = {

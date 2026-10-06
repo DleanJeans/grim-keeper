@@ -37,6 +37,13 @@ export const colors = {
   roleConfirm: '#86efac',
   roleGuess: '#93c5fd',
   roleRumor: '#c4b5fd',
+  // Role info table
+  roleInfoTokenBackground: '#1c1f25',
+  roleInfoTokenBorder: '#5b6472',
+  roleInfoTokenEmptyBorder: '#3b424c',
+  roleInfoTokenFilledBorder: '#d6c7a1',
+  roleInfoCarried: '#77716a',
+  roleInfoNeighbor: '#93c5fd',
   playerTokenEdgeBadge: {
     confirmedBackground: '#166534',
     confirmedIcon: '#dcfce7',

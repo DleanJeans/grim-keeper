@@ -7,6 +7,7 @@ import { DayNoteRow } from '@/components/game/notes-tab/day-note-row';
 import { NotesTabScriptPicker } from '@/components/game/notes-tab/notes-tab-script-picker';
 import { PlayerNoteSection } from '@/components/game/notes-tab/player-note-section';
 import { RoleAssignmentActions } from '@/components/game/notes-tab/role-assignment-actions';
+import { RoleInfoTable } from '@/components/game/notes-tab/role-info/role-info-table';
 import { SavedFriendNotesLink } from '@/components/game/notes-tab/saved-friend-notes-link';
 import { Text } from '@/components/text';
 import { getNotesForPlayer, useGameStore } from '@/store/game-store';
@@ -85,6 +86,7 @@ export function NotesTab() {
         <Text style={styles.phaseHeader}>
           {getPhaseLabel({ activeDay, activePhase }, startingNight)}
         </Text>
+        <RoleInfoTable />
       </View>
     );
   }
@@ -113,6 +115,7 @@ export function NotesTab() {
           />
         );
       })}
+      <RoleInfoTable />
     </View>
   );
 }
