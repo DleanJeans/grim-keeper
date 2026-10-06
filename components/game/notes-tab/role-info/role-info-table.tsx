@@ -15,6 +15,7 @@ import {
   getRoleInfoOwners,
   getRoleInfoTemplate,
   hasRoleInfo,
+  inferRoleInfosFromNotes,
   type RoleInfoSlot,
 } from '@/utils/role-info-utils';
 import { isSushiBuffetScript } from '@/utils/script-service';
@@ -68,12 +69,22 @@ export function RoleInfoTable() {
     () => new Map(scriptRoles.map((role) => [role.id, role])),
     [scriptRoles],
   );
+  const inferredRoleInfos = useMemo(
+    () => inferRoleInfosFromNotes(players, game.playerDayNotes, game.roleInfos, scriptRoles),
+    [players, game.playerDayNotes, game.roleInfos, scriptRoles],
+  );
+  const roleInfos = useMemo(
+    () => [...(game.roleInfos ?? []), ...inferredRoleInfos],
+    [game.roleInfos, inferredRoleInfos],
+  );
+  const inferredEntries = useMemo(() => new Set(inferredRoleInfos), [inferredRoleInfos]);
 
   if (sections.length === 0) return null;
 
   const activeValue = activeSlot
-    ? getRoleInfoForPhaseOrPrevious(game.roleInfos, activeSlot.role.id, activeDay, activePhase)
-        ?.values[activeSlot.slot.id]
+    ? getRoleInfoForPhaseOrPrevious(roleInfos, activeSlot.role.id, activeDay, activePhase)?.values[
+        activeSlot.slot.id
+      ]
     : undefined;
 
   function handleSelect(value: string | undefined) {
@@ -81,7 +92,9 @@ export function RoleInfoTable() {
 
     const { role, slot } = activeSlot;
     setActiveSlot(null);
-    runDayEdit(() => setRoleInfoValue(game.id, role.id, activeDay, activePhase, slot.id, value));
+    runDayEdit(() =>
+      setRoleInfoValue(game.id, role.id, activeDay, activePhase, slot.id, value, inferredRoleInfos),
+    );
   }
 
   return (
@@ -94,12 +107,13 @@ export function RoleInfoTable() {
         <RoleInfoSection
           activeDay={activeDay}
           activePhase={activePhase}
+          inferredEntries={inferredEntries}
           key={section.label}
           label={section.label}
           onPressSlot={(role, slot) => setActiveSlot({ role, slot })}
           players={players}
           playersById={playersById}
-          roleInfos={game.roleInfos}
+          roleInfos={roleInfos}
           roles={section.roles}
           rolesById={rolesById}
           scriptRoles={scriptRoles}
@@ -160,6 +174,7 @@ const styles = StyleSheet.create({
 function RoleInfoSection({
   activeDay,
   activePhase,
+  inferredEntries,
   label,
   onPressSlot,
   players,
@@ -172,6 +187,7 @@ function RoleInfoSection({
 }: {
   activeDay: number;
   activePhase: GamePhase;
+  inferredEntries: Set<RoleInfoEntry>;
   label: string;
   onPressSlot: (role: Role, slot: RoleInfoSlot) => void;
   players: Player[];
@@ -189,9 +205,12 @@ function RoleInfoSection({
         const template = getRoleInfoTemplate(role);
         const entry = getRoleInfoForPhaseOrPrevious(roleInfos, role.id, activeDay, activePhase);
         const owners = getRoleInfoOwners(players, role.id, activeDay, activePhase, scriptRoles);
-        const carried =
-          entry && (entry.day !== activeDay || entry.phase !== activePhase)
-            ? `from ${getPhaseLabel({ activeDay: entry.day, activePhase: entry.phase }, startingNight)}`
+        const isCarried = entry && (entry.day !== activeDay || entry.phase !== activePhase);
+        const fromNotes = entry && inferredEntries.has(entry);
+        const carried = isCarried
+          ? `from ${fromNotes ? 'notes, ' : ''}${getPhaseLabel({ activeDay: entry.day, activePhase: entry.phase }, startingNight)}`
+          : fromNotes
+            ? 'from notes'
             : undefined;
 
         return (

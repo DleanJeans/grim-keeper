@@ -6,7 +6,9 @@ import {
   getRoleInfoTemplate,
   getRolesForInfoSlot,
   hasRoleInfo,
+  inferRoleInfosFromNotes,
   mapRoleInfoPlayerIds,
+  seedRoleInfos,
   setRoleInfoValue,
 } from '@/utils/role-info-utils';
 
@@ -196,5 +198,132 @@ describe('getRoleInfoOwners', () => {
     ];
 
     expect(getRoleInfoOwners(players, 'empath', 2, 'night', roles).map((p) => p.id)).toEqual(['a']);
+  });
+});
+
+describe('inferRoleInfosFromNotes', () => {
+  const tbRoles: Role[] = [
+    { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
+    { id: 'investigator', name: 'Investigator', team: 'townsfolk' },
+    { id: 'empath', name: 'Empath', team: 'townsfolk' },
+    { id: 'chef', name: 'Chef', team: 'townsfolk' },
+    { id: 'fortuneteller', name: 'Fortune Teller', team: 'townsfolk' },
+    { id: 'dreamer', name: 'Dreamer', team: 'townsfolk' },
+    { id: 'saint', name: 'Saint', team: 'outsider' },
+    { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+    { id: 'scarletwoman', name: 'Scarlet Woman', team: 'minion' },
+    { id: 'imp', name: 'Imp', team: 'demon' },
+  ];
+  const players = [
+    makePlayer('ann', 0, { name: 'Ann' }),
+    makePlayer('ben', 1, { name: 'Ben' }),
+    makePlayer('cat', 2, { name: 'Cat' }),
+    makePlayer('dan', 3, { name: 'Dan' }),
+  ];
+
+  function claim(player: Player, roleId: string): Player {
+    return {
+      ...player,
+      roleAssignments: [{ day: 1, kind: 'claim', roleIds: [roleId], updatedAt: NOW }],
+    };
+  }
+
+  function note(playerId: string, text: string, day = 1, phase?: 'day' | 'night') {
+    return {
+      day,
+      notes: [{ createdAt: NOW, id: `${playerId}-${day}`, text, updatedAt: NOW }],
+      phase,
+      playerId,
+      updatedAt: NOW,
+    };
+  }
+
+  function infer(
+    claims: [string, string][],
+    notes: ReturnType<typeof note>[],
+    stored?: RoleInfoEntry[],
+  ) {
+    const claimed = players.map((player) => {
+      const roleId = claims.find(([playerId]) => playerId === player.id)?.[1];
+      return roleId ? claim(player, roleId) : player;
+    });
+    return inferRoleInfosFromNotes(claimed, notes, stored, tbRoles);
+  }
+
+  it('reads a Washerwoman character and two players', () => {
+    expect(infer([['ann', 'washerwoman']], [note('ann', 'ben or dan is the empath')])).toEqual([
+      {
+        day: 1,
+        phase: 'day',
+        roleId: 'washerwoman',
+        updatedAt: NOW,
+        values: { '0': 'empath', '1': 'ben', '2': 'dan' },
+      },
+    ]);
+  });
+
+  it('reads multi-word characters and skips roles outside the slot filter', () => {
+    const [entry] = infer(
+      [['ben', 'investigator']],
+      [note('ben', 'Saint? no: Scarlet Woman is Cat or Ann', 2, 'night')],
+    );
+    expect(entry).toMatchObject({
+      day: 2,
+      phase: 'night',
+      values: { '0': 'scarletwoman', '1': 'cat', '2': 'ann' },
+    });
+  });
+
+  it('reads Empath and Chef numbers from digits and words', () => {
+    const entries = infer(
+      [
+        ['cat', 'empath'],
+        ['dan', 'chef'],
+      ],
+      [note('cat', 'got a 1'), note('dan', 'zero pairs')],
+    );
+    expect(entries.map(({ roleId, values }) => [roleId, values])).toEqual([
+      ['empath', { '0': '1' }],
+      ['chef', { '0': '0' }],
+    ]);
+  });
+
+  it('reads a Dreamer player with one good and one evil character', () => {
+    const [entry] = infer([['dan', 'dreamer']], [note('dan', 'dreamt of Ann: Imp or Chef')]);
+    expect(entry.values).toEqual({ '0': 'ann', '1': 'chef', '2': 'imp' });
+  });
+
+  it('reads Fortune Teller players and a yes/no answer', () => {
+    const [entry] = infer([['ann', 'fortuneteller']], [note('ann', 'Ben + Cat: yes')]);
+    expect(entry.values).toEqual({ '0': 'ben', '1': 'cat', '2': 'Yes' });
+  });
+
+  it('ignores partial words, unclaimed roles and roles that already have stored info', () => {
+    expect(infer([['ann', 'empath']], [note('ann', 'benign, nothing useful')])).toEqual([]);
+    expect(infer([], [note('ann', 'got a 1')])).toEqual([]);
+    expect(
+      infer(
+        [['ann', 'empath']],
+        [note('ann', 'got a 1')],
+        [{ day: 1, phase: 'day', roleId: 'empath', updatedAt: NOW, values: {} }],
+      ),
+    ).toEqual([]);
+  });
+});
+
+describe('seedRoleInfos', () => {
+  const seed: RoleInfoEntry = {
+    day: 1,
+    phase: 'day',
+    roleId: 'empath',
+    updatedAt: NOW,
+    values: { '0': '1' },
+  };
+
+  it('adds the role seeds only when the role has no stored entries', () => {
+    expect(seedRoleInfos(undefined, 'empath', [seed])).toEqual([seed]);
+    expect(seedRoleInfos(undefined, 'chef', [seed])).toBeUndefined();
+    const stored = [{ ...seed, values: { '0': '2' } }];
+    expect(seedRoleInfos(stored, 'empath', [seed])).toBe(stored);
   });
 });

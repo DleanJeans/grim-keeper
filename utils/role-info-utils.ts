@@ -1,4 +1,4 @@
-import type { GamePhase, Player, Role, RoleInfoEntry } from '@/types/game';
+import type { GamePhase, Player, PlayerDayNote, Role, RoleInfoEntry } from '@/types/game';
 import { getEventPhaseIndex } from '@/utils/game-phase-utils';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 import { getRoleDisplayForDayOrPrevious } from '@/utils/role-utils';
@@ -255,6 +255,20 @@ const ROLE_INFO_TEMPLATES: Record<string, RoleInfoTemplate> = Object.fromEntries
   ]),
 );
 
+const NUMBER_WORDS = [
+  'zero',
+  'one',
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+  'seven',
+  'eight',
+  'nine',
+  'ten',
+];
+
 const goodTeams = new Set(['townsfolk', 'outsider']);
 const evilTeams = new Set(['minion', 'demon']);
 
@@ -345,6 +359,20 @@ export function setRoleInfoValue(
   return entries.map((entry, entryIndex) => (entryIndex === index ? nextEntry : entry));
 }
 
+/** Adds the role's seed entries when it has no stored entries, so inferred infos persist. */
+export function seedRoleInfos(
+  roleInfos: RoleInfoEntry[] | undefined,
+  roleId: string,
+  seedEntries: RoleInfoEntry[] | undefined,
+): RoleInfoEntry[] | undefined {
+  const roleSeeds = seedEntries?.filter((entry) => entry.roleId === roleId) ?? [];
+  if (roleSeeds.length === 0 || roleInfos?.some((entry) => entry.roleId === roleId)) {
+    return roleInfos;
+  }
+
+  return [...(roleInfos ?? []), ...roleSeeds];
+}
+
 /** Rewrites player-slot values; returning undefined drops the value. */
 export function mapRoleInfoPlayerIds(
   roleInfos: RoleInfoEntry[] | undefined,
@@ -413,6 +441,201 @@ export function getAliveNeighbors(
   if (!left || !right) return left ? [left] : right ? [right] : [];
 
   return left.id === right.id ? [left] : [left, right];
+}
+
+/**
+ * Fills info tokens from the players' notes for characters that have no stored info yet, so
+ * games saved before the Character info table still show their infos. Notes of every player who
+ * claimed or was confirmed as the character are read per phase; nothing is saved.
+ */
+export function inferRoleInfosFromNotes(
+  players: Player[],
+  playerDayNotes: PlayerDayNote[] | undefined,
+  roleInfos: RoleInfoEntry[] | undefined,
+  roles: Role[],
+): RoleInfoEntry[] {
+  if (!playerDayNotes?.length) return [];
+
+  const storedRoleIds = new Set((roleInfos ?? []).map((entry) => entry.roleId));
+  const seatedPlayers = players
+    .filter((candidate) => !candidate.isStoryteller)
+    .sort((first, second) => first.seat - second.seat);
+  const inferred: RoleInfoEntry[] = [];
+
+  for (const role of roles) {
+    if (storedRoleIds.has(role.id)) continue;
+
+    const slots = getRoleInfoTemplate(role).slots;
+    if (!slots.some((slot) => slot.kind !== 'text')) continue;
+
+    const owners = seatedPlayers.filter((candidate) =>
+      candidate.roleAssignments?.some(
+        (assignment) =>
+          (assignment.kind === 'claim' || assignment.kind === 'confirm') &&
+          assignment.roleIds.includes(role.id),
+      ),
+    );
+    const entriesByPhase = new Map<string, RoleInfoEntry>();
+
+    for (const owner of owners) {
+      for (const dayNote of playerDayNotes) {
+        if (dayNote.playerId !== owner.id) continue;
+
+        const phase = dayNote.phase ?? 'day';
+        const key = `${dayNote.day}-${phase}`;
+        if (entriesByPhase.has(key)) continue;
+
+        const text = dayNote.notes.map((note) => note.text).join('\n');
+        const otherPlayers = seatedPlayers.filter((candidate) => candidate.id !== owner.id);
+        const otherRoles = roles.filter((candidate) => candidate.id !== role.id);
+        const values = parseRoleInfoValues(text, slots, otherPlayers, otherRoles);
+        if (Object.keys(values).length === 0) continue;
+
+        entriesByPhase.set(key, {
+          day: dayNote.day,
+          phase,
+          roleId: role.id,
+          updatedAt: dayNote.updatedAt,
+          values,
+        });
+      }
+    }
+
+    inferred.push(...entriesByPhase.values());
+  }
+
+  return inferred;
+}
+
+/**
+ * Reads token values from note text: character and player names fill their tokens in the order
+ * they appear, numbers and choices take their first match. Free-text tokens stay empty.
+ */
+export function parseRoleInfoValues(
+  text: string,
+  slots: RoleInfoSlot[],
+  players: Player[],
+  roles: Role[],
+): Record<string, string> {
+  const normalizedText = text.toLocaleLowerCase().replace(/[\u2018\u2019]/g, "'");
+  const mentions = getNameMentions(normalizedText, [
+    ...roles.map((candidate) => ({
+      id: candidate.id,
+      kind: 'role' as const,
+      name: candidate.name,
+    })),
+    ...players.map((candidate) => ({
+      id: candidate.id,
+      kind: 'player' as const,
+      name: candidate.name,
+    })),
+  ]);
+  const usedMentions = new Set<NameMention>();
+  const values: Record<string, string> = {};
+
+  for (const slot of slots) {
+    let value: string | undefined;
+
+    switch (slot.kind) {
+      case 'player':
+      case 'role': {
+        const allowedRoleIds =
+          slot.kind === 'role'
+            ? new Set(getRolesForInfoSlot(roles, slot.filter).map((candidate) => candidate.id))
+            : undefined;
+        const mention = mentions.find(
+          (candidate) =>
+            !usedMentions.has(candidate) &&
+            candidate.kind === slot.kind &&
+            (!allowedRoleIds || allowedRoleIds.has(candidate.id)),
+        );
+        if (mention) {
+          usedMentions.add(mention);
+          value = mention.id;
+        }
+        break;
+      }
+      case 'number':
+        value = findNumber(normalizedText, slot.min, slot.max);
+        break;
+      case 'choice':
+        value = slot.choices
+          .map((option) => ({
+            index: findWord(normalizedText, option.toLocaleLowerCase()),
+            option,
+          }))
+          .filter(({ index }) => index >= 0)
+          .sort((first, second) => first.index - second.index)[0]?.option;
+        break;
+      case 'text':
+        break;
+    }
+
+    if (value !== undefined) values[slot.id] = value;
+  }
+
+  return values;
+}
+
+type NameMention = { end: number; id: string; kind: 'player' | 'role'; start: number };
+
+/** Whole-word name matches in reading order; longer names win where matches overlap. */
+function getNameMentions(
+  text: string,
+  names: { id: string; kind: NameMention['kind']; name: string }[],
+): NameMention[] {
+  const candidates: NameMention[] = [];
+
+  for (const { id, kind, name } of names) {
+    const needle = name
+      .trim()
+      .toLocaleLowerCase()
+      .replace(/[\u2018\u2019]/g, "'");
+    if (!needle) continue;
+
+    let start = findWord(text, needle);
+    while (start >= 0) {
+      candidates.push({ end: start + needle.length, id, kind, start });
+      start = findWord(text, needle, start + needle.length);
+    }
+  }
+
+  const accepted: NameMention[] = [];
+  const bySize = [...candidates].sort(
+    (first, second) => second.end - second.start - (first.end - first.start),
+  );
+  for (const candidate of bySize) {
+    const overlaps = accepted.some(
+      (other) => candidate.start < other.end && other.start < candidate.end,
+    );
+    if (!overlaps) accepted.push(candidate);
+  }
+
+  return accepted.sort((first, second) => first.start - second.start);
+}
+
+function findNumber(text: string, min: number, max: number) {
+  const pattern = new RegExp(`\\b(\\d+|${NUMBER_WORDS.join('|')})\\b`, 'g');
+  for (const match of text.matchAll(pattern)) {
+    const wordIndex = NUMBER_WORDS.indexOf(match[1]);
+    const value = wordIndex >= 0 ? wordIndex : Number(match[1]);
+    if (value >= min && value <= max) return String(value);
+  }
+  return undefined;
+}
+
+/** Index of the next whole-word occurrence of the needle, or -1. */
+function findWord(text: string, needle: string, fromIndex = 0) {
+  let index = text.indexOf(needle, fromIndex);
+  while (index >= 0) {
+    if (!isWordChar(text[index - 1]) && !isWordChar(text[index + needle.length])) return index;
+    index = text.indexOf(needle, index + 1);
+  }
+  return -1;
+}
+
+function isWordChar(char: string | undefined) {
+  return char !== undefined && (/[0-9_]/.test(char) || char.toLowerCase() !== char.toUpperCase());
 }
 
 function withSlotIds(specs: SlotSpec[]): RoleInfoSlot[] {

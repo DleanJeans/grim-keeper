@@ -19,6 +19,7 @@ import type {
   PlayerRevive,
   PlayerRoleAssignment,
   Role,
+  RoleInfoEntry,
   SavedNote,
   StartingNight,
   StoredScript,
@@ -50,7 +51,7 @@ import {
   mapGamePlayerIdsToFriendIds,
   migrateObjectIds,
 } from '@/utils/object-id';
-import { mapRoleInfoPlayerIds, setRoleInfoValue } from '@/utils/role-info-utils';
+import { mapRoleInfoPlayerIds, seedRoleInfos, setRoleInfoValue } from '@/utils/role-info-utils';
 import { mergeRoleCatalogMetadata } from '@/utils/role-utils';
 import {
   getNotesForPlayer,
@@ -176,6 +177,8 @@ type GameState = GameData & {
     phase: GamePhase,
     slotId: string,
     value: string | undefined,
+    /** Entries inferred from notes, saved first when the role has no stored info yet. */
+    seedEntries?: RoleInfoEntry[],
   ) => void;
   setMapDimensions: (gameId: string, mapWidth: number, mapHeight: number) => void;
   setTokenSize: (gameId: string, tokenSize: number) => void;
@@ -1199,7 +1202,7 @@ export const useGameStore = create<GameState>()(
           ),
         }));
       },
-      setRoleInfoValue: (gameId, roleId, day, phase, slotId, value) => {
+      setRoleInfoValue: (gameId, roleId, day, phase, slotId, value, seedEntries) => {
         const updatedAt = new Date().toISOString();
         set((state) => ({
           games: state.games.map((game) =>
@@ -1207,7 +1210,7 @@ export const useGameStore = create<GameState>()(
               ? {
                   ...game,
                   roleInfos: setRoleInfoValue(
-                    game.roleInfos,
+                    seedRoleInfos(game.roleInfos, roleId, seedEntries),
                     roleId,
                     day,
                     phase,
