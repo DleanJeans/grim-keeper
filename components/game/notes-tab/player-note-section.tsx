@@ -19,8 +19,12 @@ export function PlayerNoteSection({ player }: { player: Player }) {
       notesByPhase.set(getEventPhaseIndex(entry.day, entry.phase ?? 'day'), entry.notes);
     }
   }
+  // Night rows only show when they already hold notes, so older night notes stay visible.
   const phasePositions = Array.from({ length: currentPhaseIndex + 1 }, (_, index) =>
     getPhasePositionAtIndex(currentPhaseIndex - index),
+  ).filter(
+    ({ activeDay: day, activePhase: phase }) =>
+      phase === 'day' || notesByPhase.has(getEventPhaseIndex(day, phase)),
   );
 
   return (

@@ -154,6 +154,8 @@ export type Game = {
   script?: StoredScript;
   playerDayNotes?: PlayerDayNote[];
   roleInfos?: RoleInfoEntry[];
+  /** Demon and Minion slot id (such as `demon-0`, `minion-1`) → character chosen as in play. */
+  evilInPlay?: Record<string, string>;
 };
 
 export type CharacterTypeCounts = {

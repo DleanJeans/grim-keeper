@@ -1,4 +1,4 @@
-import type { Role, StoredScript } from '@/types/game';
+import type { Game, Role, StoredScript } from '@/types/game';
 import { createScriptId } from '@/utils/object-id';
 import {
   BOTC_ROLE_CATALOG_URL,
@@ -207,6 +207,15 @@ export function createSushiBuffetScript(catalog: Role[], existingRoles: Role[] =
 
 export function isSushiBuffetScript(script?: Pick<StoredScript, 'id'>) {
   return script?.id === SUSHI_BUFFET_SCRIPT_ID;
+}
+
+/** The game script's characters, limited to the enabled ones for Sushi Buffet. */
+export function getGameScriptRoles(game: Pick<Game, 'script' | 'sushiRoleIds'>) {
+  if (!game.script) return [];
+  if (!isSushiBuffetScript(game.script) || !game.sushiRoleIds) return game.script.roles;
+
+  const enabledRoleIds = new Set(game.sushiRoleIds);
+  return game.script.roles.filter((role) => enabledRoleIds.has(role.id));
 }
 
 export function createStoredScript(

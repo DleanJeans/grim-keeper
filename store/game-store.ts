@@ -25,6 +25,7 @@ import type {
   StoredScript,
 } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
+import { setEvilInPlayRole } from '@/utils/evil-in-play-utils';
 import {
   addMissingFriends,
   getFriendByName,
@@ -185,6 +186,7 @@ type GameState = GameData & {
   setMapDimensions: (gameId: string, mapWidth: number, mapHeight: number) => void;
   setTokenSize: (gameId: string, tokenSize: number) => void;
   setCharacterTypeCounts: (gameId: string, counts?: CharacterTypeCounts) => void;
+  setEvilInPlayRole: (gameId: string, slotId: string, roleId?: string) => void;
   setGameResult: (gameId: string, result?: GameResult) => void;
   setActiveDay: (gameId: string, day: number) => void;
   setGamePhase: (gameId: string, day: number, phase: GamePhase) => void;
@@ -1245,6 +1247,19 @@ export const useGameStore = create<GameState>()(
           games: state.games.map((game) =>
             game.id === gameId
               ? { ...game, characterTypeCounts, updatedAt: new Date().toISOString() }
+              : game,
+          ),
+        }));
+      },
+      setEvilInPlayRole: (gameId, slotId, roleId) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? {
+                  ...game,
+                  evilInPlay: setEvilInPlayRole(game.evilInPlay, slotId, roleId),
+                  updatedAt: new Date().toISOString(),
+                }
               : game,
           ),
         }));

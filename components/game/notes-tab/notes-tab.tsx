@@ -7,6 +7,7 @@ import { DayNoteRow } from '@/components/game/notes-tab/day-note-row';
 import { NotesTabScriptPicker } from '@/components/game/notes-tab/notes-tab-script-picker';
 import { PlayerNoteSection } from '@/components/game/notes-tab/player-note-section';
 import { RoleAssignmentActions } from '@/components/game/notes-tab/role-assignment-actions';
+import { EvilInPlayPicker } from '@/components/game/notes-tab/role-info/evil-in-play-picker';
 import { RoleInfoTable } from '@/components/game/notes-tab/role-info/role-info-table';
 import { SavedFriendNotesLink } from '@/components/game/notes-tab/saved-friend-notes-link';
 import { Text } from '@/components/text';
@@ -84,6 +85,7 @@ export function NotesTab() {
       <View style={styles.emptyContainer}>
         <NotesTabScriptPicker />
         <RoleAssignmentActions />
+        <EvilInPlayPicker />
         <RoleInfoTable />
         <Text style={styles.phaseHeader}>
           {getPhaseLabel({ activeDay, activePhase }, startingNight)}
@@ -98,6 +100,7 @@ export function NotesTab() {
     <View style={styles.container}>
       <NotesTabScriptPicker />
       <RoleAssignmentActions />
+      <EvilInPlayPicker />
       <RoleInfoTable />
       <Text style={styles.phaseHeader}>
         {getPhaseLabel({ activeDay, activePhase }, startingNight)}

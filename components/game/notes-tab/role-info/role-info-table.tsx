@@ -11,6 +11,11 @@ import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { GamePhase, Player, Role, RoleInfoEntry, StartingNight } from '@/types/game';
+import {
+  type EvilInPlayTeam,
+  getEvilInPlayRoleIds,
+  getGameEvilInPlaySlots,
+} from '@/utils/evil-in-play-utils';
 import { getLatestPhaseWithData, getPhaseLabel } from '@/utils/game-phase-utils';
 import {
   getAliveNeighbors,
@@ -27,7 +32,7 @@ import {
   isRoleInfoShownInPhase,
   type RoleInfoSlot,
 } from '@/utils/role-info-utils';
-import { isSushiBuffetScript } from '@/utils/script-service';
+import { getGameScriptRoles, isSushiBuffetScript } from '@/utils/script-service';
 
 const TEAM_SECTIONS = [
   { label: 'Townsfolk', team: 'townsfolk' },
@@ -36,9 +41,6 @@ const TEAM_SECTIONS = [
   { label: 'Demons', team: 'demon' },
   { label: 'Travellers', team: 'traveller' },
 ];
-
-/** Evil characters show even when nobody claims them, since they rarely get claimed. */
-const ALWAYS_SHOWN_TEAMS = new Set(['minion', 'demon']);
 
 type ActiveSlot = {
   carryForward: boolean;
@@ -60,13 +62,10 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
   const setRoleInfoValue = useGameStore((state) => state.setRoleInfoValue);
   const [activeSlot, setActiveSlot] = useState<ActiveSlot | null>(null);
 
-  const scriptRoles = useMemo(() => {
-    if (!game.script) return [];
-    if (!isSushiBuffetScript(game.script) || !game.sushiRoleIds) return game.script.roles;
-
-    const enabledRoleIds = new Set(game.sushiRoleIds);
-    return game.script.roles.filter((role) => enabledRoleIds.has(role.id));
-  }, [game.script, game.sushiRoleIds]);
+  const scriptRoles = useMemo(
+    () => getGameScriptRoles({ script: game.script, sushiRoleIds: game.sushiRoleIds }),
+    [game.script, game.sushiRoleIds],
+  );
   // Claims made on later days count too, so the table can be filled in retrospectively.
   const mentionedRoleIds = useMemo(() => getMentionedRoleIds(players), [players]);
   const playerRoleIds = useMemo(
@@ -79,6 +78,22 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
           )
         : undefined,
     [player],
+  );
+  // Sushi Buffet lists every character, so its evil rows wait for the ones chosen as in play.
+  const isSushiBuffet = isSushiBuffetScript(game.script);
+  const evilInPlayRoleIds = useMemo(
+    () =>
+      getEvilInPlayRoleIds(
+        getGameEvilInPlaySlots(
+          {
+            characterTypeCounts: game.characterTypeCounts,
+            evilInPlay: game.evilInPlay,
+            players: game.players,
+          },
+          scriptRoles,
+        ),
+      ),
+    [game.characterTypeCounts, game.evilInPlay, game.players, scriptRoles],
   );
   const inferredRoleInfos = useMemo(
     () =>
@@ -102,10 +117,21 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
               ? playerRoleIds.has(role.id)
               : isRoleInfoShownInPhase(role, activeDay) &&
                 isUnusedOrUsedIn(role, roleInfos, activeDay, activePhase) &&
-                (ALWAYS_SHOWN_TEAMS.has(team) || mentionedRoleIds.has(role.id))),
+                !isRoleInfoOver(role, getRoleClaimers(players, role.id), activeDay, activePhase) &&
+                isShownTeamRole(role, team, mentionedRoleIds, evilInPlayRoleIds, isSushiBuffet)),
         ),
       })).filter(({ roles }) => roles.length > 0),
-    [activeDay, activePhase, mentionedRoleIds, playerRoleIds, roleInfos, scriptRoles],
+    [
+      activeDay,
+      activePhase,
+      evilInPlayRoleIds,
+      isSushiBuffet,
+      mentionedRoleIds,
+      playerRoleIds,
+      players,
+      roleInfos,
+      scriptRoles,
+    ],
   );
   const seatedPlayers = useMemo(
     () =>
@@ -227,6 +253,24 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * Evil characters show even when nobody claims them, since they rarely get claimed, but only the
+ * ones chosen as in play once any are (always, when `requireInPlay`). Good characters show once
+ * mentioned.
+ */
+function isShownTeamRole(
+  role: Role,
+  team: string,
+  mentionedRoleIds: Set<string>,
+  evilInPlayRoleIds: Map<EvilInPlayTeam, Set<string>>,
+  requireInPlay: boolean,
+) {
+  if (team !== 'demon' && team !== 'minion') return mentionedRoleIds.has(role.id);
+
+  const inPlayRoleIds = evilInPlayRoleIds.get(team);
+  return inPlayRoleIds ? inPlayRoleIds.has(role.id) : !requireInPlay;
+}
+
 /** Once-per-game characters only show in the phase their ability was used, once used. */
 function isUnusedOrUsedIn(role: Role, roleInfos: RoleInfoEntry[], day: number, phase: GamePhase) {
   const used = getRoleInfoUsedPhase(role, roleInfos);
@@ -319,7 +363,6 @@ function RoleInfoSection({
           : [
               getPhaseLine(
                 role,
-                isRoleInfoOver(role, owners, activeDay, activePhase),
                 roleInfos,
                 inferredEntries,
                 activeDay,
@@ -365,7 +408,6 @@ function RoleInfoSection({
 /** The single line of a character shown for the current phase, carrying earlier values. */
 function getPhaseLine(
   role: Role,
-  isOver: boolean,
   roleInfos: RoleInfoEntry[],
   inferredEntries: Set<RoleInfoEntry>,
   day: number,
@@ -387,7 +429,7 @@ function getPhaseLine(
   return {
     executed,
     key: 'phase',
-    label: isOver ? ['Dead, no more info', label].filter(Boolean).join(' · ') : label,
+    label,
     neighbors,
     onPressSlot: (slot) => onPressSlot({ carryForward: true, day, phase, role, slot }),
     values: entry?.values ?? {},
