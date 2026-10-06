@@ -7,6 +7,7 @@ import type {
   PlayerDayNote,
   PlayerDayNoteEntry,
   Role,
+  RoleInfoEntry,
   SavedNote,
   StoredScript,
 } from '@/types/game';
@@ -254,6 +255,7 @@ function isGame(value: unknown): value is SerializedGame {
     Array.isArray(value.conversations) &&
     value.conversations.every(isConversation) &&
     isOptionalPlayerDayNotes(value.playerDayNotes) &&
+    isOptionalRoleInfos(value.roleInfos) &&
     (value.script === undefined || isSerializedStoredScript(value.script))
   );
 }
@@ -357,6 +359,22 @@ function isPlayerDayNoteEntry(value: unknown): value is PlayerDayNoteEntry {
     isString(value.text) &&
     isString(value.createdAt) &&
     isString(value.updatedAt)
+  );
+}
+
+function isOptionalRoleInfos(value: unknown): value is RoleInfoEntry[] | undefined {
+  return value === undefined || (Array.isArray(value) && value.every(isRoleInfoEntry));
+}
+
+function isRoleInfoEntry(value: unknown): value is RoleInfoEntry {
+  return (
+    isRecord(value) &&
+    isString(value.roleId) &&
+    isFiniteNumber(value.day) &&
+    (value.phase === 'day' || value.phase === 'night') &&
+    isString(value.updatedAt) &&
+    isRecord(value.values) &&
+    Object.values(value.values).every(isString)
   );
 }
 

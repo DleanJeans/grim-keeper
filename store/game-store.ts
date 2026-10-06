@@ -50,6 +50,7 @@ import {
   mapGamePlayerIdsToFriendIds,
   migrateObjectIds,
 } from '@/utils/object-id';
+import { mapRoleInfoPlayerIds, setRoleInfoValue } from '@/utils/role-info-utils';
 import { mergeRoleCatalogMetadata } from '@/utils/role-utils';
 import {
   getNotesForPlayer,
@@ -168,6 +169,14 @@ type GameState = GameData & {
     noteId?: string,
   ) => boolean;
   deleteSavedNote: (note: SavedNote, roleId?: string) => void;
+  setRoleInfoValue: (
+    gameId: string,
+    roleId: string,
+    day: number,
+    phase: GamePhase,
+    slotId: string,
+    value: string | undefined,
+  ) => void;
   setMapDimensions: (gameId: string, mapWidth: number, mapHeight: number) => void;
   setTokenSize: (gameId: string, tokenSize: number) => void;
   setCharacterTypeCounts: (gameId: string, counts?: CharacterTypeCounts) => void;
@@ -835,6 +844,9 @@ export const useGameStore = create<GameState>()(
               updatedAt: new Date().toISOString(),
               players,
               playerDayNotes: game.playerDayNotes?.filter((note) => note.playerId !== playerId),
+              roleInfos: mapRoleInfoPlayerIds(game.roleInfos, (id) =>
+                id === playerId ? undefined : id,
+              ),
               conversations: game.conversations
                 .filter((conversation) => !conversation.participantIds.includes(playerId))
                 .map((conversation) => ({
@@ -1182,6 +1194,28 @@ export const useGameStore = create<GameState>()(
                   mapWidth: Math.max(1, Math.round(mapWidth)),
                   mapHeight: clampMapHeight(mapHeight),
                   updatedAt: new Date().toISOString(),
+                }
+              : game,
+          ),
+        }));
+      },
+      setRoleInfoValue: (gameId, roleId, day, phase, slotId, value) => {
+        const updatedAt = new Date().toISOString();
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? {
+                  ...game,
+                  roleInfos: setRoleInfoValue(
+                    game.roleInfos,
+                    roleId,
+                    day,
+                    phase,
+                    slotId,
+                    value,
+                    updatedAt,
+                  ),
+                  updatedAt,
                 }
               : game,
           ),
