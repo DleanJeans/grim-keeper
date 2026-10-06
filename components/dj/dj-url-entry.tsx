@@ -1,8 +1,9 @@
-import { Plus } from 'lucide-react-native';
+import { ClipboardPaste, Plus } from 'lucide-react-native';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { Text, TextInput } from '@/components/text';
+import { useClipboardSongUrl } from '@/hooks/use-clipboard-song-url';
 import { colors } from '@/theme/colors';
 import { normalizeSongUrl } from '@/utils/dj-utils';
 
@@ -13,6 +14,8 @@ type DjUrlEntryProps = {
 export function DjUrlEntry({ onAdd }: DjUrlEntryProps) {
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const { songUrl: clipboardSongUrl, refresh: refreshClipboard } = useClipboardSongUrl();
+  const showPaste = !draft.trim() && !!clipboardSongUrl;
 
   function handleAdd() {
     const songUrl = normalizeSongUrl(draft);
@@ -36,6 +39,7 @@ export function DjUrlEntry({ onAdd }: DjUrlEntryProps) {
           accessibilityLabel="Song URL"
           autoCapitalize="none"
           autoCorrect={false}
+          onFocus={refreshClipboard}
           onChangeText={(value) => {
             setDraft(value);
             if (error) {
@@ -49,26 +53,38 @@ export function DjUrlEntry({ onAdd }: DjUrlEntryProps) {
           style={styles.input}
           value={draft}
         />
-        <Pressable
-          accessibilityLabel="Add song URL"
-          accessibilityRole="button"
-          disabled={!draft.trim()}
-          onPress={handleAdd}
-          style={({ pressed }) => [
-            styles.addButton,
-            !draft.trim() && styles.addButtonDisabled,
-            pressed && styles.addButtonPressed,
-          ]}
-        >
-          <Plus
-            color={draft.trim() ? colors.onPrimary : colors.onDisabled}
-            size={19}
-            strokeWidth={2.7}
-          />
-          <Text style={[styles.addButtonText, !draft.trim() && styles.addButtonTextDisabled]}>
-            Add
-          </Text>
-        </Pressable>
+        {showPaste ? (
+          <Pressable
+            accessibilityLabel="Paste song URL from clipboard"
+            accessibilityRole="button"
+            onPress={() => setDraft(clipboardSongUrl ?? '')}
+            style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}
+          >
+            <ClipboardPaste color={colors.onPrimary} size={19} strokeWidth={2.7} />
+            <Text style={styles.addButtonText}>Paste</Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            accessibilityLabel="Add song URL"
+            accessibilityRole="button"
+            disabled={!draft.trim()}
+            onPress={handleAdd}
+            style={({ pressed }) => [
+              styles.addButton,
+              !draft.trim() && styles.addButtonDisabled,
+              pressed && styles.addButtonPressed,
+            ]}
+          >
+            <Plus
+              color={draft.trim() ? colors.onPrimary : colors.onDisabled}
+              size={19}
+              strokeWidth={2.7}
+            />
+            <Text style={[styles.addButtonText, !draft.trim() && styles.addButtonTextDisabled]}>
+              Add
+            </Text>
+          </Pressable>
+        )}
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </KeyboardAvoidingView>
