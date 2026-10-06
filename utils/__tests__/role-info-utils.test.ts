@@ -565,3 +565,31 @@ describe('seedRoleInfos', () => {
     expect(seedRoleInfos(stored, 'empath', [seed, nextNight])).toEqual([...stored, nextNight]);
   });
 });
+
+describe('Alsaahir', () => {
+  it('has a player slot per Demon and Minion in play', () => {
+    const template = getRoleInfoTemplate({ id: 'alsaahir' }, { demons: 1, minions: 3 });
+    expect(template.slots.map((slot) => [slot.id, slot.kind, slot.label])).toEqual([
+      ['0', 'player', 'Demon'],
+      ['1', 'player', 'Minion'],
+      ['2', 'player', 'Minion'],
+      ['3', 'player', 'Minion'],
+    ]);
+  });
+
+  it('maps every guessed player id, beyond the default slots too', () => {
+    const entries = mapRoleInfoPlayerIds(
+      [
+        {
+          day: 2,
+          phase: 'day',
+          roleId: 'alsaahir',
+          updatedAt: NOW,
+          values: { '0': 'a', '3': 'b' },
+        },
+      ],
+      (id) => `new-${id}`,
+    );
+    expect(entries?.[0].values).toEqual({ '0': 'new-a', '3': 'new-b' });
+  });
+});

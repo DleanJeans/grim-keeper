@@ -33,6 +33,8 @@ export type RoleInfoTemplate = {
   autoNeighbors?: boolean;
   /** Show the player executed the day before each night. */
   autoExecuted?: boolean;
+  /** One player slot per Demon then Minion in play, sized by `getRoleInfoTemplate`'s counts. */
+  evilInPlay?: boolean;
   slots: RoleInfoSlot[];
 };
 
@@ -65,7 +67,9 @@ const learnsPair = (filter: RoleInfoRoleFilter, label: string) => [
 ];
 
 /** Keyed by normalized role id (lowercase letters only). Empty lists are passive roles. */
-type RoleInfoSpec = SlotSpec[] | { executed?: true; neighbors?: true; slots: SlotSpec[] };
+type RoleInfoSpec =
+  | SlotSpec[]
+  | { evilInPlay?: true; executed?: true; neighbors?: true; slots: SlotSpec[] };
 
 const ROLE_INFO_SPECS: Record<string, RoleInfoSpec> = {
   // Trouble Brewing — Townsfolk
@@ -164,7 +168,7 @@ const ROLE_INFO_SPECS: Record<string, RoleInfoSpec> = {
   // Experimental & Carousel — Townsfolk
   acrobat: [player('Chosen')],
   alchemist: [role('Minion ability', 'minion')],
-  alsaahir: [text('Guess')],
+  alsaahir: { evilInPlay: true, slots: [player('Demon'), player('Minion')] },
   amnesiac: [text('Ability'), text('Guess')],
   atheist: [],
   balloonist: [player('Player'), role('Type')],
@@ -265,6 +269,7 @@ const ROLE_INFO_TEMPLATES: Record<string, RoleInfoTemplate> = Object.fromEntries
       : {
           autoExecuted: spec.executed,
           autoNeighbors: spec.neighbors,
+          evilInPlay: spec.evilInPlay,
           slots: withSlotIds(spec.slots),
         },
   ]),
@@ -387,9 +392,24 @@ export function normalizeRoleInfoId(roleId: string) {
   return roleId.toLocaleLowerCase().replace(/[^a-z]/g, '');
 }
 
-/** Known characters get their own template; homebrew characters fall back to Player + Info. */
-export function getRoleInfoTemplate(role: Pick<Role, 'id'>): RoleInfoTemplate {
-  return ROLE_INFO_TEMPLATES[normalizeRoleInfoId(role.id)] ?? FALLBACK_TEMPLATE;
+/**
+ * Known characters get their own template; homebrew characters fall back to Player + Info.
+ * `evilCounts` sizes the slots of characters that guess every Demon and Minion (the Alsaahir).
+ */
+export function getRoleInfoTemplate(
+  role: Pick<Role, 'id'>,
+  evilCounts?: { demons: number; minions: number },
+): RoleInfoTemplate {
+  const template = ROLE_INFO_TEMPLATES[normalizeRoleInfoId(role.id)] ?? FALLBACK_TEMPLATE;
+  if (!template.evilInPlay || !evilCounts) return template;
+
+  return {
+    ...template,
+    slots: withSlotIds([
+      ...Array.from({ length: evilCounts.demons }, () => player('Demon')),
+      ...Array.from({ length: evilCounts.minions }, () => player('Minion')),
+    ]),
+  };
 }
 
 export function hasRoleInfo(role: Pick<Role, 'id'>) {
@@ -573,17 +593,17 @@ export function mapRoleInfoPlayerIds(
   mapPlayerId: (playerId: string) => string | undefined,
 ): RoleInfoEntry[] | undefined {
   return roleInfos?.map((entry) => {
+    const template = getRoleInfoTemplate({ id: entry.roleId });
     const playerSlotIds = new Set(
-      getRoleInfoTemplate({ id: entry.roleId })
-        .slots.filter((slot) => slot.kind === 'player')
-        .map((slot) => slot.id),
+      template.slots.filter((slot) => slot.kind === 'player').map((slot) => slot.id),
     );
 
     return {
       ...entry,
       values: Object.fromEntries(
         Object.entries(entry.values).flatMap(([slotId, value]) => {
-          if (!playerSlotIds.has(slotId)) return [[slotId, value]];
+          // Every slot of an in-play guess is a player, however many the game had.
+          if (!template.evilInPlay && !playerSlotIds.has(slotId)) return [[slotId, value]];
           const mappedValue = mapPlayerId(value);
           return mappedValue === undefined ? [] : [[slotId, mappedValue]];
         }),

@@ -81,19 +81,25 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
   );
   // Sushi Buffet lists every character, so its evil rows wait for the ones chosen as in play.
   const isSushiBuffet = isSushiBuffetScript(game.script);
-  const evilInPlayRoleIds = useMemo(
+  const evilInPlaySlots = useMemo(
     () =>
-      getEvilInPlayRoleIds(
-        getGameEvilInPlaySlots(
-          {
-            characterTypeCounts: game.characterTypeCounts,
-            evilInPlay: game.evilInPlay,
-            players: game.players,
-          },
-          scriptRoles,
-        ),
+      getGameEvilInPlaySlots(
+        {
+          characterTypeCounts: game.characterTypeCounts,
+          evilInPlay: game.evilInPlay,
+          players: game.players,
+        },
+        scriptRoles,
       ),
     [game.characterTypeCounts, game.evilInPlay, game.players, scriptRoles],
+  );
+  const evilInPlayRoleIds = useMemo(() => getEvilInPlayRoleIds(evilInPlaySlots), [evilInPlaySlots]);
+  const evilCounts = useMemo(
+    () => ({
+      demons: evilInPlaySlots.filter((slot) => slot.team === 'demon').length,
+      minions: evilInPlaySlots.filter((slot) => slot.team === 'minion').length,
+    }),
+    [evilInPlaySlots],
   );
   const inferredRoleInfos = useMemo(
     () =>
@@ -183,6 +189,7 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
       {sections.map((section) => (
         <RoleInfoSection
           activeDay={activeDay}
+          evilCounts={evilCounts}
           activePhase={activePhase}
           inferredEntries={inferredEntries}
           key={section.label}
@@ -292,6 +299,7 @@ function getRoleInfoValues(roleInfos: RoleInfoEntry[], slot: ActiveSlot) {
 
 function RoleInfoSection({
   activeDay,
+  evilCounts,
   activePhase,
   inferredEntries,
   label,
@@ -305,6 +313,8 @@ function RoleInfoSection({
   startingNight,
 }: {
   activeDay: number;
+  /** Demons and Minions in play, for characters that guess each of them. */
+  evilCounts: { demons: number; minions: number };
   activePhase: GamePhase;
   inferredEntries: Set<RoleInfoEntry>;
   label: string;
@@ -325,7 +335,7 @@ function RoleInfoSection({
     <View style={styles.section}>
       <Text style={styles.sectionLabel}>{label}</Text>
       {roles.map((role) => {
-        const template = getRoleInfoTemplate(role);
+        const template = getRoleInfoTemplate(role, evilCounts);
         const owners = getRoleClaimers(players, role.id);
         const nights =
           lastNightDay === undefined ? undefined : getRoleInfoNights(role, lastNightDay, owners);
