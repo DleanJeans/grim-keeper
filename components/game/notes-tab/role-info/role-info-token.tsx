@@ -10,32 +10,42 @@ import type { RoleInfoSlot } from '@/utils/role-info-utils';
 const TOKEN_SIZE = 46;
 
 export type RoleInfoTokenProps = {
-  onPress: () => void;
+  /** Omit for a read-only token, such as an auto-filled neighbor. */
+  onPress?: () => void;
   player?: Player;
   role?: Role;
   slot: RoleInfoSlot;
   value?: string;
 };
 
-/** Circular, pressable token showing one stored info value (or an empty slot). */
+/** Circular token showing one info value (or an empty slot); pressable unless read-only. */
 export function RoleInfoToken({ onPress, player, role, slot, value }: RoleInfoTokenProps) {
   const filled = value !== undefined;
   const valueLabel = player?.name ?? role?.name ?? value;
 
   return (
     <View style={styles.container}>
-      <Pressable
-        accessibilityLabel={`${slot.label}: ${valueLabel ?? 'empty'}`}
-        accessibilityRole="button"
-        onPress={onPress}
-        style={({ pressed }) => [
-          styles.token,
-          filled ? styles.tokenFilled : styles.tokenEmpty,
-          pressed ? styles.tokenPressed : null,
-        ]}
-      >
-        <TokenContent player={player} role={role} slot={slot} value={value} />
-      </Pressable>
+      {onPress ? (
+        <Pressable
+          accessibilityLabel={`${slot.label}: ${valueLabel ?? 'empty'}`}
+          accessibilityRole="button"
+          onPress={onPress}
+          style={({ pressed }) => [
+            styles.token,
+            filled ? styles.tokenFilled : styles.tokenEmpty,
+            pressed ? styles.tokenPressed : null,
+          ]}
+        >
+          <TokenContent player={player} role={role} slot={slot} value={value} />
+        </Pressable>
+      ) : (
+        <View
+          accessibilityLabel={`${slot.label}: ${valueLabel ?? 'empty'}`}
+          style={[styles.token, styles.tokenReadOnly]}
+        >
+          <TokenContent player={player} role={role} slot={slot} value={value} />
+        </View>
+      )}
       <Text numberOfLines={1} style={styles.label}>
         {slot.label}
       </Text>
@@ -76,6 +86,9 @@ const styles = StyleSheet.create({
   },
   tokenPressed: {
     backgroundColor: colors.surfacePressed,
+  },
+  tokenReadOnly: {
+    borderColor: colors.roleInfoNeighbor,
   },
   numberText: {
     color: colors.text,

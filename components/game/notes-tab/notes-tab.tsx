@@ -53,6 +53,7 @@ export function NotesTab() {
       <View style={styles.focusedContainer}>
         <NotesTabScriptPicker />
         <RoleAssignmentActions />
+        <RoleInfoTable player={focusedPlayer} />
         <PlayerNoteSection player={focusedPlayer} />
         {claimedRoleCounts.map(({ count, role }) => (
           <ClaimedRoleNotesLink
@@ -83,10 +84,10 @@ export function NotesTab() {
       <View style={styles.emptyContainer}>
         <NotesTabScriptPicker />
         <RoleAssignmentActions />
+        <RoleInfoTable />
         <Text style={styles.phaseHeader}>
           {getPhaseLabel({ activeDay, activePhase }, startingNight)}
         </Text>
-        <RoleInfoTable />
       </View>
     );
   }
@@ -97,6 +98,7 @@ export function NotesTab() {
     <View style={styles.container}>
       <NotesTabScriptPicker />
       <RoleAssignmentActions />
+      <RoleInfoTable />
       <Text style={styles.phaseHeader}>
         {getPhaseLabel({ activeDay, activePhase }, startingNight)}
       </Text>
@@ -115,7 +117,6 @@ export function NotesTab() {
           />
         );
       })}
-      <RoleInfoTable />
     </View>
   );
 }

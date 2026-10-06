@@ -3,19 +3,28 @@ import { StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { RoleInfoPickerDialog } from '@/components/game/notes-tab/role-info/role-info-picker-dialog';
-import { RoleInfoRow } from '@/components/game/notes-tab/role-info/role-info-row';
+import {
+  type RoleInfoLine,
+  RoleInfoRow,
+} from '@/components/game/notes-tab/role-info/role-info-row';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { GamePhase, Player, Role, RoleInfoEntry, StartingNight } from '@/types/game';
-import { getPhaseLabel } from '@/utils/game-phase-utils';
+import { getLatestPhaseWithData, getPhaseLabel } from '@/utils/game-phase-utils';
 import {
   getAliveNeighbors,
+  getExecutedPlayer,
+  getMentionedRoleIds,
+  getRoleClaimers,
   getRoleInfoForPhaseOrPrevious,
-  getRoleInfoOwners,
+  getRoleInfoNights,
   getRoleInfoTemplate,
+  getRoleInfoUsedPhase,
   hasRoleInfo,
-  inferRoleInfosFromNotes,
+  inferRoleInfos,
+  isRoleInfoOver,
+  isRoleInfoShownInPhase,
   type RoleInfoSlot,
 } from '@/utils/role-info-utils';
 import { isSushiBuffetScript } from '@/utils/script-service';
@@ -28,11 +37,25 @@ const TEAM_SECTIONS = [
   { label: 'Travellers', team: 'traveller' },
 ];
 
-type ActiveSlot = { role: Role; slot: RoleInfoSlot };
+/** Evil characters show even when nobody claims them, since they rarely get claimed. */
+const ALWAYS_SHOWN_TEAMS = new Set(['minion', 'demon']);
+
+type ActiveSlot = {
+  carryForward: boolean;
+  day: number;
+  phase: GamePhase;
+  role: Role;
+  slot: RoleInfoSlot;
+};
+
+export type RoleInfoTableProps = {
+  /** Show only this player's claimed or confirmed characters. */
+  player?: Player;
+};
 
 /** Per-character info table for the current phase, so infos can be compared side by side. */
-export function RoleInfoTable() {
-  const { activeDay, activePhase, game, players, runDayEdit, startingNight } =
+export function RoleInfoTable({ player }: RoleInfoTableProps) {
+  const { activeDay, activePhase, game, players, runDayEdit, showRoles, startingNight } =
     useGameRouteContext();
   const setRoleInfoValue = useGameStore((state) => state.setRoleInfoValue);
   const [activeSlot, setActiveSlot] = useState<ActiveSlot | null>(null);
@@ -44,15 +67,45 @@ export function RoleInfoTable() {
     const enabledRoleIds = new Set(game.sushiRoleIds);
     return game.script.roles.filter((role) => enabledRoleIds.has(role.id));
   }, [game.script, game.sushiRoleIds]);
+  // Claims made on later days count too, so the table can be filled in retrospectively.
+  const mentionedRoleIds = useMemo(() => getMentionedRoleIds(players), [players]);
+  const playerRoleIds = useMemo(
+    () =>
+      player
+        ? new Set(
+            (player.roleAssignments ?? [])
+              .filter((assignment) => assignment.kind === 'claim' || assignment.kind === 'confirm')
+              .flatMap((assignment) => assignment.roleIds),
+          )
+        : undefined,
+    [player],
+  );
+  const inferredRoleInfos = useMemo(
+    () =>
+      inferRoleInfos(players, game.playerDayNotes, game.roleInfos, scriptRoles, game.conversations),
+    [players, game.playerDayNotes, game.roleInfos, scriptRoles, game.conversations],
+  );
+  const roleInfos = useMemo(
+    () => [...(game.roleInfos ?? []), ...inferredRoleInfos],
+    [game.roleInfos, inferredRoleInfos],
+  );
+  const inferredEntries = useMemo(() => new Set(inferredRoleInfos), [inferredRoleInfos]);
   const sections = useMemo(
     () =>
       TEAM_SECTIONS.map(({ label, team }) => ({
         label,
         roles: scriptRoles.filter(
-          (role) => role.team?.toLocaleLowerCase() === team && hasRoleInfo(role),
+          (role) =>
+            role.team?.toLocaleLowerCase() === team &&
+            hasRoleInfo(role) &&
+            (playerRoleIds
+              ? playerRoleIds.has(role.id)
+              : isRoleInfoShownInPhase(role, activeDay) &&
+                isUnusedOrUsedIn(role, roleInfos, activeDay, activePhase) &&
+                (ALWAYS_SHOWN_TEAMS.has(team) || mentionedRoleIds.has(role.id))),
         ),
       })).filter(({ roles }) => roles.length > 0),
-    [scriptRoles],
+    [activeDay, activePhase, mentionedRoleIds, playerRoleIds, roleInfos, scriptRoles],
   );
   const seatedPlayers = useMemo(
     () =>
@@ -69,31 +122,29 @@ export function RoleInfoTable() {
     () => new Map(scriptRoles.map((role) => [role.id, role])),
     [scriptRoles],
   );
-  const inferredRoleInfos = useMemo(
-    () => inferRoleInfosFromNotes(players, game.playerDayNotes, game.roleInfos, scriptRoles),
-    [players, game.playerDayNotes, game.roleInfos, scriptRoles],
-  );
-  const roleInfos = useMemo(
-    () => [...(game.roleInfos ?? []), ...inferredRoleInfos],
-    [game.roleInfos, inferredRoleInfos],
-  );
-  const inferredEntries = useMemo(() => new Set(inferredRoleInfos), [inferredRoleInfos]);
 
   if (sections.length === 0) return null;
 
   const activeValue = activeSlot
-    ? getRoleInfoForPhaseOrPrevious(roleInfos, activeSlot.role.id, activeDay, activePhase)?.values[
-        activeSlot.slot.id
-      ]
+    ? getRoleInfoValues(roleInfos, activeSlot)[activeSlot.slot.id]
     : undefined;
 
   function handleSelect(value: string | undefined) {
     if (!activeSlot) return;
 
-    const { role, slot } = activeSlot;
+    const { carryForward, day, phase, role, slot } = activeSlot;
     setActiveSlot(null);
     runDayEdit(() =>
-      setRoleInfoValue(game.id, role.id, activeDay, activePhase, slot.id, value, inferredRoleInfos),
+      setRoleInfoValue(
+        game.id,
+        role.id,
+        day,
+        phase,
+        slot.id,
+        value,
+        inferredRoleInfos,
+        carryForward,
+      ),
     );
   }
 
@@ -110,23 +161,28 @@ export function RoleInfoTable() {
           inferredEntries={inferredEntries}
           key={section.label}
           label={section.label}
-          onPressSlot={(role, slot) => setActiveSlot({ role, slot })}
+          onPressSlot={setActiveSlot}
+          lastNightDay={
+            player ? Math.max(activeDay, getLatestPhaseWithData(game).activeDay) : undefined
+          }
           players={players}
           playersById={playersById}
           roleInfos={roleInfos}
           roles={section.roles}
           rolesById={rolesById}
-          scriptRoles={scriptRoles}
           startingNight={startingNight}
         />
       ))}
       <RoleInfoPickerDialog
+        day={activeSlot?.day ?? activeDay}
         key={activeSlot ? `${activeSlot.role.id}-${activeSlot.slot.id}` : 'closed'}
         onClose={() => setActiveSlot(null)}
         onSelect={handleSelect}
+        phase={activeSlot?.phase ?? activePhase}
         players={seatedPlayers}
         role={activeSlot?.role}
         roles={scriptRoles}
+        showRoles={showRoles}
         slot={activeSlot?.slot}
         value={activeValue}
       />
@@ -171,31 +227,54 @@ const styles = StyleSheet.create({
   },
 });
 
+/** Once-per-game characters only show in the phase their ability was used, once used. */
+function isUnusedOrUsedIn(role: Role, roleInfos: RoleInfoEntry[], day: number, phase: GamePhase) {
+  const used = getRoleInfoUsedPhase(role, roleInfos);
+  return !used || (used.day === day && used.phase === phase);
+}
+
+/** Values shown for the slot's line: that night only, or carried from earlier phases. */
+function getRoleInfoValues(roleInfos: RoleInfoEntry[], slot: ActiveSlot) {
+  const entry = slot.carryForward
+    ? getRoleInfoForPhaseOrPrevious(roleInfos, slot.role.id, slot.day, slot.phase)
+    : roleInfos.find(
+        (candidate) =>
+          candidate.roleId === slot.role.id &&
+          candidate.day === slot.day &&
+          candidate.phase === slot.phase,
+      );
+  return entry?.values ?? {};
+}
+
 function RoleInfoSection({
   activeDay,
   activePhase,
   inferredEntries,
   label,
+  lastNightDay,
   onPressSlot,
   players,
   playersById,
   roleInfos,
   roles,
   rolesById,
-  scriptRoles,
   startingNight,
 }: {
   activeDay: number;
   activePhase: GamePhase;
   inferredEntries: Set<RoleInfoEntry>;
   label: string;
-  onPressSlot: (role: Role, slot: RoleInfoSlot) => void;
+  /**
+   * Give every-night characters a line per night through this day's night (the focused player's
+   * view, which covers the whole game).
+   */
+  lastNightDay?: number;
+  onPressSlot: (slot: ActiveSlot) => void;
   players: Player[];
   playersById: Map<string, Player>;
-  roleInfos: RoleInfoEntry[] | undefined;
+  roleInfos: RoleInfoEntry[];
   roles: Role[];
   rolesById: Map<string, Role>;
-  scriptRoles: Role[];
   startingNight: StartingNight;
 }) {
   return (
@@ -203,35 +282,114 @@ function RoleInfoSection({
       <Text style={styles.sectionLabel}>{label}</Text>
       {roles.map((role) => {
         const template = getRoleInfoTemplate(role);
-        const entry = getRoleInfoForPhaseOrPrevious(roleInfos, role.id, activeDay, activePhase);
-        const owners = getRoleInfoOwners(players, role.id, activeDay, activePhase, scriptRoles);
-        const isCarried = entry && (entry.day !== activeDay || entry.phase !== activePhase);
-        const fromNotes = entry && inferredEntries.has(entry);
-        const carried = isCarried
-          ? `from ${fromNotes ? 'notes, ' : ''}${getPhaseLabel({ activeDay: entry.day, activePhase: entry.phase }, startingNight)}`
-          : fromNotes
-            ? 'from notes'
+        const owners = getRoleClaimers(players, role.id);
+        const nights =
+          lastNightDay === undefined ? undefined : getRoleInfoNights(role, lastNightDay, owners);
+        // A night's Undertaker info is about the execution on the day before it.
+        const getExecuted = (night: number) =>
+          template.autoExecuted ? getExecutedPlayer(players, night - 1) : undefined;
+        const getNeighbors = (day: number, phase: GamePhase) =>
+          template.autoNeighbors && owners[0]
+            ? getAliveNeighbors(players, owners[0].id, day, phase)
             : undefined;
+
+        const lines: RoleInfoLine[] = nights
+          ? nights.map((night) => {
+              const position = { carryForward: false, day: night, phase: 'night' as const, role };
+              const entry = roleInfos.find(
+                (candidate) =>
+                  candidate.roleId === role.id &&
+                  candidate.day === night &&
+                  candidate.phase === 'night',
+              );
+              const nightLabel = getPhaseLabel(
+                { activeDay: night, activePhase: 'night' },
+                startingNight,
+              );
+              return {
+                executed: getExecuted(night),
+                key: `night-${night}`,
+                label:
+                  entry && inferredEntries.has(entry) ? `${nightLabel} · from notes` : nightLabel,
+                neighbors: getNeighbors(night, 'night'),
+                onPressSlot: (slot) => onPressSlot({ ...position, slot }),
+                values: entry?.values ?? {},
+              };
+            })
+          : [
+              getPhaseLine(
+                role,
+                isRoleInfoOver(role, owners, activeDay, activePhase),
+                roleInfos,
+                inferredEntries,
+                activeDay,
+                activePhase,
+                startingNight,
+                getExecuted(activeDay),
+                getNeighbors(activeDay, activePhase),
+                onPressSlot,
+              ),
+            ];
+
+        // Mark where the character's info ends when all of its players have died.
+        if (
+          nights &&
+          lastNightDay !== undefined &&
+          isRoleInfoOver(role, owners, lastNightDay, 'night')
+        ) {
+          lines.push({
+            isDead: true,
+            key: 'dead',
+            label: 'Dead',
+            onPressSlot: () => undefined,
+            values: {},
+          });
+        }
 
         return (
           <RoleInfoRow
-            carriedFromLabel={carried}
             key={role.id}
-            neighbors={
-              template.autoNeighbors && owners[0]
-                ? getAliveNeighbors(players, owners[0].id, activeDay, activePhase)
-                : undefined
-            }
-            onPressSlot={(slot) => onPressSlot(role, slot)}
+            lines={lines}
             owners={owners}
             playersById={playersById}
             role={role}
             rolesById={rolesById}
             template={template}
-            values={entry?.values ?? {}}
           />
         );
       })}
     </View>
   );
+}
+
+/** The single line of a character shown for the current phase, carrying earlier values. */
+function getPhaseLine(
+  role: Role,
+  isOver: boolean,
+  roleInfos: RoleInfoEntry[],
+  inferredEntries: Set<RoleInfoEntry>,
+  day: number,
+  phase: GamePhase,
+  startingNight: StartingNight,
+  executed: Player | undefined,
+  neighbors: Player[] | undefined,
+  onPressSlot: (slot: ActiveSlot) => void,
+): RoleInfoLine {
+  const entry = getRoleInfoForPhaseOrPrevious(roleInfos, role.id, day, phase);
+  const isCarried = entry && (entry.day !== day || entry.phase !== phase);
+  const fromNotes = entry && inferredEntries.has(entry);
+  const label = isCarried
+    ? `from ${fromNotes ? 'notes, ' : ''}${getPhaseLabel({ activeDay: entry.day, activePhase: entry.phase }, startingNight)}`
+    : fromNotes
+      ? 'from notes'
+      : undefined;
+
+  return {
+    executed,
+    key: 'phase',
+    label: isOver ? ['Dead, no more info', label].filter(Boolean).join(' · ') : label,
+    neighbors,
+    onPressSlot: (slot) => onPressSlot({ carryForward: true, day, phase, role, slot }),
+    values: entry?.values ?? {},
+  };
 }

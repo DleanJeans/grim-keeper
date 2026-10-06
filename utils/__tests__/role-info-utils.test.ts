@@ -1,12 +1,21 @@
 import type { Player, Role, RoleInfoEntry } from '@/types/game';
 import {
   getAliveNeighbors,
+  getExecutedPlayer,
+  getMentionedRoleIds,
   getRoleInfoForPhaseOrPrevious,
+  getRoleInfoNights,
   getRoleInfoOwners,
   getRoleInfoTemplate,
+  getRoleInfoUsedPhase,
   getRolesForInfoSlot,
   hasRoleInfo,
+  inferNightKills,
+  inferRoleInfos,
   inferRoleInfosFromNotes,
+  inferVirginNominations,
+  isRoleInfoOver,
+  isRoleInfoShownInPhase,
   mapRoleInfoPlayerIds,
   seedRoleInfos,
   setRoleInfoValue,
@@ -113,6 +122,12 @@ describe('setRoleInfoValue', () => {
     expect(day1).toHaveLength(2);
     expect(day1[1].values).toEqual({ '1': 'a', '2': 'b' });
     expect(day1[0].values).toEqual({ '1': 'a' });
+  });
+
+  it('starts a new phase empty when not carrying forward', () => {
+    const entries = setRoleInfoValue(undefined, 'empath', 1, 'night', '0', '1', NOW);
+    const next = setRoleInfoValue(entries, 'empath', 2, 'night', 'x', undefined, NOW, false);
+    expect(next[1].values).toEqual({});
   });
 
   it('clears a slot when the value is undefined', () => {
@@ -250,15 +265,22 @@ describe('inferRoleInfosFromNotes', () => {
     return inferRoleInfosFromNotes(claimed, notes, stored, tbRoles);
   }
 
-  it('reads a Washerwoman character and two players', () => {
+  it('fills a day note into that day and the night before', () => {
+    const values = { '0': 'empath', '1': 'ben', '2': 'dan' };
     expect(infer([['ann', 'washerwoman']], [note('ann', 'ben or dan is the empath')])).toEqual([
-      {
-        day: 1,
-        phase: 'day',
-        roleId: 'washerwoman',
-        updatedAt: NOW,
-        values: { '0': 'empath', '1': 'ben', '2': 'dan' },
-      },
+      { day: 1, phase: 'night', roleId: 'washerwoman', updatedAt: NOW, values },
+      { day: 1, phase: 'day', roleId: 'washerwoman', updatedAt: NOW, values },
+    ]);
+  });
+
+  it('keeps a night note for its night over the next day note', () => {
+    const entries = infer(
+      [['cat', 'empath']],
+      [note('cat', 'now a 2', 2, 'day'), note('cat', 'got a 1', 2, 'night')],
+    );
+    expect(entries.map(({ day, phase, values }) => [day, phase, values['0']])).toEqual([
+      [2, 'night', '1'],
+      [2, 'day', '2'],
     ]);
   });
 
@@ -282,9 +304,11 @@ describe('inferRoleInfosFromNotes', () => {
       ],
       [note('cat', 'got a 1'), note('dan', 'zero pairs')],
     );
-    expect(entries.map(({ roleId, values }) => [roleId, values])).toEqual([
-      ['empath', { '0': '1' }],
-      ['chef', { '0': '0' }],
+    expect(entries.map(({ phase, roleId, values }) => [roleId, phase, values])).toEqual([
+      ['empath', 'night', { '0': '1' }],
+      ['empath', 'day', { '0': '1' }],
+      ['chef', 'night', { '0': '0' }],
+      ['chef', 'day', { '0': '0' }],
     ]);
   });
 
@@ -311,6 +335,218 @@ describe('inferRoleInfosFromNotes', () => {
   });
 });
 
+describe('inferNightKills', () => {
+  const demonRoles: Role[] = [
+    { id: 'imp', name: 'Imp', team: 'demon' },
+    { id: 'po', name: 'Po', team: 'demon' },
+    { id: 'lleech', name: 'Lleech', team: 'demon' },
+    { id: 'assassin', name: 'Assassin', team: 'minion' },
+  ];
+
+  function died(
+    id: string,
+    seat: number,
+    day: number,
+    kind: 'execution' | 'night',
+    killerRoleIds?: string[],
+  ) {
+    return makePlayer(id, seat, { death: { day, kind, killerRoleIds, updatedAt: NOW } });
+  }
+
+  it('fills each night with that night deaths and ignores executions', () => {
+    const players = [
+      died('ann', 0, 1, 'execution'),
+      died('ben', 1, 2, 'night'),
+      died('cat', 2, 3, 'night'),
+    ];
+    const imp = inferNightKills(players, [], demonRoles).filter((entry) => entry.roleId === 'imp');
+    expect(imp.map(({ day, phase, values }) => [day, phase, values])).toEqual([
+      [2, 'night', { '0': 'ben' }],
+      [3, 'night', { '0': 'cat' }],
+    ]);
+  });
+
+  it('fills every kill token of other Demons and keeps their other tokens', () => {
+    const players = [died('ann', 0, 2, 'night'), died('ben', 1, 2, 'night')];
+    const stored: RoleInfoEntry[] = [
+      { day: 1, phase: 'night', roleId: 'lleech', updatedAt: NOW, values: { '0': 'dan' } },
+    ];
+    const entries = inferNightKills(players, stored, demonRoles);
+    expect(entries.find((entry) => entry.roleId === 'po')?.values).toEqual({
+      '0': 'ann',
+      '1': 'ben',
+    });
+    expect(entries.find((entry) => entry.roleId === 'lleech')?.values).toEqual({
+      '0': 'dan',
+      '1': 'ann',
+    });
+  });
+
+  it('gives credited deaths to their killer only', () => {
+    const players = [died('ann', 0, 2, 'night', ['assassin'])];
+    expect(inferNightKills(players, [], demonRoles).map((entry) => entry.roleId)).toEqual([
+      'assassin',
+    ]);
+  });
+
+  it('leaves nights with stored kills alone', () => {
+    const players = [died('ann', 0, 2, 'night')];
+    const stored: RoleInfoEntry[] = [
+      { day: 2, phase: 'night', roleId: 'imp', updatedAt: NOW, values: { '0': 'ben' } },
+    ];
+    expect(
+      inferNightKills(players, stored, demonRoles).some((entry) => entry.roleId === 'imp'),
+    ).toBe(false);
+  });
+
+  it('does not fill kill tokens from notes', () => {
+    const players = [
+      makePlayer('ann', 0, {
+        roleAssignments: [{ day: 1, kind: 'confirm', roleIds: ['imp'], updatedAt: NOW }],
+      }),
+      makePlayer('ben', 1),
+    ];
+    const notes = [
+      {
+        day: 1,
+        notes: [{ createdAt: NOW, id: 'n', text: 'BEN executed', updatedAt: NOW }],
+        playerId: 'ann',
+        updatedAt: NOW,
+      },
+    ];
+    expect(inferRoleInfos(players, notes, undefined, demonRoles)).toEqual([]);
+  });
+});
+
+describe('inferVirginNominations', () => {
+  const virginRoles: Role[] = [{ id: 'virgin', name: 'Virgin', team: 'townsfolk' }];
+  const virgin = makePlayer('ann', 0, {
+    roleAssignments: [{ day: 1, kind: 'claim', roleIds: ['virgin'], updatedAt: NOW }],
+  });
+
+  function nomination(id: string, day: number, initiatorId: string, nomineeId: string) {
+    return {
+      createdAt: `2026-01-0${day}T00:00:00.000Z`,
+      day,
+      id,
+      initiatorId,
+      kind: 'nomination' as const,
+      participantIds: [initiatorId, nomineeId],
+    };
+  }
+
+  it('fills the first nominator of the Virgin and whether they were executed', () => {
+    const ben = makePlayer('ben', 1, { death: { day: 2, kind: 'execution', updatedAt: NOW } });
+    const cat = makePlayer('cat', 2);
+    const entries = inferVirginNominations(
+      [virgin, ben, cat],
+      [
+        nomination('n2', 3, 'cat', 'ann'),
+        nomination('n1', 2, 'ben', 'ann'),
+        nomination('n0', 1, 'ann', 'cat'),
+      ],
+      [],
+      virginRoles,
+    );
+    expect(entries.map(({ day, phase, values }) => [day, phase, values])).toEqual([
+      [2, 'day', { '0': 'ben', '1': 'Yes' }],
+    ]);
+  });
+
+  it('says No when the nominator survived the day', () => {
+    const [entry] = inferVirginNominations(
+      [virgin, makePlayer('ben', 1)],
+      [nomination('n1', 1, 'ben', 'ann')],
+      [],
+      virginRoles,
+    );
+    expect(entry.values).toEqual({ '0': 'ben', '1': 'No' });
+  });
+});
+
+describe('getExecutedPlayer', () => {
+  it('finds the player executed that day, not night deaths', () => {
+    const players = [
+      makePlayer('ann', 0, { death: { day: 1, kind: 'night', updatedAt: NOW } }),
+      makePlayer('ben', 1, { death: { day: 1, kind: 'execution', updatedAt: NOW } }),
+    ];
+    expect(getExecutedPlayer(players, 1)?.id).toBe('ben');
+    expect(getExecutedPlayer(players, 2)).toBeUndefined();
+    expect(getRoleInfoTemplate({ id: 'undertaker' }).autoExecuted).toBe(true);
+  });
+});
+
+describe('getRoleInfoUsedPhase', () => {
+  it('finds the first phase a once-per-game ability was recorded', () => {
+    const entries: RoleInfoEntry[] = [
+      { day: 1, phase: 'day', roleId: 'slayer', updatedAt: NOW, values: {} },
+      { day: 3, phase: 'day', roleId: 'slayer', updatedAt: NOW, values: { '0': 'ben' } },
+      { day: 2, phase: 'day', roleId: 'slayer', updatedAt: NOW, values: { '0': 'cat' } },
+      { day: 1, phase: 'night', roleId: 'empath', updatedAt: NOW, values: { '0': '1' } },
+    ];
+    expect(getRoleInfoUsedPhase({ id: 'slayer' }, entries)?.day).toBe(2);
+    expect(getRoleInfoUsedPhase({ id: 'virgin' }, entries)).toBeUndefined();
+    expect(getRoleInfoUsedPhase({ id: 'empath' }, entries)).toBeUndefined();
+  });
+});
+
+describe('getRoleInfoNights', () => {
+  it('lists every night up to the day for every-night characters', () => {
+    expect(getRoleInfoNights({ id: 'empath' }, 3)).toEqual([1, 2, 3]);
+  });
+
+  it('starts other-nights characters on the second night', () => {
+    expect(getRoleInfoNights({ id: 'imp' }, 3)).toEqual([2, 3]);
+    expect(getRoleInfoNights({ id: 'imp' }, 1)).toEqual([]);
+  });
+
+  it('stops once all of the character players have died', () => {
+    const empath = makePlayer('ann', 0, { death: { day: 2, kind: 'execution', updatedAt: NOW } });
+    expect(getRoleInfoNights({ id: 'empath' }, 4, [empath])).toEqual([1, 2]);
+    expect(isRoleInfoOver({ id: 'empath' }, [empath], 2, 'day')).toBe(true);
+    expect(isRoleInfoOver({ id: 'empath' }, [empath], 2, 'night')).toBe(false);
+    expect(isRoleInfoOver({ id: 'washerwoman' }, [empath], 3, 'night')).toBe(false);
+  });
+
+  it('keeps start-knowing, once-only and day characters to a single row', () => {
+    expect(getRoleInfoNights({ id: 'washerwoman' }, 3)).toBeUndefined();
+    expect(getRoleInfoNights({ id: 'ravenkeeper' }, 3)).toBeUndefined();
+    expect(getRoleInfoNights({ id: 'virgin' }, 3)).toBeUndefined();
+  });
+});
+
+describe('getMentionedRoleIds', () => {
+  it('counts claims, confirmations and rumors from any day but not guesses', () => {
+    const players = [
+      makePlayer('ann', 0, {
+        roleAssignments: [
+          { day: 4, kind: 'claim', roleIds: ['washerwoman'], updatedAt: NOW },
+          { day: 2, kind: 'guess', roleIds: ['imp'], updatedAt: NOW },
+          { day: 3, kind: 'rumor', roleIds: ['empath'], subjectPlayerId: 'ben', updatedAt: NOW },
+        ],
+      }),
+    ];
+    expect([...getMentionedRoleIds(players)]).toEqual(['washerwoman', 'empath']);
+  });
+});
+
+describe('isRoleInfoShownInPhase', () => {
+  it('shows start-knowing characters only on the first night and day', () => {
+    expect(isRoleInfoShownInPhase({ id: 'washerwoman' }, 1)).toBe(true);
+    expect(isRoleInfoShownInPhase({ id: 'washerwoman' }, 2)).toBe(false);
+  });
+
+  it('shows other-nights characters only after the first night and day', () => {
+    expect(isRoleInfoShownInPhase({ id: 'undertaker' }, 1)).toBe(false);
+    expect(isRoleInfoShownInPhase({ id: 'undertaker' }, 2)).toBe(true);
+  });
+
+  it('shows every-night characters on all phases', () => {
+    expect(isRoleInfoShownInPhase({ id: 'empath' }, 1)).toBe(true);
+    expect(isRoleInfoShownInPhase({ id: 'empath' }, 3)).toBe(true);
+  });
+});
+
 describe('seedRoleInfos', () => {
   const seed: RoleInfoEntry = {
     day: 1,
@@ -320,10 +556,12 @@ describe('seedRoleInfos', () => {
     values: { '0': '1' },
   };
 
-  it('adds the role seeds only when the role has no stored entries', () => {
+  it('adds the role seeds only for phases the role has not stored', () => {
     expect(seedRoleInfos(undefined, 'empath', [seed])).toEqual([seed]);
     expect(seedRoleInfos(undefined, 'chef', [seed])).toBeUndefined();
     const stored = [{ ...seed, values: { '0': '2' } }];
     expect(seedRoleInfos(stored, 'empath', [seed])).toBe(stored);
+    const nextNight = { ...seed, day: 2, phase: 'night' as const };
+    expect(seedRoleInfos(stored, 'empath', [seed, nextNight])).toEqual([...stored, nextNight]);
   });
 });

@@ -4,15 +4,20 @@ import { KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } 
 import { RoleIcon } from '@/components/role-icon';
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { Player, Role } from '@/types/game';
+import type { GamePhase, Player, Role } from '@/types/game';
 import { getNumberChoices, getRolesForInfoSlot, type RoleInfoSlot } from '@/utils/role-info-utils';
+import { getRoleDisplayForMode } from '@/utils/role-utils';
 
 export type RoleInfoPickerDialogProps = {
+  day: number;
   onClose: () => void;
   onSelect: (value: string | undefined) => void;
+  phase: GamePhase;
   players: Player[];
   role?: Role;
   roles: Role[];
+  /** Show each player's confirmed, claimed, rumored or guessed character before their name. */
+  showRoles: boolean;
   slot?: RoleInfoSlot;
   value?: string;
 };
@@ -22,11 +27,14 @@ export type RoleInfoPickerDialogProps = {
  * Remount (via `key`) per slot so the text draft starts from the slot's value.
  */
 export function RoleInfoPickerDialog({
+  day,
   onClose,
   onSelect,
+  phase,
   players,
   role,
   roles,
+  showRoles,
   slot,
   value,
 }: RoleInfoPickerDialogProps) {
@@ -49,11 +57,14 @@ export function RoleInfoPickerDialog({
           <ScrollView contentContainerStyle={styles.options} style={styles.scroll}>
             {slot ? (
               <SlotOptions
+                day={day}
                 draft={draft}
                 onChangeDraft={setDraft}
                 onSelect={onSelect}
+                phase={phase}
                 players={players}
                 roles={roles}
+                showRoles={showRoles}
                 slot={slot}
                 value={value}
               />
@@ -235,19 +246,25 @@ const styles = StyleSheet.create({
 });
 
 function SlotOptions({
+  day,
   draft,
   onChangeDraft,
   onSelect,
+  phase,
   players,
   roles,
+  showRoles,
   slot,
   value,
 }: {
+  day: number;
   draft: string;
   onChangeDraft: (text: string) => void;
   onSelect: (value: string) => void;
+  phase: GamePhase;
   players: Player[];
   roles: Role[];
+  showRoles: boolean;
   slot: RoleInfoSlot;
   value?: string;
 }) {
@@ -258,6 +275,11 @@ function SlotOptions({
           key={option.id}
           label={option.name}
           onPress={() => onSelect(option.id)}
+          role={
+            showRoles
+              ? getRoleDisplayForMode(option, players, day, roles, 'all', phase).roles[0]
+              : undefined
+          }
           selected={value === option.id}
         />
       ));

@@ -179,6 +179,8 @@ type GameState = GameData & {
     value: string | undefined,
     /** Entries inferred from notes, saved first when the role has no stored info yet. */
     seedEntries?: RoleInfoEntry[],
+    /** Start a new phase from the previous phase's values; off for per-night rows. */
+    carryForward?: boolean,
   ) => void;
   setMapDimensions: (gameId: string, mapWidth: number, mapHeight: number) => void;
   setTokenSize: (gameId: string, tokenSize: number) => void;
@@ -1202,7 +1204,7 @@ export const useGameStore = create<GameState>()(
           ),
         }));
       },
-      setRoleInfoValue: (gameId, roleId, day, phase, slotId, value, seedEntries) => {
+      setRoleInfoValue: (gameId, roleId, day, phase, slotId, value, seedEntries, carryForward) => {
         const updatedAt = new Date().toISOString();
         set((state) => ({
           games: state.games.map((game) =>
@@ -1217,6 +1219,7 @@ export const useGameStore = create<GameState>()(
                     slotId,
                     value,
                     updatedAt,
+                    carryForward,
                   ),
                   updatedAt,
                 }
