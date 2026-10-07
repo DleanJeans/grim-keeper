@@ -9,15 +9,18 @@ const songUrl = 'https://open.spotify.com/track/example-track';
 
 const game: Game = {
   activeDay: 1,
+  activePhase: 'day',
   conversations: [],
   createdAt: '2026-09-01T00:00:00.000Z',
   id: 'source-game',
   players: [{ id: APP_USER_ID, name: 'Keeper', seat: 0 }],
+  startingNight: 1,
   updatedAt: '2026-09-01T00:00:00.000Z',
 };
 
 const data: GameData = {
   appUserName: 'Keeper',
+  defaultStartingNight: 1,
   friends: [],
   games: [game],
   roleCatalog: [],
@@ -43,7 +46,7 @@ describe('DJ transfer boundaries', () => {
       }),
     );
 
-    expect(backup.version).toBe(3);
+    expect(backup.version).toBe(4);
     expect(JSON.stringify(backup)).not.toContain('imageUrl');
     expect(JSON.stringify(backup)).not.toContain('accessToken');
     expect(JSON.stringify(backup)).not.toContain('thumbnail');

@@ -162,9 +162,11 @@ export function createHomebrewScript(
   return {
     id: existingId ?? createScriptId({ author, name }, []),
     name,
-    version: getOptionalText(metadata.version) ?? '1.0.0',
+    version: getOptionalText(scriptMetadata.version) ?? '1.0.0',
     scriptType:
-      getOptionalText(metadata.scriptType) ?? getOptionalText(metadata.script_type) ?? 'Full',
+      getOptionalText(scriptMetadata.scriptType) ??
+      getOptionalText(scriptMetadata.script_type) ??
+      'Full',
     author,
     roles,
     updatedAt: new Date().toISOString(),
