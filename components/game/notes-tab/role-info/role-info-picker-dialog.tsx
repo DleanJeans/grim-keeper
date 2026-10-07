@@ -5,7 +5,12 @@ import { RoleIcon } from '@/components/role-icon';
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { GamePhase, Player, Role } from '@/types/game';
-import { getNumberChoices, getRolesForInfoSlot, type RoleInfoSlot } from '@/utils/role-info-utils';
+import {
+  getNumberChoices,
+  getRolesForInfoSlot,
+  isPlayerChoosableForSlot,
+  type RoleInfoSlot,
+} from '@/utils/role-info-utils';
 import { getRoleDisplayForMode } from '@/utils/role-utils';
 
 export type RoleInfoPickerDialogProps = {
@@ -207,6 +212,9 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: 12,
   },
+  optionDisabled: {
+    opacity: 0.35,
+  },
   optionPressed: {
     backgroundColor: colors.surfacePressed,
   },
@@ -272,6 +280,7 @@ function SlotOptions({
     case 'player':
       return players.map((option) => (
         <PickerOption
+          disabled={!isPlayerChoosableForSlot(option, slot, day, phase)}
           key={option.id}
           label={option.name}
           onPress={() => onSelect(option.id)}
@@ -333,12 +342,15 @@ function SlotOptions({
 }
 
 function PickerOption({
+  disabled = false,
   label,
   number = false,
   onPress,
   role,
   selected,
 }: {
+  /** Grayed out, such as a dead player for an ability that only works on alive players. */
+  disabled?: boolean;
   label: string;
   number?: boolean;
   onPress: () => void;
@@ -349,13 +361,15 @@ function PickerOption({
     <Pressable
       accessibilityLabel={`Select ${label}`}
       accessibilityRole="button"
-      accessibilityState={{ selected }}
+      accessibilityState={{ disabled, selected }}
+      disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.option,
         number && styles.numberOption,
         selected && styles.optionSelected,
         pressed && styles.optionPressed,
+        disabled && styles.optionDisabled,
       ]}
     >
       {role ? <RoleIcon role={role} size={22} /> : null}

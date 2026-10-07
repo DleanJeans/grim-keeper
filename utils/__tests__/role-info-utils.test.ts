@@ -14,6 +14,7 @@ import {
   inferRoleInfos,
   inferRoleInfosFromNotes,
   inferVirginNominations,
+  isPlayerChoosableForSlot,
   isRoleInfoOver,
   isRoleInfoShownInPhase,
   mapRoleInfoPlayerIds,
@@ -591,5 +592,27 @@ describe('Alsaahir', () => {
       (id) => `new-${id}`,
     );
     expect(entries?.[0].values).toEqual({ '0': 'new-a', '3': 'new-b' });
+  });
+});
+
+describe('isPlayerChoosableForSlot', () => {
+  const killedNight2 = makePlayer('ann', 1, { death: { day: 2, kind: 'night', updatedAt: NOW } });
+  const alive = makePlayer('ben', 2);
+  const [impKill] = getRoleInfoTemplate({ id: 'imp' }).slots;
+  const [revived] = getRoleInfoTemplate({ id: 'professor' }).slots;
+  const [master] = getRoleInfoTemplate({ id: 'butler' }).slots;
+
+  it('keeps a player killed that night choosable for the kill', () => {
+    expect(isPlayerChoosableForSlot(killedNight2, impKill, 2, 'night')).toBe(true);
+    expect(isPlayerChoosableForSlot(killedNight2, impKill, 3, 'night')).toBe(false);
+  });
+
+  it('only allows dead players for dead-only slots', () => {
+    expect(isPlayerChoosableForSlot(killedNight2, revived, 3, 'night')).toBe(true);
+    expect(isPlayerChoosableForSlot(alive, revived, 3, 'night')).toBe(false);
+  });
+
+  it('allows anyone for other player slots', () => {
+    expect(isPlayerChoosableForSlot(killedNight2, master, 3, 'night')).toBe(true);
   });
 });

@@ -22,7 +22,11 @@ export type RoleInfoRoleFilter =
 type RoleInfoSlotBase = { id: string; label: string };
 
 export type RoleInfoSlot =
-  | (RoleInfoSlotBase & { kind: 'player' })
+  | (RoleInfoSlotBase & {
+      kind: 'player';
+      /** Only alive (or only dead) players can be chosen; kill slots are always alive-only. */
+      target?: 'alive' | 'dead';
+    })
   | (RoleInfoSlotBase & { kind: 'role'; filter: RoleInfoRoleFilter })
   | (RoleInfoSlotBase & { kind: 'number'; max: number; min: number })
   | (RoleInfoSlotBase & { kind: 'choice'; choices: string[] })
@@ -45,6 +49,8 @@ const YES_NO = ['Yes', 'No'];
 const GOOD_EVIL = ['Good', 'Evil'];
 
 const player = (label = 'Player'): SlotSpec => ({ kind: 'player', label });
+const alivePlayer = (label: string): SlotSpec => ({ kind: 'player', label, target: 'alive' });
+const deadPlayer = (label: string): SlotSpec => ({ kind: 'player', label, target: 'dead' });
 const role = (label: string, filter: RoleInfoRoleFilter = 'any'): SlotSpec => ({
   filter,
   kind: 'role',
@@ -101,14 +107,14 @@ const ROLE_INFO_SPECS: Record<string, RoleInfoSpec> = {
 
   // Bad Moon Rising — Townsfolk
   grandmother: [player('Grandchild'), role('Character', 'good')],
-  sailor: [player('Drinking with')],
-  chambermaid: [player('Player 1'), player('Player 2'), num('Woke', 2)],
+  sailor: [alivePlayer('Drinking with')],
+  chambermaid: [alivePlayer('Player 1'), alivePlayer('Player 2'), num('Woke', 2)],
   exorcist: [player('Chosen')],
   innkeeper: [player('Protected 1'), player('Protected 2')],
   gambler: [player('Player'), role('Guess')],
   gossip: [text('Statement'), yesNo('Died?')],
   courtier: [role('Drunk')],
-  professor: [player('Revived')],
+  professor: [deadPlayer('Revived')],
   minstrel: [],
   tealady: { neighbors: true, slots: [] },
   pacifist: [],
@@ -126,13 +132,13 @@ const ROLE_INFO_SPECS: Record<string, RoleInfoSpec> = {
   // Bad Moon Rising — Demons
   zombuul: [player('Killed')],
   pukka: [player('Poisoned')],
-  shabaloth: [player('Killed 1'), player('Killed 2'), player('Regurgitated')],
+  shabaloth: [player('Killed 1'), player('Killed 2'), deadPlayer('Regurgitated')],
   po: [player('Killed 1'), player('Killed 2'), player('Killed 3')],
 
   // Sects & Violets — Townsfolk
   clockmaker: [num('Steps', 10, 1)],
   dreamer: [player('Player'), role('Good', 'good'), role('Evil', 'evil')],
-  snakecharmer: [player('Chosen'), yesNo('Demon?')],
+  snakecharmer: [alivePlayer('Chosen'), yesNo('Demon?')],
   mathematician: [num('Abnormal', 10)],
   flowergirl: [yesNo('Demon voted?')],
   towncrier: [yesNo('Minion nominated?')],
@@ -182,7 +188,7 @@ const ROLE_INFO_SPECS: Record<string, RoleInfoSpec> = {
   fisherman: [text('Advice')],
   general: [choice('Winning', ['Good', 'Evil', 'Neither'])],
   highpriestess: [player('Speak with')],
-  huntsman: [player('Chosen'), yesNo('Damsel?')],
+  huntsman: [alivePlayer('Chosen'), yesNo('Damsel?')],
   king: [role('Alive character')],
   knight: [player('Not Demon 1'), player('Not Demon 2')],
   lycanthrope: [player('Killed')],
@@ -196,7 +202,7 @@ const ROLE_INFO_SPECS: Record<string, RoleInfoSpec> = {
   shugenja: [choice('Nearest evil', ['Clockwise', 'Anticlockwise'])],
   steward: [player('Good player')],
   villageidiot: [player('Chosen'), choice('Alignment', GOOD_EVIL)],
-  bonecollector: [player('Chosen'), role('Ability')],
+  bonecollector: [deadPlayer('Chosen'), role('Ability')],
   // Experimental & Carousel — Outsiders
   damsel: [],
   golem: [player('Nominated')],
@@ -1041,6 +1047,28 @@ function getRoleClaimerIds(players: Player[], roleId: string) {
       )
       .map((candidate) => candidate.id),
   );
+}
+
+/**
+ * Whether the player can be chosen for the slot in the given phase, judged by who was alive as
+ * the phase began (so a player killed that night still counts as alive).
+ */
+export function isPlayerChoosableForSlot(
+  candidate: Player,
+  slot: RoleInfoSlot,
+  day: number,
+  phase: GamePhase,
+) {
+  if (slot.kind !== 'player') return true;
+
+  const target = slot.target ?? (isKillSlot(slot) ? 'alive' : undefined);
+  if (!target) return true;
+
+  const wasDead =
+    phase === 'night'
+      ? day > 1 && isPlayerCurrentlyDead(candidate, day - 1, 'day')
+      : isPlayerCurrentlyDead(candidate, day, 'night');
+  return target === 'alive' ? !wasDead : wasDead;
 }
 
 function isKillSlot(slot: RoleInfoSlot) {
