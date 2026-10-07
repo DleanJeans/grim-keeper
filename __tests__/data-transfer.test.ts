@@ -5,6 +5,7 @@ import { APP_USER_ID } from '@/utils/object-id';
 
 const data: GameData = {
   appUserName: 'Keeper',
+  defaultStartingNight: 1,
   friends: [],
   games: [],
   roleCatalog: [],
@@ -355,7 +356,7 @@ describe('data transfer', () => {
       createBackup({ ...data, games: [game], scripts: [script], roleCatalog: [role] }),
     );
 
-    expect(backup.version).toBe(3);
+    expect(backup.version).toBe(4);
     expect(backup.data.games[0]).toMatchObject({ scriptId: 'script-1' });
     expect(backup.data.games[0].script).toBeUndefined();
     expect(parseBackup(JSON.stringify(backup)).games[0]).toMatchObject({

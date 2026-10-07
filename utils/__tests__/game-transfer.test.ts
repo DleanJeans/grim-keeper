@@ -298,6 +298,8 @@ function createGame({
 
   return {
     activeDay: 2,
+    activePhase: 'day',
+    startingNight: 1,
     conversations: [
       {
         createdAt,

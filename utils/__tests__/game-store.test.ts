@@ -68,7 +68,7 @@ describe('script persistence role references', () => {
     expect(typeof latestValue).toBe('string');
 
     const persisted = JSON.parse(latestValue as string);
-    expect(persisted.version).toBe(14);
+    expect(persisted.version).toBe(15);
     expect(persisted.state.scripts[0].roles).toEqual(['loric_role']);
     expect(persisted.state.games[0].script.roles).toEqual(['loric_role']);
   });
@@ -123,7 +123,7 @@ describe('script persistence role references', () => {
     expect(useGameStore.getState().scripts[0]?.roles).toEqual([officialRole]);
     const migratedValue = persistedStorage.setItem.mock.calls.at(-1)?.[1];
     const migrated = JSON.parse(migratedValue as string);
-    expect(migrated.version).toBe(14);
+    expect(migrated.version).toBe(15);
     expect(migrated.state.scripts[0].roles).toEqual(['loric_role']);
     expect(migrated.state.games[0].script.roles).toEqual(['loric_role']);
   });
@@ -164,7 +164,7 @@ describe('script persistence role references', () => {
     expect(useGameStore.getState().games[0]?.script?.roles).toEqual([officialRole]);
     const migratedValue = persistedStorage.setItem.mock.calls.at(-1)?.[1];
     const migrated = JSON.parse(migratedValue as string);
-    expect(migrated.version).toBe(14);
+    expect(migrated.version).toBe(15);
     expect(migrated.state.scripts).toEqual([]);
     expect(migrated.state.games[0]).not.toHaveProperty('script');
     expect(migrated.state.games[0].scriptRoleIds).toEqual([officialRole.id]);

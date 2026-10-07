@@ -142,7 +142,7 @@ export function ScriptRoleList({
       ];
     }
 
-    const sections = ROLE_SECTIONS.map(({ label, team }) => ({
+    const sections: ScriptRoleSection[] = ROLE_SECTIONS.map(({ label, team }) => ({
       data: chunkEntries(
         visibleRoleEntries.filter((entry) => entry.role.team?.toLocaleLowerCase() === team),
         twoColumns && !showNotes ? 2 : 1,
