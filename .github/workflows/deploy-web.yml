@@ -5,6 +5,7 @@ on:
     branches:
       - dev
       - main
+  pull_request:
 
 permissions:
   contents: read
@@ -30,6 +31,10 @@ jobs:
 
       - name: Unit tests
         run: pnpm exec jest --runInBand --watchman=false
+
+      - name: Build web (pull requests only)
+        if: ${{ github.event_name == 'pull_request' }}
+        run: pnpm build:web
 
       - name: "Deploy to dev (EAS Hosting alias: dev)"
         if: ${{ github.ref == 'refs/heads/dev' }}
