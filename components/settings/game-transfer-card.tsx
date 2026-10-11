@@ -10,7 +10,7 @@ import { colors } from '@/theme/colors';
 import { pickJsonFile } from '@/utils/file-transfer';
 import { parseGameTransfer } from '@/utils/game-transfer';
 
-export function GameTransferCard() {
+export function GameTransferSection() {
   const showDialog = useAppDialog();
   const importGameTransfer = useGameStore((state) => state.importGameTransfer);
   const importSession = useDjStore((state) => state.importSession);
@@ -51,7 +51,7 @@ export function GameTransferCard() {
   }
 
   return (
-    <View style={styles.card}>
+    <View style={styles.section}>
       <View style={styles.heading}>
         <Text selectable style={styles.title}>
           Single game transfer
@@ -111,15 +111,6 @@ const styles = StyleSheet.create({
   buttonTextDisabled: {
     color: colors.onDisabled,
   },
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderCurve: 'continuous',
-    borderRadius: 10,
-    borderWidth: 1,
-    gap: 16,
-    padding: 16,
-  },
   description: {
     color: colors.textMuted,
     fontSize: 15,
@@ -128,9 +119,15 @@ const styles = StyleSheet.create({
   heading: {
     gap: 6,
   },
+  section: {
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    gap: 16,
+    paddingTop: 16,
+  },
   title: {
     color: colors.text,
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '800',
   },
 });

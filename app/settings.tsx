@@ -6,7 +6,6 @@ import { DjSettingsCard } from '@/components/dj/dj-settings-card';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { AppVersionInfo } from '@/components/settings/app-version-info';
 import { DataTransferCard } from '@/components/settings/data-transfer-card';
-import { GameTransferCard } from '@/components/settings/game-transfer-card';
 import { NightStartSettingsCard } from '@/components/settings/night-start-settings-card';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
@@ -50,7 +49,6 @@ export default function SettingsRoute() {
         <ResponsiveContent style={styles.content}>
           <DjSettingsCard />
           <NightStartSettingsCard />
-          <GameTransferCard />
           <DataTransferCard />
           <Pressable
             accessibilityRole="button"

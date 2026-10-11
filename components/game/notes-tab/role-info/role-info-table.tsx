@@ -79,7 +79,7 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
         : undefined,
     [player],
   );
-  // Sushi Buffet lists every character, so its evil rows wait for the ones chosen as in play.
+  // Sushi Buffet shows every non-Traveller character, so each one's tokens can be reviewed.
   const isSushiBuffet = isSushiBuffetScript(game.script);
   const evilInPlaySlots = useMemo(
     () =>
@@ -118,13 +118,20 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
         roles: scriptRoles.filter(
           (role) =>
             role.team?.toLocaleLowerCase() === team &&
-            hasRoleInfo(role) &&
             (playerRoleIds
-              ? playerRoleIds.has(role.id)
-              : isRoleInfoShownInPhase(role, activeDay) &&
-                isUnusedOrUsedIn(role, roleInfos, activeDay, activePhase) &&
-                !isRoleInfoOver(role, getRoleClaimers(players, role.id), activeDay, activePhase) &&
-                isShownTeamRole(role, team, mentionedRoleIds, evilInPlayRoleIds, isSushiBuffet)),
+              ? hasRoleInfo(role) && playerRoleIds.has(role.id)
+              : isSushiBuffet
+                ? team !== 'traveller'
+                : hasRoleInfo(role) &&
+                  isRoleInfoShownInPhase(role, activeDay) &&
+                  isUnusedOrUsedIn(role, roleInfos, activeDay, activePhase) &&
+                  !isRoleInfoOver(
+                    role,
+                    getRoleClaimers(players, role.id),
+                    activeDay,
+                    activePhase,
+                  ) &&
+                  isShownTeamRole(role, team, mentionedRoleIds, evilInPlayRoleIds)),
         ),
       })).filter(({ roles }) => roles.length > 0),
     [
@@ -262,20 +269,18 @@ const styles = StyleSheet.create({
 
 /**
  * Evil characters show even when nobody claims them, since they rarely get claimed, but only the
- * ones chosen as in play once any are (always, when `requireInPlay`). Good characters show once
- * mentioned.
+ * ones chosen as in play once any are. Good characters show once mentioned.
  */
 function isShownTeamRole(
   role: Role,
   team: string,
   mentionedRoleIds: Set<string>,
   evilInPlayRoleIds: Map<EvilInPlayTeam, Set<string>>,
-  requireInPlay: boolean,
 ) {
   if (team !== 'demon' && team !== 'minion') return mentionedRoleIds.has(role.id);
 
   const inPlayRoleIds = evilInPlayRoleIds.get(team);
-  return inPlayRoleIds ? inPlayRoleIds.has(role.id) : !requireInPlay;
+  return !inPlayRoleIds || inPlayRoleIds.has(role.id);
 }
 
 /** Once-per-game characters only show in the phase their ability was used, once used. */

@@ -1,8 +1,9 @@
-import { Download, FileUp, Upload } from 'lucide-react-native';
+import { ClipboardPaste, Download, FileUp, Upload, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
+import { GameTransferSection } from '@/components/settings/game-transfer-card';
 import { Text } from '@/components/text';
 import { useDjStore } from '@/store/dj-store';
 import { useGameStore } from '@/store/game-store';
@@ -21,6 +22,7 @@ export function DataTransferCard() {
   const showDialog = useAppDialog();
   const [backupText, setBackupText] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  const [isPasting, setIsPasting] = useState(false);
   const [selectedBackup, setSelectedBackup] = useState<SelectedBackup | null>(null);
   const importData = useGameStore((state) => state.importData);
   const importDjData = useDjStore((state) => state.importData);
@@ -78,8 +80,7 @@ export function DataTransferCard() {
     const { dj, ...gameData } = data;
     importData(gameData);
     importDjData(dj);
-    setBackupText('');
-    setSelectedBackup(null);
+    resetImport();
 
     showDialog('Import complete', 'Your Grim Keeper data has been restored.');
   }
@@ -109,9 +110,10 @@ export function DataTransferCard() {
     }
   }
 
-  function clearSelectedBackup() {
+  function resetImport() {
     setSelectedBackup(null);
     setBackupText('');
+    setIsPasting(false);
   }
 
   return (
@@ -125,40 +127,78 @@ export function DataTransferCard() {
         </Text>
       </View>
 
-      <ActionButton
-        disabled={isExporting}
-        icon="download"
-        label={isExporting ? 'Preparing backup…' : 'Export data'}
-        onPress={exportData}
-      />
+      <View style={styles.section}>
+        <View style={styles.sectionHeading}>
+          <Text selectable style={styles.sectionTitle}>
+            Export
+          </Text>
+          <Text selectable style={styles.description}>
+            Save all app data on this device to a backup file.
+          </Text>
+        </View>
 
-      {selectedBackup ? (
-        <SelectedBackupSummary backup={selectedBackup} onClear={clearSelectedBackup} />
-      ) : (
-        <TextInput
-          accessibilityLabel="Backup JSON"
-          autoCapitalize="none"
-          autoCorrect={false}
-          multiline
-          onChangeText={setBackupText}
-          placeholder="Paste Grim Keeper backup JSON"
-          placeholderTextColor={colors.inputPlaceholder}
-          style={styles.input}
-          textAlignVertical="top"
-          value={backupText}
+        <ActionButton
+          disabled={isExporting}
+          icon="download"
+          label={isExporting ? 'Preparing backup…' : 'Export data'}
+          onPress={exportData}
         />
-      )}
+      </View>
 
-      {process.env.EXPO_OS === 'web' ? (
-        <ActionButton icon="file" label="Choose backup file" onPress={chooseBackupFile} secondary />
-      ) : null}
+      <View style={styles.section}>
+        <View style={styles.sectionHeading}>
+          <Text selectable style={styles.sectionTitle}>
+            Import
+          </Text>
+          <Text selectable style={styles.description}>
+            Replace all app data on this device with a backup.
+          </Text>
+        </View>
 
-      <ActionButton
-        disabled={!selectedBackup && !backupText.trim()}
-        icon="upload"
-        label="Import data"
-        onPress={confirmImport}
-      />
+        {selectedBackup ? <SelectedBackupSummary backup={selectedBackup} /> : null}
+
+        {isPasting ? (
+          <TextInput
+            accessibilityLabel="Backup JSON"
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoFocus
+            multiline
+            onChangeText={setBackupText}
+            placeholder="Paste Grim Keeper backup JSON"
+            placeholderTextColor={colors.inputPlaceholder}
+            style={styles.input}
+            textAlignVertical="top"
+            value={backupText}
+          />
+        ) : null}
+
+        {selectedBackup || isPasting ? (
+          <>
+            <ActionButton
+              disabled={!selectedBackup && !backupText.trim()}
+              icon="upload"
+              label="Import data"
+              onPress={confirmImport}
+            />
+            <ActionButton icon="cancel" label="Cancel" onPress={resetImport} secondary />
+          </>
+        ) : (
+          <>
+            {process.env.EXPO_OS === 'web' ? (
+              <ActionButton icon="file" label="Choose backup file" onPress={chooseBackupFile} />
+            ) : null}
+            <ActionButton
+              icon="paste"
+              label="Paste backup"
+              onPress={() => setIsPasting(true)}
+              secondary
+            />
+          </>
+        )}
+      </View>
+
+      <GameTransferSection />
     </View>
   );
 }
@@ -226,6 +266,20 @@ const styles = StyleSheet.create({
     minHeight: 140,
     padding: 12,
   },
+  section: {
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    gap: 16,
+    paddingTop: 16,
+  },
+  sectionHeading: {
+    gap: 6,
+  },
+  sectionTitle: {
+    color: colors.text,
+    fontSize: 17,
+    fontWeight: '800',
+  },
   selectedBackup: {
     backgroundColor: colors.inputBackground,
     borderColor: colors.inputBorder,
@@ -259,14 +313,20 @@ const styles = StyleSheet.create({
 
 type ActionButtonProps = {
   disabled?: boolean;
-  icon: 'download' | 'file' | 'upload';
+  icon: 'cancel' | 'download' | 'file' | 'paste' | 'upload';
   label: string;
   onPress: () => void;
   secondary?: boolean;
 };
 
 function ActionButton({ disabled, icon, label, onPress, secondary }: ActionButtonProps) {
-  const Icon = icon === 'download' ? Download : icon === 'file' ? FileUp : Upload;
+  const Icon = {
+    cancel: X,
+    download: Download,
+    file: FileUp,
+    paste: ClipboardPaste,
+    upload: Upload,
+  }[icon];
   const foregroundColor = disabled ? colors.onDisabled : secondary ? colors.text : colors.onPrimary;
 
   return (
@@ -295,13 +355,7 @@ function ActionButton({ disabled, icon, label, onPress, secondary }: ActionButto
   );
 }
 
-function SelectedBackupSummary({
-  backup,
-  onClear,
-}: {
-  backup: SelectedBackup;
-  onClear: () => void;
-}) {
+function SelectedBackupSummary({ backup }: { backup: SelectedBackup }) {
   const stats = getBackupStats(backup.data);
 
   return (
@@ -316,7 +370,6 @@ function SelectedBackupSummary({
           scripts · {stats.notes} notes
         </Text>
       </Text>
-      <ActionButton icon="upload" label="Paste backup instead" onPress={onClear} secondary />
     </View>
   );
 }
