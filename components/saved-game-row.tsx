@@ -1,7 +1,9 @@
 import { router } from 'expo-router';
-import { Trash2 } from 'lucide-react-native';
+import { ChevronDown, ChevronUp } from 'lucide-react-native';
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { SavedGamePlayerList } from '@/components/saved-game-player-list';
 import { SavedGameRolesRow } from '@/components/saved-game-roles-row';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
@@ -14,10 +16,12 @@ type SavedGameRowProps = {
 };
 
 export function SavedGameRow({ game, onDelete }: SavedGameRowProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const resultStyles = getResultStyles(game.result);
   const gameTitle = game.script?.name ?? formatGameDate(game.createdAt);
   const gameDays = getLastDayWithData(game);
-  const playerCountLabel = `${game.players.length} ${game.players.length === 1 ? 'player' : 'players'}`;
+  const playerCount = game.players.filter((player) => !player.isStoryteller).length;
+  const playerCountLabel = `${playerCount} ${playerCount === 1 ? 'player' : 'players'}`;
   const dayCountLabel = `${gameDays} ${gameDays === 1 ? 'day' : 'days'}`;
 
   return (
@@ -26,6 +30,8 @@ export function SavedGameRow({ game, onDelete }: SavedGameRowProps) {
         <Pressable
           accessibilityLabel={`Open ${gameTitle}, ${playerCountLabel}, ${dayCountLabel}${game.result ? `, ${formatResult(game.result)}` : ''}`}
           accessibilityRole="button"
+          accessibilityHint="Hold to delete"
+          onLongPress={() => onDelete(game.id)}
           onPress={() => router.push({ pathname: '/game/[id]', params: { id: game.id } })}
           style={({ pressed }) => [
             styles.gameButton,
@@ -36,38 +42,42 @@ export function SavedGameRow({ game, onDelete }: SavedGameRowProps) {
           <View style={styles.details}>
             <View style={styles.titleGroup}>
               <View style={styles.titleRow}>
-                <Text selectable style={styles.title}>
-                  {gameTitle}
-                </Text>
+                <Text style={styles.title}>{gameTitle}</Text>
                 {game.result ? <GameResultBadge result={game.result} /> : null}
               </View>
               {game.script ? (
-                <Text selectable style={styles.date}>
-                  {formatGameDate(game.createdAt)}
-                </Text>
+                <Text style={styles.date}>{formatGameDate(game.createdAt)}</Text>
               ) : null}
             </View>
-            <Text selectable style={styles.metadata}>
+            <Text style={styles.metadata}>
               {playerCountLabel} · {dayCountLabel}
             </Text>
-            {game.script ? <SavedGameRolesRow game={game} /> : null}
+            {game.script && !isExpanded ? <SavedGameRolesRow game={game} /> : null}
           </View>
         </Pressable>
-
-        <Pressable
-          accessibilityLabel={`Delete ${gameTitle}`}
-          accessibilityRole="button"
-          onPress={() => onDelete(game.id)}
-          style={({ pressed }) => [
-            styles.deleteButton,
-            resultStyles.surface,
-            resultStyles.divider,
-            pressed && styles.deletePressed,
-          ]}
-        >
-          <Trash2 color={colors.danger} size={18} strokeWidth={2.6} />
-        </Pressable>
       </View>
+
+      {isExpanded ? <SavedGamePlayerList game={game} /> : null}
+
+      <Pressable
+        accessibilityLabel={`${isExpanded ? 'Hide' : 'Show'} players in ${gameTitle}`}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: isExpanded }}
+        hitSlop={4}
+        onPress={() => setIsExpanded((expanded) => !expanded)}
+        style={({ pressed }) => [
+          styles.expandButton,
+          resultStyles.surface,
+          resultStyles.divider,
+          pressed && styles.pressed,
+        ]}
+      >
+        {isExpanded ? (
+          <ChevronUp color={colors.textMuted} size={20} strokeWidth={2.4} />
+        ) : (
+          <ChevronDown color={colors.textMuted} size={20} strokeWidth={2.4} />
+        )}
+      </Pressable>
     </View>
   );
 }
@@ -79,7 +89,6 @@ function GameResultBadge({ result }: { result: GameResult }) {
       style={[styles.badge, result === 'won' ? styles.wonBadge : styles.lostBadge]}
     >
       <Text
-        selectable
         style={[styles.badgeLabel, result === 'won' ? styles.wonBadgeLabel : styles.lostBadgeLabel]}
       >
         {formatResult(result)}
@@ -152,25 +161,21 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 13,
   },
-  deleteButton: {
-    alignItems: 'center',
-    borderBottomRightRadius: 8,
-    borderLeftColor: colors.borderStrong,
-    borderLeftWidth: 1,
-    borderTopRightRadius: 8,
-    justifyContent: 'center',
-    paddingHorizontal: 14,
-  },
-  deletePressed: {
-    backgroundColor: colors.dangerSurface,
-  },
   details: {
     flex: 1,
     gap: 8,
   },
-  gameButton: {
+  expandButton: {
+    alignItems: 'center',
     borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+    borderTopColor: colors.borderStrong,
+    borderTopWidth: 1,
+    paddingVertical: 6,
+  },
+  gameButton: {
     borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
     flex: 1,
     flexDirection: 'row',
     gap: 8,
@@ -182,7 +187,7 @@ const styles = StyleSheet.create({
     borderColor: colors.danger,
   },
   lostDivider: {
-    borderLeftColor: colors.danger,
+    borderTopColor: colors.danger,
   },
   lostSurface: {
     backgroundColor: colors.dangerSurface,
@@ -226,7 +231,7 @@ const styles = StyleSheet.create({
     borderColor: colors.successBorder,
   },
   wonDivider: {
-    borderLeftColor: colors.successBorder,
+    borderTopColor: colors.successBorder,
   },
   wonBadge: {
     backgroundColor: colors.successSurface,

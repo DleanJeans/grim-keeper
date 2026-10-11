@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { HoverTooltip } from '@/components/hover-tooltip';
 import { RoleIcon } from '@/components/role-icon';
 import { colors } from '@/theme/colors';
 import type { Game, Role } from '@/types/game';
@@ -24,11 +25,13 @@ export function SavedGameRolesRow({ game }: { game: Game }) {
   const unknownRole = GENERIC_KILLER_ROLES[0];
 
   const orderedPlayers = useMemo(() => {
-    return [...game.players].sort(
-      (first, second) =>
-        getPlayerRoleBucket(first, roles, game.activeDay) -
-          getPlayerRoleBucket(second, roles, game.activeDay) || first.seat - second.seat,
-    );
+    return game.players
+      .filter((player) => !player.isStoryteller)
+      .sort(
+        (first, second) =>
+          getPlayerRoleBucket(first, roles, game.activeDay) -
+            getPlayerRoleBucket(second, roles, game.activeDay) || first.seat - second.seat,
+      );
   }, [game.players, game.activeDay, roles]);
 
   // Collapse consecutive unknown players into a single badge showing the count.
@@ -55,25 +58,27 @@ export function SavedGameRolesRow({ game }: { game: Game }) {
       {entries.map((entry) => {
         if (entry.kind === 'unknown') {
           return (
-            <View
+            <HoverTooltip
               key={`unknown-${entry.players.map((player) => player.id).join('-')}`}
+              label={`${entry.players.map((player) => player.name).join(', ')}: Unknown`}
               style={styles.unknownBadge}
             >
               <RoleIcon role={unknownRole} size={ROLE_ICON_SIZE} />
               <View style={styles.unknownCount}>
                 <Text style={styles.unknownCountText}>{entry.players.length}</Text>
               </View>
-            </View>
+            </HoverTooltip>
           );
         }
 
         return (
-          <View
+          <HoverTooltip
             key={entry.player.id}
+            label={`${entry.player.name}: ${entry.role.name}`}
             style={entry.player.id === APP_USER_ID ? styles.appUserRing : undefined}
           >
             <RoleIcon role={entry.role} size={ROLE_ICON_SIZE} />
-          </View>
+          </HoverTooltip>
         );
       })}
     </View>
