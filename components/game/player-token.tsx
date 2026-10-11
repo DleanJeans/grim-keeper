@@ -51,6 +51,8 @@ type PlayerTokenProps = {
   confirmedRoleIds?: string[];
   deadVoteAvailable?: boolean;
   disabled?: boolean;
+  /** Label shown on the token; defaults to the player's name. */
+  displayName?: string;
   interactionMode?: boolean;
   isInitiator?: boolean;
   isNominated?: boolean;
@@ -72,6 +74,7 @@ export function PlayerToken({
   confirmedRoleIds,
   deadVoteAvailable,
   disabled = false,
+  displayName,
   isInitiator = false,
   isNominated = false,
   isNominator = false,
@@ -285,7 +288,7 @@ export function PlayerToken({
                   : Colors.textDefault
             }
             isStoryteller={player.isStoryteller}
-            name={player.name}
+            name={displayName ?? player.name}
             roles={visibleRoles}
           />
         </View>

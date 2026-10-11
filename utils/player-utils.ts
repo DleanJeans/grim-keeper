@@ -1,4 +1,5 @@
 import type { Conversation, GamePhase, Player } from '@/types/game';
+import { normalizePlayerName } from '@/utils/conversation-utils';
 import { getDeathPhase, getEventPhaseIndex, getPhaseIndex } from '@/utils/game-phase-utils';
 
 export function isPlayerCurrentlyDead(
@@ -64,4 +65,22 @@ export function hasDeadVoteAvailable(
       !revivedBeforeVote
     );
   });
+}
+
+/** First word of the name, or the full name when another player in the game shares that first word. */
+export function getPlayerTokenName(player: Player, players: Player[]): string {
+  const name = normalizePlayerName(player.name);
+  const firstName = getFirstName(name);
+  const firstNameKey = firstName.toLocaleLowerCase();
+  const isShared = players.some(
+    (other) =>
+      other.id !== player.id &&
+      getFirstName(normalizePlayerName(other.name)).toLocaleLowerCase() === firstNameKey,
+  );
+
+  return isShared ? name : firstName;
+}
+
+function getFirstName(name: string) {
+  return name.split(' ')[0] ?? '';
 }

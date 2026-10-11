@@ -12,7 +12,11 @@ import type { Conversation, Player, PlayerPosition, Role, RoleDisplayMode } from
 import { buildConversationGroupRepeats, getConversationGroupKey } from '@/utils/conversation-utils';
 import type { GamePhasePosition } from '@/utils/game-phase-utils';
 import { getPlayerMapPosition } from '@/utils/layout-utils';
-import { hasDeadVoteAvailable, isPlayerCurrentlyDead } from '@/utils/player-utils';
+import {
+  getPlayerTokenName,
+  hasDeadVoteAvailable,
+  isPlayerCurrentlyDead,
+} from '@/utils/player-utils';
 import {
   getLatestRumorMapDisplaysForDayOrPrevious,
   getRoleDisplayForModes,
@@ -332,6 +336,7 @@ function PlayerTokenForMap({
     <PlayerToken
       confirmedRoleIds={roleDisplay.kind === 'confirm' ? roleDisplay.roleIds : undefined}
       disabled={disabled}
+      displayName={getPlayerTokenName(player, players)}
       deadVoteAvailable={deadVoteAvailable}
       interactionMode={interactionMode}
       isInitiator={highlightedPlayerIds[0] === player.id}

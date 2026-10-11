@@ -1,5 +1,9 @@
 import type { Player, PlayerDeath, PlayerRevive } from '@/types/game';
-import { hasDeadVoteAvailable, isPlayerCurrentlyDead } from '@/utils/player-utils';
+import {
+  getPlayerTokenName,
+  hasDeadVoteAvailable,
+  isPlayerCurrentlyDead,
+} from '@/utils/player-utils';
 
 function makePlayer(overrides: Partial<Player> = {}): Player {
   return {
@@ -63,5 +67,24 @@ describe('hasDeadVoteAvailable', () => {
     expect(
       hasDeadVoteAvailable(makePlayer({ death: makeDeath(2), revive: makeRevive(3) }), 3),
     ).toBe(false);
+  });
+});
+
+describe('getPlayerTokenName', () => {
+  it('shows the first word when no other player shares it', () => {
+    const emma = makePlayer({ id: 'p1', name: 'Emma S' });
+    const bob = makePlayer({ id: 'p2', name: 'Bob' });
+
+    expect(getPlayerTokenName(emma, [emma, bob])).toBe('Emma');
+    expect(getPlayerTokenName(bob, [emma, bob])).toBe('Bob');
+  });
+
+  it('shows the full name when another player shares the first word', () => {
+    const emmaS = makePlayer({ id: 'p1', name: 'Emma S' });
+    const emmaW = makePlayer({ id: 'p2', name: 'emma  W' });
+    const players = [emmaS, emmaW];
+
+    expect(getPlayerTokenName(emmaS, players)).toBe('Emma S');
+    expect(getPlayerTokenName(emmaW, players)).toBe('emma W');
   });
 });
