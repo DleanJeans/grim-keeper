@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { ResponsiveContent } from '@/components/responsive-content';
+import { NewScriptButton } from '@/components/scripts/new-script-button';
 import { RemoteScriptCard } from '@/components/scripts/remote-script-card';
 import { ScriptCard } from '@/components/scripts/script-card';
 import { ScriptPasteImporter } from '@/components/scripts/script-paste-importer';
@@ -14,6 +15,7 @@ import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { StoredScript } from '@/types/game';
 import {
+  createEmptyScript,
   createHomebrewScript,
   createStoredScript,
   fetchRemoteScriptContent,
@@ -177,6 +179,16 @@ export default function ScriptsRoute() {
     }
   }
 
+  function handleCreateScript() {
+    const script = createEmptyScript(
+      'New script',
+      scripts.map((existingScript) => existingScript.id),
+    );
+
+    saveScript(script);
+    setEditingScriptId(script.id);
+  }
+
   function handleSelectScript(script: StoredScript) {
     if (!isSelectingForGame) {
       return;
@@ -257,6 +269,7 @@ export default function ScriptsRoute() {
             onSelect={handleSelectScript}
             onUpdate={updateScript}
           />
+          <NewScriptButton onPress={handleCreateScript} />
 
           <View style={{ gap: 10 }}>
             <Text

@@ -1,6 +1,7 @@
 import {
   BOTC_NIGHT_SHEET_URL,
   BOTC_SCRIPTS_API_URL,
+  createEmptyScript,
   createHomebrewScript,
   createOfficialCarouselScript,
   createStoredScript,
@@ -45,6 +46,17 @@ describe('script service', () => {
     } finally {
       globalThis.fetch = originalFetch;
     }
+  });
+
+  it('creates an empty script with a unique id', () => {
+    expect(createEmptyScript('New script', ['new-script'])).toEqual({
+      id: 'new-script-2',
+      name: 'New script',
+      version: '1.0.0',
+      scriptType: 'Full',
+      roles: [],
+      updatedAt: expect.any(String),
+    });
   });
 
   it('creates a stored homebrew script from standard script JSON', () => {

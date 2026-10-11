@@ -173,6 +173,17 @@ export function createHomebrewScript(
   };
 }
 
+export function createEmptyScript(name: string, usedIds: string[]): StoredScript {
+  return {
+    id: createScriptId({ name }, usedIds),
+    name,
+    version: '1.0.0',
+    scriptType: 'Full',
+    roles: [],
+    updatedAt: new Date().toISOString(),
+  };
+}
+
 export function createOfficialCarouselScript(
   catalog: Role[],
   existingId = OFFICIAL_CAROUSEL_SCRIPT_ID,
