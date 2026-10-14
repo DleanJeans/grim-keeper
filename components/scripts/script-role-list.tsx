@@ -11,13 +11,13 @@ import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Role } from '@/types/game';
 import { DESKTOP_CONTENT_MAX_WIDTH } from '@/utils/responsive-utils';
-import { fetchNightSheet } from '@/utils/script-service';
+import { BUNDLED_NIGHT_SHEET, fetchNightSheet } from '@/utils/script-service';
 import {
+  getNightOrderRoleEntries,
   getScriptRoleEntries,
   type NightSheet,
   type ScriptRoleEntry,
   type ScriptRoleNote,
-  sortScriptRoleEntriesByNightOrder,
 } from '@/utils/script-utils';
 
 const ROLE_SECTIONS = [
@@ -58,7 +58,7 @@ export function ScriptRoleList({
   const [twoColumns, setTwoColumns] = useState(false);
   const [notesOnly, setNotesOnly] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
-  const [nightSheet, setNightSheet] = useState<NightSheet | null>(null);
+  const [nightSheet, setNightSheet] = useState<NightSheet>(BUNDLED_NIGHT_SHEET);
   const [rowLayoutAnimationEnabled, setRowLayoutAnimationEnabled] = useState(true);
 
   useEffect(() => {
@@ -83,7 +83,7 @@ export function ScriptRoleList({
         }
       })
       .catch(() => {
-        // Stored script order remains available when the nightsheet is offline.
+        // The bundled nightsheet stays in use when the remote one is blocked or offline.
       });
 
     return () => {
@@ -118,23 +118,10 @@ export function ScriptRoleList({
   const sections = useMemo<ScriptRoleSection[]>(() => {
     if (sortMode === 'night-order') {
       const nightName = nightTab === 'first-night' ? 'firstNight' : 'otherNight';
-      const nightRoleIds = new Set(nightSheet?.[nightName] ?? []);
-      const allNightRoleIds = new Set([
-        ...(nightSheet?.firstNight ?? []),
-        ...(nightSheet?.otherNight ?? []),
-      ]);
-      const tabEntries = nightSheet
-        ? visibleRoleEntries.filter(({ role }) =>
-            nightTab === 'first-night'
-              ? nightRoleIds.has(role.id)
-              : nightRoleIds.has(role.id) || !allNightRoleIds.has(role.id),
-          )
-        : visibleRoleEntries;
-
       return [
         {
           data: chunkEntries(
-            sortScriptRoleEntriesByNightOrder(tabEntries, nightSheet, nightName),
+            getNightOrderRoleEntries(visibleRoleEntries, nightSheet, nightName),
             1,
           ),
           title: nightTab === 'first-night' ? 'First night' : 'Other nights',

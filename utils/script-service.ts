@@ -1,4 +1,5 @@
 import type { Game, Role, StoredScript } from '@/types/game';
+import bundledNightSheet from '@/utils/botc-nightsheet.json';
 import { createScriptId } from '@/utils/object-id';
 import {
   BOTC_ROLE_CATALOG_URL,
@@ -13,6 +14,8 @@ import type { NightSheet } from '@/utils/script-utils';
 
 export const BOTC_SCRIPTS_API_URL = 'https://www.botcscripts.com/api/scripts';
 export const BOTC_NIGHT_SHEET_URL = 'https://release.botc.app/resources/data/nightsheet.json';
+/** Offline copy of the official nightsheet; the app refreshes it from BOTC_NIGHT_SHEET_URL. */
+export const BUNDLED_NIGHT_SHEET: NightSheet = bundledNightSheet;
 export const OFFICIAL_SCRIPT_AUTHOR = 'The Pandemonium Institute';
 export const OFFICIAL_CAROUSEL_SCRIPT_ID = 'carousel';
 export { SUSHI_BUFFET_SCRIPT_ID, SUSHI_BUFFET_SCRIPT_NAME } from '@/utils/script-constants';

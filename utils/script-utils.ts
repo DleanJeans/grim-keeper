@@ -94,35 +94,27 @@ export function getScriptRoleEntries(
   });
 }
 
-export function sortScriptRoleEntriesByNightOrder(
+export function getNightOrderRoleEntries(
   entries: ScriptRoleEntry[],
-  nightSheet: NightSheet | null,
+  nightSheet: NightSheet,
   nightName: keyof NightSheet,
 ) {
   const nightOrder = new Map<string, number>();
 
-  for (const roleId of nightSheet?.[nightName] ?? []) {
-    if (!nightOrder.has(roleId)) {
-      nightOrder.set(roleId, nightOrder.size);
+  for (const roleId of nightSheet[nightName]) {
+    const normalizedRoleId = normalizeNightSheetRoleId(roleId);
+    if (!nightOrder.has(normalizedRoleId)) {
+      nightOrder.set(normalizedRoleId, nightOrder.size);
     }
   }
 
-  return [...entries].sort((first, second) => {
-    const firstIndex = nightOrder.get(first.role.id);
-    const secondIndex = nightOrder.get(second.role.id);
+  return entries
+    .map((entry) => ({ entry, index: nightOrder.get(normalizeNightSheetRoleId(entry.role.id)) }))
+    .filter((item): item is { entry: ScriptRoleEntry; index: number } => item.index !== undefined)
+    .sort((first, second) => first.index - second.index)
+    .map(({ entry }) => entry);
+}
 
-    if (firstIndex === undefined && secondIndex === undefined) {
-      return 0;
-    }
-
-    if (firstIndex === undefined) {
-      return 1;
-    }
-
-    if (secondIndex === undefined) {
-      return -1;
-    }
-
-    return firstIndex - secondIndex;
-  });
+function normalizeNightSheetRoleId(roleId: string) {
+  return roleId.toLocaleLowerCase().replace(/[^a-z]/g, '');
 }

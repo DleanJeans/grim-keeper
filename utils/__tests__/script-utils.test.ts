@@ -1,8 +1,8 @@
 import type { Game, Role, SavedNote, StoredScript } from '@/types/game';
 import {
+  getNightOrderRoleEntries,
   getScriptPlayCounts,
   getScriptRoleEntries,
-  sortScriptRoleEntriesByNightOrder,
   sortScriptsByMostPlayed,
 } from '@/utils/script-utils';
 
@@ -118,36 +118,29 @@ describe('script utils', () => {
     ]);
   });
 
-  it('sorts roles by each nightsheet tab and keeps unknown roles stable at the end', () => {
+  it('lists only the roles that wake on each nightsheet tab, in night order', () => {
     const entries = getScriptRoleEntries(
       [
         { id: 'custom-b', name: 'Custom B' },
         { id: 'imp', name: 'Imp' },
-        { id: 'custom-a', name: 'Custom A' },
+        { id: 'fortune_teller', name: 'Fortune Teller' },
         { id: 'empath', name: 'Empath' },
-      ],
-      [
-        { id: 'empath', name: 'Empath' },
-        { id: 'imp', name: 'Imp' },
+        { id: 'soldier', name: 'Soldier' },
       ],
       [],
+      [],
     );
+    const nightSheet = {
+      firstNight: ['fortuneteller', 'empath'],
+      otherNight: ['imp', 'empath', 'fortuneteller'],
+    };
 
     expect(
-      sortScriptRoleEntriesByNightOrder(
-        entries,
-        { firstNight: ['empath'], otherNight: ['imp'] },
-        'otherNight',
-      ).map(({ role }) => role.id),
-    ).toEqual(['imp', 'custom-b', 'custom-a', 'empath']);
-
+      getNightOrderRoleEntries(entries, nightSheet, 'firstNight').map(({ role }) => role.id),
+    ).toEqual(['fortune_teller', 'empath']);
     expect(
-      sortScriptRoleEntriesByNightOrder(
-        entries,
-        { firstNight: ['empath'], otherNight: ['imp'] },
-        'firstNight',
-      ).map(({ role }) => role.id),
-    ).toEqual(['empath', 'custom-b', 'imp', 'custom-a']);
+      getNightOrderRoleEntries(entries, nightSheet, 'otherNight').map(({ role }) => role.id),
+    ).toEqual(['imp', 'empath', 'fortune_teller']);
   });
 
   it('supports filtering the derived entries to roles with notes', () => {
