@@ -5,6 +5,7 @@ import { View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { RolePicker } from '@/components/game/notes-tab/role-picker';
 import { SushiBuffetRoleAssignmentDialog } from '@/components/game/notes-tab/sushi-buffet-role-assignment-dialog';
+import { TravelerRoleAlignmentButton } from '@/components/game/notes-tab/traveler-role-alignment-button';
 import { TravelerRolePicker } from '@/components/game/notes-tab/traveler-role-picker';
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { RoleAssignmentButton } from '@/components/game/role-assignment-button';
@@ -13,13 +14,14 @@ import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Player, PlayerRoleAssignment, Role } from '@/types/game';
-import { getPhaseLabel } from '@/utils/game-phase-utils';
+import { getEventPhaseIndex, getPhaseLabel } from '@/utils/game-phase-utils';
 import {
   canRoleTurnEvil,
   GENERIC_CHARACTER_TYPE_ROLE_REFERENCES,
   getEvilGoodRole,
   getRoleDisplayForDayOrPrevious,
   getRoleOwnerNamesForDay,
+  getRolesByIds,
   getTravelerClaimRoles,
   isTravelerRole,
 } from '@/utils/role-utils';
@@ -105,6 +107,18 @@ export function RoleAssignmentActions() {
     ? getTravelerClaimRoles(confirmedTravelerBaseRole)
     : [];
   const isTravelerClaim = roleAssignmentKind === 'claim' && !!confirmedTravelerRole;
+  // Confirm keeps the full picker in the phase the Traveller joined, so it can still be changed.
+  const activePhaseIndex = getEventPhaseIndex(activeDay, activePhase);
+  const travelerConfirmedEarlier = (focusedPlayer.roleAssignments ?? []).some(
+    (assignment) =>
+      assignment.kind === 'confirm' &&
+      getEventPhaseIndex(assignment.day, assignment.phase ?? 'day') < activePhaseIndex &&
+      getRolesByIds(assignment.roleIds, game.script?.roles ?? []).some(isTravelerRole),
+  );
+  const showTravelerAlignmentOnly =
+    !!confirmedTravelerBaseRole &&
+    roleAssignmentKind !== 'claim' &&
+    (roleAssignmentKind !== 'confirm' || travelerConfirmedEarlier);
   const roleOwnerNames = showRoles
     ? getRoleOwnerNamesForDay(players, activeDay, selectableRoles, activePhase)
     : undefined;
@@ -187,7 +201,16 @@ export function RoleAssignmentActions() {
             <SushiBuffetRoleAssignmentDialog />
           ) : (
             <>
-              {roleAssignmentKind === 'rumor' ? (
+              {showTravelerAlignmentOnly && confirmedTravelerBaseRole ? (
+                <TravelerRoleAlignmentButton
+                  onSelect={(roleId) => handleToggleRoleAssignment(roleId, true)}
+                  role={confirmedTravelerBaseRole}
+                  selectedRoleId={
+                    roleAssignmentRoleIds[0] ??
+                    (roleAssignmentKind === 'confirm' ? confirmedTravelerRole?.id : undefined)
+                  }
+                />
+              ) : roleAssignmentKind === 'rumor' ? (
                 rumorSubject ? (
                   <RolePicker
                     description={
@@ -236,7 +259,8 @@ export function RoleAssignmentActions() {
                   />
                 </>
               )}
-              {roleAssignmentKind === 'confirm' || roleAssignmentKind === 'guess' ? (
+              {!showTravelerAlignmentOnly &&
+              (roleAssignmentKind === 'confirm' || roleAssignmentKind === 'guess') ? (
                 <TravelerRolePicker
                   description={`Choose one traveler role to ${getRoleAssignmentLabel(roleAssignmentKind).toLocaleLowerCase()} for this player.`}
                   onToggleRole={handleToggleRoleAssignment}
