@@ -1,3 +1,5 @@
+- Make sure dialogs do not get overlapped by mobile keyboard
+
 ## File structure
 
 Each component lives in its own file. The default layout is, top to bottom:
