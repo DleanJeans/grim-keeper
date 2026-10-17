@@ -263,7 +263,14 @@ export function PlayerToken({
         {backgroundRole ? (
           <ImageBackground
             source={roleIconSource}
-            style={[StyleSheet.absoluteFill, { borderRadius: tokenSize / 2, overflow: 'hidden' }]}
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                borderRadius: tokenSize / 2,
+                filter: backgroundRole.redTint ? [{ hueRotate: '150deg' }] : undefined,
+                overflow: 'hidden',
+              },
+            ]}
             imageStyle={{
               borderRadius: tokenSize / 2,
               opacity: ROLE_IMAGE_OPACITY,

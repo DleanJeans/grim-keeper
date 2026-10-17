@@ -237,16 +237,17 @@ export function canRoleTurnEvil(role: Role) {
 }
 
 export function getEvilGoodRole(role: Role): Role {
-  const evilImageUrl =
-    role.imageUrls?.[1] ??
-    (getRoleEdition(role)
-      ? `${BOTC_ROLE_ICON_BASE_URL}/${getRoleEditionDirectory(role)}/${role.id}_e.webp`
-      : role.imageUrls?.[0]);
+  const officialEvilImageUrl = isOfficialRole({ edition: getRoleEdition(role) })
+    ? `${BOTC_ROLE_ICON_BASE_URL}/${getRoleEditionDirectory(role)}/${role.id}_e.webp`
+    : undefined;
+  const evilImageUrl = officialEvilImageUrl ?? role.imageUrls?.[1] ?? role.imageUrls?.[0];
 
   return {
     ...role,
     id: `${role.id}_evil`,
     ...(evilImageUrl ? { imageUrls: [evilImageUrl] } : {}),
+    // Custom and generic roles with only a good icon get it recolored red instead.
+    ...(!officialEvilImageUrl && !role.imageUrls?.[1] ? { redTint: true } : {}),
     // The red icon marks a named role as evil; generic types have no red icon.
     name: role.id.startsWith('generic_') ? `Evil ${role.name}` : role.name,
     team: role.team ?? officialRoleMetadataById[role.id]?.team,

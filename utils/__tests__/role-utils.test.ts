@@ -7,6 +7,7 @@ import {
   getAssignedRoleIdsForDayOrPrevious,
   getClaimedRoleIdsForDayOrPrevious,
   getEffectiveRoleForPlayer,
+  getEvilGoodRole,
   getKillerRoleOptions,
   getLatestRumorMapDisplaysForDayOrPrevious,
   getPlayerRoleBucket,
@@ -1351,9 +1352,20 @@ describe('role utilities', () => {
       'https://release.botc.app/resources/characters/tb/washerwoman_e.webp',
     );
     expect(getRoleAlignment(evilRole)).toBe('e');
+    expect(evilRole.redTint).toBeUndefined();
     expect(getRolesByIds(['generic_townsfolk_evil'], roles)[0]).toMatchObject({
       name: 'Evil Townsfolk',
+      redTint: true,
     });
+    expect(
+      getEvilGoodRole({
+        edition: 'Custom',
+        id: 'baker',
+        imageUrls: ['https://example.com/baker.png'],
+        name: 'Baker',
+        team: 'townsfolk',
+      }),
+    ).toMatchObject({ imageUrls: ['https://example.com/baker.png'], redTint: true });
     expect(getRolesByIds(['imp_evil'], [{ id: 'imp', name: 'Imp', team: 'demon' }])).toEqual([
       { id: 'imp_evil', name: 'Imp Evil' },
     ]);

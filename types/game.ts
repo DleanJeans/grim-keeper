@@ -22,6 +22,8 @@ export type Role = {
   edition?: string;
   imageSource?: ImageSourcePropType;
   imageUrls?: string[];
+  /** Runtime only: recolor the single good icon of a good role turned evil. */
+  redTint?: boolean;
 };
 
 export type StoredScript = {

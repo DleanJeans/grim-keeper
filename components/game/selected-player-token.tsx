@@ -31,7 +31,7 @@ export function SelectedPlayerToken({
       {backgroundRole ? (
         <ImageBackground
           source={roleIconSource}
-          style={StyleSheet.absoluteFill}
+          style={[StyleSheet.absoluteFill, backgroundRole.redTint && styles.redTint]}
           imageStyle={styles.backgroundImage}
         />
       ) : null}
@@ -84,6 +84,9 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 8,
     fontWeight: '900',
+  },
+  redTint: {
+    filter: [{ hueRotate: '150deg' }],
   },
   token: {
     alignItems: 'center',
