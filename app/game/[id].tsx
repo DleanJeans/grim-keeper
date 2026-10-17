@@ -12,6 +12,7 @@ import { ActiveGameTab } from '@/components/game/active-game-tab';
 import { CharacterTypeCountEditor } from '@/components/game/character-type-counts';
 import { DayCount } from '@/components/game/day-count';
 import { DayEditLockButton } from '@/components/game/day-edit-lock-button';
+import { DayJumpButtons } from '@/components/game/day-jump-buttons';
 import { DjGameButton } from '@/components/game/dj-game-button';
 import { GameMap } from '@/components/game/game-map';
 import {
@@ -1084,6 +1085,15 @@ export default function GameRoute() {
                   />
                 </View>
               </View>
+
+              <DayJumpButtons
+                key="day-jump-buttons"
+                activeDay={activeGame.activeDay}
+                activePhase={activePhase}
+                latestPhase={latestPhase ?? activePosition}
+                onChangePhase={handleChangePhase}
+                startingNight={startingNight}
+              />
 
               {isRearrangeMode ? (
                 <View key="rearrange-actions">
