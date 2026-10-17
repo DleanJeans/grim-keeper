@@ -41,50 +41,54 @@ export function AppDialogProvider({ children }: { children: ReactNode }) {
   return (
     <AppDialogContext value={contextValue}>
       {children}
-      <Modal animationType="fade" onRequestClose={dismiss} transparent visible={dialog !== null}>
-        <KeyboardAvoidingView
-          behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
-          style={styles.backdrop}
-        >
-          <View accessibilityRole="alert" style={styles.dialog}>
-            <View style={styles.content}>
-              <Text selectable style={styles.title}>
-                {dialog?.title}
-              </Text>
-              {dialog?.message ? (
-                <Text selectable style={styles.message}>
-                  {dialog.message}
+      {/* Mounted only while shown: on web each Modal portal stacks in mount order, so a
+          dialog opened from another Modal (e.g. the Traveler picker) must mount last. */}
+      {dialog ? (
+        <Modal animationType="fade" onRequestClose={dismiss} transparent visible>
+          <KeyboardAvoidingView
+            behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
+            style={styles.backdrop}
+          >
+            <View accessibilityRole="alert" style={styles.dialog}>
+              <View style={styles.content}>
+                <Text selectable style={styles.title}>
+                  {dialog?.title}
                 </Text>
-              ) : null}
-            </View>
-            <View style={styles.actions}>
-              {dialog?.buttons.map((button) => (
-                <Pressable
-                  accessibilityRole="button"
-                  key={`${button.style ?? 'default'}-${button.text}`}
-                  onPress={() => handleButtonPress(button)}
-                  style={({ pressed }) => [
-                    styles.action,
-                    button.style === 'destructive' ? styles.destructiveAction : null,
-                    button.style === 'success' ? styles.successAction : null,
-                    pressed ? styles.actionPressed : null,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.actionText,
-                      button.style === 'destructive' ? styles.destructiveActionText : null,
-                      button.style === 'success' ? styles.successActionText : null,
+                {dialog?.message ? (
+                  <Text selectable style={styles.message}>
+                    {dialog.message}
+                  </Text>
+                ) : null}
+              </View>
+              <View style={styles.actions}>
+                {dialog?.buttons.map((button) => (
+                  <Pressable
+                    accessibilityRole="button"
+                    key={`${button.style ?? 'default'}-${button.text}`}
+                    onPress={() => handleButtonPress(button)}
+                    style={({ pressed }) => [
+                      styles.action,
+                      button.style === 'destructive' ? styles.destructiveAction : null,
+                      button.style === 'success' ? styles.successAction : null,
+                      pressed ? styles.actionPressed : null,
                     ]}
                   >
-                    {button.text}
-                  </Text>
-                </Pressable>
-              ))}
+                    <Text
+                      style={[
+                        styles.actionText,
+                        button.style === 'destructive' ? styles.destructiveActionText : null,
+                        button.style === 'success' ? styles.successActionText : null,
+                      ]}
+                    >
+                      {button.text}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
             </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+          </KeyboardAvoidingView>
+        </Modal>
+      ) : null}
     </AppDialogContext>
   );
 }
