@@ -224,13 +224,18 @@ export function getTravelerClaimRoles(role: Role): Role[] {
   ];
 }
 
+// Kill abilities the ability-text patterns below don't catch.
+const KILLER_ROLE_IDS = new Set(['gangster', 'golem', 'tinker']);
+
 export function canRoleKill(role: Role) {
   const ability = role.ability?.toLocaleLowerCase() ?? '';
 
   return (
+    KILLER_ROLE_IDS.has(role.id) ||
     /\b(?:choose(?:s)?|select(?:s)?|nominate(?:s)?|pick(?:s)?)\b[\s\S]{0,100}\b(?:a|another|one|target|\d+)?\s*players?\b[\s\S]{0,180}\b(?:die|dies|executed|killed|kill)\b/.test(
       ability,
-    ) || /\b(?:a|another|one) player (?:die|dies|is killed|is dead)\b/.test(ability)
+    ) ||
+    /\b(?:a|another|one) player (?:die|dies|is killed|is dead)\b/.test(ability)
   );
 }
 
@@ -349,6 +354,21 @@ export function getAssignedRoleIdsForDayOrPrevious(
     ...(getRoleAssignmentForDayOrPrevious(assignments, day, 'claim', phase)?.roleIds ?? []),
     ...(getRoleAssignmentForDayOrPrevious(assignments, day, 'confirm', phase)?.roleIds ?? []),
   ].filter((roleId, index, roleIds) => roleIds.indexOf(roleId) === index);
+}
+
+/** Role ids any player has claimed or confirmed by this phase, Traveller alignments dropped. */
+export function getClaimedRoleIdsForDayOrPrevious(
+  players: Player[],
+  day: number,
+  phase: GamePhase = 'day',
+) {
+  const roleIds = players.flatMap((player) =>
+    getAssignedRoleIdsForDayOrPrevious(player.roleAssignments, day, phase).map((roleId) =>
+      roleId.replace(/_(?:good|evil)$/, ''),
+    ),
+  );
+
+  return [...new Set(roleIds)];
 }
 
 export function getRoleNames(roleIds: string[], roles: Role[]) {

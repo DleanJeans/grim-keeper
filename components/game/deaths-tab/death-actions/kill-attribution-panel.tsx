@@ -11,7 +11,13 @@ import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { KillAttribution, Player, Role } from '@/types/game';
 import { getPhaseLabel } from '@/utils/game-phase-utils';
-import { getKillerRoleOptions, getRoleOwnerNamesForDay, getRolesByIds } from '@/utils/role-utils';
+import {
+  getClaimedRoleIdsForDayOrPrevious,
+  getKillerRoleOptions,
+  getRoleOwnerNamesForDay,
+  getRolesByIds,
+} from '@/utils/role-utils';
+import { isSushiBuffetScript } from '@/utils/script-service';
 
 type KillAttributionPanelProps = {
   confirmLabel?: string;
@@ -36,8 +42,15 @@ export function KillAttributionPanel({
   const [killerRoleIds, setKillerRoleIds] = useState<string[]>(
     initialAttribution?.killerRoleIds ?? [],
   );
+  // Sushi Buffet's script holds every character, so only offer the ones players claimed.
+  const scriptRoles = isSushiBuffetScript(game.script)
+    ? getRolesByIds(getClaimedRoleIdsForDayOrPrevious(players, activeDay, activePhase), [
+        ...(game.script?.roles ?? []),
+        ...roleCatalog,
+      ])
+    : (game.script?.roles ?? []);
   const killerRoles = getKillerRoleOptions(
-    [...(game.script?.roles ?? []), ...getRolesByIds(game.lorics ?? [], roleCatalog)],
+    [...scriptRoles, ...getRolesByIds(game.lorics ?? [], roleCatalog)],
     roleCatalog,
   );
   const killerRoleSections = getKillerRoleSections(killerRoles);
@@ -112,31 +125,19 @@ export function KillAttributionPanel({
 function getKillerRoleSections(roles: Role[]) {
   return [
     { label: 'Generic', roles: roles.filter((role) => role.id.startsWith('generic_')) },
-    {
-      label: 'Loric',
-      roles: roles.filter(
-        (role) => !role.id.startsWith('generic_') && role.team?.toLocaleLowerCase() === 'loric',
-      ),
-    },
-    {
-      label: 'Townsfolk',
-      roles: roles.filter(
-        (role) => !role.id.startsWith('generic_') && role.team?.toLocaleLowerCase() === 'townsfolk',
-      ),
-    },
-    {
-      label: 'Minion',
-      roles: roles.filter(
-        (role) => !role.id.startsWith('generic_') && role.team?.toLocaleLowerCase() === 'minion',
-      ),
-    },
-    {
-      label: 'Demon',
-      roles: roles.filter(
-        (role) => !role.id.startsWith('generic_') && role.team?.toLocaleLowerCase() === 'demon',
-      ),
-    },
+    { label: 'Loric', roles: getTeamRoles(roles, 'loric') },
+    { label: 'Townsfolk', roles: getTeamRoles(roles, 'townsfolk') },
+    { label: 'Outsider', roles: getTeamRoles(roles, 'outsider') },
+    { label: 'Minion', roles: getTeamRoles(roles, 'minion') },
+    { label: 'Demon', roles: getTeamRoles(roles, 'demon') },
+    { label: 'Traveller', roles: getTeamRoles(roles, 'traveller') },
   ];
+}
+
+function getTeamRoles(roles: Role[], team: string) {
+  return roles.filter(
+    (role) => !role.id.startsWith('generic_') && role.team?.toLocaleLowerCase() === team,
+  );
 }
 
 function KillFormButton({

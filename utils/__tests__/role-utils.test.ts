@@ -5,6 +5,7 @@ import {
   GENERIC_CHARACTER_TYPE_ROLES,
   getAssignedRoleIdsForDay,
   getAssignedRoleIdsForDayOrPrevious,
+  getClaimedRoleIdsForDayOrPrevious,
   getEffectiveRoleForPlayer,
   getKillerRoleOptions,
   getLatestRumorMapDisplaysForDayOrPrevious,
@@ -935,6 +936,80 @@ describe('role utilities', () => {
     ]);
 
     expect(roles.map((role) => role.id)).toEqual(['generic_unknown', 'imp']);
+  });
+
+  it('collects claimed and confirmed role ids up to the active phase', () => {
+    const players = [
+      {
+        id: 'p1',
+        name: 'Ann',
+        seat: 0,
+        roleAssignments: [
+          { day: 1, kind: 'claim' as const, roleIds: ['moonchild'], updatedAt: '' },
+          { day: 1, kind: 'guess' as const, roleIds: ['imp'], updatedAt: '' },
+        ],
+      },
+      {
+        id: 'p2',
+        name: 'Bob',
+        seat: 1,
+        roleAssignments: [
+          { day: 1, kind: 'confirm' as const, roleIds: ['gunslinger_good'], updatedAt: '' },
+          { day: 3, kind: 'claim' as const, roleIds: ['golem'], updatedAt: '' },
+        ],
+      },
+    ];
+
+    expect(getClaimedRoleIdsForDayOrPrevious(players, 2)).toEqual(['moonchild', 'gunslinger']);
+  });
+
+  it('includes the Moonchild as a killer role option', () => {
+    const roles = getKillerRoleOptions([
+      {
+        ability:
+          'When you learn that you died, publicly choose 1 alive player. Tonight, if it was a good player, they die.',
+        id: 'moonchild',
+        name: 'Moonchild',
+        team: 'outsider',
+      },
+    ]);
+
+    expect(roles.map((role) => role.id)).toContain('moonchild');
+  });
+
+  it('includes Outsider and Traveller killer roles the ability patterns miss', () => {
+    const roles = getKillerRoleOptions([
+      {
+        ability:
+          'You may only nominate once per game. When you do, if the nominee is not the Demon, they die.',
+        id: 'golem',
+        name: 'Golem',
+        team: 'outsider',
+      },
+      { ability: 'You might die at any time.', id: 'tinker', name: 'Tinker', team: 'outsider' },
+      {
+        ability:
+          'Once per day, you may choose to kill an alive neighbour, if your other alive neighbour agrees.',
+        id: 'gangster',
+        name: 'Gangster',
+        team: 'traveller',
+      },
+      {
+        ability:
+          'Each day, after the 1st vote has been tallied, you may choose a player that voted: they die.',
+        id: 'gunslinger',
+        name: 'Gunslinger',
+        team: 'traveller',
+      },
+    ]);
+
+    expect(roles.map((role) => role.id)).toEqual([
+      'generic_unknown',
+      'golem',
+      'tinker',
+      'gangster',
+      'gunslinger',
+    ]);
   });
 
   it('keeps generic demon when multiple demon types are in the script', () => {
