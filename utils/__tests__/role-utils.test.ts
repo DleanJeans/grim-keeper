@@ -11,6 +11,7 @@ import {
   getLatestRumorMapDisplaysForDayOrPrevious,
   getPlayerRoleBucket,
   getReferencedRoleIdsForDayOrPrevious,
+  getRoleAlignment,
   getRoleAssignmentForDay,
   getRoleDisplayForDayOrPrevious,
   getRoleDisplayForMode,
@@ -20,6 +21,7 @@ import {
   getRoleIdsMentionedByOtherPlayersForDay,
   getRoleNames,
   getRoleOwnerNamesForDay,
+  getRolesByIds,
   getRolesForDay,
   getRolesForDayOrPrevious,
   getRolesWithKillAbility,
@@ -1337,6 +1339,23 @@ describe('role utilities', () => {
       'p6', // minion, seat 5
       'p3', // demon, seat 6
       'p7', // unknown, seat 1
+    ]);
+  });
+
+  it('resolves a good role swapped to evil with the red icon and evil alignment', () => {
+    const roles = [{ edition: 'tb', id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' }];
+    const [evilRole] = getRolesByIds(['washerwoman_evil'], roles);
+
+    expect(evilRole).toMatchObject({ id: 'washerwoman_evil', name: 'Washerwoman' });
+    expect(getRoleIconUrl(evilRole)).toBe(
+      'https://release.botc.app/resources/characters/tb/washerwoman_e.webp',
+    );
+    expect(getRoleAlignment(evilRole)).toBe('e');
+    expect(getRolesByIds(['generic_townsfolk_evil'], roles)[0]).toMatchObject({
+      name: 'Evil Townsfolk',
+    });
+    expect(getRolesByIds(['imp_evil'], [{ id: 'imp', name: 'Imp', team: 'demon' }])).toEqual([
+      { id: 'imp_evil', name: 'Imp Evil' },
     ]);
   });
 });

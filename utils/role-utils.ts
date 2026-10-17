@@ -176,6 +176,10 @@ export function getRoleIconUrlForAlignment(role: Role, alignment: 'g' | 'e') {
 export function getRoleAlignment(role: Role): 'g' | 'e' | undefined {
   const team = getRoleTeam(role);
 
+  if (isEvilGoodRole(role)) {
+    return 'e';
+  }
+
   if (alignedGoodTeams.has(team)) {
     return 'g';
   }
@@ -226,6 +230,32 @@ export function getTravelerClaimRoles(role: Role): Role[] {
 
 // Kill abilities the ability-text patterns below don't catch.
 const KILLER_ROLE_IDS = new Set(['gangster', 'golem', 'tinker']);
+
+/** Good (Townsfolk/Outsider) roles that turned evil are stored as `<roleId>_evil`. */
+export function canRoleTurnEvil(role: Role) {
+  return alignedGoodTeams.has(getRoleTeam(role)) && !isEvilGoodRole(role);
+}
+
+export function getEvilGoodRole(role: Role): Role {
+  const evilImageUrl =
+    role.imageUrls?.[1] ??
+    (getRoleEdition(role)
+      ? `${BOTC_ROLE_ICON_BASE_URL}/${getRoleEditionDirectory(role)}/${role.id}_e.webp`
+      : role.imageUrls?.[0]);
+
+  return {
+    ...role,
+    id: `${role.id}_evil`,
+    ...(evilImageUrl ? { imageUrls: [evilImageUrl] } : {}),
+    // The red icon marks a named role as evil; generic types have no red icon.
+    name: role.id.startsWith('generic_') ? `Evil ${role.name}` : role.name,
+    team: role.team ?? officialRoleMetadataById[role.id]?.team,
+  };
+}
+
+function isEvilGoodRole(role: Role) {
+  return role.id.endsWith('_evil') && alignedGoodTeams.has(getRoleTeam(role));
+}
 
 export function canRoleKill(role: Role) {
   const ability = role.ability?.toLocaleLowerCase() ?? '';
@@ -730,9 +760,13 @@ function getTravelerClaimRoleById(roleId: string, roles: Role[]) {
     return undefined;
   }
 
-  const travelerRole = roles.find((role) => role.id === match[1] && isTravelerRole(role));
-  return travelerRole
-    ? getTravelerClaimRoles(travelerRole).find((role) => role.id === roleId)
+  const baseRole = [...roles, ...GENERIC_CHARACTER_TYPE_ROLES].find((role) => role.id === match[1]);
+  if (baseRole && match[2] === 'evil' && canRoleTurnEvil(baseRole)) {
+    return getEvilGoodRole(baseRole);
+  }
+
+  return baseRole && isTravelerRole(baseRole)
+    ? getTravelerClaimRoles(baseRole).find((role) => role.id === roleId)
     : undefined;
 }
 

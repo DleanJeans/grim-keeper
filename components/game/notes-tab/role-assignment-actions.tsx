@@ -1,4 +1,5 @@
-import { CircleHelp, Megaphone, ShieldCheck, Tag } from 'lucide-react-native';
+import { CircleHelp, Megaphone, ShieldCheck, Skull, Tag } from 'lucide-react-native';
+import { useState } from 'react';
 import { View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
@@ -14,7 +15,9 @@ import { colors } from '@/theme/colors';
 import type { Player, PlayerRoleAssignment, Role } from '@/types/game';
 import { getPhaseLabel } from '@/utils/game-phase-utils';
 import {
+  canRoleTurnEvil,
   GENERIC_CHARACTER_TYPE_ROLE_REFERENCES,
+  getEvilGoodRole,
   getRoleDisplayForDayOrPrevious,
   getRoleOwnerNamesForDay,
   getTravelerClaimRoles,
@@ -47,6 +50,8 @@ export function RoleAssignmentActions() {
     startingNight,
   } = useGameRouteContext();
   const roleCatalog = useGameStore((state) => state.roleCatalog);
+  // Keyed to the open panel so the Evil toggle resets for another player or kind.
+  const [evilPickingKey, setEvilPickingKey] = useState<string | null>(null);
 
   if (!focusedPlayer || interactionMode || !game.script) {
     return null;
@@ -61,6 +66,31 @@ export function RoleAssignmentActions() {
       ? selectableRoles.filter((role) => !isTravelerRole(role))
       : selectableRoles;
   const regularRoles = assignmentRoles.filter((role) => !isTravelerRole(role));
+  const pickingKey = `${focusedPlayer.id}:${roleAssignmentKind}`;
+  const selectedRoleId = roleAssignmentRoleIds[0];
+  const selectedTurnableRole = regularRoles.find(
+    (role) =>
+      canRoleTurnEvil(role) && (role.id === selectedRoleId || `${role.id}_evil` === selectedRoleId),
+  );
+  const showEvilToggle =
+    (roleAssignmentKind === 'confirm' || roleAssignmentKind === 'guess') &&
+    (!selectedRoleId || !!selectedTurnableRole);
+  const evilSelected = selectedTurnableRole
+    ? selectedRoleId === `${selectedTurnableRole.id}_evil`
+    : evilPickingKey === pickingKey;
+  const pickerRoles =
+    showEvilToggle && evilSelected
+      ? regularRoles.map((role) => (canRoleTurnEvil(role) ? getEvilGoodRole(role) : role))
+      : regularRoles;
+  const handleToggleEvil = () => {
+    setEvilPickingKey(evilSelected ? null : pickingKey);
+    if (selectedTurnableRole) {
+      handleToggleRoleAssignment(
+        evilSelected ? selectedTurnableRole.id : `${selectedTurnableRole.id}_evil`,
+        true,
+      );
+    }
+  };
   const confirmedRoleDisplay = getRoleDisplayForDayOrPrevious(
     focusedPlayer.roleAssignments?.filter((assignment) => assignment.kind === 'confirm'),
     activeDay,
@@ -182,15 +212,29 @@ export function RoleAssignmentActions() {
                   scriptId={game.script.id}
                 />
               ) : (
-                <RolePicker
-                  description={`Tap a role to ${getRoleAssignmentLabel(roleAssignmentKind).toLocaleLowerCase()} or clear it.`}
-                  onToggleRole={handleToggleRoleAssignment}
-                  roles={regularRoles}
-                  roleOwnerNames={roleOwnerNames}
-                  sectioned
-                  selectedRoleIds={roleAssignmentRoleIds}
-                  scriptId={game.script.id}
-                />
+                <>
+                  {showEvilToggle ? (
+                    <RoleAssignmentButton
+                      accessibilityLabel={
+                        evilSelected ? 'Swap back to good roles' : 'Swap good roles to evil'
+                      }
+                      compact
+                      icon={Skull}
+                      label="Evil"
+                      onPress={handleToggleEvil}
+                      selected={evilSelected}
+                    />
+                  ) : null}
+                  <RolePicker
+                    description={`Tap a role to ${getRoleAssignmentLabel(roleAssignmentKind).toLocaleLowerCase()} or clear it.`}
+                    onToggleRole={handleToggleRoleAssignment}
+                    roles={pickerRoles}
+                    roleOwnerNames={roleOwnerNames}
+                    sectioned
+                    selectedRoleIds={roleAssignmentRoleIds}
+                    scriptId={game.script.id}
+                  />
+                </>
               )}
               {roleAssignmentKind === 'confirm' || roleAssignmentKind === 'guess' ? (
                 <TravelerRolePicker
