@@ -1,7 +1,8 @@
 import { BookOpen, Check, ChevronDown, ChevronRight, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { SearchBox } from '@/components/search-box';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { StoredScript } from '@/types/game';
@@ -31,18 +32,32 @@ export function GameScriptPicker({
   triggerHeight,
 }: GameScriptPickerProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const selectableScripts = scripts.filter((script) => script.id !== SUSHI_BUFFET_SCRIPT_ID);
   const selectedScript = [featuredScript, ...selectableScripts].find(
     (script) => script?.id === selectedScriptId,
   );
+  const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
+  const visibleFeaturedScript =
+    featuredScript && matchesScriptSearch(featuredScript, normalizedQuery)
+      ? featuredScript
+      : undefined;
+  const visibleScripts = selectableScripts.filter((script) =>
+    matchesScriptSearch(script, normalizedQuery),
+  );
+
+  function closePicker() {
+    setPickerOpen(false);
+    setSearchQuery('');
+  }
 
   function handleSelect(scriptId: string | null) {
     onSelect(scriptId);
-    setPickerOpen(false);
+    closePicker();
   }
 
   function handleBrowse() {
-    setPickerOpen(false);
+    closePicker();
     onBrowse();
   }
 
@@ -88,17 +103,15 @@ export function GameScriptPicker({
           <ChevronDown color={colors.textMuted} size={18} strokeWidth={2.6} />
         </Pressable>
       </View>
-      <Modal
-        animationType="slide"
-        onRequestClose={() => setPickerOpen(false)}
-        transparent
-        visible={pickerOpen}
-      >
-        <View style={{ backgroundColor: '#00000099', flex: 1, justifyContent: 'flex-end' }}>
+      <Modal animationType="slide" onRequestClose={closePicker} transparent visible={pickerOpen}>
+        <KeyboardAvoidingView
+          behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
+          style={{ backgroundColor: '#00000099', flex: 1, justifyContent: 'flex-end' }}
+        >
           <Pressable
             accessibilityLabel="Close script picker"
             accessibilityRole="button"
-            onPress={() => setPickerOpen(false)}
+            onPress={closePicker}
             style={{ flex: 1 }}
           />
           <View
@@ -123,7 +136,7 @@ export function GameScriptPicker({
                 accessibilityLabel="Close script picker"
                 accessibilityRole="button"
                 hitSlop={8}
-                onPress={() => setPickerOpen(false)}
+                onPress={closePicker}
                 style={({ pressed }) => ({
                   alignItems: 'center',
                   backgroundColor: pressed ? colors.surfacePressed : colors.surfaceRaised,
@@ -136,28 +149,37 @@ export function GameScriptPicker({
                 <X color={colors.textMuted} size={18} strokeWidth={2.5} />
               </Pressable>
             </View>
+            <SearchBox label="Search scripts" onChangeText={setSearchQuery} value={searchQuery} />
             <ScrollView
               contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
               contentInsetAdjustmentBehavior="automatic"
+              keyboardShouldPersistTaps="handled"
               nestedScrollEnabled
               showsVerticalScrollIndicator
               style={{ flexGrow: 0, flexShrink: 1 }}
             >
-              {featuredScript ? (
+              {visibleFeaturedScript ? (
                 <ScriptOption
                   description="Built-in script with a customizable role pool"
-                  label={featuredScript.name}
-                  onPress={() => handleSelect(featuredScript.id)}
-                  selected={selectedScriptId === featuredScript.id}
+                  label={visibleFeaturedScript.name}
+                  onPress={() => handleSelect(visibleFeaturedScript.id)}
+                  selected={selectedScriptId === visibleFeaturedScript.id}
                 />
               ) : null}
-              <ScriptOption
-                description="Assign roles later from the game screen"
-                label="No script"
-                selected={selectedScriptId === null}
-                onPress={() => handleSelect(null)}
-              />
-              {selectableScripts.map((script) => (
+              {normalizedQuery ? null : (
+                <ScriptOption
+                  description="Assign roles later from the game screen"
+                  label="No script"
+                  selected={selectedScriptId === null}
+                  onPress={() => handleSelect(null)}
+                />
+              )}
+              {normalizedQuery && !visibleFeaturedScript && visibleScripts.length === 0 ? (
+                <Text selectable style={styles.emptyText}>
+                  No scripts match that search.
+                </Text>
+              ) : null}
+              {visibleScripts.map((script) => (
                 <ScriptOption
                   description={getScriptOptionDescription(script, scriptPlayCounts?.get(script.id))}
                   author={script.author}
@@ -191,9 +213,17 @@ export function GameScriptPicker({
               <ChevronRight color={colors.textMuted} size={16} strokeWidth={2.5} />
             </Pressable>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
+  );
+}
+
+function matchesScriptSearch(script: StoredScript, normalizedQuery: string) {
+  return (
+    !normalizedQuery ||
+    script.name.toLocaleLowerCase().includes(normalizedQuery) ||
+    Boolean(script.author?.toLocaleLowerCase().includes(normalizedQuery))
   );
 }
 
@@ -214,6 +244,10 @@ function getScriptDescription(script?: StoredScript) {
 
   return `${script.roles.length} roles${script.author ? ` · ${script.author}` : ''}`;
 }
+
+const styles = StyleSheet.create({
+  emptyText: { color: colors.textMuted, fontSize: 14, padding: 12 },
+});
 
 function ScriptOption({
   author,
