@@ -24,6 +24,7 @@ import {
   isSushiBuffetScript,
   type RemoteScript,
 } from '@/utils/script-service';
+import { sortScriptsByMostPlayed } from '@/utils/script-utils';
 
 export default function ScriptsRoute() {
   const showDialog = useAppDialog();
@@ -33,6 +34,7 @@ export default function ScriptsRoute() {
   }>();
   const isSelectingForGame = selectForGame === 'true';
   const roleCatalog = useGameStore((state) => state.roleCatalog);
+  const games = useGameStore((state) => state.games);
   const scripts = useGameStore((state) => state.scripts);
   const deleteScript = useGameStore((state) => state.deleteScript);
   const saveScript = useGameStore((state) => state.saveScript);
@@ -260,7 +262,10 @@ export default function ScriptsRoute() {
             canSelect={isSelectingForGame}
             editingScriptId={editingScriptId}
             roleCatalog={roleCatalog}
-            scripts={scripts.filter((script) => !isSushiBuffetScript(script))}
+            scripts={sortScriptsByMostPlayed(
+              scripts.filter((script) => !isSushiBuffetScript(script)),
+              games,
+            )}
             onDelete={confirmDeleteScript}
             onEdit={(scriptId) =>
               setEditingScriptId((currentId) => (currentId === scriptId ? null : scriptId))
