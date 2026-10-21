@@ -33,6 +33,8 @@ export type StoredScript = {
   version: string;
   scriptType?: string;
   author?: string;
+  /** Leaves the script list once a game uses it; the game keeps its own copy. */
+  oneTime?: boolean;
   roles: Role[];
   updatedAt: string;
 };

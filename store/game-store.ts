@@ -438,7 +438,7 @@ export const useGameStore = create<GameState>()(
             script?.id === SUSHI_BUFFET_SCRIPT_ID
               ? normalizeSushiRoleIds(sushiRoleIds ?? script.roles.map((role) => role.id), script)
               : undefined,
-          script: script ? { ...script, roles: [...script.roles] } : undefined,
+          script: script ? { ...embedGameScript(script), roles: [...script.roles] } : undefined,
         };
 
         set((state) => {
@@ -447,6 +447,7 @@ export const useGameStore = create<GameState>()(
           return {
             games,
             friends,
+            scripts: removeOneTimeScript(state.scripts, script),
           };
         });
 
@@ -525,6 +526,7 @@ export const useGameStore = create<GameState>()(
       },
       setGameScript: (gameId, script) => {
         set((state) => ({
+          scripts: removeOneTimeScript(state.scripts, script),
           games: state.games.map((game) =>
             game.id === gameId
               ? {
@@ -540,7 +542,7 @@ export const useGameStore = create<GameState>()(
                       : undefined,
                   script: script
                     ? {
-                        ...script,
+                        ...embedGameScript(script),
                         roles: mergeRoleNotes(
                           mergeRoleCatalogMetadata(script.roles, [
                             ...state.roleCatalog,
@@ -1634,6 +1636,16 @@ function compactPersistedState(state: PersistedGameState): PersistedGameState {
 
 function createId(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function embedGameScript({ oneTime: _oneTime, ...script }: StoredScript): StoredScript {
+  return script;
+}
+
+function removeOneTimeScript(scripts: StoredScript[], script?: StoredScript) {
+  return script?.oneTime
+    ? scripts.filter((existingScript) => existingScript.id !== script.id)
+    : scripts;
 }
 
 function normalizeSushiRoleIds(roleIds: string[], script: StoredScript) {

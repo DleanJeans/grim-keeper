@@ -18,8 +18,12 @@ export default function ScriptDetailRoute() {
   const games = useGameStore((state) => state.games);
   const djEnabled = useDjStore((state) => state.enabled);
   const isSushiBuffet = isSushiBuffetScript({ id });
-  const sushiBuffetGame = isSushiBuffet ? games.find((game) => game.id === gameId) : undefined;
-  const script = isSushiBuffet ? sushiBuffetGame?.script : scripts.find((item) => item.id === id);
+  const game = gameId ? games.find((item) => item.id === gameId) : undefined;
+  const sushiBuffetGame = isSushiBuffet ? game : undefined;
+  const script = isSushiBuffet
+    ? sushiBuffetGame?.script
+    : (scripts.find((item) => item.id === id) ??
+      (game?.script?.id === id ? game.script : undefined));
   const roles = script
     ? isSushiBuffetScript(script)
       ? getEnabledSushiRoles(script, sushiBuffetGame)

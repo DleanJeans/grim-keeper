@@ -272,6 +272,7 @@ export default function ScriptsRoute() {
             }
             onView={handleViewScript}
             onSelect={handleSelectScript}
+            onToggleOneTime={(script) => updateScript({ ...script, oneTime: !script.oneTime })}
             onUpdate={updateScript}
           />
           <NewScriptButton onPress={handleCreateScript} />
@@ -377,6 +378,7 @@ function SavedScriptsSection({
   onDelete,
   onEdit,
   onSelect,
+  onToggleOneTime,
   onView,
   onUpdate,
   roleCatalog,
@@ -387,6 +389,7 @@ function SavedScriptsSection({
   onDelete: (script: StoredScript) => void;
   onEdit: (scriptId: string) => void;
   onSelect: (script: StoredScript) => void;
+  onToggleOneTime: (script: StoredScript) => void;
   onView: (scriptId: string) => void;
   onUpdate: (script: StoredScript) => void;
   roleCatalog: StoredScript['roles'];
@@ -423,6 +426,7 @@ function SavedScriptsSection({
             onDelete={() => onDelete(script)}
             onEdit={() => onEdit(script.id)}
             onSelect={() => onSelect(script)}
+            onToggleOneTime={() => onToggleOneTime(script)}
             onView={() => onView(script.id)}
             onUpdate={onUpdate}
             roleCatalog={roleCatalog}

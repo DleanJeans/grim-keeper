@@ -318,6 +318,55 @@ describe('Sushi Buffet role selections', () => {
   });
 });
 
+describe('one-time scripts', () => {
+  const oneTimeScript: StoredScript = {
+    id: 'one-time',
+    name: 'One Time',
+    oneTime: true,
+    roles: [{ id: 'imp', name: 'Imp' }],
+    updatedAt: '2026-10-21T00:00:00.000Z',
+    version: '1.0.0',
+  };
+  const keptScript: StoredScript = { ...oneTimeScript, id: 'kept', oneTime: undefined };
+
+  afterEach(() => {
+    useGameStore.setState({ games: [], scripts: [] });
+  });
+
+  it('moves a one-time script out of the script list into the new game', () => {
+    useGameStore.setState({ scripts: [oneTimeScript, keptScript] });
+
+    const game = useGameStore.getState().createGame({
+      mapHeight: 400,
+      mapWidth: 600,
+      playerNames: ['Alice'],
+      script: oneTimeScript,
+    });
+
+    expect(useGameStore.getState().scripts.map((script) => script.id)).toEqual(['kept']);
+    expect(game.scriptId).toBe('one-time');
+    expect(game.script?.name).toBe('One Time');
+    expect(game.script?.oneTime).toBeUndefined();
+  });
+
+  it('moves a one-time script out of the list when set on an existing game', () => {
+    useGameStore.setState({ scripts: [oneTimeScript, keptScript] });
+    const game = useGameStore.getState().createGame({
+      mapHeight: 400,
+      mapWidth: 600,
+      playerNames: ['Alice'],
+      script: keptScript,
+    });
+
+    useGameStore.getState().setGameScript(game.id, oneTimeScript);
+
+    const state = useGameStore.getState();
+    expect(state.scripts.map((script) => script.id)).toEqual(['kept']);
+    expect(state.games[0].script?.id).toBe('one-time');
+    expect(state.games[0].script?.oneTime).toBeUndefined();
+  });
+});
+
 describe('updateGamePlayers', () => {
   afterEach(() => {
     useGameStore.setState({ games: [], friends: [] });

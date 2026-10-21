@@ -1,4 +1,4 @@
-import { Check, ChevronDown, ChevronUp, Trash2 } from 'lucide-react-native';
+import { Check, ChevronDown, ChevronUp, Ticket, Trash2 } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
@@ -17,6 +17,7 @@ type ScriptCardProps = {
   onDelete: () => void;
   onEdit: () => void;
   onSelect: () => void;
+  onToggleOneTime: () => void;
   onView: () => void;
   onUpdate: (script: StoredScript) => void;
 };
@@ -27,6 +28,7 @@ export function ScriptCard({
   onDelete,
   onEdit,
   onSelect,
+  onToggleOneTime,
   onView,
   onUpdate,
   roleCatalog,
@@ -64,7 +66,19 @@ export function ScriptCard({
               </Text>
             </>
           ) : null}
+          {script.oneTime ? (
+            <View accessibilityLabel="One-time script" style={styles.customTag}>
+              <Text selectable style={styles.customTagText}>
+                One-time
+              </Text>
+            </View>
+          ) : null}
         </View>
+        {script.oneTime ? (
+          <Text selectable style={styles.metadata}>
+            Leaves this list once a game uses it. The game keeps its own copy.
+          </Text>
+        ) : null}
       </View>
 
       {editing ? (
@@ -81,6 +95,12 @@ export function ScriptCard({
           icon={editing ? ChevronUp : ChevronDown}
           label={editing ? 'Close' : 'Customize'}
           onPress={onEdit}
+        />
+        <ScriptCardButton
+          icon={Ticket}
+          label="One-time"
+          onPress={onToggleOneTime}
+          variant={script.oneTime ? 'primary' : 'neutral'}
         />
         <ScriptCardButton
           icon={Trash2}
