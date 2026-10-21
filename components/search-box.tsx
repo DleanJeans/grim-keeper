@@ -4,21 +4,23 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
 
-type FriendSearchProps = {
+type SearchBoxProps = {
+  /** Placeholder and accessibility label, such as "Search friends". */
+  label: string;
   onChangeText: (value: string) => void;
   value: string;
 };
 
-export function FriendSearch({ onChangeText, value }: FriendSearchProps) {
+export function SearchBox({ label, onChangeText, value }: SearchBoxProps) {
   return (
     <View style={styles.searchBox}>
       <Search color={colors.textMuted} size={18} strokeWidth={2.4} />
       <TextInput
-        accessibilityLabel="Search friends"
+        accessibilityLabel={label}
         autoCapitalize="none"
         autoCorrect={false}
         onChangeText={onChangeText}
-        placeholder="Search friends"
+        placeholder={label}
         placeholderTextColor={colors.textSubtle}
         returnKeyType="search"
         style={styles.searchInput}
@@ -26,7 +28,7 @@ export function FriendSearch({ onChangeText, value }: FriendSearchProps) {
       />
       {value.length > 0 ? (
         <Pressable
-          accessibilityLabel="Clear friend search"
+          accessibilityLabel={`Clear ${label.toLocaleLowerCase()}`}
           accessibilityRole="button"
           hitSlop={8}
           onPress={() => onChangeText('')}

@@ -4,8 +4,8 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { FriendNameForm } from '@/components/friends/friend-name-form';
 import { FriendRow } from '@/components/friends/friend-row';
-import { FriendSearch } from '@/components/friends/friend-search';
 import { ResponsiveContent } from '@/components/responsive-content';
+import { SearchBox } from '@/components/search-box';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
 import { useGameStore } from '@/store/game-store';
@@ -46,7 +46,7 @@ export default function FriendsRoute() {
         <ResponsiveContent style={styles.contentContainer}>
           <FriendNameForm friends={friends} onAddFriend={addFriend} />
           {friends.length > 0 ? (
-            <FriendSearch onChangeText={setSearchText} value={searchText} />
+            <SearchBox label="Search friends" onChangeText={setSearchText} value={searchText} />
           ) : null}
 
           <View style={styles.friendList}>

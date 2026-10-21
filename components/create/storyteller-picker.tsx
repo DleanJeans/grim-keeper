@@ -1,7 +1,8 @@
 import { Check, ChevronDown, X } from 'lucide-react-native';
-import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { SearchBox } from '@/components/search-box';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { FriendSummary } from '@/types/game';
@@ -14,12 +15,25 @@ type StorytellerPickerProps = {
 
 export function StorytellerPicker({ friends, onSelect, selectedFriendId }: StorytellerPickerProps) {
   const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const selectedFriend = friends.find((friend) => friend.id === selectedFriendId);
   const disabled = friends.length === 0;
+  const visibleFriends = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
+
+    return normalizedQuery
+      ? friends.filter((friend) => friend.name.toLocaleLowerCase().includes(normalizedQuery))
+      : friends;
+  }, [friends, searchQuery]);
+
+  function closePicker() {
+    setOpen(false);
+    setSearchQuery('');
+  }
 
   function handleSelect(friendId?: string) {
     onSelect(friendId);
-    setOpen(false);
+    closePicker();
   }
 
   return (
@@ -53,12 +67,15 @@ export function StorytellerPicker({ friends, onSelect, selectedFriendId }: Story
         />
       </Pressable>
 
-      <Modal animationType="slide" onRequestClose={() => setOpen(false)} transparent visible={open}>
-        <View style={styles.backdrop}>
+      <Modal animationType="slide" onRequestClose={closePicker} transparent visible={open}>
+        <KeyboardAvoidingView
+          behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
+          style={styles.backdrop}
+        >
           <Pressable
             accessibilityLabel="Close Storyteller picker"
             accessibilityRole="button"
-            onPress={() => setOpen(false)}
+            onPress={closePicker}
             style={styles.dismissArea}
           />
           <View style={styles.dialog}>
@@ -74,18 +91,23 @@ export function StorytellerPicker({ friends, onSelect, selectedFriendId }: Story
               <Pressable
                 accessibilityLabel="Close Storyteller picker"
                 accessibilityRole="button"
-                onPress={() => setOpen(false)}
+                onPress={closePicker}
                 style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
               >
                 <X color={colors.textMuted} size={18} strokeWidth={2.5} />
               </Pressable>
             </View>
+            {friends.length > 0 ? (
+              <SearchBox label="Search friends" onChangeText={setSearchQuery} value={searchQuery} />
+            ) : null}
             <ScrollView
               contentContainerStyle={styles.options}
               contentInsetAdjustmentBehavior="automatic"
+              keyboardShouldPersistTaps="handled"
+              style={styles.scroll}
             >
-              {friends.length > 0 ? (
-                friends.map((friend) => {
+              {visibleFriends.length > 0 ? (
+                visibleFriends.map((friend) => {
                   const selected = friend.id === selectedFriendId;
                   return (
                     <Pressable
@@ -114,7 +136,9 @@ export function StorytellerPicker({ friends, onSelect, selectedFriendId }: Story
                 })
               ) : (
                 <Text selectable style={styles.emptyText}>
-                  Add a friend before selecting a storyteller.
+                  {friends.length > 0
+                    ? 'No friends match that search.'
+                    : 'Add a friend before selecting a storyteller.'}
                 </Text>
               )}
             </ScrollView>
@@ -131,7 +155,7 @@ export function StorytellerPicker({ friends, onSelect, selectedFriendId }: Story
               </Pressable>
             ) : null}
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -184,6 +208,7 @@ const styles = StyleSheet.create({
   optionText: { flex: 1, gap: 3 },
   options: { gap: 8 },
   pressed: { backgroundColor: colors.surfacePressed },
+  scroll: { flexGrow: 0, flexShrink: 1 },
   trigger: {
     alignItems: 'center',
     backgroundColor: colors.surface,
