@@ -1,10 +1,12 @@
 import Head from 'expo-router/head';
 
+import { colors } from '@/theme/colors';
+
 export function PwaHead() {
   return (
     <Head>
       <link rel="manifest" href="/manifest.json" />
-      <meta name="theme-color" content="#0b0d10" />
+      <meta name="theme-color" content={colors.background} />
       <meta name="mobile-web-web-app-capable" content="yes" />
       <meta name="apple-mobile-web-app-capable" content="yes" />
       <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

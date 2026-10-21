@@ -1,4 +1,7 @@
-export const colors = {
+import { readStoredThemeId } from '@/theme/theme-storage';
+import { applyTheme } from '@/theme/themes';
+
+const baseColors = {
   background: '#0b0d10',
   surface: '#121417',
   surfaceRaised: '#181b20',
@@ -59,3 +62,5 @@ export const colors = {
     nominatorIcon: '#ddd6fe',
   },
 };
+
+export const colors = applyTheme(baseColors, readStoredThemeId());

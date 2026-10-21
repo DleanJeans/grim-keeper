@@ -7,6 +7,7 @@ import { ResponsiveContent } from '@/components/responsive-content';
 import { AppVersionInfo } from '@/components/settings/app-version-info';
 import { DataTransferCard } from '@/components/settings/data-transfer-card';
 import { NightStartSettingsCard } from '@/components/settings/night-start-settings-card';
+import { ThemeSettingsCard } from '@/components/settings/theme-settings-card';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
 import { useDjStore } from '@/store/dj-store';
@@ -47,6 +48,7 @@ export default function SettingsRoute() {
         style={styles.screen}
       >
         <ResponsiveContent style={styles.content}>
+          <ThemeSettingsCard />
           <DjSettingsCard />
           <NightStartSettingsCard />
           <DataTransferCard />
