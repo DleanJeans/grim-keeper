@@ -11,7 +11,7 @@ import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import type { FriendSummary } from '@/types/game';
+import type { FriendSummary, Game } from '@/types/game';
 import { hasDuplicatePlayerName, normalizePlayerName } from '@/utils/conversation-utils';
 import {
   getFriendSummaries,
@@ -27,7 +27,12 @@ import { createSushiBuffetScript, isSushiBuffetScript } from '@/utils/script-ser
 import { getScriptPlayCounts, sortScriptsByMostPlayed } from '@/utils/script-utils';
 
 export default function CreateRoute() {
-  const { gameId: gameIdParam, scriptId: scriptIdParam } = useLocalSearchParams<{
+  const {
+    copyPlayersFrom: copyPlayersFromParam,
+    gameId: gameIdParam,
+    scriptId: scriptIdParam,
+  } = useLocalSearchParams<{
+    copyPlayersFrom?: string;
     gameId?: string;
     scriptId?: string;
   }>();
@@ -53,15 +58,18 @@ export default function CreateRoute() {
   const [selectedSushiRoleIds, setSelectedSushiRoleIds] = useState<string[]>([]);
   const [draftSelectedStorytellerId, setDraftSelectedStorytellerId] = useState<string | null>(null);
   const draftGameId = useRef<string | null>(null);
+  const copiedPlayersGameId = useRef<string | null>(null);
   const sushiSelectionKeyRef = useRef<string | null>(null);
   const sushiSelectionChangedRef = useRef(false);
   const editingGame = gameIdParam ? games.find((game) => game.id === gameIdParam) : undefined;
   const isEditing = Boolean(editingGame);
+  const copyPlayersSourceGame =
+    !gameIdParam && copyPlayersFromParam
+      ? games.find((game) => game.id === copyPlayersFromParam)
+      : undefined;
   const players =
     editingGame && draftGameId.current !== editingGame.id
-      ? editingGame.players
-          .filter((player) => player.id !== APP_USER_ID && !player.isStoryteller)
-          .map(({ id, name }) => ({ id, name }))
+      ? getDraftPlayers(editingGame)
       : draftPlayers;
   const fixedPlayerName =
     editingGame?.players.find((player) => player.id === APP_USER_ID)?.name ?? appUserName;
@@ -150,16 +158,18 @@ export default function CreateRoute() {
   useEffect(() => {
     if (editingGame && draftGameId.current !== editingGame.id) {
       draftGameId.current = editingGame.id;
-      setDraftPlayers(
-        editingGame.players
-          .filter((player) => player.id !== APP_USER_ID && !player.isStoryteller)
-          .map(({ id, name }) => ({ id, name })),
-      );
-      setDraftSelectedStorytellerId(
-        editingGame.players.find((player) => player.isStoryteller)?.id ?? null,
-      );
+      setDraftPlayers(getDraftPlayers(editingGame));
+      setDraftSelectedStorytellerId(getStorytellerId(editingGame));
     }
   }, [editingGame]);
+
+  useEffect(() => {
+    if (copyPlayersSourceGame && copiedPlayersGameId.current !== copyPlayersSourceGame.id) {
+      copiedPlayersGameId.current = copyPlayersSourceGame.id;
+      setDraftPlayers(getDraftPlayers(copyPlayersSourceGame));
+      setDraftSelectedStorytellerId(getStorytellerId(copyPlayersSourceGame));
+    }
+  }, [copyPlayersSourceGame]);
 
   useEffect(() => {
     if (scriptIdParam) {
@@ -420,6 +430,16 @@ export default function CreateRoute() {
       </KeyboardAvoidingView>
     </>
   );
+}
+
+function getDraftPlayers(game: Game): DraftPlayer[] {
+  return game.players
+    .filter((player) => player.id !== APP_USER_ID && !player.isStoryteller)
+    .map(({ id, name }) => ({ id, name }));
+}
+
+function getStorytellerId(game: Game) {
+  return game.players.find((player) => player.isStoryteller)?.id ?? null;
 }
 
 function createDraftId() {

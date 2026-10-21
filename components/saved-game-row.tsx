@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ChevronDown, ChevronUp } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, Users } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -57,7 +57,27 @@ export function SavedGameRow({ game, onDelete }: SavedGameRowProps) {
         </Pressable>
       </View>
 
-      {isExpanded ? <SavedGamePlayerList game={game} /> : null}
+      {isExpanded ? (
+        <>
+          <SavedGamePlayerList game={game} />
+          <Pressable
+            accessibilityHint="Starts a new game with the same players and Storyteller"
+            accessibilityRole="button"
+            onPress={() =>
+              router.push({ pathname: '/create', params: { copyPlayersFrom: game.id } })
+            }
+            style={({ pressed }) => [
+              styles.copyPlayersButton,
+              resultStyles.surface,
+              resultStyles.divider,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Users color={colors.text} size={16} strokeWidth={2.4} />
+            <Text style={styles.copyPlayersLabel}>New game with these players</Text>
+          </Pressable>
+        </>
+      ) : null}
 
       <Pressable
         accessibilityLabel={`${isExpanded ? 'Hide' : 'Show'} players in ${gameTitle}`}
@@ -156,6 +176,20 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderCurve: 'continuous',
+  },
+  copyPlayersButton: {
+    alignItems: 'center',
+    borderTopColor: colors.borderStrong,
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+    paddingVertical: 10,
+  },
+  copyPlayersLabel: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '800',
   },
   date: {
     color: colors.textMuted,
