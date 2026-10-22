@@ -12,6 +12,7 @@ import { ScriptRoleEditor } from './script-role-editor';
 type ScriptCardProps = {
   canSelect: boolean;
   editing: boolean;
+  gamesPlayed: number;
   roleCatalog: Role[];
   script: StoredScript;
   onDelete: () => void;
@@ -25,6 +26,7 @@ type ScriptCardProps = {
 export function ScriptCard({
   canSelect,
   editing,
+  gamesPlayed,
   onDelete,
   onEdit,
   onSelect,
@@ -52,7 +54,7 @@ export function ScriptCard({
         <View style={styles.metadataRow}>
           <Text selectable style={styles.metadata}>
             {script.author ? `${script.author} · ` : ''}v{script.version} · {script.roles.length}{' '}
-            roles
+            roles · {gamesPlayed} {gamesPlayed === 1 ? 'game' : 'games'}
           </Text>
           {custom ? (
             <>

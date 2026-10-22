@@ -24,7 +24,7 @@ import {
   isSushiBuffetScript,
   type RemoteScript,
 } from '@/utils/script-service';
-import { sortScriptsByMostPlayed } from '@/utils/script-utils';
+import { getScriptPlayCounts, sortScriptsByMostPlayed } from '@/utils/script-utils';
 
 export default function ScriptsRoute() {
   const showDialog = useAppDialog();
@@ -47,6 +47,7 @@ export default function ScriptsRoute() {
   const [catalogError, setCatalogError] = useState('');
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [editingScriptId, setEditingScriptId] = useState<string | null>(null);
+  const scriptPlayCounts = getScriptPlayCounts(games);
   const shouldRefreshRoleCatalog =
     roleCatalog.length === 0 || !roleCatalog.some((role) => role.ability);
 
@@ -262,6 +263,7 @@ export default function ScriptsRoute() {
             canSelect={isSelectingForGame}
             editingScriptId={editingScriptId}
             roleCatalog={roleCatalog}
+            scriptPlayCounts={scriptPlayCounts}
             scripts={sortScriptsByMostPlayed(
               scripts.filter((script) => !isSushiBuffetScript(script)),
               games,
@@ -382,6 +384,7 @@ function SavedScriptsSection({
   onView,
   onUpdate,
   roleCatalog,
+  scriptPlayCounts,
   scripts,
 }: {
   canSelect: boolean;
@@ -393,6 +396,7 @@ function SavedScriptsSection({
   onView: (scriptId: string) => void;
   onUpdate: (script: StoredScript) => void;
   roleCatalog: StoredScript['roles'];
+  scriptPlayCounts: ReadonlyMap<string, number>;
   scripts: StoredScript[];
 }) {
   return (
@@ -422,6 +426,7 @@ function SavedScriptsSection({
           <ScriptCard
             canSelect={canSelect}
             editing={editingScriptId === script.id}
+            gamesPlayed={scriptPlayCounts.get(script.id) ?? 0}
             key={script.id}
             onDelete={() => onDelete(script)}
             onEdit={() => onEdit(script.id)}
