@@ -1,6 +1,6 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Search } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { ResponsiveContent } from '@/components/responsive-content';
@@ -28,6 +28,9 @@ import {
 } from '@/utils/script-service';
 import { getScriptPlayCounts, sortScriptsByMostPlayed } from '@/utils/script-utils';
 
+/** Space kept above a script card scrolled into view. */
+const SCROLL_TO_SCRIPT_MARGIN = 12;
+
 export default function ScriptsRoute() {
   const showDialog = useAppDialog();
   const { gameId, selectForGame } = useLocalSearchParams<{
@@ -50,6 +53,10 @@ export default function ScriptsRoute() {
   const [catalogError, setCatalogError] = useState('');
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [editingScriptId, setEditingScriptId] = useState<string | null>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const savedScriptsSectionY = useRef(0);
+  /** A just-duplicated script to scroll to once its card has laid out. */
+  const scrollToScriptId = useRef<string | null>(null);
   const scriptPlayCounts = getScriptPlayCounts(games);
   const shouldRefreshRoleCatalog =
     roleCatalog.length === 0 || !roleCatalog.some((role) => role.ability);
@@ -203,6 +210,22 @@ export default function ScriptsRoute() {
 
     saveScript(duplicate);
     setEditingScriptId(duplicate.id);
+    scrollToScriptId.current = duplicate.id;
+    if (filterScriptsBySearch([duplicate], savedSearchText).length === 0) {
+      setSavedSearchText('');
+    }
+  }
+
+  function handleScriptCardLayout(scriptId: string, y: number) {
+    if (scrollToScriptId.current !== scriptId) {
+      return;
+    }
+
+    scrollToScriptId.current = null;
+    scrollViewRef.current?.scrollTo({
+      animated: true,
+      y: Math.max(0, savedScriptsSectionY.current + y - SCROLL_TO_SCRIPT_MARGIN),
+    });
   }
 
   function handleSelectScript(script: StoredScript) {
@@ -271,6 +294,7 @@ export default function ScriptsRoute() {
         }}
       />
       <ScrollView
+        ref={scrollViewRef}
         automaticallyAdjustKeyboardInsets
         contentInsetAdjustmentBehavior="automatic"
         style={{ backgroundColor: colors.background, flex: 1 }}
@@ -309,6 +333,10 @@ export default function ScriptsRoute() {
             )}
             onDelete={confirmDeleteScript}
             onDuplicate={handleDuplicateScript}
+            onLayout={(y) => {
+              savedScriptsSectionY.current = y;
+            }}
+            onScriptCardLayout={handleScriptCardLayout}
             onEdit={(scriptId) =>
               setEditingScriptId((currentId) => (currentId === scriptId ? null : scriptId))
             }
@@ -414,6 +442,9 @@ const styles = StyleSheet.create({
     gap: 22,
     padding: 20,
   },
+  savedScripts: {
+    gap: 10,
+  },
 });
 
 function SavedScriptsSection({
@@ -422,6 +453,8 @@ function SavedScriptsSection({
   onDelete,
   onDuplicate,
   onEdit,
+  onLayout,
+  onScriptCardLayout,
   onSelect,
   onToggleOneTime,
   onSearchChange,
@@ -437,6 +470,8 @@ function SavedScriptsSection({
   onDelete: (script: StoredScript) => void;
   onDuplicate: (script: StoredScript) => void;
   onEdit: (scriptId: string) => void;
+  onLayout: (y: number) => void;
+  onScriptCardLayout: (scriptId: string, y: number) => void;
   onSelect: (script: StoredScript) => void;
   onToggleOneTime: (script: StoredScript) => void;
   onSearchChange: (value: string) => void;
@@ -450,7 +485,7 @@ function SavedScriptsSection({
   const visibleScripts = filterScriptsBySearch(scripts, searchText);
 
   return (
-    <View style={{ gap: 10 }}>
+    <View onLayout={(event) => onLayout(event.nativeEvent.layout.y)} style={styles.savedScripts}>
       <Text
         selectable
         style={{ color: colors.text, fontSize: 18, fontWeight: '900', textAlign: 'center' }}
@@ -488,6 +523,7 @@ function SavedScriptsSection({
             onDelete={() => onDelete(script)}
             onDuplicate={() => onDuplicate(script)}
             onEdit={() => onEdit(script.id)}
+            onLayout={(event) => onScriptCardLayout(script.id, event.nativeEvent.layout.y)}
             onSelect={() => onSelect(script)}
             onToggleOneTime={() => onToggleOneTime(script)}
             onView={() => onView(script.id)}

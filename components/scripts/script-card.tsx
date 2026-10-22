@@ -1,5 +1,5 @@
 import { Check, ChevronDown, ChevronUp, Copy, Ticket, Trash2 } from 'lucide-react-native';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { type LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
@@ -18,6 +18,7 @@ type ScriptCardProps = {
   onDelete: () => void;
   onDuplicate: () => void;
   onEdit: () => void;
+  onLayout?: (event: LayoutChangeEvent) => void;
   onSelect: () => void;
   onToggleOneTime: () => void;
   onView: () => void;
@@ -31,6 +32,7 @@ export function ScriptCard({
   onDelete,
   onDuplicate,
   onEdit,
+  onLayout,
   onSelect,
   onToggleOneTime,
   onView,
@@ -41,7 +43,7 @@ export function ScriptCard({
   const custom = isCustomScript(script);
 
   return (
-    <View style={styles.card}>
+    <View onLayout={onLayout} style={styles.card}>
       <View style={styles.header}>
         <Pressable
           accessibilityHint="Opens the script details"
