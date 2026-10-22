@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Search, Users, X } from 'lucide-react-native';
+import { Check, ChevronDown, Search, UserPlus, Users, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
@@ -6,15 +6,20 @@ import Animated, { LinearTransition } from 'react-native-reanimated';
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { FriendSummary } from '@/types/game';
+import { normalizePlayerName } from '@/utils/conversation-utils';
+import { hasFriendName } from '@/utils/friend-utils';
 
 type FriendPlayerPickerProps = {
   friends: FriendSummary[];
+  /** Creates the friend and returns its id, or undefined when it can't be added. */
+  onAddFriend: (name: string) => string | undefined;
   onDone: (selectedFriendIds: string[]) => void;
   selectedFriendIds: string[];
 };
 
 export function FriendPlayerPicker({
   friends,
+  onAddFriend,
   onDone,
   selectedFriendIds,
 }: FriendPlayerPickerProps) {
@@ -44,6 +49,8 @@ export function FriendPlayerPicker({
     );
   }, [friends, searchQuery, selectedFriendIdSet]);
   const hasSearchQuery = searchQuery.trim().length > 0;
+  const newFriendName = normalizePlayerName(searchQuery);
+  const canAddNewFriend = newFriendName.length > 0 && !hasFriendName(friends, newFriendName);
   const selectedFriendsCollapsed =
     hasSearchQuery && !selectedFriendsExpanded && selectedFriends.length > 0;
   const visibleFriends = selectedFriendsCollapsed
@@ -69,6 +76,30 @@ export function FriendPlayerPicker({
   function handleSearchChange(query: string) {
     setSearchQuery(query);
     setSelectedFriendsExpanded(false);
+  }
+
+  function handleAddNewFriend() {
+    if (!canAddNewFriend) {
+      return;
+    }
+
+    const friendId = onAddFriend(newFriendName);
+
+    if (!friendId) {
+      return;
+    }
+
+    setSearchQuery('');
+    setSelectedFriendsExpanded(false);
+    setDraftSelectedFriendIds((currentIds) =>
+      currentIds.includes(friendId) ? currentIds : [...currentIds, friendId],
+    );
+  }
+
+  function handleSearchSubmit() {
+    if (unselectedFriends.length === 0) {
+      handleAddNewFriend();
+    }
   }
 
   function handleDone() {
@@ -102,29 +133,15 @@ export function FriendPlayerPicker({
       <Pressable
         accessibilityLabel={`Choose friends: ${selectionSummary}`}
         accessibilityRole="button"
-        disabled={friends.length === 0}
         onPress={openPicker}
-        style={({ pressed }) => [
-          styles.trigger,
-          friends.length === 0 ? styles.triggerDisabled : pressed ? styles.triggerPressed : null,
-        ]}
+        style={({ pressed }) => [styles.trigger, pressed && styles.triggerPressed]}
       >
-        <Users
-          color={friends.length === 0 ? colors.onDisabled : colors.text}
-          size={18}
-          strokeWidth={2.5}
-        />
+        <Users color={colors.text} size={18} strokeWidth={2.5} />
         <View style={styles.triggerText}>
-          <Text
-            selectable
-            style={[styles.triggerTitle, friends.length === 0 && styles.disabledText]}
-          >
+          <Text selectable style={styles.triggerTitle}>
             Choose friends
           </Text>
-          <Text
-            selectable
-            style={[styles.triggerDescription, friends.length === 0 && styles.disabledText]}
-          >
+          <Text selectable style={styles.triggerDescription}>
             {friends.length === 0 ? 'No friends yet' : selectionSummary}
           </Text>
         </View>
@@ -165,11 +182,12 @@ export function FriendPlayerPicker({
             <View style={styles.searchBox}>
               <Search color={colors.textMuted} size={18} strokeWidth={2.4} />
               <TextInput
-                accessibilityLabel="Search friends"
+                accessibilityLabel="Search or add friends"
                 autoCapitalize="none"
                 autoCorrect={false}
                 onChangeText={handleSearchChange}
-                placeholder="Search friends"
+                onSubmitEditing={handleSearchSubmit}
+                placeholder="Search or add friends"
                 placeholderTextColor={colors.textSubtle}
                 returnKeyType="search"
                 style={styles.searchInput}
@@ -257,13 +275,33 @@ export function FriendPlayerPicker({
                     </Animated.View>
                   );
                 })
-              ) : selectedFriendsCollapsed ? null : (
+              ) : selectedFriendsCollapsed || canAddNewFriend ? null : (
                 <Text selectable style={styles.emptyText}>
-                  {friends.length === 0
-                    ? 'Add a friend before choosing players.'
-                    : 'No friends found.'}
+                  {friends.length === 0 ? 'Type a name to add a friend.' : 'No friends found.'}
                 </Text>
               )}
+              {canAddNewFriend ? (
+                <Animated.View key="add-new-friend" layout={LinearTransition.duration(220)}>
+                  <Pressable
+                    accessibilityLabel={`Add ${newFriendName} as a new friend and select them as the next player`}
+                    accessibilityRole="button"
+                    onPress={handleAddNewFriend}
+                    style={({ pressed }) => [styles.option, pressed && styles.buttonPressed]}
+                  >
+                    <View style={styles.addBadge}>
+                      <UserPlus color={colors.primary} size={16} strokeWidth={2.5} />
+                    </View>
+                    <View style={styles.optionText}>
+                      <Text selectable style={styles.optionName}>
+                        Add "{newFriendName}"
+                      </Text>
+                      <Text selectable style={styles.optionDescription}>
+                        New friend
+                      </Text>
+                    </View>
+                  </Pressable>
+                </Animated.View>
+              ) : null}
             </ScrollView>
 
             <View style={styles.actions}>
@@ -313,6 +351,15 @@ const styles = StyleSheet.create({
   },
   actionText: { color: colors.text, fontSize: 16, fontWeight: '800' },
   actions: { flexDirection: 'row', gap: 10 },
+  addBadge: {
+    alignItems: 'center',
+    borderColor: colors.primary,
+    borderRadius: 6,
+    borderWidth: 1,
+    height: 24,
+    justifyContent: 'center',
+    width: 42,
+  },
   backdrop: { backgroundColor: '#00000099', flex: 1, justifyContent: 'flex-end' },
   buttonPressed: { backgroundColor: colors.surfacePressed },
   closeButton: {
@@ -394,7 +441,6 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
   },
   triggerDescription: { color: colors.textMuted, fontSize: 12 },
-  triggerDisabled: { backgroundColor: colors.disabled, borderColor: colors.disabled },
   triggerPressed: { backgroundColor: colors.surfacePressed },
   triggerText: { flex: 1, gap: 2 },
   triggerTitle: { color: colors.text, fontWeight: '800' },
@@ -405,5 +451,4 @@ const styles = StyleSheet.create({
     height: 24,
     width: 42,
   },
-  disabledText: { color: colors.onDisabled },
 });

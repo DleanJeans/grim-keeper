@@ -14,6 +14,7 @@ import { colors } from '@/theme/colors';
 import type { FriendSummary, Game } from '@/types/game';
 import { hasDuplicatePlayerName, normalizePlayerName } from '@/utils/conversation-utils';
 import {
+  getFriendByName,
   getFriendSummaries,
   mergeFriendPlayerSelection,
   sortFriendSummaries,
@@ -37,6 +38,7 @@ export default function CreateRoute() {
     gameId?: string;
     scriptId?: string;
   }>();
+  const addFriend = useGameStore((state) => state.addFriend);
   const appUserName = useGameStore((state) => state.appUserName);
   const createGame = useGameStore((state) => state.createGame);
   const updateGamePlayers = useGameStore((state) => state.updateGamePlayers);
@@ -276,6 +278,18 @@ export default function CreateRoute() {
     );
   }
 
+  function handleAddFriend(friendName: string) {
+    addFriend(friendName);
+
+    const state = useGameStore.getState();
+    const friend = getFriendByName(
+      getFriendSummaries(state.games, state.friends, appUserName),
+      friendName,
+    );
+
+    return friend && !draftSelectedStorytellerIds.includes(friend.id) ? friend.id : undefined;
+  }
+
   function handleRemovePlayer(playerId: string) {
     setDraftPlayers((currentPlayers) => currentPlayers.filter((player) => player.id !== playerId));
   }
@@ -379,6 +393,7 @@ export default function CreateRoute() {
               isSushiBuffet={isSushiBuffet}
               name={name}
               nameFocused={nameFocused}
+              onAddFriend={handleAddFriend}
               onAddPlayer={handleAddPlayer}
               onApplyFriendSelection={handleApplyFriendSelection}
               onBlurName={() => setNameFocused(false)}

@@ -29,6 +29,7 @@ type CreateFormHeaderProps = {
   lorics: Role[];
   name: string;
   nameFocused: boolean;
+  onAddFriend: (name: string) => string | undefined;
   onAddPlayer: () => void;
   onBlurName: () => void;
   onBrowseScripts: () => void;
@@ -68,6 +69,7 @@ export function CreateFormHeader({
   lorics,
   name,
   nameFocused,
+  onAddFriend,
   onAddPlayer,
   onApplyFriendSelection,
   onBlurName,
@@ -150,6 +152,7 @@ export function CreateFormHeader({
         {!isEditing ? (
           <FriendPlayerPicker
             friends={allFriends}
+            onAddFriend={onAddFriend}
             onDone={onApplyFriendSelection}
             selectedFriendIds={selectedFriendIds}
           />
