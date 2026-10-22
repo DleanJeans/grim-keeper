@@ -146,10 +146,12 @@ export function StorytellerPicker({
                         <Text selectable style={styles.optionName}>
                           {friend.name}
                         </Text>
-                        <Text selectable style={styles.optionDescription}>
-                          {friend.gamesStorytold} {friend.gamesStorytold === 1 ? 'game' : 'games'}{' '}
-                          as storyteller
-                        </Text>
+                        {friend.gamesStorytold > 0 ? (
+                          <Text selectable style={styles.optionDescription}>
+                            {friend.gamesStorytold} {friend.gamesStorytold === 1 ? 'game' : 'games'}{' '}
+                            as storyteller
+                          </Text>
+                        ) : null}
                       </View>
                       {selected ? <Check color={colors.primary} size={18} strokeWidth={3} /> : null}
                     </Pressable>
