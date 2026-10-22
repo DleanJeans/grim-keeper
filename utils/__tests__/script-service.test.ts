@@ -1,6 +1,7 @@
 import {
   BOTC_NIGHT_SHEET_URL,
   BOTC_SCRIPTS_API_URL,
+  createDuplicateScript,
   createEmptyScript,
   createHomebrewScript,
   createOfficialCarouselScript,
@@ -57,6 +58,51 @@ describe('script service', () => {
       roles: [],
       updatedAt: expect.any(String),
     });
+  });
+
+  it('duplicates a downloaded official script into a custom script', () => {
+    const roles = [{ id: 'imp', name: 'Imp', team: 'demon' }];
+    const duplicate = createDuplicateScript(
+      {
+        id: 'trouble-brewing',
+        remoteId: 178,
+        name: 'Trouble Brewing',
+        version: '1.0.0',
+        scriptType: 'Full',
+        author: 'The Pandemonium Institute',
+        oneTime: true,
+        roles,
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+      ['trouble-brewing', 'trouble-brewing-copy'],
+    );
+
+    expect(duplicate).toEqual({
+      id: 'trouble-brewing-copy-2',
+      name: 'Trouble Brewing (copy)',
+      version: '1.0.0',
+      scriptType: 'Full',
+      roles,
+      updatedAt: expect.any(String),
+    });
+    expect(duplicate.roles[0]).not.toBe(roles[0]);
+  });
+
+  it('keeps a homebrew author when duplicating', () => {
+    expect(
+      createDuplicateScript(
+        {
+          id: '42-custom',
+          remoteId: 42,
+          name: 'Custom',
+          version: '2.0.0',
+          author: 'Homebrew Author',
+          roles: [],
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+        [],
+      ),
+    ).toMatchObject({ author: 'Homebrew Author', id: 'custom-copy', name: 'Custom (copy)' });
   });
 
   it('creates a stored homebrew script from standard script JSON', () => {

@@ -16,6 +16,7 @@ import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { StoredScript } from '@/types/game';
 import {
+  createDuplicateScript,
   createEmptyScript,
   createHomebrewScript,
   createStoredScript,
@@ -194,6 +195,16 @@ export default function ScriptsRoute() {
     setEditingScriptId(script.id);
   }
 
+  function handleDuplicateScript(script: StoredScript) {
+    const duplicate = createDuplicateScript(
+      script,
+      scripts.map((existingScript) => existingScript.id),
+    );
+
+    saveScript(duplicate);
+    setEditingScriptId(duplicate.id);
+  }
+
   function handleSelectScript(script: StoredScript) {
     if (!isSelectingForGame) {
       return;
@@ -297,6 +308,7 @@ export default function ScriptsRoute() {
               games,
             )}
             onDelete={confirmDeleteScript}
+            onDuplicate={handleDuplicateScript}
             onEdit={(scriptId) =>
               setEditingScriptId((currentId) => (currentId === scriptId ? null : scriptId))
             }
@@ -408,6 +420,7 @@ function SavedScriptsSection({
   canSelect,
   editingScriptId,
   onDelete,
+  onDuplicate,
   onEdit,
   onSelect,
   onToggleOneTime,
@@ -422,6 +435,7 @@ function SavedScriptsSection({
   canSelect: boolean;
   editingScriptId: string | null;
   onDelete: (script: StoredScript) => void;
+  onDuplicate: (script: StoredScript) => void;
   onEdit: (scriptId: string) => void;
   onSelect: (script: StoredScript) => void;
   onToggleOneTime: (script: StoredScript) => void;
@@ -472,6 +486,7 @@ function SavedScriptsSection({
             gamesPlayed={scriptPlayCounts.get(script.id) ?? 0}
             key={script.id}
             onDelete={() => onDelete(script)}
+            onDuplicate={() => onDuplicate(script)}
             onEdit={() => onEdit(script.id)}
             onSelect={() => onSelect(script)}
             onToggleOneTime={() => onToggleOneTime(script)}

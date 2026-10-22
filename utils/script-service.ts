@@ -198,6 +198,23 @@ export function createEmptyScript(name: string, usedIds: string[]): StoredScript
   };
 }
 
+/** Copies a script into a new custom script: no remote link, not one-time, editable roles. */
+export function createDuplicateScript(script: StoredScript, usedIds: string[]): StoredScript {
+  const { author: sourceAuthor, oneTime: _oneTime, remoteId: _remoteId, ...rest } = script;
+  const name = `${script.name} (copy)`;
+  // The official author would keep the copy from counting as a custom script.
+  const author = sourceAuthor === OFFICIAL_SCRIPT_AUTHOR ? undefined : sourceAuthor;
+
+  return {
+    ...rest,
+    ...(author ? { author } : {}),
+    id: createScriptId({ author, name }, usedIds),
+    name,
+    roles: script.roles.map((role) => ({ ...role })),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
 export function createOfficialCarouselScript(
   catalog: Role[],
   existingId = OFFICIAL_CAROUSEL_SCRIPT_ID,

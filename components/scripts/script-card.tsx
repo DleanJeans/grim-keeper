@@ -1,4 +1,4 @@
-import { Check, ChevronDown, ChevronUp, Ticket, Trash2 } from 'lucide-react-native';
+import { Check, ChevronDown, ChevronUp, Copy, Ticket, Trash2 } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
@@ -16,6 +16,7 @@ type ScriptCardProps = {
   roleCatalog: Role[];
   script: StoredScript;
   onDelete: () => void;
+  onDuplicate: () => void;
   onEdit: () => void;
   onSelect: () => void;
   onToggleOneTime: () => void;
@@ -28,6 +29,7 @@ export function ScriptCard({
   editing,
   gamesPlayed,
   onDelete,
+  onDuplicate,
   onEdit,
   onSelect,
   onToggleOneTime,
@@ -104,6 +106,7 @@ export function ScriptCard({
           onPress={onToggleOneTime}
           variant={script.oneTime ? 'primary' : 'neutral'}
         />
+        <ScriptCardButton icon={Copy} iconOnly label="Duplicate" onPress={onDuplicate} />
         <ScriptCardButton
           icon={Trash2}
           iconOnly
