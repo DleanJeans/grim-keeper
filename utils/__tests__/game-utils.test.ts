@@ -1,5 +1,10 @@
 import type { Game, Player } from '@/types/game';
-import { getCharacterStats, getGameStats, getLastDayWithData } from '@/utils/game-utils';
+import {
+  getCharacterStats,
+  getGameStats,
+  getGamesWithRoleInPlay,
+  getLastDayWithData,
+} from '@/utils/game-utils';
 import { APP_USER_ID } from '@/utils/object-id';
 
 function makePlayer(overrides: Partial<Player> = {}): Player {
@@ -349,3 +354,44 @@ function makeAlignedGame(
     },
   });
 }
+
+describe('getGamesWithRoleInPlay', () => {
+  function withRole(roleId: string, kind: 'claim' | 'confirm' = 'confirm', isStoryteller = false) {
+    return makePlayer({
+      isStoryteller,
+      roleAssignments: [{ day: 1, kind, roleIds: [roleId], updatedAt: '' }],
+    });
+  }
+
+  it('finds games where a player confirmed or claimed the role', () => {
+    const confirmed = makeGame({ id: 'confirmed', players: [withRole('chef')] });
+    const claimed = makeGame({ id: 'claimed', players: [withRole('chef', 'claim')] });
+    const other = makeGame({ id: 'other', players: [withRole('empath')] });
+
+    expect(getGamesWithRoleInPlay([confirmed, claimed, other], 'chef').map((g) => g.id)).toEqual([
+      'confirmed',
+      'claimed',
+    ]);
+  });
+
+  it('matches _evil and _good variants to the base role', () => {
+    const evilChef = makeGame({ id: 'evil', players: [withRole('chef_evil')] });
+    const goodTraveller = makeGame({ id: 'good', players: [withRole('beggar_good')] });
+
+    expect(getGamesWithRoleInPlay([evilChef, goodTraveller], 'chef').map((g) => g.id)).toEqual([
+      'evil',
+    ]);
+    expect(getGamesWithRoleInPlay([evilChef, goodTraveller], 'beggar').map((g) => g.id)).toEqual([
+      'good',
+    ]);
+  });
+
+  it('counts Demon/Minion In play picks and ignores storytellers', () => {
+    const picked = makeGame({ id: 'picked', evilInPlay: { 'demon-0': 'imp' } });
+    const storyteller = makeGame({ id: 'st', players: [withRole('imp', 'confirm', true)] });
+
+    expect(getGamesWithRoleInPlay([picked, storyteller], 'imp').map((g) => g.id)).toEqual([
+      'picked',
+    ]);
+  });
+});

@@ -63,6 +63,31 @@ export function getLastDayWithData(game: Game): number {
   return Math.max(1, lastDay);
 }
 
+/**
+ * Games where a player's current role (confirm over claim, as on the saved-game
+ * row) or a Demon/Minion "In play" pick is `roleId`. `_evil`/`_good` variants
+ * count as the base role.
+ */
+export function getGamesWithRoleInPlay(games: Game[], roleId: string): Game[] {
+  const baseRoleId = getBaseRoleId(roleId);
+
+  return games.filter((game) => {
+    const roles = game.script?.roles ?? [];
+    const isPlayerRole = game.players.some((player) => {
+      if (player.isStoryteller) {
+        return false;
+      }
+      const { role } = getEffectiveRoleForPlayer(player, roles, game.activeDay);
+      return role ? getBaseRoleId(role.id) === baseRoleId : false;
+    });
+
+    return (
+      isPlayerRole ||
+      Object.values(game.evilInPlay ?? {}).some((id) => getBaseRoleId(id) === baseRoleId)
+    );
+  });
+}
+
 export function getGameStats(games: Game[], playerId = APP_USER_ID): GameStats {
   const playerGames =
     playerId === APP_USER_ID
@@ -207,4 +232,8 @@ function getPercentage(value: number, total: number) {
 
 export function isGameResult(value: unknown): value is GameResult {
   return value === 'lost' || value === 'won';
+}
+
+function getBaseRoleId(roleId: string) {
+  return roleId.replace(/_(evil|good)$/, '');
 }

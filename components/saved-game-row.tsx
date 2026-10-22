@@ -13,7 +13,7 @@ import { requestWebFullscreen } from '@/utils/web-fullscreen';
 
 type SavedGameRowProps = {
   game: Game;
-  onDelete: (gameId: string) => void;
+  onDelete?: (gameId: string) => void;
 };
 
 export function SavedGameRow({ game, onDelete }: SavedGameRowProps) {
@@ -31,8 +31,8 @@ export function SavedGameRow({ game, onDelete }: SavedGameRowProps) {
         <Pressable
           accessibilityLabel={`Open ${gameTitle}, ${playerCountLabel}, ${dayCountLabel}${game.result ? `, ${formatResult(game.result)}` : ''}`}
           accessibilityRole="button"
-          accessibilityHint="Hold to delete"
-          onLongPress={() => onDelete(game.id)}
+          accessibilityHint={onDelete ? 'Hold to delete' : undefined}
+          onLongPress={onDelete ? () => onDelete(game.id) : undefined}
           onPress={() => {
             void requestWebFullscreen();
             router.push({ pathname: '/game/[id]', params: { id: game.id } });

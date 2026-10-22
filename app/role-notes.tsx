@@ -4,6 +4,7 @@ import { DjSongSection } from '@/components/dj/dj-song-section';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { RoleIcon } from '@/components/role-icon';
 import { RoleWikiLink } from '@/components/role-wiki-link';
+import { SavedGameRow } from '@/components/saved-game-row';
 import { SavedNotes } from '@/components/saved-notes';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
@@ -11,6 +12,7 @@ import { useDjStore } from '@/store/dj-store';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { SavedNote } from '@/types/game';
+import { getGamesWithRoleInPlay } from '@/utils/game-utils';
 import { GENERIC_CHARACTER_TYPE_ROLE_REFERENCES, GENERIC_KILLER_ROLES } from '@/utils/role-utils';
 
 export default function RoleNotesScreen() {
@@ -65,6 +67,7 @@ export default function RoleNotesScreen() {
   }
 
   const hasNotes = mergedNotes.length > 0;
+  const roleGames = getGamesWithRoleInPlay(games, role.id);
 
   return (
     <>
@@ -109,6 +112,17 @@ export default function RoleNotesScreen() {
               No notes for this role.
             </Text>
           )}
+
+          {roleGames.length > 0 ? (
+            <View style={styles.gamesSection}>
+              <Text selectable style={styles.sectionTitle}>
+                Saved games
+              </Text>
+              {roleGames.map((roleGame) => (
+                <SavedGameRow key={roleGame.id} game={roleGame} />
+              ))}
+            </View>
+          ) : null}
         </ResponsiveContent>
       </ScrollView>
     </>
@@ -128,6 +142,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+  gamesSection: {
+    gap: 12,
+  },
   emptyText: {
     color: colors.textMuted,
     fontSize: 15,
@@ -142,6 +159,12 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 17,
     fontWeight: '800',
+  },
+  sectionTitle: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '800',
+    textAlign: 'center',
   },
   screen: {
     backgroundColor: colors.background,
