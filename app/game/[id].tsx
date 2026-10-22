@@ -114,7 +114,7 @@ export default function GameRoute() {
   const setCharacterTypeCounts = useGameStore((state) => state.setCharacterTypeCounts);
   const setGameResult = useGameStore((state) => state.setGameResult);
   const djEnabled = useDjStore((state) => state.enabled);
-  const [activeTab, setActiveTab] = useState<GameTab>('interactions');
+  const [activeTab, setActiveTab] = useState<GameTab>('notes');
   const [trackingMode, setTrackingMode] = useState<TrackingMode | null>(null);
   const [votingNominationId, setVotingNominationId] = useState<string | null>(null);
   const [votingNominationIsNew, setVotingNominationIsNew] = useState(false);
