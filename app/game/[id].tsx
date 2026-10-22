@@ -19,6 +19,7 @@ import {
   type GameRouteContextValue,
   GameRouteProvider,
   type GameTab,
+  getVisibleGameTab,
   type TrackingMode,
 } from '@/components/game/game-route-context';
 import { GameTabContent } from '@/components/game/game-tab-content';
@@ -960,7 +961,7 @@ export default function GameRoute() {
     mapHeight,
     mapScale,
     nominationCurves,
-    activeTab,
+    activeTab: getVisibleGameTab(activeTab, activePhase),
     trackingMode,
     votingNominationId,
     votingReturnTab,

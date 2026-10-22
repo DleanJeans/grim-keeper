@@ -6,11 +6,11 @@ import { NomIcon } from '@/components/game/noms-tab/nom-icon';
 import { tabBarButtonStyle, tabBarContainer, tabBarLabelStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
 
-const gameTabs: { flex: number; label: string; value: GameTab }[] = [
+const gameTabs: { dayOnly?: boolean; flex: number; label: string; value: GameTab }[] = [
   { flex: 0.85, label: 'Roles', value: 'notes' },
   { flex: 0.85, label: 'Deaths', value: 'deaths' },
-  { flex: 0.85, label: 'Noms', value: 'nominations' },
-  { flex: 0.85, label: 'Links', value: 'interactions' },
+  { dayOnly: true, flex: 0.85, label: 'Noms', value: 'nominations' },
+  { dayOnly: true, flex: 0.85, label: 'Links', value: 'interactions' },
 ];
 
 function renderGameTabIcon(tab: GameTab, color: string) {
@@ -27,10 +27,11 @@ function renderGameTabIcon(tab: GameTab, color: string) {
 }
 
 export function GameTabs() {
-  const { activeTab, setActiveTab, exitMapModes } = useGameRouteContext();
+  const { activePhase, activeTab, setActiveTab, exitMapModes } = useGameRouteContext();
+  const tabs = activePhase === 'night' ? gameTabs.filter((tab) => !tab.dayOnly) : gameTabs;
   return (
     <View accessibilityRole="tablist" style={tabBarContainer}>
-      {gameTabs.map((tab) => {
+      {tabs.map((tab) => {
         const active = activeTab === tab.value;
         return (
           <Pressable

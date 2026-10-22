@@ -14,6 +14,11 @@ import type {
 import type { GamePhasePosition } from '@/utils/game-phase-utils';
 
 export type GameTab = 'interactions' | 'nominations' | 'deaths' | 'notes';
+
+/** Noms and Links only apply to Day phases, so Night shows Roles in their place. */
+export function getVisibleGameTab(tab: GameTab, phase: GamePhase): GameTab {
+  return phase === 'night' && (tab === 'nominations' || tab === 'interactions') ? 'notes' : tab;
+}
 export type TrackingMode = 'interaction' | 'nomination';
 
 export type GameRouteContextValue = {
