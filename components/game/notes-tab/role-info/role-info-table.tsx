@@ -162,7 +162,7 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
     [scriptRoles],
   );
 
-  if (sections.length === 0) return null;
+  if (!showRoles || sections.length === 0) return null;
 
   const activeValue = activeSlot
     ? getRoleInfoValues(roleInfos, activeSlot)[activeSlot.slot.id]
