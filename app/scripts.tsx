@@ -207,6 +207,32 @@ export default function ScriptsRoute() {
     router.push({ pathname: '/scripts/[id]', params: { id: scriptId } });
   }
 
+  function handleToggleOneTime(script: StoredScript) {
+    const gamesPlayed = scriptPlayCounts.get(script.id) ?? 0;
+
+    if (script.oneTime || gamesPlayed === 0) {
+      updateScript({ ...script, oneTime: script.oneTime ? undefined : true });
+      return;
+    }
+
+    showDialog(
+      'Move into saved games?',
+      `${script.name} is used by ${gamesPlayed} saved ${gamesPlayed === 1 ? 'game' : 'games'}. Each game keeps its own copy, and the script leaves this list.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Move',
+          onPress: () => {
+            deleteScript(script.id);
+            if (editingScriptId === script.id) {
+              setEditingScriptId(null);
+            }
+          },
+        },
+      ],
+    );
+  }
+
   function confirmDeleteScript(script: StoredScript) {
     showDialog('Delete downloaded script?', `Remove ${script.name} from this device?`, [
       { text: 'Cancel', style: 'cancel' },
@@ -274,7 +300,7 @@ export default function ScriptsRoute() {
             }
             onView={handleViewScript}
             onSelect={handleSelectScript}
-            onToggleOneTime={(script) => updateScript({ ...script, oneTime: !script.oneTime })}
+            onToggleOneTime={handleToggleOneTime}
             onUpdate={updateScript}
           />
           <NewScriptButton onPress={handleCreateScript} />
