@@ -53,7 +53,12 @@ import {
   mapGamePlayerIdsToFriendIds,
   migrateObjectIds,
 } from '@/utils/object-id';
-import { mapRoleInfoPlayerIds, seedRoleInfos, setRoleInfoValue } from '@/utils/role-info-utils';
+import {
+  mapRoleInfoPlayerIds,
+  seedRoleInfos,
+  setDailyRoleInfoValues,
+  setRoleInfoValue,
+} from '@/utils/role-info-utils';
 import { mergeRoleCatalogMetadata } from '@/utils/role-utils';
 import {
   getNotesForPlayer,
@@ -183,6 +188,12 @@ type GameState = GameData & {
     seedEntries?: RoleInfoEntry[],
     /** Start a new phase from the previous phase's values; off for per-night rows. */
     carryForward?: boolean,
+  ) => void;
+  /** Replaces a daily character's values for each listed day (the Savant's statements). */
+  setDailyRoleInfoValues: (
+    gameId: string,
+    roleId: string,
+    valuesByDay: Map<number, Record<string, string>>,
   ) => void;
   setMapDimensions: (gameId: string, mapWidth: number, mapHeight: number) => void;
   setTokenSize: (gameId: string, tokenSize: number) => void;
@@ -1213,6 +1224,20 @@ export const useGameStore = create<GameState>()(
                     updatedAt,
                     carryForward,
                   ),
+                  updatedAt,
+                }
+              : game,
+          ),
+        }));
+      },
+      setDailyRoleInfoValues: (gameId, roleId, valuesByDay) => {
+        const updatedAt = new Date().toISOString();
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? {
+                  ...game,
+                  roleInfos: setDailyRoleInfoValues(game.roleInfos, roleId, valuesByDay, updatedAt),
                   updatedAt,
                 }
               : game,

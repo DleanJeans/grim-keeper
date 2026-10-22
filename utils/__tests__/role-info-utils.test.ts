@@ -1,8 +1,10 @@
 import type { Player, Role, RoleInfoEntry } from '@/types/game';
 import {
   getAliveNeighbors,
+  getDailyRoleInfo,
   getExecutedPlayer,
   getMentionedRoleIds,
+  getRoleInfoDays,
   getRoleInfoForPhaseOrPrevious,
   getRoleInfoNights,
   getRoleInfoOwners,
@@ -18,7 +20,9 @@ import {
   isRoleInfoOver,
   isRoleInfoShownInPhase,
   mapRoleInfoPlayerIds,
+  ROLE_INFO_TRUE_KEY,
   seedRoleInfos,
+  setDailyRoleInfoValues,
   setRoleInfoValue,
 } from '@/utils/role-info-utils';
 
@@ -513,6 +517,60 @@ describe('getRoleInfoNights', () => {
     expect(getRoleInfoNights({ id: 'washerwoman' }, 3)).toBeUndefined();
     expect(getRoleInfoNights({ id: 'ravenkeeper' }, 3)).toBeUndefined();
     expect(getRoleInfoNights({ id: 'virgin' }, 3)).toBeUndefined();
+  });
+});
+
+describe('daily role info', () => {
+  it('gives the Savant a row per day until all of its players died', () => {
+    const savant = makePlayer('ann', 0, { death: { day: 3, kind: 'night', updatedAt: NOW } });
+    expect(getRoleInfoDays({ id: 'savant' }, 2)).toEqual([1, 2]);
+    expect(getRoleInfoDays({ id: 'savant' }, 4, [savant])).toEqual([1, 2]);
+    expect(getRoleInfoDays({ id: 'empath' }, 3)).toBeUndefined();
+    expect(isRoleInfoOver({ id: 'savant' }, [savant], 3, 'day')).toBe(true);
+  });
+
+  it('shows the Savant from the first day on', () => {
+    expect(isRoleInfoShownInPhase({ id: 'savant' }, 1, 'night')).toBe(false);
+    expect(isRoleInfoShownInPhase({ id: 'savant' }, 1, 'day')).toBe(true);
+    expect(isRoleInfoShownInPhase({ id: 'savant' }, 2, 'night')).toBe(true);
+  });
+
+  it('reads a day entry, falling back to one saved during that night', () => {
+    const entries: RoleInfoEntry[] = [
+      { day: 1, phase: 'night', roleId: 'savant', updatedAt: NOW, values: { '0': 'old' } },
+      { day: 2, phase: 'night', roleId: 'savant', updatedAt: NOW, values: { '0': 'night' } },
+      { day: 2, phase: 'day', roleId: 'savant', updatedAt: NOW, values: { '0': 'day' } },
+    ];
+    expect(getDailyRoleInfo(entries, 'savant', 1)?.values['0']).toBe('old');
+    expect(getDailyRoleInfo(entries, 'savant', 2)?.values['0']).toBe('day');
+    expect(getDailyRoleInfo(entries, 'savant', 3)).toBeUndefined();
+  });
+
+  it('replaces the listed days and drops days left empty', () => {
+    const entries: RoleInfoEntry[] = [
+      { day: 1, phase: 'night', roleId: 'savant', updatedAt: NOW, values: { '0': 'old' } },
+      { day: 2, phase: 'day', roleId: 'savant', updatedAt: NOW, values: { '0': 'gone' } },
+      { day: 1, phase: 'night', roleId: 'empath', updatedAt: NOW, values: { '0': '1' } },
+    ];
+    const next = setDailyRoleInfoValues(
+      entries,
+      'savant',
+      new Map<number, Record<string, string>>([
+        [1, { '0': 'A', '1': 'B', [ROLE_INFO_TRUE_KEY]: '1' }],
+        [2, {}],
+      ]),
+      'later',
+    );
+    expect(next).toEqual([
+      entries[2],
+      {
+        day: 1,
+        phase: 'day',
+        roleId: 'savant',
+        updatedAt: 'later',
+        values: { '0': 'A', '1': 'B', [ROLE_INFO_TRUE_KEY]: '1' },
+      },
+    ]);
   });
 });
 

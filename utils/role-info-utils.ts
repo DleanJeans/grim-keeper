@@ -33,6 +33,10 @@ export type RoleInfoSlot =
   | (RoleInfoSlotBase & { kind: 'text' });
 
 export type RoleInfoTemplate = {
+  /** One line per day, for characters that learn something each day (the Savant). */
+  daily?: boolean;
+  /** The text slots are statements, and one can be marked as possibly true (the Savant). */
+  markTrue?: boolean;
   /** Show the alive neighbors of the role's owner for each phase. */
   autoNeighbors?: boolean;
   /** Show the player executed the day before each night. */
@@ -44,6 +48,9 @@ export type RoleInfoTemplate = {
 
 type SlotSpec = DistributiveOmit<RoleInfoSlot, 'id'>;
 type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : never;
+
+/** Entry value key holding the slot id of the statement marked as possibly true. */
+export const ROLE_INFO_TRUE_KEY = 'true';
 
 const YES_NO = ['Yes', 'No'];
 const GOOD_EVIL = ['Good', 'Evil'];
@@ -75,7 +82,14 @@ const learnsPair = (filter: RoleInfoRoleFilter, label: string) => [
 /** Keyed by normalized role id (lowercase letters only). Empty lists are passive roles. */
 type RoleInfoSpec =
   | SlotSpec[]
-  | { evilInPlay?: true; executed?: true; neighbors?: true; slots: SlotSpec[] };
+  | {
+      daily?: true;
+      evilInPlay?: true;
+      executed?: true;
+      markTrue?: true;
+      neighbors?: true;
+      slots: SlotSpec[];
+    };
 
 const ROLE_INFO_SPECS: Record<string, RoleInfoSpec> = {
   // Trouble Brewing — Townsfolk
@@ -143,7 +157,7 @@ const ROLE_INFO_SPECS: Record<string, RoleInfoSpec> = {
   flowergirl: [yesNo('Demon voted?')],
   towncrier: [yesNo('Minion nominated?')],
   oracle: [num('Dead evil', 10)],
-  savant: [text('Statement 1'), text('Statement 2')],
+  savant: { daily: true, markTrue: true, slots: [text('Statement 1'), text('Statement 2')] },
   seamstress: [player('Player 1'), player('Player 2'), yesNo('Same team?')],
   philosopher: [role('Became', 'good')],
   artist: [text('Question'), yesNo('Answer')],
@@ -275,7 +289,9 @@ const ROLE_INFO_TEMPLATES: Record<string, RoleInfoTemplate> = Object.fromEntries
       : {
           autoExecuted: spec.executed,
           autoNeighbors: spec.neighbors,
+          daily: spec.daily,
           evilInPlay: spec.evilInPlay,
+          markTrue: spec.markTrue,
           slots: withSlotIds(spec.slots),
         },
   ]),
@@ -427,7 +443,14 @@ export function hasRoleInfo(role: Pick<Role, 'id'>) {
  * Start-knowing characters only show on the first night and day; characters that act on other
  * nights only show after them.
  */
-export function isRoleInfoShownInPhase(role: Pick<Role, 'id'>, day: number) {
+export function isRoleInfoShownInPhase(
+  role: Pick<Role, 'id'>,
+  day: number,
+  phase: GamePhase = 'day',
+) {
+  // Daily characters list every day so far, so they show from the first day on.
+  if (getRoleInfoTemplate(role).daily) return phase === 'day' || day > 1;
+
   const roleId = normalizeRoleInfoId(role.id);
   if (START_KNOWING_ROLE_IDS.has(roleId)) return day <= 1;
   if (OTHER_NIGHTS_ROLE_IDS.has(roleId)) return day > 1;
@@ -470,14 +493,61 @@ export function getRoleInfoUsedPhase(role: Pick<Role, 'id'>, roleInfos: RoleInfo
     )[0];
 }
 
-/** Whether an every-night character's players are all dead, so it gets no more info. */
+/**
+ * Days to show one row each for, up to the given day, for characters that learn something each
+ * day; undefined for other characters. Days after all of the character's players died are left out.
+ */
+export function getRoleInfoDays(
+  role: Pick<Role, 'id'>,
+  day: number,
+  owners: Player[] = [],
+): number[] | undefined {
+  if (!getRoleInfoTemplate(role).daily) return undefined;
+
+  return Array.from({ length: Math.max(0, day) }, (_, index) => index + 1).filter(
+    (infoDay) => !areAllDead(owners, infoDay, 'day'),
+  );
+}
+
+/**
+ * A daily character's entry for one day. Entries saved before daily rows during that day's night
+ * still count for it.
+ */
+export function getDailyRoleInfo(roleInfos: RoleInfoEntry[], roleId: string, day: number) {
+  const entries = roleInfos.filter((entry) => entry.roleId === roleId && entry.day === day);
+  return entries.find((entry) => entry.phase === 'day') ?? entries[0];
+}
+
+/**
+ * Replaces the values of a daily character's day entries; days with no values left lose their
+ * entry. Each day is saved on its day phase without carrying earlier days forward.
+ */
+export function setDailyRoleInfoValues(
+  roleInfos: RoleInfoEntry[] | undefined,
+  roleId: string,
+  valuesByDay: Map<number, Record<string, string>>,
+  updatedAt: string,
+): RoleInfoEntry[] {
+  const kept = (roleInfos ?? []).filter(
+    (entry) => entry.roleId !== roleId || !valuesByDay.has(entry.day),
+  );
+  const saved = [...valuesByDay]
+    .filter(([, values]) => Object.keys(values).length > 0)
+    .map(([day, values]): RoleInfoEntry => ({ day, phase: 'day', roleId, updatedAt, values }));
+
+  return [...kept, ...saved];
+}
+
+/** Whether an every-night or daily character's players are all dead, so it gets no more info. */
 export function isRoleInfoOver(
   role: Pick<Role, 'id'>,
   owners: Player[],
   day: number,
   phase: GamePhase,
 ) {
-  return getRoleInfoNights(role, day) !== undefined && areAllDead(owners, day, phase);
+  const hasRows =
+    getRoleInfoNights(role, day) !== undefined || getRoleInfoDays(role, day) !== undefined;
+  return hasRows && areAllDead(owners, day, phase);
 }
 
 /** Players who ever claimed or were confirmed as the role, by seat. */

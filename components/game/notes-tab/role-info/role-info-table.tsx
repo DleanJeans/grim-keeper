@@ -7,6 +7,7 @@ import {
   type RoleInfoLine,
   RoleInfoRow,
 } from '@/components/game/notes-tab/role-info/role-info-row';
+import { RoleInfoStatementsDialog } from '@/components/game/notes-tab/role-info/role-info-statements-dialog';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
@@ -16,12 +17,18 @@ import {
   getEvilInPlayRoleIds,
   getGameEvilInPlaySlots,
 } from '@/utils/evil-in-play-utils';
-import { getLatestPhaseWithData, getPhaseLabel } from '@/utils/game-phase-utils';
+import {
+  type GamePhasePosition,
+  getLatestPhaseWithData,
+  getPhaseLabel,
+} from '@/utils/game-phase-utils';
 import {
   getAliveNeighbors,
+  getDailyRoleInfo,
   getExecutedPlayer,
   getMentionedRoleIds,
   getRoleClaimers,
+  getRoleInfoDays,
   getRoleInfoForPhaseOrPrevious,
   getRoleInfoNights,
   getRoleInfoTemplate,
@@ -30,6 +37,7 @@ import {
   inferRoleInfos,
   isRoleInfoOver,
   isRoleInfoShownInPhase,
+  ROLE_INFO_TRUE_KEY,
   type RoleInfoSlot,
 } from '@/utils/role-info-utils';
 import { getGameScriptRoles, isSushiBuffetScript } from '@/utils/script-service';
@@ -60,6 +68,7 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
   const { activeDay, activePhase, game, players, runDayEdit, showRoles, startingNight } =
     useGameRouteContext();
   const setRoleInfoValue = useGameStore((state) => state.setRoleInfoValue);
+  const setDailyRoleInfoValues = useGameStore((state) => state.setDailyRoleInfoValues);
   const [activeSlot, setActiveSlot] = useState<ActiveSlot | null>(null);
 
   const scriptRoles = useMemo(
@@ -123,7 +132,7 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
               : isSushiBuffet
                 ? team !== 'traveller'
                 : hasRoleInfo(role) &&
-                  isRoleInfoShownInPhase(role, activeDay) &&
+                  isRoleInfoShownInPhase(role, activeDay, activePhase) &&
                   isUnusedOrUsedIn(role, roleInfos, activeDay, activePhase) &&
                   !isRoleInfoOver(
                     role,
@@ -164,6 +173,17 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
 
   if (!showRoles || sections.length === 0) return null;
 
+  const latestPhase = getLatestPhaseWithData(game);
+  // Daily characters can be filled in for every day reached so far.
+  const lastDay = Math.max(
+    getLastDayReached({ activeDay, activePhase }),
+    getLastDayReached(latestPhase),
+  );
+  const activeTemplate = activeSlot ? getRoleInfoTemplate(activeSlot.role) : undefined;
+  const activeDailyRole = activeTemplate?.daily ? activeSlot?.role : undefined;
+  const dailyDays = activeDailyRole
+    ? getRoleInfoDays(activeDailyRole, lastDay, getRoleClaimers(players, activeDailyRole.id))
+    : undefined;
   const activeValue = activeSlot
     ? getRoleInfoValues(roleInfos, activeSlot)[activeSlot.slot.id]
     : undefined;
@@ -187,6 +207,13 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
     );
   }
 
+  function handleSaveDaily(valuesByDay: Map<number, Record<string, string>>) {
+    if (!activeDailyRole) return;
+
+    setActiveSlot(null);
+    runDayEdit(() => setDailyRoleInfoValues(game.id, activeDailyRole.id, valuesByDay));
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -202,9 +229,8 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
           key={section.label}
           label={section.label}
           onPressSlot={setActiveSlot}
-          lastNightDay={
-            player ? Math.max(activeDay, getLatestPhaseWithData(game).activeDay) : undefined
-          }
+          lastDay={lastDay}
+          lastNightDay={player ? Math.max(activeDay, latestPhase.activeDay) : undefined}
           players={players}
           playersById={playersById}
           roleInfos={roleInfos}
@@ -220,11 +246,31 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
         onSelect={handleSelect}
         phase={activeSlot?.phase ?? activePhase}
         players={seatedPlayers}
-        role={activeSlot?.role}
+        role={activeDailyRole ? undefined : activeSlot?.role}
         roles={scriptRoles}
         showRoles={showRoles}
-        slot={activeSlot?.slot}
+        slot={activeDailyRole ? undefined : activeSlot?.slot}
         value={activeValue}
+      />
+      <RoleInfoStatementsDialog
+        days={dailyDays ?? []}
+        focusDay={activeSlot?.day}
+        focusSlotId={activeSlot?.slot.id}
+        key={activeDailyRole ? `daily-${activeDailyRole.id}` : 'daily-closed'}
+        markTrue={activeTemplate?.markTrue === true}
+        onClose={() => setActiveSlot(null)}
+        onSave={handleSaveDaily}
+        role={activeDailyRole}
+        slots={activeTemplate?.slots ?? []}
+        startingNight={startingNight}
+        valuesByDay={
+          new Map(
+            (dailyDays ?? []).map((day) => [
+              day,
+              getDailyRoleInfo(roleInfos, activeSlot?.role.id ?? '', day)?.values ?? {},
+            ]),
+          )
+        }
       />
     </View>
   );
@@ -289,6 +335,11 @@ function isUnusedOrUsedIn(role: Role, roleInfos: RoleInfoEntry[], day: number, p
   return !used || (used.day === day && used.phase === phase);
 }
 
+/** The last day whose daytime was reached: a night comes before its own day. */
+function getLastDayReached({ activeDay, activePhase }: GamePhasePosition) {
+  return activePhase === 'night' ? activeDay - 1 : activeDay;
+}
+
 /** Values shown for the slot's line: that night only, or carried from earlier phases. */
 function getRoleInfoValues(roleInfos: RoleInfoEntry[], slot: ActiveSlot) {
   const entry = slot.carryForward
@@ -308,6 +359,7 @@ function RoleInfoSection({
   activePhase,
   inferredEntries,
   label,
+  lastDay,
   lastNightDay,
   onPressSlot,
   players,
@@ -323,6 +375,8 @@ function RoleInfoSection({
   activePhase: GamePhase;
   inferredEntries: Set<RoleInfoEntry>;
   label: string;
+  /** Give daily characters a line per day through this day. */
+  lastDay: number;
   /**
    * Give every-night characters a line per night through this day's night (the focused player's
    * view, which covers the whole game).
@@ -344,6 +398,7 @@ function RoleInfoSection({
         const owners = getRoleClaimers(players, role.id);
         const nights =
           lastNightDay === undefined ? undefined : getRoleInfoNights(role, lastNightDay, owners);
+        const days = template.daily ? getRoleInfoDays(role, lastDay, owners) : undefined;
         // A night's Undertaker info is about the execution on the day before it.
         const getExecuted = (night: number) =>
           template.autoExecuted ? getExecutedPlayer(players, night - 1) : undefined;
@@ -352,48 +407,51 @@ function RoleInfoSection({
             ? getAliveNeighbors(players, owners[0].id, day, phase)
             : undefined;
 
-        const lines: RoleInfoLine[] = nights
-          ? nights.map((night) => {
-              const position = { carryForward: false, day: night, phase: 'night' as const, role };
-              const entry = roleInfos.find(
-                (candidate) =>
-                  candidate.roleId === role.id &&
-                  candidate.day === night &&
-                  candidate.phase === 'night',
-              );
-              const nightLabel = getPhaseLabel(
-                { activeDay: night, activePhase: 'night' },
-                startingNight,
-              );
-              return {
-                executed: getExecuted(night),
-                key: `night-${night}`,
-                label:
-                  entry && inferredEntries.has(entry) ? `${nightLabel} · from notes` : nightLabel,
-                neighbors: getNeighbors(night, 'night'),
-                onPressSlot: (slot) => onPressSlot({ ...position, slot }),
-                values: entry?.values ?? {},
-              };
-            })
-          : [
-              getPhaseLine(
-                role,
-                roleInfos,
-                inferredEntries,
-                activeDay,
-                activePhase,
-                startingNight,
-                getExecuted(activeDay),
-                getNeighbors(activeDay, activePhase),
-                onPressSlot,
-              ),
-            ];
+        const lines: RoleInfoLine[] = days
+          ? getDayLines(role, days, roleInfos, startingNight, onPressSlot)
+          : nights
+            ? nights.map((night) => {
+                const position = { carryForward: false, day: night, phase: 'night' as const, role };
+                const entry = roleInfos.find(
+                  (candidate) =>
+                    candidate.roleId === role.id &&
+                    candidate.day === night &&
+                    candidate.phase === 'night',
+                );
+                const nightLabel = getPhaseLabel(
+                  { activeDay: night, activePhase: 'night' },
+                  startingNight,
+                );
+                return {
+                  executed: getExecuted(night),
+                  key: `night-${night}`,
+                  label:
+                    entry && inferredEntries.has(entry) ? `${nightLabel} · from notes` : nightLabel,
+                  neighbors: getNeighbors(night, 'night'),
+                  onPressSlot: (slot) => onPressSlot({ ...position, slot }),
+                  values: entry?.values ?? {},
+                };
+              })
+            : [
+                getPhaseLine(
+                  role,
+                  roleInfos,
+                  inferredEntries,
+                  activeDay,
+                  activePhase,
+                  startingNight,
+                  getExecuted(activeDay),
+                  getNeighbors(activeDay, activePhase),
+                  onPressSlot,
+                ),
+              ];
 
         // Mark where the character's info ends when all of its players have died.
         if (
-          nights &&
-          lastNightDay !== undefined &&
-          isRoleInfoOver(role, owners, lastNightDay, 'night')
+          (nights &&
+            lastNightDay !== undefined &&
+            isRoleInfoOver(role, owners, lastNightDay, 'night')) ||
+          (days && isRoleInfoOver(role, owners, lastDay, 'day'))
         ) {
           lines.push({
             isDead: true,
@@ -418,6 +476,28 @@ function RoleInfoSection({
       })}
     </View>
   );
+}
+
+/** One line per day of a daily character (the Savant), its statements marked true or false. */
+function getDayLines(
+  role: Role,
+  days: number[],
+  roleInfos: RoleInfoEntry[],
+  startingNight: StartingNight,
+  onPressSlot: (slot: ActiveSlot) => void,
+): RoleInfoLine[] {
+  const { markTrue } = getRoleInfoTemplate(role);
+
+  return days.map((day) => {
+    const values = getDailyRoleInfo(roleInfos, role.id, day)?.values ?? {};
+    return {
+      trueSlotId: markTrue ? values[ROLE_INFO_TRUE_KEY] : undefined,
+      key: `day-${day}`,
+      label: getPhaseLabel({ activeDay: day, activePhase: 'day' }, startingNight),
+      onPressSlot: (slot) => onPressSlot({ carryForward: false, day, phase: 'day', role, slot }),
+      values,
+    };
+  });
 }
 
 /** The single line of a character shown for the current phase, carrying earlier values. */

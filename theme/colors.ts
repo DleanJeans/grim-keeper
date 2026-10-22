@@ -47,6 +47,7 @@ const baseColors = {
   roleInfoTokenFilledBorder: '#d6c7a1',
   roleInfoCarried: '#77716a',
   roleInfoNeighbor: '#93c5fd',
+  roleInfoTokenTrueBorder: '#6fbf73',
   playerTokenEdgeBadge: {
     confirmedBackground: '#166534',
     confirmedIcon: '#dcfce7',

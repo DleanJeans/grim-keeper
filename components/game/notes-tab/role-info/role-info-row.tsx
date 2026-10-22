@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { RoleInfoToken } from '@/components/game/notes-tab/role-info/role-info-token';
 import { RoleReference } from '@/components/role-reference';
@@ -20,6 +20,8 @@ export type RoleInfoLine = {
   /** Marks the end of the character's info: its players are dead. */
   isDead?: boolean;
   neighbors?: Player[];
+  /** Slot of the statement marked as possibly true; the other statements show as false. */
+  trueSlotId?: string;
   onPressSlot: (slot: RoleInfoSlot) => void;
   values: Record<string, string>;
 };
@@ -124,6 +126,39 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 8,
   },
+  statementFalse: {
+    color: colors.danger,
+  },
+  statementOr: {
+    color: colors.textMuted,
+    fontWeight: '700',
+  },
+  statementTrue: {
+    color: colors.roleInfoTokenTrueBorder,
+  },
+  statements: {
+    backgroundColor: colors.roleInfoTokenBackground,
+    borderColor: colors.roleInfoTokenFilledBorder,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  statementsEmpty: {
+    borderColor: colors.roleInfoTokenEmptyBorder,
+    borderStyle: 'dashed',
+  },
+  statementsPressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  statementsText: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  statementPlaceholder: {
+    color: colors.textSubtle,
+  },
   tokens: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -142,7 +177,7 @@ function RoleInfoLineTokens({
   rolesById: Map<string, Role>;
   template: RoleInfoTemplate;
 }) {
-  const { executed, isDead, label, neighbors, onPressSlot, values } = line;
+  const { executed, isDead, label, neighbors, onPressSlot, trueSlotId, values } = line;
 
   if (isDead) {
     return <Text style={styles.dead}>{label}</Text>;
@@ -155,7 +190,14 @@ function RoleInfoLineTokens({
           {label}
         </Text>
       ) : null}
-      {template.slots.length > 0 || neighbors?.length ? (
+      {template.markTrue ? (
+        <StatementsBox
+          onPressSlot={onPressSlot}
+          slots={template.slots}
+          trueSlotId={trueSlotId}
+          values={values}
+        />
+      ) : template.slots.length > 0 || neighbors?.length ? (
         <View style={styles.tokens}>
           {executed ? (
             <RoleInfoToken player={executed} slot={EXECUTED_SLOT} value={executed.id} />
@@ -184,6 +226,80 @@ function RoleInfoLineTokens({
         <Text style={styles.neighbors}>Neighbors: claim this role to show</Text>
       ) : null}
     </View>
+  );
+}
+
+/**
+ * The statements in one rectangle, "A or B", so long ones fit. A statement marked true shows green
+ * and the others red.
+ */
+function StatementsBox({
+  onPressSlot,
+  slots,
+  trueSlotId,
+  values,
+}: {
+  onPressSlot: (slot: RoleInfoSlot) => void;
+  slots: RoleInfoSlot[];
+  trueSlotId?: string;
+  values: Record<string, string>;
+}) {
+  const isEmpty = slots.every((slot) => !values[slot.id]);
+  const firstEmptySlot = slots.find((slot) => !values[slot.id]) ?? slots[0];
+
+  return (
+    <Pressable
+      accessibilityLabel={slots
+        .map((slot) => `${slot.label}: ${values[slot.id] ?? 'empty'}`)
+        .join(', ')}
+      accessibilityRole="button"
+      onPress={() => firstEmptySlot && onPressSlot(firstEmptySlot)}
+      style={({ pressed }) => [
+        styles.statements,
+        isEmpty && styles.statementsEmpty,
+        pressed && styles.statementsPressed,
+      ]}
+    >
+      <Text style={styles.statementsText}>
+        {slots.map((slot, index) => (
+          <StatementText
+            isFirst={index === 0}
+            key={slot.id}
+            mark={trueSlotId === undefined ? undefined : slot.id === trueSlotId}
+            slot={slot}
+            value={values[slot.id]}
+          />
+        ))}
+      </Text>
+    </Pressable>
+  );
+}
+
+function StatementText({
+  isFirst,
+  mark,
+  slot,
+  value,
+}: {
+  isFirst: boolean;
+  /** True or false once a statement of the day is marked true. */
+  mark?: boolean;
+  slot: RoleInfoSlot;
+  value?: string;
+}) {
+  return (
+    <Text>
+      {isFirst ? null : <Text style={styles.statementOr}> or </Text>}
+      <Text
+        style={[
+          !value && styles.statementPlaceholder,
+          mark === true && styles.statementTrue,
+          mark === false && styles.statementFalse,
+        ]}
+      >
+        {value ?? slot.label}
+      </Text>
+    </Text>
   );
 }
 
