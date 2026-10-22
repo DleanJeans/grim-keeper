@@ -119,9 +119,20 @@ export async function restoreRemoteScript(
   }
 
   return {
-    ...createHomebrewScript(serializedContent, catalog, script.id),
+    // Older BotC Scripts uploads can lack _meta, so fall back to the backup's name.
+    ...createHomebrewScript(serializedContent, catalog, script.id, getNameFromSlug(script.name)),
     remoteId: script.remoteId,
   };
+}
+
+/** Backup placeholders only keep the slug, such as `uncertain-death`. */
+function getNameFromSlug(name: string) {
+  return /^[a-z0-9]+(-[a-z0-9]+)*$/.test(name)
+    ? name
+        .split('-')
+        .map((word) => `${word[0].toLocaleUpperCase()}${word.slice(1)}`)
+        .join(' ')
+    : name;
 }
 
 export function createHomebrewScript(

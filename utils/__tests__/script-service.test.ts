@@ -176,6 +176,37 @@ describe('script service', () => {
     }
   });
 
+  it('restores an older downloaded script whose JSON has no _meta entry', async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ['imp'],
+    } as unknown as Response) as unknown as typeof fetch;
+
+    try {
+      await expect(
+        restoreRemoteScript(
+          {
+            id: '344-uncertain-death',
+            name: 'uncertain-death',
+            remoteId: 344,
+            roles: [],
+            updatedAt: '',
+            version: '',
+          },
+          [{ id: 'imp', name: 'Imp', team: 'demon' }],
+        ),
+      ).resolves.toMatchObject({
+        id: '344-uncertain-death',
+        name: 'Uncertain Death',
+        remoteId: 344,
+        roles: [{ id: 'imp', name: 'Imp', team: 'demon' }],
+      });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   it('loads only the official base scripts from BotC Scripts', async () => {
     const originalFetch = globalThis.fetch;
     const fetchMock = jest.fn().mockResolvedValue({
