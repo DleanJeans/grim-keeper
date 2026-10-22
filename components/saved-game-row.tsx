@@ -9,6 +9,7 @@ import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Game, GameResult } from '@/types/game';
 import { getLastDayWithData } from '@/utils/game-utils';
+import { requestWebFullscreen } from '@/utils/web-fullscreen';
 
 type SavedGameRowProps = {
   game: Game;
@@ -32,7 +33,10 @@ export function SavedGameRow({ game, onDelete }: SavedGameRowProps) {
           accessibilityRole="button"
           accessibilityHint="Hold to delete"
           onLongPress={() => onDelete(game.id)}
-          onPress={() => router.push({ pathname: '/game/[id]', params: { id: game.id } })}
+          onPress={() => {
+            void requestWebFullscreen();
+            router.push({ pathname: '/game/[id]', params: { id: game.id } });
+          }}
           style={({ pressed }) => [
             styles.gameButton,
             resultStyles.surface,

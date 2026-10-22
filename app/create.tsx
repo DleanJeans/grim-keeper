@@ -25,6 +25,7 @@ import { DESKTOP_CONTENT_MAX_WIDTH } from '@/utils/responsive-utils';
 import { SUSHI_BUFFET_SCRIPT_ID } from '@/utils/script-constants';
 import { createSushiBuffetScript, isSushiBuffetScript } from '@/utils/script-service';
 import { getScriptPlayCounts, sortScriptsByMostPlayed } from '@/utils/script-utils';
+import { requestWebFullscreen } from '@/utils/web-fullscreen';
 
 export default function CreateRoute() {
   const {
@@ -309,6 +310,7 @@ export default function CreateRoute() {
       storytellers: selectedStorytellers,
       sushiRoleIds: isSushiBuffet ? selectedSushiRoleIds : undefined,
     });
+    void requestWebFullscreen();
     router.replace({ pathname: '/game/[id]', params: { id: game.id } });
   }
 
