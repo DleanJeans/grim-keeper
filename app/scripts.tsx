@@ -9,6 +9,7 @@ import { RemoteScriptCard } from '@/components/scripts/remote-script-card';
 import { ScriptCard } from '@/components/scripts/script-card';
 import { ScriptPasteImporter } from '@/components/scripts/script-paste-importer';
 import { UploadScriptButton } from '@/components/scripts/upload-script-button';
+import { SearchBox } from '@/components/search-box';
 import { Text, TextInput } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
 import { useGameStore } from '@/store/game-store';
@@ -42,6 +43,7 @@ export default function ScriptsRoute() {
   const updateScript = useGameStore((state) => state.updateScript);
   const [remoteScripts, setRemoteScripts] = useState<RemoteScript[]>([]);
   const [searchText, setSearchText] = useState('');
+  const [savedSearchText, setSavedSearchText] = useState('');
   const [remoteLoading, setRemoteLoading] = useState(false);
   const [remoteError, setRemoteError] = useState('');
   const [catalogError, setCatalogError] = useState('');
@@ -301,7 +303,9 @@ export default function ScriptsRoute() {
             onView={handleViewScript}
             onSelect={handleSelectScript}
             onToggleOneTime={handleToggleOneTime}
+            onSearchChange={setSavedSearchText}
             onUpdate={updateScript}
+            searchText={savedSearchText}
           />
           <NewScriptButton onPress={handleCreateScript} />
 
@@ -407,11 +411,13 @@ function SavedScriptsSection({
   onEdit,
   onSelect,
   onToggleOneTime,
+  onSearchChange,
   onView,
   onUpdate,
   roleCatalog,
   scriptPlayCounts,
   scripts,
+  searchText,
 }: {
   canSelect: boolean;
   editingScriptId: string | null;
@@ -419,12 +425,16 @@ function SavedScriptsSection({
   onEdit: (scriptId: string) => void;
   onSelect: (script: StoredScript) => void;
   onToggleOneTime: (script: StoredScript) => void;
+  onSearchChange: (value: string) => void;
   onView: (scriptId: string) => void;
   onUpdate: (script: StoredScript) => void;
   roleCatalog: StoredScript['roles'];
   scriptPlayCounts: ReadonlyMap<string, number>;
   scripts: StoredScript[];
+  searchText: string;
 }) {
+  const visibleScripts = filterScriptsBySearch(scripts, searchText);
+
   return (
     <View style={{ gap: 10 }}>
       <Text
@@ -433,7 +443,14 @@ function SavedScriptsSection({
       >
         Downloaded scripts
       </Text>
-      {scripts.length === 0 ? (
+      {scripts.length > 0 ? (
+        <SearchBox
+          label="Search downloaded scripts"
+          onChangeText={onSearchChange}
+          value={searchText}
+        />
+      ) : null}
+      {visibleScripts.length === 0 ? (
         <View
           style={{
             backgroundColor: colors.surface,
@@ -444,11 +461,11 @@ function SavedScriptsSection({
           }}
         >
           <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
-            No downloaded scripts yet.
+            {scripts.length === 0 ? 'No downloaded scripts yet.' : 'No scripts match.'}
           </Text>
         </View>
       ) : (
-        scripts.map((script) => (
+        visibleScripts.map((script) => (
           <ScriptCard
             canSelect={canSelect}
             editing={editingScriptId === script.id}
@@ -466,5 +483,19 @@ function SavedScriptsSection({
         ))
       )}
     </View>
+  );
+}
+
+function filterScriptsBySearch(scripts: StoredScript[], searchText: string) {
+  const normalizedQuery = searchText.trim().toLocaleLowerCase();
+
+  if (!normalizedQuery) {
+    return scripts;
+  }
+
+  return scripts.filter(
+    (script) =>
+      script.name.toLocaleLowerCase().includes(normalizedQuery) ||
+      script.author?.toLocaleLowerCase().includes(normalizedQuery),
   );
 }
