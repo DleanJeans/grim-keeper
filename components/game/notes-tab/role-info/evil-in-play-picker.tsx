@@ -7,15 +7,27 @@ import { RoleInfoToken } from '@/components/game/notes-tab/role-info/role-info-t
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import { type EvilInPlaySlot, getGameEvilInPlaySlots } from '@/utils/evil-in-play-utils';
+import type { Role } from '@/types/game';
+import {
+  type BluffSlot,
+  type EvilInPlaySlot,
+  getBluffSlots,
+  getGameEvilInPlaySlots,
+} from '@/utils/evil-in-play-utils';
 import type { RoleInfoSlot } from '@/utils/role-info-utils';
 import { getGameScriptRoles } from '@/utils/script-service';
 
-/** Tokens for choosing which Demon and Minions are in play, which limits the evil info rows. */
+type PickerSlot = BluffSlot | EvilInPlaySlot;
+
+/**
+ * Tokens for choosing which Demon and Minions are in play, which limits the evil info rows, and a
+ * row for the Demon's bluffs.
+ */
 export function EvilInPlayPicker() {
   const { activeDay, activePhase, game, runDayEdit } = useGameRouteContext();
   const setEvilInPlayRole = useGameStore((state) => state.setEvilInPlayRole);
-  const [activeSlot, setActiveSlot] = useState<EvilInPlaySlot | null>(null);
+  const setBluffRole = useGameStore((state) => state.setBluffRole);
+  const [activeSlot, setActiveSlot] = useState<PickerSlot | null>(null);
 
   const scriptRoles = useMemo(
     () => getGameScriptRoles({ script: game.script, sushiRoleIds: game.sushiRoleIds }),
@@ -33,45 +45,51 @@ export function EvilInPlayPicker() {
       ),
     [game.characterTypeCounts, game.evilInPlay, game.players, scriptRoles],
   );
+  const bluffSlots = useMemo(
+    () => getBluffSlots(scriptRoles, game.bluffs),
+    [game.bluffs, scriptRoles],
+  );
   const rolesById = useMemo(
     () => new Map(scriptRoles.map((role) => [role.id, role])),
     [scriptRoles],
   );
-  // A character already chosen in another slot can't be picked again.
+  // A character already chosen in another slot of the same row can't be picked again.
   const pickableRoles = useMemo(() => {
+    const rowSlots: PickerSlot[] = activeSlot?.team === 'bluff' ? bluffSlots : slots;
     const takenRoleIds = new Set(
-      slots.filter((slot) => slot.slotId !== activeSlot?.slotId).map((slot) => slot.roleId),
+      rowSlots.filter((slot) => slot.slotId !== activeSlot?.slotId).map((slot) => slot.roleId),
     );
     return scriptRoles.filter((role) => !takenRoleIds.has(role.id));
-  }, [activeSlot, scriptRoles, slots]);
+  }, [activeSlot, bluffSlots, scriptRoles, slots]);
 
-  if (slots.length === 0 || !scriptRoles.some((role) => isEvilTeam(role.team))) return null;
+  const showEvil = slots.length > 0 && scriptRoles.some((role) => isEvilTeam(role.team));
+  const showBluffs = scriptRoles.some((role) => isGoodTeam(role.team));
+  if (!showEvil && !showBluffs) return null;
 
   function handleSelect(roleId: string | undefined) {
     if (!activeSlot) return;
 
-    const { slotId } = activeSlot;
+    const { slotId, team } = activeSlot;
     setActiveSlot(null);
-    runDayEdit(() => setEvilInPlayRole(game.id, slotId, roleId));
+    runDayEdit(() =>
+      team === 'bluff'
+        ? setBluffRole(game.id, slotId, roleId)
+        : setEvilInPlayRole(game.id, slotId, roleId),
+    );
   }
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>In play</Text>
-      <View style={styles.tokens}>
-        {slots.map((slot) => {
-          const role = slot.roleId ? rolesById.get(slot.roleId) : undefined;
-          return (
-            <RoleInfoToken
-              key={slot.slotId}
-              onPress={slot.locked ? undefined : () => setActiveSlot(slot)}
-              role={role}
-              slot={getTokenSlot(slot, role?.name)}
-              value={slot.roleId}
-            />
-          );
-        })}
-      </View>
+      {showEvil ? (
+        <SlotTokens onPressSlot={setActiveSlot} rolesById={rolesById} slots={slots} />
+      ) : null}
+      {showBluffs ? (
+        <>
+          <Text style={styles.rowLabel}>Bluffs</Text>
+          <SlotTokens onPressSlot={setActiveSlot} rolesById={rolesById} slots={bluffSlots} />
+        </>
+      ) : null}
       <RoleInfoPickerDialog
         day={activeDay}
         key={activeSlot?.slotId ?? 'closed'}
@@ -102,6 +120,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '900',
   },
+  rowLabel: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '700',
+  },
   tokens: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -109,14 +132,48 @@ const styles = StyleSheet.create({
   },
 });
 
+function SlotTokens({
+  onPressSlot,
+  rolesById,
+  slots,
+}: {
+  onPressSlot: (slot: PickerSlot) => void;
+  rolesById: Map<string, Role>;
+  slots: PickerSlot[];
+}) {
+  return (
+    <View style={styles.tokens}>
+      {slots.map((slot) => {
+        const role = slot.roleId ? rolesById.get(slot.roleId) : undefined;
+        return (
+          <RoleInfoToken
+            key={slot.slotId}
+            onPress={slot.locked ? undefined : () => onPressSlot(slot)}
+            role={role}
+            slot={getTokenSlot(slot, role?.name)}
+            value={slot.roleId}
+          />
+        );
+      })}
+    </View>
+  );
+}
+
+const TOKEN_LABELS = { bluff: 'Bluff', demon: 'Demon', minion: 'Minion' } as const;
+
 /** Labelled with the chosen character's name, or its type while empty. */
-function getTokenSlot({ slotId, team }: EvilInPlaySlot, roleName?: string): RoleInfoSlot {
+function getTokenSlot({ slotId, team }: PickerSlot, roleName?: string): RoleInfoSlot {
   return {
-    filter: team,
+    filter: team === 'bluff' ? 'good' : team,
     id: slotId,
     kind: 'role',
-    label: roleName ?? (team === 'demon' ? 'Demon' : 'Minion'),
+    label: roleName ?? TOKEN_LABELS[team],
   };
+}
+
+function isGoodTeam(team?: string) {
+  const normalized = team?.toLocaleLowerCase();
+  return normalized === 'townsfolk' || normalized === 'outsider';
 }
 
 function isEvilTeam(team?: string) {

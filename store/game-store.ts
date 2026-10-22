@@ -199,6 +199,7 @@ type GameState = GameData & {
   setTokenSize: (gameId: string, tokenSize: number) => void;
   setCharacterTypeCounts: (gameId: string, counts?: CharacterTypeCounts) => void;
   setEvilInPlayRole: (gameId: string, slotId: string, roleId?: string) => void;
+  setBluffRole: (gameId: string, slotId: string, roleId?: string) => void;
   setGameResult: (gameId: string, result?: GameResult) => void;
   setActiveDay: (gameId: string, day: number) => void;
   setGamePhase: (gameId: string, day: number, phase: GamePhase) => void;
@@ -1273,6 +1274,19 @@ export const useGameStore = create<GameState>()(
               ? {
                   ...game,
                   evilInPlay: setEvilInPlayRole(game.evilInPlay, slotId, roleId),
+                  updatedAt: new Date().toISOString(),
+                }
+              : game,
+          ),
+        }));
+      },
+      setBluffRole: (gameId, slotId, roleId) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? {
+                  ...game,
+                  bluffs: setEvilInPlayRole(game.bluffs, slotId, roleId),
                   updatedAt: new Date().toISOString(),
                 }
               : game,

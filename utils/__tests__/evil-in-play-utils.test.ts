@@ -1,5 +1,6 @@
 import type { Player, Role } from '@/types/game';
 import {
+  getBluffSlots,
   getEvilInPlayRoleIds,
   getEvilInPlaySlots,
   getGameEvilInPlaySlots,
@@ -83,5 +84,21 @@ describe('setEvilInPlayRole', () => {
     const chosen = setEvilInPlayRole(undefined, 'minion-0', 'spy');
     expect(chosen).toEqual({ 'minion-0': 'spy' });
     expect(setEvilInPlayRole(chosen, 'minion-0', undefined)).toBeUndefined();
+  });
+});
+
+describe('getBluffSlots', () => {
+  it('gives 3 slots that keep only good characters from the script', () => {
+    expect(
+      getBluffSlots(TROUBLE_BREWING, {
+        'bluff-0': 'washerwoman',
+        'bluff-1': 'imp',
+        'bluff-2': 'x',
+      }),
+    ).toEqual([
+      { locked: false, roleId: 'washerwoman', slotId: 'bluff-0', team: 'bluff' },
+      { locked: false, roleId: undefined, slotId: 'bluff-1', team: 'bluff' },
+      { locked: false, roleId: undefined, slotId: 'bluff-2', team: 'bluff' },
+    ]);
   });
 });

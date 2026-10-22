@@ -2,6 +2,9 @@ import type { CharacterTypeCounts, Game, Role } from '@/types/game';
 
 export type EvilInPlayTeam = 'demon' | 'minion';
 
+/** The Demon usually gets 3 good characters not in play to bluff as. */
+export const BLUFF_COUNT = 3;
+
 export type EvilInPlaySlot = {
   /** Fixed to the script's only Demon, so it can't be changed. */
   locked: boolean;
@@ -9,6 +12,8 @@ export type EvilInPlaySlot = {
   slotId: string;
   team: EvilInPlayTeam;
 };
+
+export type BluffSlot = Omit<EvilInPlaySlot, 'team'> & { team: 'bluff' };
 
 /** Standard setup for the player count (travellers excluded). */
 export function getAutomaticCharacterTypeCounts(playerCount: number): CharacterTypeCounts {
@@ -71,6 +76,25 @@ export function getGameEvilInPlaySlots(
   return getEvilInPlaySlots(scriptRoles, counts, game.evilInPlay);
 }
 
+/** Bluff slots with the good character chosen in each. */
+export function getBluffSlots(scriptRoles: Role[], bluffs: Game['bluffs']): BluffSlot[] {
+  const goodRoleIds = new Set(
+    scriptRoles
+      .filter((role) => getTeam(role) === 'townsfolk' || getTeam(role) === 'outsider')
+      .map((role) => role.id),
+  );
+  return Array.from({ length: BLUFF_COUNT }, (_, index): BluffSlot => {
+    const slotId = `bluff-${index}`;
+    const roleId = bluffs?.[slotId];
+    return {
+      locked: false,
+      roleId: roleId && goodRoleIds.has(roleId) ? roleId : undefined,
+      slotId,
+      team: 'bluff',
+    };
+  });
+}
+
 /**
  * Characters chosen as in play, per team. A team with nothing chosen is left out, so all of its
  * characters keep showing.
@@ -86,7 +110,10 @@ export function getEvilInPlayRoleIds(slots: EvilInPlaySlot[]) {
   return roleIdsByTeam;
 }
 
-/** Sets or clears the character chosen in one slot, dropping the map once it is empty. */
+/**
+ * Sets or clears the character chosen in one slot (in play or bluff), dropping the map once it is
+ * empty.
+ */
 export function setEvilInPlayRole(
   evilInPlay: Game['evilInPlay'],
   slotId: string,
