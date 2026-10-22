@@ -39,7 +39,7 @@ type CreateFormHeaderProps = {
   onSelectLorics: (roleIds: string[]) => void;
   onSelectScript: (scriptId: string | null) => void;
   onSelectSushiRoles: (roleIds: string[]) => void;
-  onSelectStoryteller: (friendId?: string) => void;
+  onSelectStorytellers: (friendIds: string[]) => void;
   onStart: () => void;
   onSubmitName: () => void;
   scriptPlayCounts?: ReadonlyMap<string, number>;
@@ -48,7 +48,7 @@ type CreateFormHeaderProps = {
   selectedSushiRoleIds: string[];
   selectedLoricIds: string[];
   selectedFriendIds: string[];
-  selectedStorytellerId: string | null;
+  selectedStorytellerIds: string[];
   storytellers: FriendSummary[];
   sushiRoles: Role[];
 };
@@ -78,7 +78,7 @@ export function CreateFormHeader({
   onSelectLorics,
   onSelectScript,
   onSelectSushiRoles,
-  onSelectStoryteller,
+  onSelectStorytellers,
   onStart,
   onSubmitName,
   scriptPlayCounts,
@@ -87,7 +87,7 @@ export function CreateFormHeader({
   selectedSushiRoleIds,
   selectedLoricIds,
   selectedFriendIds,
-  selectedStorytellerId,
+  selectedStorytellerIds,
   storytellers,
   sushiRoles,
 }: CreateFormHeaderProps) {
@@ -139,8 +139,8 @@ export function CreateFormHeader({
 
       <StorytellerPicker
         friends={storytellers}
-        onSelect={onSelectStoryteller}
-        selectedFriendId={selectedStorytellerId}
+        onChange={onSelectStorytellers}
+        selectedFriendIds={selectedStorytellerIds}
       />
 
       <View style={styles.nameSection}>

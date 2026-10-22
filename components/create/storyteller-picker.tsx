@@ -9,14 +9,22 @@ import type { FriendSummary } from '@/types/game';
 
 type StorytellerPickerProps = {
   friends: FriendSummary[];
-  onSelect: (friendId?: string) => void;
-  selectedFriendId?: string | null;
+  onChange: (friendIds: string[]) => void;
+  selectedFriendIds: string[];
 };
 
-export function StorytellerPicker({ friends, onSelect, selectedFriendId }: StorytellerPickerProps) {
+export function StorytellerPicker({
+  friends,
+  onChange,
+  selectedFriendIds,
+}: StorytellerPickerProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const selectedFriend = friends.find((friend) => friend.id === selectedFriendId);
+  const selectedFriends = selectedFriendIds.flatMap((friendId) => {
+    const friend = friends.find((candidate) => candidate.id === friendId);
+    return friend ? [friend] : [];
+  });
+  const selectedNames = selectedFriends.map((friend) => friend.name).join(', ');
   const disabled = friends.length === 0;
   const visibleFriends = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
@@ -31,8 +39,16 @@ export function StorytellerPicker({ friends, onSelect, selectedFriendId }: Story
     setSearchQuery('');
   }
 
-  function handleSelect(friendId?: string) {
-    onSelect(friendId);
+  function handleToggle(friendId: string) {
+    onChange(
+      selectedFriendIds.includes(friendId)
+        ? selectedFriendIds.filter((selectedId) => selectedId !== friendId)
+        : [...selectedFriendIds, friendId],
+    );
+  }
+
+  function handleClear() {
+    onChange([]);
     closePicker();
   }
 
@@ -42,7 +58,7 @@ export function StorytellerPicker({ friends, onSelect, selectedFriendId }: Story
         Storyteller
       </Text>
       <Pressable
-        accessibilityLabel={`Storyteller: ${selectedFriend?.name ?? (disabled ? 'No friends yet' : 'None')}`}
+        accessibilityLabel={`Storyteller: ${selectedNames || (disabled ? 'No friends yet' : 'None')}`}
         accessibilityRole="button"
         disabled={disabled}
         onPress={() => setOpen(true)}
@@ -54,10 +70,14 @@ export function StorytellerPicker({ friends, onSelect, selectedFriendId }: Story
       >
         <View style={styles.triggerText}>
           <Text selectable style={styles.triggerTitle}>
-            {selectedFriend?.name ?? (disabled ? 'No friends yet' : 'Select a friend')}
+            {selectedNames || (disabled ? 'No friends yet' : 'Select friends')}
           </Text>
           <Text selectable style={styles.triggerDescription}>
-            {selectedFriend ? 'Selected friend' : 'Optional game role'}
+            {selectedFriends.length > 1
+              ? `${selectedFriends.length} selected friends`
+              : selectedFriends.length === 1
+                ? 'Selected friend'
+                : 'Optional game role'}
           </Text>
         </View>
         <ChevronDown
@@ -85,7 +105,7 @@ export function StorytellerPicker({ friends, onSelect, selectedFriendId }: Story
                   Select Storyteller
                 </Text>
                 <Text selectable style={styles.dialogDescription}>
-                  Choose a friend to place in the middle of the game map.
+                  Choose one or more friends to place in the middle of the game map.
                 </Text>
               </View>
               <Pressable
@@ -108,13 +128,14 @@ export function StorytellerPicker({ friends, onSelect, selectedFriendId }: Story
             >
               {visibleFriends.length > 0 ? (
                 visibleFriends.map((friend) => {
-                  const selected = friend.id === selectedFriendId;
+                  const selected = selectedFriendIds.includes(friend.id);
                   return (
                     <Pressable
                       accessibilityLabel={`${selected ? 'Selected' : 'Select'} ${friend.name} as storyteller`}
-                      accessibilityRole="button"
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: selected }}
                       key={friend.id}
-                      onPress={() => handleSelect(friend.id)}
+                      onPress={() => handleToggle(friend.id)}
                       style={({ pressed }) => [
                         styles.option,
                         selected && styles.optionSelected,
@@ -142,11 +163,11 @@ export function StorytellerPicker({ friends, onSelect, selectedFriendId }: Story
                 </Text>
               )}
             </ScrollView>
-            {selectedFriend ? (
+            {selectedFriends.length > 0 ? (
               <Pressable
                 accessibilityLabel="Clear Storyteller selection"
                 accessibilityRole="button"
-                onPress={() => handleSelect(undefined)}
+                onPress={handleClear}
                 style={({ pressed }) => [styles.clearButton, pressed && styles.pressed]}
               >
                 <Text selectable style={styles.clearText}>

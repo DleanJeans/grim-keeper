@@ -6,12 +6,13 @@ import {
   getInteractionCurvePlayerPairs,
 } from '@/components/game/connection-curve';
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import type { OtherTokenPosition } from '@/components/game/player-token';
 import { PlayerToken } from '@/components/game/player-token';
 import { colors } from '@/theme/colors';
 import type { Conversation, Player, PlayerPosition, Role, RoleDisplayMode } from '@/types/game';
 import { buildConversationGroupRepeats, getConversationGroupKey } from '@/utils/conversation-utils';
 import type { GamePhasePosition } from '@/utils/game-phase-utils';
-import { getPlayerMapPosition } from '@/utils/layout-utils';
+import { getPlayerMapPosition, getPlayerTokenScale } from '@/utils/layout-utils';
 import {
   getPlayerTokenName,
   hasDeadVoteAvailable,
@@ -229,7 +230,7 @@ export function GameMap() {
           const ownPosition =
             positions.get(player.id) ??
             getPlayerMapPosition(player, players, mapWidth, mapHeight, activeTokenSize);
-          const otherTokenPositions: { x: number; y: number }[] = [];
+          const otherTokenPositions: OtherTokenPosition[] = [];
           for (const other of players) {
             if (other.id === player.id) {
               continue;
@@ -237,7 +238,10 @@ export function GameMap() {
             const otherPosition =
               positions.get(other.id) ??
               getPlayerMapPosition(other, players, mapWidth, mapHeight, activeTokenSize);
-            otherTokenPositions.push(otherPosition);
+            otherTokenPositions.push({
+              ...otherPosition,
+              size: activeTokenSize * getPlayerTokenScale(other, players),
+            });
           }
           return (
             <PlayerTokenForMap
@@ -316,7 +320,7 @@ function PlayerTokenForMap({
   mapHeight: number;
   mapScale: number;
   mapWidth: number;
-  otherTokenPositions: { x: number; y: number }[];
+  otherTokenPositions: OtherTokenPosition[];
   player: Player;
   players: Player[];
   position: PlayerPosition;
@@ -355,6 +359,7 @@ function PlayerTokenForMap({
       roles={roleDisplay.roles}
       rolesConfirmed={roleDisplay.kind === 'confirm'}
       showRoleDetails={showRoles}
+      tokenScale={getPlayerTokenScale(player, players)}
       tokenSize={activeTokenSize}
     />
   );

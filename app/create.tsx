@@ -56,7 +56,7 @@ export default function CreateRoute() {
   );
   const [selectedLoricIds, setSelectedLoricIds] = useState<string[]>([]);
   const [selectedSushiRoleIds, setSelectedSushiRoleIds] = useState<string[]>([]);
-  const [draftSelectedStorytellerId, setDraftSelectedStorytellerId] = useState<string | null>(null);
+  const [draftSelectedStorytellerIds, setDraftSelectedStorytellerIds] = useState<string[]>([]);
   const draftGameId = useRef<string | null>(null);
   const copiedPlayersGameId = useRef<string | null>(null);
   const sushiSelectionKeyRef = useRef<string | null>(null);
@@ -109,14 +109,21 @@ export default function CreateRoute() {
     () => sortFriendSummaries(getFriendSummaries(games, storedFriends, appUserName), savedNotes),
     [appUserName, games, savedNotes, storedFriends],
   );
-  const selectedStoryteller = friends.find((friend) => friend.id === draftSelectedStorytellerId);
+  const selectedStorytellers = useMemo(
+    () =>
+      draftSelectedStorytellerIds.flatMap((friendId) => {
+        const friend = friends.find((candidate) => candidate.id === friendId);
+        return friend ? [friend] : [];
+      }),
+    [draftSelectedStorytellerIds, friends],
+  );
   const seatedNames = useMemo(
     () => [fixedPlayerName, ...players.map((player) => player.name)],
     [fixedPlayerName, players],
   );
   const selectedNames = useMemo(
-    () => [...seatedNames, ...(selectedStoryteller ? [selectedStoryteller.name] : [])],
-    [seatedNames, selectedStoryteller],
+    () => [...seatedNames, ...selectedStorytellers.map((storyteller) => storyteller.name)],
+    [seatedNames, selectedStorytellers],
   );
   const storytellerFriends = useMemo(
     () =>
@@ -126,8 +133,8 @@ export default function CreateRoute() {
     [friends, seatedNames],
   );
   const playerPickerFriends = useMemo(
-    () => friends.filter((friend) => friend.id !== draftSelectedStorytellerId),
-    [draftSelectedStorytellerId, friends],
+    () => friends.filter((friend) => !draftSelectedStorytellerIds.includes(friend.id)),
+    [draftSelectedStorytellerIds, friends],
   );
   const selectedFriendIds = useMemo(() => {
     const friendIds = new Set(playerPickerFriends.map((friend) => friend.id));
@@ -159,7 +166,7 @@ export default function CreateRoute() {
     if (editingGame && draftGameId.current !== editingGame.id) {
       draftGameId.current = editingGame.id;
       setDraftPlayers(getDraftPlayers(editingGame));
-      setDraftSelectedStorytellerId(getStorytellerId(editingGame));
+      setDraftSelectedStorytellerIds(getStorytellerIds(editingGame));
     }
   }, [editingGame]);
 
@@ -167,7 +174,7 @@ export default function CreateRoute() {
     if (copyPlayersSourceGame && copiedPlayersGameId.current !== copyPlayersSourceGame.id) {
       copiedPlayersGameId.current = copyPlayersSourceGame.id;
       setDraftPlayers(getDraftPlayers(copyPlayersSourceGame));
-      setDraftSelectedStorytellerId(getStorytellerId(copyPlayersSourceGame));
+      setDraftSelectedStorytellerIds(getStorytellerIds(copyPlayersSourceGame));
     }
   }, [copyPlayersSourceGame]);
 
@@ -280,7 +287,7 @@ export default function CreateRoute() {
     Keyboard.dismiss();
 
     if (isEditing && editingGame) {
-      updateGamePlayers(editingGame.id, players, selectedStoryteller);
+      updateGamePlayers(editingGame.id, players, selectedStorytellers);
       setGameScript(editingGame.id, selectedScript);
       if (isSushiBuffet) {
         setGameSushiRoleIds(editingGame.id, selectedSushiRoleIds);
@@ -299,7 +306,7 @@ export default function CreateRoute() {
       mapWidth,
       playerNames: players.map((player) => player.name),
       script: selectedScript,
-      storyteller: selectedStoryteller,
+      storytellers: selectedStorytellers,
       sushiRoleIds: isSushiBuffet ? selectedSushiRoleIds : undefined,
     });
     router.replace({ pathname: '/game/[id]', params: { id: game.id } });
@@ -390,7 +397,7 @@ export default function CreateRoute() {
                 sushiSelectionChangedRef.current = true;
                 setSelectedSushiRoleIds(roleIds);
               }}
-              onSelectStoryteller={(friendId) => setDraftSelectedStorytellerId(friendId ?? null)}
+              onSelectStorytellers={setDraftSelectedStorytellerIds}
               lorics={roleCatalog.filter((role) => role.team?.toLocaleLowerCase() === 'loric')}
               onSelectLorics={setSelectedLoricIds}
               onStart={handleStart}
@@ -401,7 +408,7 @@ export default function CreateRoute() {
               selectedSushiRoleIds={selectedSushiRoleIds}
               selectedFriendIds={selectedFriendIds}
               selectedLoricIds={selectedLoricIds}
-              selectedStorytellerId={draftSelectedStorytellerId}
+              selectedStorytellerIds={draftSelectedStorytellerIds}
               storytellers={storytellerFriends}
               sushiRoles={sushiBuffetScript.roles}
             />
@@ -438,8 +445,8 @@ function getDraftPlayers(game: Game): DraftPlayer[] {
     .map(({ id, name }) => ({ id, name }));
 }
 
-function getStorytellerId(game: Game) {
-  return game.players.find((player) => player.isStoryteller)?.id ?? null;
+function getStorytellerIds(game: Game) {
+  return game.players.filter((player) => player.isStoryteller).map((player) => player.id);
 }
 
 function createDraftId() {

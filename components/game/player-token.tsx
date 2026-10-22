@@ -26,7 +26,7 @@ const DEFAULT_BORDER_WIDTH = 2;
 const SELECTED_BORDER_WIDTH = 3;
 const ROLE_IMAGE_SCALE = 1.4;
 const ROLE_IMAGE_OPACITY = 0.4;
-const EMPTY_OTHER_TOKEN_POSITIONS: { x: number; y: number }[] = [];
+const EMPTY_OTHER_TOKEN_POSITIONS: OtherTokenPosition[] = [];
 const badgeColors = colors.playerTokenEdgeBadge;
 const Colors = {
   backgroundDefault: '#f8fafc',
@@ -44,6 +44,9 @@ const Colors = {
   textDragReady: '#082f49',
 } as const;
 
+/** Center of another token on the map; `size` defaults to this token's size. */
+export type OtherTokenPosition = { size?: number; x: number; y: number };
+
 type PlayerTokenProps = {
   mapHeight: number;
   mapScale: number;
@@ -58,7 +61,7 @@ type PlayerTokenProps = {
   isNominated?: boolean;
   isNominator?: boolean;
   isSelected?: boolean;
-  otherTokenPositions?: { x: number; y: number }[];
+  otherTokenPositions?: OtherTokenPosition[];
   player: Player;
   position: PlayerPosition;
   roles?: Role[];
@@ -66,6 +69,8 @@ type PlayerTokenProps = {
   rearrangeMode?: boolean;
   showRoleDetails?: boolean;
   tokenSize: number;
+  /** Multiplier on `tokenSize`, e.g. 0.5 for Storytellers when there are several. */
+  tokenScale?: number;
   onMove: (playerId: string, position: PlayerPosition) => void;
   onSelect?: (playerId: string) => void;
 };
@@ -91,10 +96,11 @@ export function PlayerToken({
   roles = [],
   rolesConfirmed = false,
   showRoleDetails = false,
+  tokenScale = 1,
   tokenSize: tokenSizeProp,
 }: PlayerTokenProps) {
   const [isDragReady, setIsDragReady] = useState(false);
-  const tokenSize = getTokenSize(tokenSizeProp);
+  const tokenSize = getTokenSize(tokenSizeProp) * tokenScale;
   const borderWidth = isSelected ? SELECTED_BORDER_WIDTH : DEFAULT_BORDER_WIDTH;
   const displayedRoles =
     rolesConfirmed && confirmedRoleIds
@@ -113,7 +119,7 @@ export function PlayerToken({
   const y = useSharedValue(position.y);
   const startX = useSharedValue(position.x);
   const startY = useSharedValue(position.y);
-  const otherPositionsShared = useSharedValue<{ x: number; y: number }[]>(otherTokenPositions);
+  const otherPositionsShared = useSharedValue<OtherTokenPosition[]>(otherTokenPositions);
 
   useEffect(() => {
     x.value = reduceMotion ? position.x : withSpring(position.x);
@@ -128,7 +134,7 @@ export function PlayerToken({
 
   // Worklet: clamp the proposed center so it doesn't overlap any other token.
   // For each blocker, project the proposed center onto the boundary circle of
-  // the blocker (radius = tokenSize) along the vector from blocker to proposed
+  // the blocker (radius = half of both token sizes) along the vector from blocker to proposed
   // center. Pick the candidate closest to the original proposed center — that
   // is the one furthest along the drag direction, so the dragged token stops
   // at the first blocker it actually hits.
@@ -144,12 +150,13 @@ export function PlayerToken({
       const dx = px - blocker.x;
       const dy = py - blocker.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
-      if (distance >= tokenSize) {
+      const minDistance = (tokenSize + (blocker.size ?? tokenSize)) / 2;
+      if (distance >= minDistance) {
         continue;
       }
       if (distance === 0) {
-        // Coincident centers: nudge along +x by exactly tokenSize.
-        const candidateX = blocker.x + tokenSize;
+        // Coincident centers: nudge along +x by exactly minDistance.
+        const candidateX = blocker.x + minDistance;
         const candidateY = blocker.y;
         const candidateDistanceSquared = (candidateX - px) ** 2 + (candidateY - py) ** 2;
         if (candidateDistanceSquared < bestDistanceSquared) {
@@ -159,8 +166,8 @@ export function PlayerToken({
         }
         continue;
       }
-      const candidateX = blocker.x + (dx / distance) * tokenSize;
-      const candidateY = blocker.y + (dy / distance) * tokenSize;
+      const candidateX = blocker.x + (dx / distance) * minDistance;
+      const candidateY = blocker.y + (dy / distance) * minDistance;
       const candidateDistanceSquared = (candidateX - px) ** 2 + (candidateY - py) ** 2;
       if (candidateDistanceSquared < bestDistanceSquared) {
         bestX = candidateX;
@@ -294,7 +301,7 @@ export function PlayerToken({
                   ? Colors.textDeath
                   : Colors.textDefault
             }
-            isStoryteller={player.isStoryteller}
+            isStoryteller={player.isStoryteller && tokenScale === 1}
             name={displayName ?? player.name}
             roles={visibleRoles}
           />

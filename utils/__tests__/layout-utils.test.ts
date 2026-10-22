@@ -12,6 +12,7 @@ import {
   getMapScale,
   getNextMapDimension,
   getPlayerMapPosition,
+  getPlayerTokenScale,
   getTokenSize,
   resolveTokenCollisions,
   scalePlayerMapPositions,
@@ -122,6 +123,37 @@ describe('layout utils', () => {
         .filter((player) => !player.isStoryteller)
         .map((player) => getPlayerMapPosition(player, mixedPlayers, 268, 200)),
     ).toEqual(players.map((player) => getPlayerMapPosition(player, players, 268, 200)));
+  });
+
+  it('places several storytellers side by side at half size', () => {
+    const storytellers: Player[] = ['first', 'second'].map((id) => ({
+      id,
+      isStoryteller: true,
+      name: id,
+      seat: -1,
+    }));
+    const mixedPlayers = [...players, ...storytellers];
+
+    expect(
+      storytellers.map((player) => getPlayerMapPosition(player, mixedPlayers, 268, 200, 90)),
+    ).toEqual([
+      { x: 111.5, y: 100 },
+      { x: 156.5, y: 100 },
+    ]);
+    expect(storytellers.map((player) => getPlayerTokenScale(player, mixedPlayers))).toEqual([
+      0.5, 0.5,
+    ]);
+    expect(getPlayerTokenScale(players[0], mixedPlayers)).toBe(1);
+    expect(getPlayerTokenScale(storytellers[0], [...players, storytellers[0]])).toBe(1);
+  });
+
+  it('lets half-size storytellers sit closer together than full tokens', () => {
+    const storytellers: Player[] = [
+      { id: 'a', isStoryteller: true, name: 'A', position: { x: 200, y: 200 }, seat: -1 },
+      { id: 'b', isStoryteller: true, name: 'B', position: { x: 245, y: 200 }, seat: -1 },
+    ];
+
+    expect(resolveTokenCollisions(storytellers, 500, 500, 90).positions).toEqual({});
   });
 
   it('keeps the token border inside the map', () => {

@@ -20,6 +20,34 @@ export function getTokenSize(tokenSize = defaultTokenSize) {
   return Math.min(maxTokenSize, Math.max(minTokenSize, tokenSize));
 }
 
+/** Storyteller tokens shrink to half size when a game has more than one Storyteller. */
+export function getPlayerTokenScale(player: Player, players: Player[]) {
+  return player.isStoryteller && players.filter((candidate) => candidate.isStoryteller).length > 1
+    ? 0.5
+    : 1;
+}
+
+/** Default spot for one of `count` Storytellers: side by side around the map center. */
+export function getStorytellerPosition(
+  index: number,
+  count: number,
+  mapWidth: number,
+  mapHeight: number,
+  tokenSize = defaultTokenSize,
+): PlayerPosition {
+  const storytellerTokenSize = getTokenSize(tokenSize) * (count > 1 ? 0.5 : 1);
+
+  return clampTokenPosition(
+    {
+      x: mapWidth / 2 + (index - (count - 1) / 2) * storytellerTokenSize,
+      y: mapHeight / 2,
+    },
+    mapWidth,
+    mapHeight,
+    storytellerTokenSize,
+  );
+}
+
 export function getDefaultMapWidth(viewportWidth: number) {
   return Math.max(1, Math.min(DESKTOP_CONTENT_MAX_WIDTH, Math.round(viewportWidth - 40)));
 }
@@ -108,12 +136,20 @@ export function getPlayerMapPosition(
   const resolvedTokenSize = getTokenSize(tokenSize);
 
   if (player.position) {
-    return clampTokenPosition(player.position, mapWidth, mapHeight, resolvedTokenSize);
+    return clampTokenPosition(
+      player.position,
+      mapWidth,
+      mapHeight,
+      resolvedTokenSize * getPlayerTokenScale(player, players),
+    );
   }
 
   if (player.isStoryteller) {
-    return clampTokenPosition(
-      { x: mapWidth / 2, y: mapHeight / 2 },
+    const storytellers = players.filter((candidate) => candidate.isStoryteller);
+
+    return getStorytellerPosition(
+      storytellers.findIndex((candidate) => candidate.id === player.id),
+      storytellers.length,
       mapWidth,
       mapHeight,
       resolvedTokenSize,
@@ -193,7 +229,8 @@ type ResolvablePlayer = {
 };
 
 /**
- * Resolves overlaps between circular tokens of equal `tokenSize` by pushing the
+ * Resolves overlaps between circular tokens of `tokenSize` (half size for
+ * Storytellers when there are several, see getPlayerTokenScale) by pushing the
  * non-anchor token away from the anchor along the line connecting their centers.
  * Repeats until no further overlap is detected (or the iteration cap is hit),
  * which lets pushes cascade through a chain of touching tokens.
@@ -211,7 +248,12 @@ export function resolveTokenCollisions(
   anchorId?: string,
 ): TokenCollisionResolution {
   const resolvedTokenSize = getTokenSize(tokenSize);
-  const minDistance = resolvedTokenSize;
+  const tokenSizes = new Map(
+    players.map((player) => [player.id, resolvedTokenSize * getPlayerTokenScale(player, players)]),
+  );
+  const getTokenSizeFor = (id: string) => tokenSizes.get(id) ?? resolvedTokenSize;
+  const getMinDistance = (firstId: string, secondId: string) =>
+    (getTokenSizeFor(firstId) + getTokenSizeFor(secondId)) / 2;
 
   const positions = new Map<string, PlayerPosition>();
   for (const player of players) {
@@ -260,6 +302,7 @@ export function resolveTokenCollisions(
         const dx = bx - ax;
         const dy = by - ay;
         const distance = Math.sqrt(dx * dx + dy * dy);
+        const minDistance = getMinDistance(a.id, b.id);
         if (distance >= minDistance - COLLISION_RESOLUTION_EPSILON) {
           continue;
         }
@@ -282,13 +325,13 @@ export function resolveTokenCollisions(
           { x: newAx, y: newAy },
           mapWidth,
           mapHeight,
-          resolvedTokenSize,
+          getTokenSizeFor(a.id),
         );
         const clampedB = clampTokenPosition(
           { x: newBx, y: newBy },
           mapWidth,
           mapHeight,
-          resolvedTokenSize,
+          getTokenSizeFor(b.id),
         );
 
         a.position = clampedA;
@@ -306,6 +349,7 @@ export function resolveTokenCollisions(
         const dx = movable.position.x - anchor.x;
         const dy = movable.position.y - anchor.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
+        const minDistance = getMinDistance(movable.id, anchorId as string);
         if (distance < minDistance - COLLISION_RESOLUTION_EPSILON) {
           const overlap = minDistance - distance;
           const directionX = distance === 0 ? 1 : dx / distance;
@@ -317,7 +361,7 @@ export function resolveTokenCollisions(
             },
             mapWidth,
             mapHeight,
-            resolvedTokenSize,
+            getTokenSizeFor(movable.id),
           );
           movable.position = newPos;
           setResolved(movable.id, newPos);

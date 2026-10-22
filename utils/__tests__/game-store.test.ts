@@ -581,7 +581,7 @@ describe('storyteller players', () => {
       mapHeight: 400,
       mapWidth: 600,
       playerNames: ['Storyteller', 'Alice'],
-      storyteller,
+      storytellers: [storyteller],
     });
 
     expect(game.players).toHaveLength(3);
@@ -633,7 +633,7 @@ describe('storyteller players', () => {
 
     useGameStore
       .getState()
-      .updateGamePlayers('game-1', [{ id: 'alice', name: 'Alice' }], storyteller);
+      .updateGamePlayers('game-1', [{ id: 'alice', name: 'Alice' }], [storyteller]);
 
     expect(useGameStore.getState().games[0].players[2]).toEqual(game.players[2]);
     expect(useGameStore.getState().games[0].conversations).toEqual(game.conversations);
@@ -644,6 +644,35 @@ describe('storyteller players', () => {
       expect.objectContaining({ isStoryteller: true }),
     );
     expect(useGameStore.getState().games[0].conversations).toEqual([]);
+  });
+
+  it('creates several storytellers side by side at half token size', () => {
+    const first = { createdAt: '2026-07-07T00:00:00.000Z', id: 'knave-1', name: 'Knave One' };
+    const second = { createdAt: '2026-07-07T00:00:00.000Z', id: 'knave-2', name: 'Knave Two' };
+    useGameStore.setState({ appUserName: 'Keeper', friends: [first, second], games: [] });
+
+    const game = useGameStore.getState().createGame({
+      mapHeight: 400,
+      mapWidth: 600,
+      playerNames: ['Alice'],
+      storytellers: [first, second],
+    });
+    const storytellers = game.players.filter((player) => player.isStoryteller);
+
+    expect(storytellers.map((player) => player.id)).toEqual(['knave-1', 'knave-2']);
+    expect(storytellers.map((player) => player.position)).toEqual([
+      { x: 277.5, y: 200 },
+      { x: 322.5, y: 200 },
+    ]);
+
+    useGameStore.getState().updateGamePlayers(game.id, [{ id: 'alice', name: 'Alice' }], [second]);
+
+    expect(
+      useGameStore
+        .getState()
+        .games[0].players.filter((player) => player.isStoryteller)
+        .map((player) => player.id),
+    ).toEqual(['knave-2']);
   });
 });
 
