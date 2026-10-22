@@ -69,7 +69,7 @@ type PlayerTokenProps = {
   rearrangeMode?: boolean;
   showRoleDetails?: boolean;
   tokenSize: number;
-  /** Multiplier on `tokenSize`, e.g. 0.5 for Storytellers when there are several. */
+  /** Multiplier on `tokenSize`, e.g. 0.75 for Storytellers when there are several. */
   tokenScale?: number;
   onMove: (playerId: string, position: PlayerPosition) => void;
   onSelect?: (playerId: string) => void;
@@ -301,7 +301,7 @@ export function PlayerToken({
                   ? Colors.textDeath
                   : Colors.textDefault
             }
-            isStoryteller={player.isStoryteller && tokenScale === 1}
+            isStoryteller={player.isStoryteller}
             name={displayName ?? player.name}
             roles={visibleRoles}
           />

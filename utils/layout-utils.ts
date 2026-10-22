@@ -13,6 +13,7 @@ export const mapWidthStep = 20;
 export const minMapHeight = 240;
 export const maxMapHeight = 2000;
 export const mapHeightStep = 20;
+const MULTIPLE_STORYTELLER_TOKEN_SCALE = 0.75;
 
 export function getTokenSize(tokenSize = defaultTokenSize) {
   'worklet';
@@ -20,10 +21,10 @@ export function getTokenSize(tokenSize = defaultTokenSize) {
   return Math.min(maxTokenSize, Math.max(minTokenSize, tokenSize));
 }
 
-/** Storyteller tokens shrink to half size when a game has more than one Storyteller. */
+/** Storyteller tokens shrink to 75% size when a game has more than one Storyteller. */
 export function getPlayerTokenScale(player: Player, players: Player[]) {
   return player.isStoryteller && players.filter((candidate) => candidate.isStoryteller).length > 1
-    ? 0.5
+    ? MULTIPLE_STORYTELLER_TOKEN_SCALE
     : 1;
 }
 
@@ -35,7 +36,8 @@ export function getStorytellerPosition(
   mapHeight: number,
   tokenSize = defaultTokenSize,
 ): PlayerPosition {
-  const storytellerTokenSize = getTokenSize(tokenSize) * (count > 1 ? 0.5 : 1);
+  const storytellerTokenSize =
+    getTokenSize(tokenSize) * (count > 1 ? MULTIPLE_STORYTELLER_TOKEN_SCALE : 1);
 
   return clampTokenPosition(
     {
@@ -229,7 +231,7 @@ type ResolvablePlayer = {
 };
 
 /**
- * Resolves overlaps between circular tokens of `tokenSize` (half size for
+ * Resolves overlaps between circular tokens of `tokenSize` (smaller for
  * Storytellers when there are several, see getPlayerTokenScale) by pushing the
  * non-anchor token away from the anchor along the line connecting their centers.
  * Repeats until no further overlap is detected (or the iteration cap is hit),

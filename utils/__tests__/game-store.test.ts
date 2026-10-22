@@ -646,7 +646,7 @@ describe('storyteller players', () => {
     expect(useGameStore.getState().games[0].conversations).toEqual([]);
   });
 
-  it('creates several storytellers side by side at half token size', () => {
+  it('creates several storytellers side by side at a smaller token size', () => {
     const first = { createdAt: '2026-07-07T00:00:00.000Z', id: 'knave-1', name: 'Knave One' };
     const second = { createdAt: '2026-07-07T00:00:00.000Z', id: 'knave-2', name: 'Knave Two' };
     useGameStore.setState({ appUserName: 'Keeper', friends: [first, second], games: [] });
@@ -661,8 +661,8 @@ describe('storyteller players', () => {
 
     expect(storytellers.map((player) => player.id)).toEqual(['knave-1', 'knave-2']);
     expect(storytellers.map((player) => player.position)).toEqual([
-      { x: 277.5, y: 200 },
-      { x: 322.5, y: 200 },
+      { x: 266.25, y: 200 },
+      { x: 333.75, y: 200 },
     ]);
 
     useGameStore.getState().updateGamePlayers(game.id, [{ id: 'alice', name: 'Alice' }], [second]);
