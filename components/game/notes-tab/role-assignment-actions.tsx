@@ -1,6 +1,6 @@
 import { CircleHelp, Megaphone, ShieldCheck, Skull, Tag } from 'lucide-react-native';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { RolePicker } from '@/components/game/notes-tab/role-picker';
@@ -129,7 +129,7 @@ export function RoleAssignmentActions() {
     ? (players.find((player) => player.id === rumorSourcePlayerId) ?? null)
     : null;
   return (
-    <View style={{ gap: 10 }}>
+    <View style={styles.container}>
       <View style={innerActionRow}>
         {roleAssignmentKind ? (
           <RoleAssignmentButton
@@ -167,32 +167,18 @@ export function RoleAssignmentActions() {
         )}
       </View>
       {roleAssignmentKind ? (
-        <View
-          style={{
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-            borderRadius: 8,
-            borderWidth: 1,
-            gap: 12,
-            padding: 12,
-          }}
-        >
+        <View style={styles.panel}>
           {roleAssignmentKind === 'rumor' ? (
             <RumorHeader source={rumorSource} subject={rumorSubject} />
           ) : (
-            <View style={{ gap: 3 }}>
-              <View
-                style={{ alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}
-              >
-                <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
+            <View style={styles.header}>
+              <View style={styles.titleRow}>
+                <Text selectable style={styles.title}>
                   {getRoleAssignmentLabel(roleAssignmentKind)} roles for
                 </Text>
-                <PlayerNameWithRole
-                  player={focusedPlayer}
-                  textStyle={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
-                />
+                <PlayerNameWithRole player={focusedPlayer} textStyle={styles.title} />
               </View>
-              <Text selectable style={{ color: colors.textMuted, fontSize: 13 }}>
+              <Text selectable style={styles.phase}>
                 {getPhaseLabel({ activeDay, activePhase }, startingNight)}
               </Text>
             </View>
@@ -277,33 +263,65 @@ export function RoleAssignmentActions() {
   );
 }
 
+const styles = StyleSheet.create({
+  container: {
+    gap: 10,
+  },
+  header: {
+    gap: 3,
+  },
+  panel: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 12,
+    padding: 12,
+  },
+  phase: {
+    color: colors.textMuted,
+    fontSize: 13,
+  },
+  rumorHeader: {
+    gap: 8,
+  },
+  rumorHint: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  title: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  titleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+});
+
 function RumorHeader({ source, subject }: { source: Player | null; subject: Player | null }) {
   return (
-    <View style={{ gap: 8 }}>
-      <View style={{ alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
-        <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
+    <View style={styles.rumorHeader}>
+      <View style={styles.titleRow}>
+        <Text selectable style={styles.title}>
           Rumor about
         </Text>
-        {subject ? (
-          <PlayerNameWithRole
-            player={subject}
-            textStyle={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
-          />
-        ) : null}
+        {subject ? <PlayerNameWithRole player={subject} textStyle={styles.title} /> : null}
         {source ? (
           <>
-            <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
+            <Text selectable style={styles.title}>
               from
             </Text>
-            <PlayerNameWithRole
-              player={source}
-              textStyle={{ color: colors.text, fontSize: 16, fontWeight: '900' }}
-            />
+            <PlayerNameWithRole player={source} textStyle={styles.title} />
           </>
         ) : null}
       </View>
       {!source ? (
-        <Text selectable style={{ color: colors.textMuted, fontSize: 13, lineHeight: 18 }}>
+        <Text selectable style={styles.rumorHint}>
           Tap another player on the map to add a source (optional).
         </Text>
       ) : null}
