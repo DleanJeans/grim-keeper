@@ -21,7 +21,10 @@ export function useDjSongMetadata(songUrl: string) {
 
     setMetadata(undefined);
     resolveDjSongMetadata(songUrl).then((nextMetadata) => {
-      metadataCache.set(songUrl, nextMetadata);
+      // A Spotify lookup without a title failed (often offline), so try again on the next mount.
+      if (nextMetadata.provider !== 'spotify' || nextMetadata.title) {
+        metadataCache.set(songUrl, nextMetadata);
+      }
       if (active) {
         setMetadata(nextMetadata);
       }
