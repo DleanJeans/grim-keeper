@@ -107,8 +107,8 @@ export default function SaveNoteForFutureScreen() {
       <Stack.Screen options={{ title: 'Save Note for Future' }} />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ paddingBottom: 40 }}
-        style={{ backgroundColor: colors.background, flex: 1 }}
+        contentContainerStyle={styles.scrollContent}
+        style={styles.scroll}
       >
         <ResponsiveContent style={styles.content}>
           <NotePreview day={noteDay} playerName={playerName} text={text} />
@@ -123,13 +123,13 @@ export default function SaveNoteForFutureScreen() {
               scriptId={noteScriptId}
             />
           ) : (
-            <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 21 }}>
+            <Text selectable style={styles.noScript}>
               Select a game script before choosing roles for this note.
             </Text>
           )}
 
           {error ? (
-            <Text selectable style={{ color: colors.danger, fontSize: 14 }}>
+            <Text selectable style={styles.error}>
               {error}
             </Text>
           ) : null}
@@ -140,13 +140,6 @@ export default function SaveNoteForFutureScreen() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    gap: 18,
-    padding: 20,
-  },
-});
 
 function getInitialRoleIds(
   savedNote: SavedNote | undefined,
@@ -169,20 +162,11 @@ function getInitialRoleIds(
 
 function NotePreview({ day, playerName, text }: { day: number; playerName: string; text: string }) {
   return (
-    <View
-      style={{
-        backgroundColor: colors.surface,
-        borderColor: colors.border,
-        borderRadius: 8,
-        borderWidth: 1,
-        gap: 6,
-        padding: 14,
-      }}
-    >
-      <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '900' }}>
+    <View style={styles.preview}>
+      <Text selectable style={styles.previewTitle}>
         {playerName} · Day {day}
       </Text>
-      <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
+      <Text selectable style={styles.previewText}>
         {text}
       </Text>
     </View>
@@ -202,7 +186,7 @@ function SaveNoteActions({
 
   if (confirmingRemove) {
     return (
-      <View style={{ flexDirection: 'row', gap: 10 }}>
+      <View style={styles.actions}>
         <NoteActionButton icon={X} label="No" onPress={() => setConfirmingRemove(false)} />
         <NoteActionButton destructive icon={Trash2} label="Yes" onPress={onRemove} />
       </View>
@@ -210,7 +194,7 @@ function SaveNoteActions({
   }
 
   return (
-    <View style={{ flexDirection: 'row', gap: 10 }}>
+    <View style={styles.actions}>
       {canRemove ? (
         <NoteActionButton
           destructive
@@ -243,28 +227,105 @@ function NoteActionButton({
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => ({
-        alignItems: 'center',
-        backgroundColor: destructive
-          ? colors.dangerSurface
+      style={({ pressed }) => [
+        styles.actionButton,
+        destructive
+          ? styles.actionButtonDestructive
           : pressed
-            ? colors.surfacePressed
+            ? styles.actionButtonPressed
             : primary
-              ? colors.primary
-              : colors.surfaceRaised,
-        borderColor: destructive ? '#7f1d1d' : primary ? colors.primary : colors.borderStrong,
-        borderRadius: 8,
-        borderWidth: 1,
-        flex: 1,
-        flexDirection: 'row',
-        gap: 8,
-        justifyContent: 'center',
-        paddingHorizontal: 14,
-        paddingVertical: 12,
-      })}
+              ? styles.actionButtonPrimary
+              : null,
+      ]}
     >
       <Icon color={foreground} size={17} strokeWidth={2.7} />
-      <Text style={{ color: foreground, fontWeight: '800' }}>{label}</Text>
+      <Text
+        style={[
+          styles.actionLabel,
+          destructive ? styles.actionLabelDestructive : primary ? styles.actionLabelPrimary : null,
+        ]}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  actionButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.borderStrong,
+    borderRadius: 8,
+    borderWidth: 1,
+    flex: 1,
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  actionButtonDestructive: {
+    backgroundColor: colors.dangerSurface,
+    borderColor: colors.dangerBorder,
+  },
+  actionButtonPressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  actionButtonPrimary: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  actionLabel: {
+    color: colors.text,
+    fontWeight: '800',
+  },
+  actionLabelDestructive: {
+    color: colors.danger,
+  },
+  actionLabelPrimary: {
+    color: colors.onPrimary,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  content: {
+    gap: 18,
+    padding: 20,
+  },
+  error: {
+    color: colors.danger,
+    fontSize: 14,
+  },
+  noScript: {
+    color: colors.textMuted,
+    fontSize: 15,
+    lineHeight: 21,
+  },
+  preview: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 6,
+    padding: 14,
+  },
+  previewText: {
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  previewTitle: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  scroll: {
+    backgroundColor: colors.background,
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+});

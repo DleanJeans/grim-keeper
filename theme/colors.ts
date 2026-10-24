@@ -16,6 +16,7 @@ const baseColors = {
   disabled: '#272b31',
   onDisabled: '#77716a',
   danger: '#fca5a5',
+  dangerBorder: '#7f1d1d',
   dangerSurface: '#2a1517',
   success: '#d8e7cf',
   successBorder: '#3f6a45',

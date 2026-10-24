@@ -137,7 +137,7 @@ function ScriptCardButton({
   const palette = {
     danger: {
       background: colors.dangerSurface,
-      border: '#7f1d1d',
+      border: colors.dangerBorder,
       icon: colors.danger,
       text: colors.danger,
     },
