@@ -11,7 +11,6 @@ import type { Game, Player, Role, SavedNote, StoredScript } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
 
 export function SavedNotes({
-  compact = false,
   day,
   games,
   label = false,
@@ -22,7 +21,6 @@ export function SavedNotes({
   roles,
   scripts,
 }: {
-  compact?: boolean;
   day?: number;
   games?: Game[];
   label?: boolean;
@@ -58,15 +56,14 @@ export function SavedNotes({
   }
 
   return (
-    <View style={[styles.list, compact && styles.listCompact]}>
+    <View style={styles.list}>
       {label ? (
-        <Text selectable style={[styles.label, compact && styles.labelCompact]}>
+        <Text selectable style={styles.label}>
           Notes
         </Text>
       ) : null}
       {notes.map((note) => (
         <SavedNoteCard
-          compact={compact}
           context={resolveNoteContext(note, games, scripts, mode)}
           day={day}
           key={note.id}
@@ -144,11 +141,6 @@ const styles = StyleSheet.create({
     gap: 6,
     padding: 10,
   },
-  cardCompact: {
-    backgroundColor: 'transparent',
-    borderWidth: 0,
-    padding: 0,
-  },
   contextButton: {
     flex: 1,
   },
@@ -185,28 +177,17 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
-  labelCompact: {
-    fontSize: 10,
-  },
   list: {
     gap: 6,
-  },
-  listCompact: {
-    gap: 1,
   },
   noteText: {
     color: colors.textMuted,
     fontSize: 13,
     lineHeight: 18,
   },
-  noteTextCompact: {
-    fontSize: 10,
-    lineHeight: 13,
-  },
 });
 
 function SavedNoteCard({
-  compact,
   context,
   day,
   note,
@@ -214,7 +195,6 @@ function SavedNoteCard({
   players,
   roles,
 }: {
-  compact: boolean;
   context: NoteContext;
   day?: number;
   note: SavedNote;
@@ -223,7 +203,7 @@ function SavedNoteCard({
   roles: Role[];
 }) {
   return (
-    <View style={[styles.card, compact && styles.cardCompact]}>
+    <View style={styles.card}>
       <RoleReferencedNoteText
         day={day}
         game={context.game}
@@ -231,7 +211,7 @@ function SavedNoteCard({
         roles={context.roles ?? roles}
         scriptId={context.scriptId}
         showPlayerRoles
-        style={[styles.noteText, compact && styles.noteTextCompact]}
+        style={styles.noteText}
         text={note.text}
       />
       <View style={styles.footer}>
