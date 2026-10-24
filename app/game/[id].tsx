@@ -1119,13 +1119,11 @@ export default function GameRoute() {
 
           <View style={styles.fabStack}>
             {djEnabled ? <DjGameButton gameId={activeGame.id} /> : null}
-            <View style={styles.fab}>
-              <RevealRolesButton
-                onRevealRolesChange={setShowRoles}
-                showRoles={showRoles}
-                variant="icon"
-              />
-            </View>
+            <RevealRolesButton
+              onRevealRolesChange={setShowRoles}
+              showRoles={showRoles}
+              variant="icon"
+            />
           </View>
         </View>
       </GameRouteProvider>
@@ -1149,9 +1147,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#0b1120',
     flex: 1,
     position: 'relative',
-  },
-  fab: {
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
   },
   fabStack: {
     alignItems: 'center',

@@ -160,6 +160,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 28,
     borderWidth: 1,
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
     height: 56,
     justifyContent: 'center',
     width: 56,
