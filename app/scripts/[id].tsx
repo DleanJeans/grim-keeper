@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { DjSongSection } from '@/components/dj/dj-song-section';
+import { NotFoundScreen } from '@/components/not-found-screen';
 import { ScriptRoleList } from '@/components/scripts/script-role-list';
 import { SushiBuffetScriptRoleList } from '@/components/scripts/sushi-buffet-script-role-list';
 import { Text } from '@/components/text';
@@ -32,14 +33,12 @@ export default function ScriptDetailRoute() {
 
   if (!script || (isSushiBuffet && (!sushiBuffetGame || !isSushiBuffetScript(script)))) {
     return (
-      <View style={{ alignItems: 'center', flex: 1, justifyContent: 'center', padding: 20 }}>
-        <Stack.Screen
-          options={{ title: isSushiBuffet ? 'Sushi Buffet unavailable' : 'Script not found' }}
-        />
-        <Text selectable style={{ color: colors.text, fontSize: 17, fontWeight: '800' }}>
-          {isSushiBuffet ? 'Sushi Buffet can only be viewed from a game.' : 'Script not found.'}
-        </Text>
-      </View>
+      <NotFoundScreen
+        message={
+          isSushiBuffet ? 'Sushi Buffet can only be viewed from a game.' : 'Script not found.'
+        }
+        title={isSushiBuffet ? 'Sushi Buffet unavailable' : 'Script not found'}
+      />
     );
   }
 

@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { DjCurrentSong } from '@/components/dj/dj-current-song';
 import { type DjSongListItem, DjSongSection } from '@/components/dj/dj-song-section';
 import { DjUrlEntry } from '@/components/dj/dj-url-entry';
+import { NotFoundScreen } from '@/components/not-found-screen';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
@@ -53,14 +54,7 @@ export default function DjRoute() {
   const generalSongs = getDjSongs(playlists, GENERAL_DJ_TARGET);
 
   if (!game) {
-    return (
-      <View style={styles.notFound}>
-        <Stack.Screen options={{ title: 'DJ unavailable' }} />
-        <Text selectable style={styles.notFoundText}>
-          Game not found.
-        </Text>
-      </View>
-    );
+    return <NotFoundScreen message="Game not found." title="DJ unavailable" />;
   }
 
   return (
@@ -175,18 +169,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 8,
     padding: 16,
-  },
-  notFound: {
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    flex: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  notFoundText: {
-    color: colors.text,
-    fontSize: 17,
-    fontWeight: '800',
   },
   pressed: {
     opacity: 0.7,

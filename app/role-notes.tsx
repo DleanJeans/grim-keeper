@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { DjSongSection } from '@/components/dj/dj-song-section';
+import { NotFoundScreen } from '@/components/not-found-screen';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { RoleIcon } from '@/components/role-icon';
 import { RoleWikiLink } from '@/components/role-wiki-link';
@@ -37,14 +38,7 @@ export default function RoleNotesScreen() {
     : (catalogRole ?? genericRole);
 
   if (!role) {
-    return (
-      <View style={styles.notFoundContainer}>
-        <Stack.Screen options={{ title: 'Role not found' }} />
-        <Text selectable style={styles.notFoundText}>
-          Role not found.
-        </Text>
-      </View>
-    );
+    return <NotFoundScreen message="Role not found." title="Role not found" />;
   }
 
   const description = scriptRole?.ability ?? catalogRole?.ability;
@@ -148,17 +142,6 @@ const styles = StyleSheet.create({
   emptyText: {
     color: colors.textMuted,
     fontSize: 15,
-  },
-  notFoundContainer: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  notFoundText: {
-    color: colors.text,
-    fontSize: 17,
-    fontWeight: '800',
   },
   sectionTitle: {
     color: colors.text,

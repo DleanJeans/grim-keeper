@@ -30,6 +30,7 @@ import { PlayerCountStatus } from '@/components/game/player-count-status';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
 import { RevealRolesButton } from '@/components/game/reveal-roles-button';
 import { RoleDisplayModes } from '@/components/game/role-display-modes';
+import { NotFoundScreen } from '@/components/not-found-screen';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { Text } from '@/components/text';
 import { useWebFullscreen } from '@/hooks/use-web-fullscreen';
@@ -275,22 +276,7 @@ export default function GameRoute() {
   }, [game, playerIdParam, tabParam]);
 
   if (!game) {
-    return (
-      <View
-        style={{
-          alignItems: 'center',
-          backgroundColor: '#0b1120',
-          flex: 1,
-          justifyContent: 'center',
-          padding: 20,
-        }}
-      >
-        <Stack.Screen options={{ title: 'Game not found' }} />
-        <Text selectable style={{ color: '#f8fafc', fontSize: 17, fontWeight: '700' }}>
-          Game not found.
-        </Text>
-      </View>
-    );
+    return <NotFoundScreen message="Game not found." title="Game not found" />;
   }
 
   const activeGame = game;

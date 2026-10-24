@@ -9,6 +9,7 @@ import {
   FriendNameSaveButton,
 } from '@/components/friends/friend-name-editor';
 import { GameStatsCards } from '@/components/game-stats-cards';
+import { NotFoundScreen } from '@/components/not-found-screen';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { SavedNotes } from '@/components/saved-notes';
 import { Text } from '@/components/text';
@@ -42,14 +43,7 @@ export default function FriendDetailRoute() {
   const [draftName, setDraftName] = useState('');
 
   if (!friend) {
-    return (
-      <View style={{ alignItems: 'center', flex: 1, justifyContent: 'center', padding: 20 }}>
-        <Stack.Screen options={{ title: 'Friend not found' }} />
-        <Text selectable style={{ color: colors.text, fontSize: 17, fontWeight: '800' }}>
-          Friend not found.
-        </Text>
-      </View>
-    );
+    return <NotFoundScreen message="Friend not found." title="Friend not found" />;
   }
 
   const handleToggleEditing = () => {

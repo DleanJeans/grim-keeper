@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { RolePicker } from '@/components/game/notes-tab/role-picker';
+import { NotFoundScreen } from '@/components/not-found-screen';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
@@ -59,14 +60,7 @@ export default function SaveNoteForFutureScreen() {
   }, [initialRoleIds]);
 
   if (!game || !player) {
-    return (
-      <View style={{ alignItems: 'center', flex: 1, justifyContent: 'center', padding: 20 }}>
-        <Stack.Screen options={{ title: 'Note not found' }} />
-        <Text selectable style={{ color: colors.text, fontSize: 17, fontWeight: '800' }}>
-          Note not found.
-        </Text>
-      </View>
-    );
+    return <NotFoundScreen message="Note not found." title="Note not found" />;
   }
 
   const legacyRoleIds = roles
