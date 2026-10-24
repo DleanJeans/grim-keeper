@@ -8,7 +8,6 @@ export function getNotesForPlayer(savedNotes: SavedNote[], playerName: string) {
   }
   return savedNotes
     .filter((note) => normalizePlayerName(note.playerName).toLocaleLowerCase() === playerKey)
-    .slice()
     .sort((first, second) => second.createdAt.localeCompare(first.createdAt));
 }
 
@@ -117,5 +116,3 @@ export function migrateV2ToV3(state: MigrationInput): MigrationInput {
     savedNotes: [...(state.savedNotes ?? []), ...extraSavedNotes],
   };
 }
-
-// Suppress an unused-type warning while keeping the type available for callers.
