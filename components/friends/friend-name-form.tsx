@@ -1,6 +1,6 @@
 import { Plus } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
@@ -29,11 +29,11 @@ export function FriendNameForm({ friends, onAddFriend }: FriendNameFormProps) {
   }
 
   return (
-    <View style={{ gap: 8 }}>
-      <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '700' }}>
+    <View style={styles.container}>
+      <Text selectable style={styles.label}>
         Friend name
       </Text>
-      <View style={{ flexDirection: 'row', gap: 10 }}>
+      <View style={styles.row}>
         <TextInput
           autoCapitalize="words"
           autoCorrect={false}
@@ -43,35 +43,16 @@ export function FriendNameForm({ friends, onAddFriend }: FriendNameFormProps) {
           returnKeyType="done"
           submitBehavior="submit"
           value={name}
-          style={{
-            backgroundColor: colors.surface,
-            borderColor: duplicateName ? colors.danger : colors.border,
-            borderRadius: 8,
-            borderWidth: 1,
-            color: colors.text,
-            flex: 1,
-            fontSize: 17,
-            minHeight: 50,
-            paddingHorizontal: 14,
-            paddingVertical: 12,
-          }}
+          style={[styles.input, duplicateName && styles.inputDuplicate]}
         />
         <Pressable
           accessibilityRole="button"
           disabled={!canAddFriend}
           onPress={handleAddFriend}
-          style={({ pressed }) => ({
-            alignItems: 'center',
-            backgroundColor: !canAddFriend
-              ? colors.disabled
-              : pressed
-                ? colors.surfacePressed
-                : colors.primary,
-            borderRadius: 8,
-            justifyContent: 'center',
-            minHeight: 50,
-            width: 54,
-          })}
+          style={({ pressed }) => [
+            styles.addButton,
+            !canAddFriend ? styles.addButtonDisabled : pressed ? styles.addButtonPressed : null,
+          ]}
         >
           <Plus
             color={canAddFriend ? colors.onPrimary : colors.onDisabled}
@@ -81,10 +62,58 @@ export function FriendNameForm({ friends, onAddFriend }: FriendNameFormProps) {
         </Pressable>
       </View>
       {duplicateName ? (
-        <Text selectable style={{ color: colors.danger, fontSize: 14 }}>
+        <Text selectable style={styles.duplicateText}>
           That friend already exists.
         </Text>
       ) : null}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  addButton: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    justifyContent: 'center',
+    minHeight: 50,
+    width: 54,
+  },
+  addButtonDisabled: {
+    backgroundColor: colors.disabled,
+  },
+  addButtonPressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  container: {
+    gap: 8,
+  },
+  duplicateText: {
+    color: colors.danger,
+    fontSize: 14,
+  },
+  input: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    color: colors.text,
+    flex: 1,
+    fontSize: 17,
+    minHeight: 50,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  inputDuplicate: {
+    borderColor: colors.danger,
+  },
+  label: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+});
