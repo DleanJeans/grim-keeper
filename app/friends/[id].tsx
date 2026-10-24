@@ -118,11 +118,11 @@ export default function FriendDetailRoute() {
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.scrollContent}
-        style={{ backgroundColor: colors.background, flex: 1 }}
+        style={styles.scroll}
       >
         <ResponsiveContent style={styles.content}>
           {editing && duplicateName ? (
-            <Text selectable style={{ color: colors.danger, fontSize: 14, textAlign: 'center' }}>
+            <Text selectable style={styles.duplicateName}>
               That name is already in use.
             </Text>
           ) : null}
@@ -134,18 +134,8 @@ export default function FriendDetailRoute() {
           ) : null}
 
           {notes.length ? (
-            <View style={{ gap: 6 }}>
-              <Text
-                selectable
-                style={{
-                  color: colors.textMuted,
-                  fontSize: 12,
-                  fontWeight: '900',
-                  letterSpacing: 0.5,
-                  textAlign: 'center',
-                  textTransform: 'uppercase',
-                }}
-              >
+            <View style={styles.notesSection}>
+              <Text selectable style={styles.notesLabel}>
                 Notes
               </Text>
               <SavedNotes
@@ -157,7 +147,7 @@ export default function FriendDetailRoute() {
               />
             </View>
           ) : (
-            <Text selectable style={{ color: colors.textMuted, fontSize: 15, textAlign: 'center' }}>
+            <Text selectable style={styles.emptyNotes}>
               No saved notes yet.
             </Text>
           )}
@@ -187,6 +177,16 @@ const styles = StyleSheet.create({
     gap: 18,
     padding: 20,
   },
+  duplicateName: {
+    color: colors.danger,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  emptyNotes: {
+    color: colors.textMuted,
+    fontSize: 15,
+    textAlign: 'center',
+  },
   gamesHeader: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -195,6 +195,21 @@ const styles = StyleSheet.create({
   },
   gamesSection: {
     gap: 6,
+  },
+  notesLabel: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+  },
+  notesSection: {
+    gap: 6,
+  },
+  scroll: {
+    backgroundColor: colors.background,
+    flex: 1,
   },
   sectionLabel: {
     color: colors.textMuted,
