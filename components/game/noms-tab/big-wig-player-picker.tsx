@@ -103,7 +103,7 @@ export function BigWigPlayerPicker({
 }
 
 const styles = StyleSheet.create({
-  backdrop: { backgroundColor: '#00000099', flex: 1, justifyContent: 'flex-end' },
+  backdrop: { backgroundColor: colors.backdrop, flex: 1, justifyContent: 'flex-end' },
   clearButton: { alignItems: 'center', paddingVertical: 10 },
   clearText: { color: colors.danger, fontWeight: '800' },
   closeButton: {

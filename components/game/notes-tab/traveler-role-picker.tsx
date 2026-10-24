@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   overlay: {
-    backgroundColor: '#00000099',
+    backgroundColor: colors.backdrop,
     flex: 1,
     justifyContent: 'flex-end',
   },
