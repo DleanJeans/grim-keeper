@@ -62,28 +62,21 @@ export function GameScriptPicker({
   }
 
   return (
-    <View style={{ gap: 8 }}>
-      <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '700' }}>
+    <View style={styles.container}>
+      <Text selectable style={styles.label}>
         Game script
       </Text>
-      <View style={{ gap: 8 }}>
+      <View style={styles.container}>
         <Pressable
           accessibilityHint="Open the list of downloaded scripts"
           accessibilityLabel={`Game script: ${selectedScript?.name ?? 'No script'}`}
           accessibilityRole="button"
           onPress={() => setPickerOpen(true)}
-          style={({ pressed }) => ({
-            alignItems: 'center',
-            backgroundColor: pressed ? colors.surfacePressed : colors.surface,
-            borderColor: colors.border,
-            borderRadius: 8,
-            borderWidth: 1,
-            flexDirection: 'row',
-            gap: 10,
-            height: triggerHeight,
-            paddingHorizontal: 12,
-            paddingVertical: 11,
-          })}
+          style={({ pressed }) => [
+            styles.trigger,
+            triggerHeight ? { height: triggerHeight } : null,
+            pressed && styles.surfacePressed,
+          ]}
         >
           <View
             onLayout={(event) =>
@@ -91,12 +84,12 @@ export function GameScriptPicker({
                 Math.ceil(event.nativeEvent.layout.height + PICKER_TRIGGER_CHROME_HEIGHT),
               )
             }
-            style={{ flex: 1, gap: 2 }}
+            style={styles.optionText}
           >
-            <Text selectable style={{ color: colors.text, fontWeight: '800' }}>
+            <Text selectable style={styles.optionTitle}>
               {selectedScript?.name ?? 'No script'}
             </Text>
-            <Text selectable style={{ color: colors.textMuted, fontSize: 12 }}>
+            <Text selectable style={styles.optionDetail}>
               {getScriptDescription(selectedScript)}
             </Text>
           </View>
@@ -106,30 +99,17 @@ export function GameScriptPicker({
       <Modal animationType="slide" onRequestClose={closePicker} transparent visible={pickerOpen}>
         <KeyboardAvoidingView
           behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
-          style={{ backgroundColor: '#00000099', flex: 1, justifyContent: 'flex-end' }}
+          style={styles.backdrop}
         >
           <Pressable
             accessibilityLabel="Close script picker"
             accessibilityRole="button"
             onPress={closePicker}
-            style={{ flex: 1 }}
+            style={styles.backdropPressable}
           />
-          <View
-            style={{
-              backgroundColor: colors.background,
-              borderColor: colors.border,
-              borderRadius: 16,
-              borderWidth: 1,
-              gap: 12,
-              maxHeight: '82%',
-              padding: 16,
-            }}
-          >
-            <View style={{ alignItems: 'center', flexDirection: 'row', gap: 12 }}>
-              <Text
-                selectable
-                style={{ color: colors.text, flex: 1, fontSize: 18, fontWeight: '900' }}
-              >
+          <View style={styles.sheet}>
+            <View style={styles.sheetHeader}>
+              <Text selectable style={styles.sheetTitle}>
                 Select game script
               </Text>
               <Pressable
@@ -137,26 +117,19 @@ export function GameScriptPicker({
                 accessibilityRole="button"
                 hitSlop={8}
                 onPress={closePicker}
-                style={({ pressed }) => ({
-                  alignItems: 'center',
-                  backgroundColor: pressed ? colors.surfacePressed : colors.surfaceRaised,
-                  borderRadius: 8,
-                  height: 32,
-                  justifyContent: 'center',
-                  width: 32,
-                })}
+                style={({ pressed }) => [styles.closeButton, pressed && styles.surfacePressed]}
               >
                 <X color={colors.textMuted} size={18} strokeWidth={2.5} />
               </Pressable>
             </View>
             <SearchBox label="Search scripts" onChangeText={setSearchQuery} value={searchQuery} />
             <ScrollView
-              contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
+              contentContainerStyle={styles.optionsContent}
               contentInsetAdjustmentBehavior="automatic"
               keyboardShouldPersistTaps="handled"
               nestedScrollEnabled
               showsVerticalScrollIndicator
-              style={{ flexGrow: 0, flexShrink: 1 }}
+              style={styles.options}
             >
               {visibleFeaturedScript ? (
                 <ScriptOption
@@ -193,23 +166,10 @@ export function GameScriptPicker({
             <Pressable
               accessibilityRole="button"
               onPress={handleBrowse}
-              style={({ pressed }) => ({
-                alignItems: 'center',
-                backgroundColor: pressed ? colors.surfacePressed : colors.surfaceRaised,
-                borderColor: colors.borderStrong,
-                borderRadius: 8,
-                borderWidth: 1,
-                flexDirection: 'row',
-                gap: 8,
-                justifyContent: 'center',
-                paddingHorizontal: 12,
-                paddingVertical: 12,
-              })}
+              style={({ pressed }) => [styles.browseButton, pressed && styles.surfacePressed]}
             >
               <BookOpen color={colors.text} size={17} strokeWidth={2.5} />
-              <Text style={{ color: colors.text, fontWeight: '800' }}>
-                Select or download a script
-              </Text>
+              <Text style={styles.optionTitle}>Select or download a script</Text>
               <ChevronRight color={colors.textMuted} size={16} strokeWidth={2.5} />
             </Pressable>
           </View>
@@ -246,7 +206,109 @@ function getScriptDescription(script?: StoredScript) {
 }
 
 const styles = StyleSheet.create({
+  backdrop: {
+    backgroundColor: colors.backdrop,
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  backdropPressable: {
+    flex: 1,
+  },
+  browseButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.borderStrong,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  check: {
+    alignItems: 'center',
+    borderColor: colors.borderStrong,
+    borderRadius: 999,
+    borderWidth: 1,
+    height: 24,
+    justifyContent: 'center',
+    width: 24,
+  },
+  closeButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: 8,
+    height: 32,
+    justifyContent: 'center',
+    width: 32,
+  },
+  container: {
+    gap: 8,
+  },
   emptyText: { color: colors.textMuted, fontSize: 14, padding: 12 },
+  label: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  optionDetail: {
+    color: colors.textMuted,
+    fontSize: 12,
+  },
+  options: {
+    flexGrow: 0,
+    flexShrink: 1,
+  },
+  optionsContent: {
+    gap: 8,
+    paddingBottom: 4,
+  },
+  optionText: {
+    flex: 1,
+    gap: 2,
+  },
+  optionTitle: {
+    color: colors.text,
+    fontWeight: '800',
+  },
+  selected: {
+    borderColor: colors.primary,
+  },
+  sheet: {
+    backgroundColor: colors.background,
+    borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 12,
+    maxHeight: '82%',
+    padding: 16,
+  },
+  sheetHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  sheetTitle: {
+    color: colors.text,
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  surfacePressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  trigger: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+  },
 });
 
 function ScriptOption({
@@ -266,37 +328,21 @@ function ScriptOption({
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => ({
-        alignItems: 'center',
-        backgroundColor: pressed ? colors.surfacePressed : colors.surface,
-        borderColor: selected ? colors.primary : colors.border,
-        borderRadius: 8,
-        borderWidth: 1,
-        flexDirection: 'row',
-        gap: 10,
-        paddingHorizontal: 12,
-        paddingVertical: 11,
-      })}
+      style={({ pressed }) => [
+        styles.trigger,
+        selected && styles.selected,
+        pressed && styles.surfacePressed,
+      ]}
     >
-      <View
-        style={{
-          alignItems: 'center',
-          borderColor: selected ? colors.primary : colors.borderStrong,
-          borderRadius: 999,
-          borderWidth: 1,
-          height: 24,
-          justifyContent: 'center',
-          width: 24,
-        }}
-      >
+      <View style={[styles.check, selected && styles.selected]}>
         {selected ? <Check color={colors.primary} size={15} strokeWidth={3} /> : null}
       </View>
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text selectable style={{ color: colors.text, fontWeight: '800' }}>
+      <View style={styles.optionText}>
+        <Text selectable style={styles.optionTitle}>
           {label}
         </Text>
-        {author ? <Text style={{ color: colors.textMuted, fontSize: 12 }}>by {author}</Text> : null}
-        <Text selectable style={{ color: colors.textMuted, fontSize: 12 }}>
+        {author ? <Text style={styles.optionDetail}>by {author}</Text> : null}
+        <Text selectable style={styles.optionDetail}>
           {description}
         </Text>
       </View>
