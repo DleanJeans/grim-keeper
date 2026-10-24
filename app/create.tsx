@@ -347,12 +347,12 @@ export default function CreateRoute() {
       />
       <KeyboardAvoidingView
         behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
-        style={{ backgroundColor: colors.background, flex: 1 }}
+        style={styles.screen}
       >
         <DraggableFlatList
           activationDistance={8}
           automaticallyAdjustKeyboardInsets
-          containerStyle={{ backgroundColor: colors.background, flex: 1 }}
+          containerStyle={styles.screen}
           contentInsetAdjustmentBehavior="automatic"
           contentContainerStyle={styles.listContent}
           data={players}
@@ -360,20 +360,11 @@ export default function CreateRoute() {
           keyboardShouldPersistTaps="handled"
           keyExtractor={(item) => item.id}
           ListEmptyComponent={
-            <View
-              style={{
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                borderRadius: 8,
-                borderWidth: 1,
-                gap: 8,
-                padding: 18,
-              }}
-            >
-              <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: '800' }}>
+            <View style={styles.emptyCard}>
+              <Text selectable style={styles.emptyTitle}>
                 No other players yet.
               </Text>
-              <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
+              <Text selectable style={styles.emptyText}>
                 Type a name and press Enter or Add.
               </Text>
             </View>
@@ -449,7 +440,7 @@ export default function CreateRoute() {
               onRemove={handleRemovePlayer}
             />
           )}
-          style={{ backgroundColor: colors.background }}
+          style={styles.list}
         />
       </KeyboardAvoidingView>
     </>
@@ -471,6 +462,27 @@ function createDraftId() {
 }
 
 const styles = StyleSheet.create({
+  emptyCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 8,
+    padding: 18,
+  },
+  emptyText: {
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  emptyTitle: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  list: {
+    backgroundColor: colors.background,
+  },
   listContent: {
     alignSelf: 'center',
     gap: 6,
@@ -482,5 +494,9 @@ const styles = StyleSheet.create({
   },
   listHeader: {
     zIndex: 10,
+  },
+  screen: {
+    backgroundColor: colors.background,
+    flex: 1,
   },
 });
