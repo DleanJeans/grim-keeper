@@ -161,9 +161,12 @@ export default function GameRoute() {
   const latestPhase = game ? getLatestPhaseWithData(game) : null;
   const latestPhaseIndex = latestPhase ? getPhaseIndex(latestPhase) : 0;
 
+  const loadedGameId = game?.id;
+
+  // Re-lock only when moving to another phase (or the latest phase moves), not after each edit.
   useEffect(() => {
-    setDayEditLocked(!!game && activePhaseIndex < latestPhaseIndex);
-  }, [activePhaseIndex, game, latestPhaseIndex]);
+    setDayEditLocked(!!loadedGameId && activePhaseIndex < latestPhaseIndex);
+  }, [activePhaseIndex, latestPhaseIndex, loadedGameId]);
   const viewportMapWidth = getDefaultMapWidth(width);
   const fallbackMapDimensions = useRef<{
     gameId: string;
