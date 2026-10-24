@@ -38,6 +38,7 @@ export function AppUserNameCard({ appUserName, onSave }: AppUserNameCardProps) {
           Hi, {appUserName}
         </Text>
         <Pressable
+          accessibilityLabel={editing ? 'Cancel editing your name' : 'Edit your name'}
           accessibilityRole="button"
           onPress={() => setEditing((currentEditing) => !currentEditing)}
           style={({ pressed }) => [styles.editButton, pressed && styles.buttonPressed]}
@@ -49,6 +50,7 @@ export function AppUserNameCard({ appUserName, onSave }: AppUserNameCardProps) {
       {editing ? (
         <View style={styles.editRow}>
           <TextInput
+            accessibilityLabel="Your name"
             autoCapitalize="words"
             autoCorrect={false}
             enterKeyHint="done"
@@ -60,7 +62,9 @@ export function AppUserNameCard({ appUserName, onSave }: AppUserNameCardProps) {
             style={styles.input}
           />
           <Pressable
+            accessibilityLabel="Save your name"
             accessibilityRole="button"
+            accessibilityState={{ disabled: !canSave }}
             disabled={!canSave}
             onPress={handleSave}
             style={({ pressed }) => [

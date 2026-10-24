@@ -72,6 +72,7 @@ export function InteractionCard({
           </View>
         </View>
         <Pressable
+          accessibilityLabel="Delete interaction"
           accessibilityRole="button"
           onPress={() =>
             showDialog('Delete interaction?', 'This removes the recorded conversation.', [

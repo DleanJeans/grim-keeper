@@ -46,7 +46,9 @@ export function FriendNameForm({ friends, onAddFriend }: FriendNameFormProps) {
           style={[styles.input, duplicateName && styles.inputDuplicate]}
         />
         <Pressable
+          accessibilityLabel="Add friend"
           accessibilityRole="button"
+          accessibilityState={{ disabled: !canAddFriend }}
           disabled={!canAddFriend}
           onPress={handleAddFriend}
           style={({ pressed }) => [
