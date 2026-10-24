@@ -297,21 +297,13 @@ export default function ScriptsRoute() {
         ref={scrollViewRef}
         automaticallyAdjustKeyboardInsets
         contentInsetAdjustmentBehavior="automatic"
-        style={{ backgroundColor: colors.background, flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 40 }}
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
         <ResponsiveContent style={styles.content}>
-          <View style={{ gap: 6 }}>
-            <Text
-              selectable
-              style={{
-                color: colors.textMuted,
-                fontSize: 15,
-                lineHeight: 21,
-                textAlign: 'center',
-              }}
-            >
+          <View style={styles.intro}>
+            <Text selectable style={styles.introText}>
               Download scripts from BotC Scripts, upload or paste a homebrew JSON script, then add
               or remove roles before using it in a game.
             </Text>
@@ -349,14 +341,11 @@ export default function ScriptsRoute() {
           />
           <NewScriptButton onPress={handleCreateScript} />
 
-          <View style={{ gap: 10 }}>
-            <Text
-              selectable
-              style={{ color: colors.text, fontSize: 18, fontWeight: '900', textAlign: 'center' }}
-            >
+          <View style={styles.remoteSection}>
+            <Text selectable style={styles.sectionTitle}>
               Download from BotC Scripts
             </Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={styles.searchRow}>
               <TextInput
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -367,52 +356,37 @@ export default function ScriptsRoute() {
                 placeholderTextColor={colors.textSubtle}
                 returnKeyType="search"
                 value={searchText}
-                style={{
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  color: colors.text,
-                  flex: 1,
-                  minHeight: 46,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                }}
+                style={styles.searchInput}
               />
               <Pressable
                 accessibilityLabel="Search BotC Scripts"
                 accessibilityRole="button"
                 disabled={remoteLoading}
                 onPress={() => loadRemoteScripts()}
-                style={({ pressed }) => ({
-                  alignItems: 'center',
-                  backgroundColor: pressed ? colors.surfacePressed : colors.surfaceRaised,
-                  borderColor: colors.borderStrong,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  justifyContent: 'center',
-                  opacity: remoteLoading ? 0.6 : 1,
-                  width: 50,
-                })}
+                style={({ pressed }) => [
+                  styles.searchButton,
+                  pressed && styles.searchButtonPressed,
+                  remoteLoading && styles.searchButtonLoading,
+                ]}
               >
                 <Search color={colors.text} size={18} strokeWidth={2.6} />
               </Pressable>
             </View>
             {catalogError ? (
-              <Text selectable style={{ color: colors.warning, fontSize: 13, lineHeight: 18 }}>
+              <Text selectable style={styles.catalogError}>
                 {catalogError}
               </Text>
             ) : null}
             {remoteError ? (
-              <Text selectable style={{ color: colors.danger, fontSize: 14, lineHeight: 20 }}>
+              <Text selectable style={styles.remoteError}>
                 {remoteError}
               </Text>
             ) : remoteLoading ? (
-              <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
+              <Text selectable style={styles.remoteStatus}>
                 Loading scripts…
               </Text>
             ) : remoteScripts.length === 0 ? (
-              <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
+              <Text selectable style={styles.remoteStatus}>
                 No scripts found.
               </Text>
             ) : (
@@ -438,12 +412,93 @@ function getErrorMessage(error: unknown) {
 }
 
 const styles = StyleSheet.create({
+  catalogError: {
+    color: colors.warning,
+    fontSize: 13,
+    lineHeight: 18,
+  },
   content: {
     gap: 22,
     padding: 20,
   },
+  emptyCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 14,
+  },
+  emptyCardText: {
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  intro: {
+    gap: 6,
+  },
+  introText: {
+    color: colors.textMuted,
+    fontSize: 15,
+    lineHeight: 21,
+    textAlign: 'center',
+  },
+  remoteError: {
+    color: colors.danger,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  remoteSection: {
+    gap: 10,
+  },
+  remoteStatus: {
+    color: colors.textMuted,
+    fontSize: 14,
+  },
   savedScripts: {
     gap: 10,
+  },
+  scroll: {
+    backgroundColor: colors.background,
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  searchButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.borderStrong,
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    width: 50,
+  },
+  searchButtonLoading: {
+    opacity: 0.6,
+  },
+  searchButtonPressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  searchInput: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    color: colors.text,
+    flex: 1,
+    minHeight: 46,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  sectionTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: '900',
+    textAlign: 'center',
   },
 });
 
@@ -486,10 +541,7 @@ function SavedScriptsSection({
 
   return (
     <View onLayout={(event) => onLayout(event.nativeEvent.layout.y)} style={styles.savedScripts}>
-      <Text
-        selectable
-        style={{ color: colors.text, fontSize: 18, fontWeight: '900', textAlign: 'center' }}
-      >
+      <Text selectable style={styles.sectionTitle}>
         Downloaded scripts
       </Text>
       {scripts.length > 0 ? (
@@ -500,16 +552,8 @@ function SavedScriptsSection({
         />
       ) : null}
       {visibleScripts.length === 0 ? (
-        <View
-          style={{
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-            borderRadius: 8,
-            borderWidth: 1,
-            padding: 14,
-          }}
-        >
-          <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
+        <View style={styles.emptyCard}>
+          <Text selectable style={styles.emptyCardText}>
             {scripts.length === 0 ? 'No downloaded scripts yet.' : 'No scripts match.'}
           </Text>
         </View>
