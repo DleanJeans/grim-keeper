@@ -120,15 +120,17 @@ export function CreateFormHeader({
             triggerHeight={syncedPickerHeight || undefined}
           />
         </View>
-        <View style={styles.pickerCell}>
-          <LoricPicker
-            lorics={lorics}
-            onChange={onSelectLorics}
-            onTriggerHeightChange={(height) => handlePickerHeightChange('lorics', height)}
-            selectedRoleIds={selectedLoricIds}
-            triggerHeight={syncedPickerHeight || undefined}
-          />
-        </View>
+        {lorics.length > 0 ? (
+          <View style={styles.pickerCell}>
+            <LoricPicker
+              lorics={lorics}
+              onChange={onSelectLorics}
+              onTriggerHeightChange={(height) => handlePickerHeightChange('lorics', height)}
+              selectedRoleIds={selectedLoricIds}
+              triggerHeight={syncedPickerHeight || undefined}
+            />
+          </View>
+        ) : null}
       </View>
 
       {isSushiBuffet ? (
