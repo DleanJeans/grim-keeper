@@ -38,14 +38,14 @@ export function FriendGamesList({ games, friendName, roleCatalog, scripts }: Fri
 
   if (entries.length === 0) {
     return (
-      <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
+      <Text selectable style={styles.empty}>
         No games yet.
       </Text>
     );
   }
 
   return (
-    <View style={{ gap: 8 }}>
+    <View style={styles.list}>
       {entries.map((entry) => (
         <FriendGameRow key={entry.game.id} entry={entry} />
       ))}
@@ -74,11 +74,11 @@ function FriendGameRow({ entry }: { entry: GameEntry }) {
         pressed && styles.pressed,
       ]}
     >
-      <View style={{ gap: 2 }}>
-        <Text selectable style={{ color: colors.text, fontSize: 15, fontWeight: '800' }}>
+      <View style={styles.titleBlock}>
+        <Text selectable style={styles.scriptName}>
           {scriptName}
         </Text>
-        <Text selectable style={{ color: colors.textMuted, fontSize: 12 }}>
+        <Text selectable style={styles.date}>
           {formattedDate}
         </Text>
       </View>
@@ -93,34 +93,23 @@ function FriendGameRow({ entry }: { entry: GameEntry }) {
 
 function RoleLine({ label, roles }: { label: string; roles: Role[] }) {
   return (
-    <View style={{ alignItems: 'center', flexDirection: 'row', gap: 8 }}>
-      <Text
-        selectable
-        style={{
-          color: colors.textMuted,
-          flexShrink: 0,
-          fontSize: 11,
-          fontWeight: '900',
-          letterSpacing: 0.4,
-          textTransform: 'uppercase',
-          width: 78,
-        }}
-      >
+    <View style={styles.roleLine}>
+      <Text selectable style={styles.roleLineLabel}>
         {label}
       </Text>
       {roles.length === 0 ? (
-        <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontStyle: 'italic' }}>
+        <Text selectable style={styles.noRoles}>
           —
         </Text>
       ) : (
-        <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        <View style={styles.roles}>
           {roles.map((role) => (
             <RoleReference
               disablePress
               iconSize={18}
               key={role.id}
               role={role}
-              textStyle={{ color: colors.text, fontSize: 13, fontWeight: '700' }}
+              textStyle={styles.roleName}
             />
           ))}
         </View>
@@ -273,6 +262,14 @@ function getResultStyle(result?: GameResult) {
 }
 
 const styles = StyleSheet.create({
+  date: {
+    color: colors.textMuted,
+    fontSize: 12,
+  },
+  empty: {
+    color: colors.textMuted,
+    fontSize: 15,
+  },
   gameButton: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
@@ -281,12 +278,53 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 12,
   },
+  list: {
+    gap: 8,
+  },
   lost: {
     backgroundColor: colors.dangerSurface,
     borderColor: colors.danger,
   },
+  noRoles: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontStyle: 'italic',
+  },
   pressed: {
     backgroundColor: colors.surfacePressed,
+  },
+  roleLine: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  roleLineLabel: {
+    color: colors.textMuted,
+    flexShrink: 0,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    width: 78,
+  },
+  roleName: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  roles: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  scriptName: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  titleBlock: {
+    gap: 2,
   },
   won: {
     backgroundColor: colors.successSurface,
