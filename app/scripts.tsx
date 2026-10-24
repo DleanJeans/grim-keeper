@@ -160,8 +160,7 @@ export default function ScriptsRoute() {
   async function handleUploadFile(file: File) {
     try {
       const fallbackName = file.name.replace(/\.json$/i, '');
-      const name = await importScriptJson(await file.text(), fallbackName);
-      showDialog('Upload complete', `${name} is ready to use.`);
+      showDialog('Upload complete', await importScriptJson(await file.text(), fallbackName));
     } catch (error) {
       showDialog('Could not upload script', getErrorMessage(error));
     }
@@ -180,13 +179,15 @@ export default function ScriptsRoute() {
     );
 
     saveScript(existingScript ? { ...uploadedScript, id: existingScript.id } : uploadedScript);
-    return uploadedScript.name;
+    // Official roles imported offline have no team until the catalog loads.
+    return uploadedScript.roles.some((role) => !role.team)
+      ? `${uploadedScript.name} is ready to use. Character types and abilities for official roles will be filled in the next time Scripts opens online.`
+      : `${uploadedScript.name} is ready to use.`;
   }
 
   async function handleImportPastedScript(value: string, fallbackName?: string) {
     try {
-      const name = await importScriptJson(value, fallbackName);
-      showDialog('Import complete', `${name} is ready to use.`);
+      showDialog('Import complete', await importScriptJson(value, fallbackName));
       return true;
     } catch (error) {
       showDialog('Could not import script', getErrorMessage(error));
