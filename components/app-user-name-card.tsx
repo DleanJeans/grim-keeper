@@ -123,6 +123,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
     fontSize: 16,
+    minWidth: 0,
     minHeight: 48,
     paddingHorizontal: 14,
     paddingVertical: 12,

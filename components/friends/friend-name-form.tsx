@@ -100,6 +100,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
     fontSize: 17,
+    minWidth: 0,
     minHeight: 50,
     paddingHorizontal: 14,
     paddingVertical: 12,
