@@ -36,6 +36,7 @@ import { Text } from '@/components/text';
 import { useWebFullscreen } from '@/hooks/use-web-fullscreen';
 import { useDjStore } from '@/store/dj-store';
 import { getGameById, useGameStore } from '@/store/game-store';
+import { colors } from '@/theme/colors';
 import type {
   GamePhase,
   KillAttribution,
@@ -1144,7 +1145,7 @@ function createScrollContentStyle(topInset: number) {
 
 const styles = StyleSheet.create({
   body: {
-    backgroundColor: '#0b1120',
+    backgroundColor: colors.gameBackground,
     flex: 1,
     position: 'relative',
   },
@@ -1171,13 +1172,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   selectingBar: {
-    backgroundColor: '#111827',
-    borderTopColor: '#334155',
+    backgroundColor: colors.gameSurface,
+    borderTopColor: colors.gameBorder,
     borderTopWidth: 1,
     paddingVertical: 12,
   },
   selectingLabel: {
-    color: '#f8fafc',
+    color: colors.gameText,
     fontSize: 14,
     fontWeight: '700',
     textAlign: 'center',

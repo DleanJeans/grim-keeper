@@ -3,6 +3,7 @@ import { Pressable } from 'react-native';
 
 import { onDarkTextStrong, outlinedActionStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
+import { colors } from '@/theme/colors';
 
 type KillButtonProps = {
   disabled?: boolean;
@@ -27,7 +28,7 @@ export function KillButton({ disabled = false, flex = 1, onPress, playerName }: 
         })
       }
     >
-      <Skull color={disabled ? '#94a3b8' : '#93c5fd'} size={17} strokeWidth={2.7} />
+      <Skull color={disabled ? colors.gameTextMuted : '#93c5fd'} size={17} strokeWidth={2.7} />
       <Text style={onDarkTextStrong}>{disabled ? 'Killed' : 'Kill'}</Text>
     </Pressable>
   );

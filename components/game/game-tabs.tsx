@@ -5,6 +5,7 @@ import { type GameTab, useGameRouteContext } from '@/components/game/game-route-
 import { NomIcon } from '@/components/game/noms-tab/nom-icon';
 import { tabBarButtonStyle, tabBarContainer, tabBarLabelStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
+import { colors } from '@/theme/colors';
 
 const gameTabs: { dayOnly?: boolean; flex: number; label: string; value: GameTab }[] = [
   { flex: 0.85, label: 'Roles', value: 'notes' },
@@ -45,7 +46,7 @@ export function GameTabs() {
             }}
             style={tabBarButtonStyle(active, tab.flex)}
           >
-            {renderGameTabIcon(tab.value, active ? '#0b1120' : '#94a3b8')}
+            {renderGameTabIcon(tab.value, active ? colors.gameBackground : colors.gameTextMuted)}
             <Text style={tabBarLabelStyle(active)}>{tab.label}</Text>
           </Pressable>
         );

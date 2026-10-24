@@ -26,6 +26,15 @@ const baseColors = {
   warning: '#f4dfaa',
   warningText: '#4b3510',
   line: '#b7c7d9',
+  // Game screen (slate palette, not themed yet)
+  gameBackground: '#0b1120',
+  gameBorder: '#334155',
+  gameConfirm: '#16a34a',
+  gameSurface: '#111827',
+  gameSurfacePressed: '#1f2937',
+  gameText: '#f8fafc',
+  gameTextMuted: '#94a3b8',
+  gameTextSubtle: '#64748b',
   // Note input
   inputBackground: '#111827',
   inputBorder: '#334155',

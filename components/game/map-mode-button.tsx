@@ -3,6 +3,7 @@ import type { ComponentType } from 'react';
 import { Pressable } from 'react-native';
 
 import { Text } from '@/components/text';
+import { colors } from '@/theme/colors';
 
 type MapModeButtonProps = {
   accessibilityLabel: string;
@@ -19,7 +20,7 @@ export function MapModeButton({
   accessibilityLabel,
   flex = 1,
   icon: Icon,
-  iconColor = '#f8fafc',
+  iconColor = colors.gameText,
   label,
   onPress,
   variant = 'default',
@@ -33,8 +34,8 @@ export function MapModeButton({
         onPress={onPress}
         style={({ pressed }) => ({
           alignItems: 'center',
-          backgroundColor: pressed ? '#dbeafe' : '#f8fafc',
-          borderColor: '#f8fafc',
+          backgroundColor: pressed ? '#dbeafe' : colors.gameText,
+          borderColor: colors.gameText,
           borderRadius: 8,
           borderWidth: 1,
           justifyContent: 'center',
@@ -55,8 +56,8 @@ export function MapModeButton({
       onPress={onPress}
       style={({ pressed }) => ({
         alignItems: 'center',
-        backgroundColor: pressed ? '#1f2937' : '#111827',
-        borderColor: '#334155',
+        backgroundColor: pressed ? colors.gameSurfacePressed : colors.gameSurface,
+        borderColor: colors.gameBorder,
         borderRadius: 8,
         borderWidth: 1,
         flex: width === undefined ? flex : undefined,
@@ -70,7 +71,7 @@ export function MapModeButton({
       })}
     >
       {Icon ? <Icon color={iconColor} size={17} strokeWidth={2.7} /> : null}
-      {label ? <Text style={{ color: '#f8fafc', fontWeight: '900' }}>{label}</Text> : null}
+      {label ? <Text style={{ color: colors.gameText, fontWeight: '900' }}>{label}</Text> : null}
     </Pressable>
   );
 }

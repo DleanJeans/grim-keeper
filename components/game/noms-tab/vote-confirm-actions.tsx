@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { confirmRowStyle, onDarkText, solidActionStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
+import { colors } from '@/theme/colors';
 
 const confirmTextStyle = {
   ...onDarkText,
@@ -18,7 +19,7 @@ export function VoteConfirmActions() {
       <Pressable
         accessibilityRole="button"
         onPress={handleCancelVoting}
-        style={solidActionStyle({ backgroundColor: '#334155', flex: 0.75 })}
+        style={solidActionStyle({ backgroundColor: colors.gameBorder, flex: 0.75 })}
       >
         <X color="#f8fafc" size={17} strokeWidth={2.7} />
         <Text style={onDarkText}>Cancel</Text>
@@ -26,7 +27,7 @@ export function VoteConfirmActions() {
       <Pressable
         accessibilityRole="button"
         onPress={handleConfirmVotes}
-        style={solidActionStyle({ backgroundColor: '#16a34a', flex: 1.25 })}
+        style={solidActionStyle({ backgroundColor: colors.gameConfirm, flex: 1.25 })}
       >
         <Check color="#f8fafc" size={17} strokeWidth={2.7} />
         <Text

@@ -4,6 +4,7 @@ import { useGameRouteContext } from '@/components/game/game-route-context';
 import { MapModeButton } from '@/components/game/map-mode-button';
 import { onDarkTextStrong, outlinedActionRow, outlinedActionStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
+import { colors } from '@/theme/colors';
 import {
   mapHeightStep,
   mapWidthStep,
@@ -168,8 +169,8 @@ const rotationStepRadians = Math.PI / 8;
 const styles = StyleSheet.create({
   dimensionDisplay: {
     alignItems: 'center',
-    backgroundColor: '#111827',
-    borderColor: '#334155',
+    backgroundColor: colors.gameSurface,
+    borderColor: colors.gameBorder,
     borderRadius: 8,
     borderWidth: 1,
     justifyContent: 'center',
@@ -179,7 +180,7 @@ const styles = StyleSheet.create({
     width: dimensionDisplayWidth,
   },
   dimensionTitle: {
-    color: '#94a3b8',
+    color: colors.gameTextMuted,
     fontSize: 11,
     fontWeight: '800',
   },

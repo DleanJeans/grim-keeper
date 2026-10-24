@@ -5,6 +5,7 @@ import { useGameRouteContext } from '@/components/game/game-route-context';
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { confirmRowStyle, onDarkText, solidActionStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
+import { colors } from '@/theme/colors';
 
 const confirmTextBase = {
   ...onDarkText,
@@ -51,7 +52,7 @@ export function TrackingConfirmActions() {
       <Pressable
         accessibilityRole="button"
         onPress={onCancel}
-        style={solidActionStyle({ backgroundColor: '#334155', flex: cancelFlex })}
+        style={solidActionStyle({ backgroundColor: colors.gameBorder, flex: cancelFlex })}
       >
         <X color="#f8fafc" size={17} strokeWidth={2.7} />
         <Text style={onDarkText}>Cancel</Text>
@@ -61,18 +62,25 @@ export function TrackingConfirmActions() {
         disabled={disabled}
         onPress={onConfirm}
         style={solidActionStyle({
-          backgroundColor: disabled ? '#334155' : '#16a34a',
+          backgroundColor: disabled ? colors.gameBorder : colors.gameConfirm,
           flex: confirmFlex,
         })}
       >
-        <Check color={disabled ? '#94a3b8' : '#f8fafc'} size={17} strokeWidth={2.7} />
+        <Check
+          color={disabled ? colors.gameTextMuted : colors.gameText}
+          size={17}
+          strokeWidth={2.7}
+        />
         {confirmPlayer ? (
           <View style={{ alignItems: 'center', flexDirection: 'row', flexShrink: 1, gap: 4 }}>
             <Text
               adjustsFontSizeToFit
               minimumFontScale={0.72}
               numberOfLines={1}
-              style={{ ...confirmTextBase, color: disabled ? '#94a3b8' : '#f8fafc' }}
+              style={{
+                ...confirmTextBase,
+                color: disabled ? colors.gameTextMuted : colors.gameText,
+              }}
             >
               Confirm:
             </Text>
@@ -80,7 +88,10 @@ export function TrackingConfirmActions() {
               player={confirmPlayer}
               iconSize={14}
               style={{ flexShrink: 1 }}
-              textStyle={{ ...confirmTextBase, color: disabled ? '#94a3b8' : '#f8fafc' }}
+              textStyle={{
+                ...confirmTextBase,
+                color: disabled ? colors.gameTextMuted : colors.gameText,
+              }}
             />
           </View>
         ) : (
@@ -88,7 +99,7 @@ export function TrackingConfirmActions() {
             adjustsFontSizeToFit
             minimumFontScale={0.72}
             numberOfLines={1}
-            style={{ ...confirmTextBase, color: disabled ? '#94a3b8' : '#f8fafc' }}
+            style={{ ...confirmTextBase, color: disabled ? colors.gameTextMuted : colors.gameText }}
           >
             {confirmLabel}
           </Text>

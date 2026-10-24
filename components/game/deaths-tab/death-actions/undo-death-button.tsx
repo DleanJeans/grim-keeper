@@ -1,6 +1,7 @@
 import { Undo2 } from 'lucide-react-native';
 import { Pressable, StyleSheet } from 'react-native';
 import { Text } from '@/components/text';
+import { colors } from '@/theme/colors';
 
 type UndoDeathButtonProps = {
   compact?: boolean;
@@ -31,7 +32,11 @@ export function UndoDeathButton({
         pressed && styles.buttonPressed,
       ]}
     >
-      <Undo2 color={disabled ? '#94a3b8' : '#f8fafc'} size={compact ? 15 : 17} strokeWidth={2.7} />
+      <Undo2
+        color={disabled ? colors.gameTextMuted : colors.gameText}
+        size={compact ? 15 : 17}
+        strokeWidth={2.7}
+      />
       {label ? <Text style={styles.label}>{label}</Text> : null}
     </Pressable>
   );
@@ -40,8 +45,8 @@ export function UndoDeathButton({
 const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
-    backgroundColor: '#111827',
-    borderColor: '#334155',
+    backgroundColor: colors.gameSurface,
+    borderColor: colors.gameBorder,
     borderRadius: 8,
     borderWidth: 1,
     flexDirection: 'row',
@@ -53,18 +58,18 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   buttonDisabled: {
-    borderColor: '#1f2937',
+    borderColor: colors.gameSurfacePressed,
     opacity: 0.48,
   },
   buttonPressed: {
-    backgroundColor: '#1f2937',
+    backgroundColor: colors.gameSurfacePressed,
   },
   buttonRegular: {
     minWidth: 48,
     paddingVertical: 14,
   },
   label: {
-    color: '#f8fafc',
+    color: colors.gameText,
     fontSize: 13,
     fontWeight: '800',
   },

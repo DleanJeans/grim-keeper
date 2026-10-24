@@ -2,6 +2,7 @@ import { HeartPulse } from 'lucide-react-native';
 import { Pressable } from 'react-native';
 
 import { Text } from '@/components/text';
+import { colors } from '@/theme/colors';
 
 type ReviveButtonProps = {
   disabled?: boolean;
@@ -27,8 +28,8 @@ export function ReviveButton({
       onPress={onPress}
       style={({ pressed }) => ({
         alignItems: 'center',
-        backgroundColor: pressed ? '#1f2937' : '#111827',
-        borderColor: disabled ? '#1f2937' : '#22c55e',
+        backgroundColor: pressed ? colors.gameSurfacePressed : colors.gameSurface,
+        borderColor: disabled ? colors.gameSurfacePressed : '#22c55e',
         borderRadius: 8,
         borderWidth: 1,
         flex,
@@ -41,10 +42,10 @@ export function ReviveButton({
         paddingVertical: 14,
       })}
     >
-      <HeartPulse color={disabled ? '#94a3b8' : '#86efac'} size={17} strokeWidth={2.7} />
+      <HeartPulse color={disabled ? colors.gameTextMuted : '#86efac'} size={17} strokeWidth={2.7} />
       <Text
         style={{
-          color: disabled ? '#94a3b8' : '#f8fafc',
+          color: disabled ? colors.gameTextMuted : colors.gameText,
           fontWeight: '900',
         }}
       >

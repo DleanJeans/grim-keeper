@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { Text } from '@/components/text';
+import { colors } from '@/theme/colors';
 import type { Conversation, ConversationRow, Player } from '@/types/game';
 import { buildClosureFromPlayer, buildConversationRows } from '@/utils/conversation-utils';
 
@@ -149,38 +150,38 @@ function TalkedToPill({ name, player, repeated }: TalkedToPillProps) {
 
 const styles = StyleSheet.create({
   container: {
-    borderColor: '#334155',
+    borderColor: colors.gameBorder,
     borderRadius: 8,
     borderWidth: 1,
     overflow: 'hidden',
   },
   header: {
-    backgroundColor: '#1f2937',
-    borderBottomColor: '#334155',
+    backgroundColor: colors.gameSurfacePressed,
+    borderBottomColor: colors.gameBorder,
     borderBottomWidth: 1,
     flexDirection: 'row',
   },
   headerPlayer: {
-    color: '#f8fafc',
+    color: colors.gameText,
     flex: 0.9,
     fontSize: 13,
     fontWeight: '800',
     padding: 12,
   },
   headerTalkedTo: {
-    color: '#f8fafc',
+    color: colors.gameText,
     flex: 1.4,
     fontSize: 13,
     fontWeight: '800',
     padding: 12,
   },
   noneText: {
-    color: '#64748b',
+    color: colors.gameTextSubtle,
     fontSize: 14,
   },
   pill: {
     backgroundColor: '#1e293b',
-    borderColor: '#334155',
+    borderColor: colors.gameBorder,
     borderRadius: 999,
     borderWidth: 1,
     paddingHorizontal: 8,
@@ -209,20 +210,20 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   playerCellText: {
-    color: '#f8fafc',
+    color: colors.gameText,
     fontSize: 15,
     fontWeight: '700',
   },
   playerCellTextFallback: {
-    color: '#f8fafc',
+    color: colors.gameText,
     flex: 0.9,
     fontSize: 15,
     fontWeight: '700',
     padding: 12,
   },
   row: {
-    backgroundColor: '#111827',
-    borderBottomColor: '#1f2937',
+    backgroundColor: colors.gameSurface,
+    borderBottomColor: colors.gameSurfacePressed,
     borderBottomWidth: 1,
     flexDirection: 'row',
     minHeight: 50,

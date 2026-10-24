@@ -13,6 +13,7 @@ import {
   tabBarLabelStyle,
 } from '@/components/game/styles';
 import { Text } from '@/components/text';
+import { colors } from '@/theme/colors';
 
 type InteractionSubtab = 'list' | 'table';
 
@@ -69,7 +70,10 @@ export function InteractionsTab() {
               onPress={() => setSubtab(tab.value)}
               style={tabBarButtonStyle(active, 1)}
             >
-              {renderInteractionSubtabIcon(tab.value, active ? '#0b1120' : '#94a3b8')}
+              {renderInteractionSubtabIcon(
+                tab.value,
+                active ? colors.gameBackground : colors.gameTextMuted,
+              )}
               <Text style={tabBarLabelStyle(active)}>{tab.label}</Text>
             </Pressable>
           );

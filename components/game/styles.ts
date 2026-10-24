@@ -2,10 +2,10 @@ import { StyleSheet, type TextStyle, type ViewStyle } from 'react-native';
 
 import { colors } from '@/theme/colors';
 
-const slateBg = '#111827';
-const slateBgPressed = '#1f2937';
-const slateBorder = '#334155';
-const onDark = '#f8fafc';
+const slateBg = colors.gameSurface;
+const slateBgPressed = colors.gameSurfacePressed;
+const slateBorder = colors.gameBorder;
+const onDark = colors.gameText;
 
 export const gameStyles = StyleSheet.create({
   noteCard: {
@@ -121,7 +121,7 @@ export function tabBarButtonStyle(active: boolean, flex: number): ViewStyle {
 
 export function tabBarLabelStyle(active: boolean): TextStyle {
   return {
-    color: active ? '#0b1120' : '#94a3b8',
+    color: active ? colors.gameBackground : colors.gameTextMuted,
     fontSize: 13,
     fontWeight: '800',
   };

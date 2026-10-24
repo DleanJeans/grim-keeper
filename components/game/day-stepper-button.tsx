@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import { Text } from '@/components/text';
+import { colors } from '@/theme/colors';
 
 type DayStepperButtonProps = {
   accessibilityLabel: string;
@@ -41,8 +42,8 @@ export function DayStepperButton({
 const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
-    backgroundColor: '#111827',
-    borderColor: '#334155',
+    backgroundColor: colors.gameSurface,
+    borderColor: colors.gameBorder,
     borderRadius: 8,
     borderWidth: 1,
     flex: 1,
@@ -54,14 +55,14 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   disabled: {
-    borderColor: '#1f2937',
+    borderColor: colors.gameSurfacePressed,
     opacity: 0.5,
   },
   label: {
-    color: '#f8fafc',
+    color: colors.gameText,
     fontWeight: '900',
   },
   pressed: {
-    backgroundColor: '#1f2937',
+    backgroundColor: colors.gameSurfacePressed,
   },
 });

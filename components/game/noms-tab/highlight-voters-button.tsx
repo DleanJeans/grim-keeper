@@ -3,6 +3,7 @@ import { Pressable } from 'react-native';
 
 import { onDarkText, outlinedActionStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
+import { colors } from '@/theme/colors';
 
 type HighlightVotersButtonProps = {
   active: boolean;
@@ -12,7 +13,7 @@ type HighlightVotersButtonProps = {
 
 export function HighlightVotersButton({ active, disabled, onPress }: HighlightVotersButtonProps) {
   const label = active ? 'Clear voter highlights' : 'Highlight voters';
-  const iconColor = disabled ? '#64748b' : active ? '#86efac' : '#f8fafc';
+  const iconColor = disabled ? colors.gameTextSubtle : active ? '#86efac' : colors.gameText;
 
   return (
     <Pressable

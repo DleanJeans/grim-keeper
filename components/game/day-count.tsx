@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
+import { colors } from '@/theme/colors';
 import type { GamePhase, StartingNight } from '@/types/game';
 import { getDayCutoffForPhase, getPhaseLabel } from '@/utils/game-phase-utils';
 
@@ -38,13 +39,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   label: {
-    color: '#f8fafc',
+    color: colors.gameText,
     fontSize: 15,
     fontWeight: '900',
     textAlign: 'center',
   },
   progress: {
-    color: '#94a3b8',
+    color: colors.gameTextMuted,
     fontSize: 10,
     fontWeight: '700',
     textAlign: 'center',

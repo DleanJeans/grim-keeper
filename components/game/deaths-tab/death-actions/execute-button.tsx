@@ -3,6 +3,7 @@ import { Pressable } from 'react-native';
 
 import { onDarkTextStrong, outlinedActionStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
+import { colors } from '@/theme/colors';
 
 type ExecuteButtonProps = {
   compact?: boolean;
@@ -40,7 +41,7 @@ export function ExecuteButton({
       })}
     >
       <FlameKindling
-        color={disabled ? '#94a3b8' : '#fca5a5'}
+        color={disabled ? colors.gameTextMuted : '#fca5a5'}
         size={compact ? 15 : 17}
         strokeWidth={2.7}
       />

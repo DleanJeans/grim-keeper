@@ -2,6 +2,7 @@ import { Footprints, HeartPulse, Skull } from 'lucide-react-native';
 import type { ComponentType } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from '@/components/text';
+import { colors } from '@/theme/colors';
 
 type PlayerCountStatusProps = {
   alivePlayerCount: number;
@@ -38,7 +39,7 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   pillCount: {
-    color: '#f8fafc',
+    color: colors.gameText,
     fontSize: 12,
     fontWeight: '900',
   },

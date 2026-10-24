@@ -380,8 +380,8 @@ function stripFutureAndRevivedDeath(player: Player, activePosition: GamePhasePos
 const styles = StyleSheet.create({
   map: {
     alignItems: 'stretch',
-    backgroundColor: '#111827',
-    borderColor: '#334155',
+    backgroundColor: colors.gameSurface,
+    borderColor: colors.gameBorder,
     borderRadius: 8,
     borderWidth: 1,
     overflow: 'hidden',
