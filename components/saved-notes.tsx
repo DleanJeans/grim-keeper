@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { Trash2 } from 'lucide-react-native';
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { RoleReferencedNoteText } from '@/components/role-referenced-note-text';
@@ -58,115 +58,24 @@ export function SavedNotes({
   }
 
   return (
-    <View style={{ gap: compact ? 1 : 6 }}>
+    <View style={[styles.list, compact && styles.listCompact]}>
       {label ? (
-        <Text
-          selectable
-          style={{
-            color: colors.textMuted,
-            fontSize: compact ? 10 : 12,
-            fontWeight: '900',
-            letterSpacing: 0.5,
-            textTransform: 'uppercase',
-          }}
-        >
+        <Text selectable style={[styles.label, compact && styles.labelCompact]}>
           Notes
         </Text>
       ) : null}
-      {notes.map((note) => {
-        const context = resolveNoteContext(note, games, scripts, mode);
-        return (
-          <View
-            key={note.id}
-            style={{
-              backgroundColor: compact ? 'transparent' : colors.surface,
-              borderColor: colors.border,
-              borderRadius: 8,
-              borderWidth: compact ? 0 : 1,
-              gap: 6,
-              padding: compact ? 0 : 10,
-            }}
-          >
-            <RoleReferencedNoteText
-              day={day}
-              game={context.game}
-              players={context.game?.players ?? players}
-              roles={context.roles ?? roles}
-              scriptId={context.scriptId}
-              showPlayerRoles
-              style={{
-                color: colors.textMuted,
-                fontSize: compact ? 10 : 13,
-                lineHeight: compact ? 13 : 18,
-              }}
-              text={note.text}
-            />
-            <View
-              style={{
-                alignItems: 'center',
-                flexDirection: 'row',
-                gap: 10,
-                justifyContent: 'space-between',
-              }}
-            >
-              {context.label ? (
-                <Pressable
-                  accessibilityHint="Opens this game at the day this note was written"
-                  accessibilityLabel={context.label}
-                  accessibilityRole="button"
-                  disabled={!context.game || !note.day}
-                  onPress={() => {
-                    if (!context.game || !note.day) return;
-                    const player = context.game.players.find(
-                      (candidate) =>
-                        normalizePlayerName(candidate.name).toLocaleLowerCase() ===
-                        normalizePlayerName(note.playerName).toLocaleLowerCase(),
-                    );
-                    router.push({
-                      params: {
-                        day: String(note.day),
-                        id: context.game.id,
-                        playerId: player?.id,
-                        tab: 'notes',
-                      },
-                      pathname: '/game/[id]',
-                    });
-                  }}
-                  style={({ pressed }) => ({
-                    flex: 1,
-                    opacity: pressed ? 0.6 : 1,
-                  })}
-                >
-                  <Text
-                    selectable={false}
-                    style={{
-                      color: colors.textMuted,
-                      fontSize: 10,
-                      fontWeight: '700',
-                      letterSpacing: 0.4,
-                      textDecorationLine: 'underline',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    {context.label}
-                  </Text>
-                </Pressable>
-              ) : (
-                <View style={{ flex: 1 }} />
-              )}
-              <Pressable
-                accessibilityLabel={`Delete note: ${note.text}`}
-                accessibilityRole="button"
-                hitSlop={8}
-                onPress={() => handleDeletePress(note)}
-                style={({ pressed }) => ({ opacity: pressed ? 0.55 : 1, padding: 2 })}
-              >
-                <Trash2 color={colors.danger} size={16} strokeWidth={2.4} />
-              </Pressable>
-            </View>
-          </View>
-        );
-      })}
+      {notes.map((note) => (
+        <SavedNoteCard
+          compact={compact}
+          context={resolveNoteContext(note, games, scripts, mode)}
+          day={day}
+          key={note.id}
+          note={note}
+          onDelete={handleDeletePress}
+          players={players}
+          roles={roles}
+        />
+      ))}
     </View>
   );
 }
@@ -224,4 +133,150 @@ function formatGameDate(createdAt: string) {
     month: 'short',
     year: date.getFullYear() === new Date().getFullYear() ? undefined : 'numeric',
   }).format(date);
+}
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 6,
+    padding: 10,
+  },
+  cardCompact: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    padding: 0,
+  },
+  contextButton: {
+    flex: 1,
+  },
+  contextButtonPressed: {
+    opacity: 0.6,
+  },
+  contextLabel: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textDecorationLine: 'underline',
+    textTransform: 'uppercase',
+  },
+  deleteButton: {
+    padding: 2,
+  },
+  deleteButtonPressed: {
+    opacity: 0.55,
+  },
+  footer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'space-between',
+  },
+  footerSpacer: {
+    flex: 1,
+  },
+  label: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  labelCompact: {
+    fontSize: 10,
+  },
+  list: {
+    gap: 6,
+  },
+  listCompact: {
+    gap: 1,
+  },
+  noteText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  noteTextCompact: {
+    fontSize: 10,
+    lineHeight: 13,
+  },
+});
+
+function SavedNoteCard({
+  compact,
+  context,
+  day,
+  note,
+  onDelete,
+  players,
+  roles,
+}: {
+  compact: boolean;
+  context: NoteContext;
+  day?: number;
+  note: SavedNote;
+  onDelete: (note: SavedNote) => void;
+  players?: Player[];
+  roles: Role[];
+}) {
+  return (
+    <View style={[styles.card, compact && styles.cardCompact]}>
+      <RoleReferencedNoteText
+        day={day}
+        game={context.game}
+        players={context.game?.players ?? players}
+        roles={context.roles ?? roles}
+        scriptId={context.scriptId}
+        showPlayerRoles
+        style={[styles.noteText, compact && styles.noteTextCompact]}
+        text={note.text}
+      />
+      <View style={styles.footer}>
+        {context.label ? (
+          <Pressable
+            accessibilityHint="Opens this game at the day this note was written"
+            accessibilityLabel={context.label}
+            accessibilityRole="button"
+            disabled={!context.game || !note.day}
+            onPress={() => {
+              if (!context.game || !note.day) return;
+              const player = context.game.players.find(
+                (candidate) =>
+                  normalizePlayerName(candidate.name).toLocaleLowerCase() ===
+                  normalizePlayerName(note.playerName).toLocaleLowerCase(),
+              );
+              router.push({
+                params: {
+                  day: String(note.day),
+                  id: context.game.id,
+                  playerId: player?.id,
+                  tab: 'notes',
+                },
+                pathname: '/game/[id]',
+              });
+            }}
+            style={({ pressed }) => [styles.contextButton, pressed && styles.contextButtonPressed]}
+          >
+            <Text selectable={false} style={styles.contextLabel}>
+              {context.label}
+            </Text>
+          </Pressable>
+        ) : (
+          <View style={styles.footerSpacer} />
+        )}
+        <Pressable
+          accessibilityLabel={`Delete note: ${note.text}`}
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={() => onDelete(note)}
+          style={({ pressed }) => [styles.deleteButton, pressed && styles.deleteButtonPressed]}
+        >
+          <Trash2 color={colors.danger} size={16} strokeWidth={2.4} />
+        </Pressable>
+      </View>
+    </View>
+  );
 }
