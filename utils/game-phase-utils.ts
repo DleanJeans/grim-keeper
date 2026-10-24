@@ -14,9 +14,7 @@ export function getGameActivePhase(game: Pick<Game, 'activePhase'>): GamePhase {
 }
 
 export function getPhaseIndex(position: GamePhasePosition): number {
-  return position.activePhase === 'night'
-    ? 2 * (position.activeDay - 1)
-    : 2 * position.activeDay - 1;
+  return getEventPhaseIndex(position.activeDay, position.activePhase);
 }
 
 export function getPhasePositionAtIndex(index: number): GamePhasePosition {
@@ -44,7 +42,7 @@ export function getDayCutoffForPhase(position: GamePhasePosition): number {
   return Math.floor((getPhaseIndex(position) + 1) / 2);
 }
 
-// Stored event days stay one-based; this setting only offsets the displayed night number.
+// Night N comes before Day N: Night 1 is index 0, Day 1 is index 1, Night 2 is index 2.
 export function getEventPhaseIndex(day: number, eventPhase: GamePhase): number {
   return eventPhase === 'night' ? 2 * (day - 1) : 2 * day - 1;
 }
