@@ -42,6 +42,11 @@ const baseColors = {
   roleConfirm: '#86efac',
   roleGuess: '#93c5fd',
   roleRumor: '#c4b5fd',
+  // Interactions repeated on other days
+  repeatBadgeBackground: '#78350f',
+  repeatBadgeText: '#fde68a',
+  repeatBorder: '#f59e0b',
+  repeatSurface: '#422006',
   // Role info table
   roleInfoTokenBackground: '#1c1f25',
   roleInfoTokenBorder: '#5b6472',
