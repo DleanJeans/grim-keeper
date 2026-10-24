@@ -168,7 +168,9 @@ export default function ScriptsRoute() {
   }
 
   async function importScriptJson(value: string, fallbackName?: string) {
-    const catalog = await getUsableRoleCatalog();
+    // Offline, import with the roles we already have; setRoleCatalog fills in the
+    // official role details once the catalog loads.
+    const catalog = await getUsableRoleCatalog().catch(() => roleCatalog);
     const uploadedScript = createHomebrewScript(value, catalog, undefined, fallbackName);
     const existingScript = scripts.find(
       (script) =>
