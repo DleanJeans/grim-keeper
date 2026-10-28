@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { NewScriptButton } from '@/components/scripts/new-script-button';
+import { PdfScriptReview } from '@/components/scripts/pdf-script-review';
 import { RemoteScriptCard } from '@/components/scripts/remote-script-card';
 import { ScriptCard } from '@/components/scripts/script-card';
 import { ScriptPasteImporter } from '@/components/scripts/script-paste-importer';
@@ -15,6 +16,8 @@ import { TitleHeader } from '@/components/title-header';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { StoredScript } from '@/types/game';
+import { type PdfScriptDraft, parseScriptPdfText } from '@/utils/pdf-script-parser';
+import { extractPdfTextLines } from '@/utils/pdf-text';
 import {
   createDuplicateScript,
   createEmptyScript,
@@ -53,6 +56,12 @@ export default function ScriptsRoute() {
   const [catalogError, setCatalogError] = useState('');
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [editingScriptId, setEditingScriptId] = useState<string | null>(null);
+  const [pdfImport, setPdfImport] = useState<{
+    draft: PdfScriptDraft;
+    fallbackName: string;
+    /** Starts a fresh review when the same file is picked again. */
+    readAt: number;
+  } | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const savedScriptsSectionY = useRef(0);
   /** A just-duplicated script to scroll to once its card has laid out. */
@@ -164,6 +173,37 @@ export default function ScriptsRoute() {
     } catch (error) {
       showDialog('Could not upload script', getErrorMessage(error));
     }
+  }
+
+  async function handleUploadPdf(file: File) {
+    try {
+      const catalog = await getUsableRoleCatalog().catch(() => roleCatalog);
+      if (catalog.length === 0) {
+        throw new Error(
+          'The official character list has not loaded yet. Open Scripts once while online, then try again.',
+        );
+      }
+
+      const draft = parseScriptPdfText(
+        await extractPdfTextLines(await file.arrayBuffer()),
+        catalog,
+      );
+      if (draft.roles.length === 0 && draft.unmatched.length === 0) {
+        throw new Error('No characters were found in this PDF.');
+      }
+
+      setPdfImport({ draft, fallbackName: file.name.replace(/\.pdf$/i, ''), readAt: Date.now() });
+    } catch (error) {
+      showDialog('Could not read PDF', getErrorMessage(error));
+    }
+  }
+
+  async function handleSavePdfScript(value: string, fallbackName: string) {
+    const imported = await handleImportPastedScript(value, fallbackName);
+    if (imported) {
+      setPdfImport(null);
+    }
+    return imported;
   }
 
   async function importScriptJson(value: string, fallbackName?: string) {
@@ -307,13 +347,33 @@ export default function ScriptsRoute() {
         <ResponsiveContent style={styles.content}>
           <View style={styles.intro}>
             <Text selectable style={styles.introText}>
-              Download scripts from BotC Scripts, upload or paste a homebrew JSON script, then add
-              or remove roles before using it in a game.
+              Download scripts from BotC Scripts, upload a script PDF or JSON, or paste JSON, then
+              add or remove roles before using it in a game.
             </Text>
           </View>
 
           {process.env.EXPO_OS === 'web' ? (
-            <UploadScriptButton onFileSelected={handleUploadFile} />
+            <View style={styles.uploadRow}>
+              <UploadScriptButton onFileSelected={handleUploadFile} style={styles.uploadButton} />
+              <UploadScriptButton
+                accept="application/pdf,.pdf"
+                accessibilityLabel="Upload script PDF"
+                busyLabel="Reading PDF…"
+                label="Upload PDF"
+                onFileSelected={handleUploadPdf}
+                style={styles.uploadButton}
+              />
+            </View>
+          ) : null}
+          {pdfImport ? (
+            <PdfScriptReview
+              catalog={roleCatalog}
+              draft={pdfImport.draft}
+              fallbackName={pdfImport.fallbackName}
+              key={pdfImport.readAt}
+              onCancel={() => setPdfImport(null)}
+              onSave={handleSavePdfScript}
+            />
           ) : null}
           <ScriptPasteImporter onImport={handleImportPastedScript} />
 
@@ -502,6 +562,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '900',
     textAlign: 'center',
+  },
+  uploadButton: {
+    flex: 1,
+  },
+  uploadRow: {
+    flexDirection: 'row',
+    gap: 8,
   },
 });
 

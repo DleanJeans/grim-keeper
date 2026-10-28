@@ -1,21 +1,34 @@
 import { FileUp } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 
 type UploadScriptButtonProps = {
+  /** File types the picker offers. */
+  accept?: string;
+  accessibilityLabel?: string;
+  busyLabel?: string;
+  label?: string;
   onFileSelected: (file: File) => Promise<void>;
+  style?: StyleProp<ViewStyle>;
 };
 
-export function UploadScriptButton({ onFileSelected }: UploadScriptButtonProps) {
+export function UploadScriptButton({
+  accept = 'application/json,.json',
+  accessibilityLabel = 'Upload homebrew script JSON',
+  busyLabel = 'Reading JSON…',
+  label = 'Upload JSON',
+  onFileSelected,
+  style,
+}: UploadScriptButtonProps) {
   const [isUploading, setIsUploading] = useState(false);
 
   function chooseScriptFile() {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'application/json,.json';
+    input.accept = accept;
     input.addEventListener('change', () => {
       const file = input.files?.[0];
 
@@ -38,19 +51,20 @@ export function UploadScriptButton({ onFileSelected }: UploadScriptButtonProps) 
 
   return (
     <Pressable
-      accessibilityLabel="Upload homebrew script JSON"
+      accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       disabled={isUploading}
       onPress={chooseScriptFile}
       style={({ pressed }) => [
         styles.button,
+        style,
         pressed && styles.buttonPressed,
         isUploading && styles.buttonDisabled,
       ]}
     >
       <FileUp color={isUploading ? colors.onDisabled : colors.text} size={18} strokeWidth={2.6} />
       <Text style={[styles.label, isUploading && styles.labelDisabled]}>
-        {isUploading ? 'Reading JSON…' : 'Upload JSON'}
+        {isUploading ? busyLabel : label}
       </Text>
     </Pressable>
   );
