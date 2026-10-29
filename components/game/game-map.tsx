@@ -142,27 +142,6 @@ export function GameMap() {
     [activeDayCutoff, conversations],
   );
   const disabledPlayerIdSet = useMemo(() => new Set(disabledPlayerIds), [disabledPlayerIds]);
-  const activeDayNominations = useMemo(
-    () =>
-      conversations.filter(
-        (conversation) =>
-          conversation.day === activeDayCutoff && conversation.kind === 'nomination',
-      ),
-    [activeDayCutoff, conversations],
-  );
-  const nominatorIds = useMemo(
-    () => new Set(activeDayNominations.map((nomination) => nomination.initiatorId)),
-    [activeDayNominations],
-  );
-  const nominatedIds = useMemo(
-    () =>
-      new Set(
-        activeDayNominations.flatMap((nomination) =>
-          nomination.participantIds.filter((playerId) => playerId !== nomination.initiatorId),
-        ),
-      ),
-    [activeDayNominations],
-  );
 
   // Filled in as each curve renders, so later curves steer clear of earlier line ends and arrowheads
   // and avoid crossing earlier lines.
@@ -356,8 +335,6 @@ export function GameMap() {
               handleSelectPlayer={handleSelectPlayer}
               highlightedPlayerIds={highlightedPlayerIds}
               interactionMode={interactionMode}
-              isNominated={nominatedIds.has(player.id)}
-              isNominator={nominatorIds.has(player.id)}
               isRearrangeMode={isRearrangeMode}
               mapHeight={mapHeight}
               mapScale={mapScale}
@@ -388,8 +365,6 @@ function PlayerTokenForMap({
   handleSelectPlayer,
   highlightedPlayerIds,
   interactionMode,
-  isNominated,
-  isNominator,
   isRearrangeMode,
   mapHeight,
   mapScale,
@@ -412,8 +387,6 @@ function PlayerTokenForMap({
   handleSelectPlayer: (playerId: string) => void;
   highlightedPlayerIds: string[];
   interactionMode: boolean;
-  isNominated: boolean;
-  isNominator: boolean;
   isRearrangeMode: boolean;
   mapHeight: number;
   mapScale: number;
@@ -442,8 +415,6 @@ function PlayerTokenForMap({
       deadVoteAvailable={deadVoteAvailable}
       interactionMode={interactionMode}
       isInitiator={highlightedPlayerIds[0] === player.id}
-      isNominated={isNominated}
-      isNominator={isNominator}
       isSelected={highlightedPlayerIds.includes(player.id)}
       mapHeight={mapHeight}
       mapScale={mapScale}

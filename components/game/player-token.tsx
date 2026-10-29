@@ -1,7 +1,4 @@
-import { CircleCheck, FlameKindling, Skull, Vote } from 'lucide-react-native';
-import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
-import type { ViewStyle } from 'react-native';
 import { ImageBackground, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -13,7 +10,6 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { DeadVoteIcon } from '@/components/game/dead-vote-icon';
-import { NomIcon } from '@/components/game/noms-tab/nom-icon';
 import { Text } from '@/components/text';
 import { useRoleIconSource } from '@/hooks/use-role-icon-source';
 import { colors } from '@/theme/colors';
@@ -21,7 +17,8 @@ import type { Player, PlayerPosition, Role } from '@/types/game';
 import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
 import { isTravelerRole } from '@/utils/role-utils';
 
-const BADGE_SIZE = 18;
+const MAX_BADGE_SIZE = 18;
+const BADGE_SIZE_RATIO = 0.22;
 const DEFAULT_BORDER_WIDTH = 2;
 const SELECTED_BORDER_WIDTH = 3;
 const ROLE_IMAGE_SCALE = 1.4;
@@ -58,8 +55,6 @@ type PlayerTokenProps = {
   displayName?: string;
   interactionMode?: boolean;
   isInitiator?: boolean;
-  isNominated?: boolean;
-  isNominator?: boolean;
   isSelected?: boolean;
   otherTokenPositions?: OtherTokenPosition[];
   player: Player;
@@ -81,8 +76,6 @@ export function PlayerToken({
   disabled = false,
   displayName,
   isInitiator = false,
-  isNominated = false,
-  isNominator = false,
   isSelected = false,
   mapHeight,
   mapScale,
@@ -110,11 +103,8 @@ export function PlayerToken({
   const backgroundRole = visibleRoles.find(isTravelerRole) ?? visibleRoles[0];
   const roleIconSource = useRoleIconSource(backgroundRole);
   const reduceMotion = useReducedMotion();
-  const DeathIcon = player.death?.kind === 'execution' ? FlameKindling : Skull;
-  const deathIconColor =
-    player.death?.kind === 'execution'
-      ? badgeColors.deathExecutionIcon
-      : badgeColors.deathNightIcon;
+  const hasDeadVote = !!player.death && (deadVoteAvailable ?? player.deadVoteUsed !== true);
+  const badgeSize = Math.min(MAX_BADGE_SIZE, tokenSize * BADGE_SIZE_RATIO);
   const x = useSharedValue(position.x);
   const y = useSharedValue(position.y);
   const startX = useSharedValue(position.x);
@@ -224,7 +214,7 @@ export function PlayerToken({
         accessibilityHint={
           rearrangeMode ? 'Drag to rearrange this player.' : 'Double tap to select.'
         }
-        accessibilityLabel={`${player.name}${player.isStoryteller ? ', storyteller' : ''}${player.death ? ', dead' : ''}${visibleRoles.length > 0 ? `, ${visibleRoles.map((role) => role.name).join(', ')}` : ''}`}
+        accessibilityLabel={`${player.name}${player.isStoryteller ? ', storyteller' : ''}${player.death ? ', dead' : ''}${hasDeadVote ? ', has dead vote' : ''}${visibleRoles.length > 0 ? `, ${visibleRoles.map((role) => role.name).join(', ')}` : ''}`}
         accessibilityActions={[{ name: 'activate', label: 'Select player' }]}
         onAccessibilityAction={(event) => {
           if (event.nativeEvent.actionName === 'activate' && onSelect && !disabled) {
@@ -289,6 +279,7 @@ export function PlayerToken({
           style={{
             alignItems: 'center',
             justifyContent: 'center',
+            paddingBottom: hasDeadVote ? badgeSize : 0,
             width: '100%',
             zIndex: 1,
           }}
@@ -306,49 +297,21 @@ export function PlayerToken({
             roles={visibleRoles}
           />
         </View>
-        {player.death ? (
-          <PlayerTokenEdgeBadge
-            backgroundColor={
-              player.death.kind === 'execution'
-                ? badgeColors.deathExecutionBackground
-                : badgeColors.deathNightBackground
-            }
-            position={{ bottom: -2, right: -2 }}
+        {hasDeadVote ? (
+          <View
+            style={[
+              styles.deadVoteBadge,
+              {
+                borderRadius: badgeSize / 2,
+                bottom: -borderWidth,
+                height: badgeSize,
+                left: tokenSize / 2 - borderWidth - badgeSize / 2,
+                width: badgeSize,
+              },
+            ]}
           >
-            <DeathIcon color={deathIconColor} size={13} strokeWidth={2} />
-          </PlayerTokenEdgeBadge>
-        ) : null}
-        {player.death && (deadVoteAvailable ?? player.deadVoteUsed !== true) ? (
-          <PlayerTokenEdgeBadge
-            backgroundColor={badgeColors.deadVoteBackground}
-            position={{ bottom: -2, left: -2 }}
-          >
-            <DeadVoteIcon color={badgeColors.deadVoteIcon} />
-          </PlayerTokenEdgeBadge>
-        ) : null}
-        {isNominator ? (
-          <PlayerTokenEdgeBadge
-            backgroundColor={badgeColors.nominatorBackground}
-            position={{ left: -2, top: -2 }}
-          >
-            <NomIcon color={badgeColors.nominatorIcon} size={12} strokeWidth={2.3} />
-          </PlayerTokenEdgeBadge>
-        ) : null}
-        {isNominated ? (
-          <PlayerTokenEdgeBadge
-            backgroundColor={badgeColors.nominatedBackground}
-            position={{ right: -2, top: -2 }}
-          >
-            <Vote color={badgeColors.nominatedIcon} size={12} strokeWidth={2.3} />
-          </PlayerTokenEdgeBadge>
-        ) : null}
-        {rolesConfirmed && visibleRoles.length > 0 && !visibleRoles.some(isTravelerRole) ? (
-          <PlayerTokenEdgeBadge
-            backgroundColor={badgeColors.confirmedBackground}
-            position={{ right: -10, top: tokenSize / 2 - BADGE_SIZE / 2 }}
-          >
-            <CircleCheck color={badgeColors.confirmedIcon} size={12} strokeWidth={2.8} />
-          </PlayerTokenEdgeBadge>
+            <DeadVoteIcon color={badgeColors.deadVoteIcon} size={badgeSize * 0.7} />
+          </View>
         ) : null}
       </Animated.View>
     </GestureDetector>
@@ -439,35 +402,6 @@ function PlayerTokenRoles({ color, roles }: { color: string; roles: Role[] }) {
   );
 }
 
-function PlayerTokenEdgeBadge({
-  backgroundColor,
-  children,
-  position,
-}: {
-  backgroundColor: string;
-  children: ReactNode;
-  position: Pick<ViewStyle, 'bottom' | 'left' | 'right' | 'top'>;
-}) {
-  return (
-    <View
-      style={[
-        {
-          alignItems: 'center',
-          backgroundColor,
-          borderRadius: BADGE_SIZE / 2,
-          height: BADGE_SIZE,
-          justifyContent: 'center',
-          position: 'absolute',
-          width: BADGE_SIZE,
-        },
-        position,
-      ]}
-    >
-      {children}
-    </View>
-  );
-}
-
 function getStorytellerLabelColorStyle(color: string) {
   if (color === Colors.textDeath) {
     return styles.storytellerLabelDeath;
@@ -481,6 +415,12 @@ function getStorytellerLabelColorStyle(color: string) {
 }
 
 const styles = StyleSheet.create({
+  deadVoteBadge: {
+    alignItems: 'center',
+    backgroundColor: badgeColors.deadVoteBackground,
+    justifyContent: 'center',
+    position: 'absolute',
+  },
   storytellerLabel: {
     fontSize: 8,
     fontWeight: '900',

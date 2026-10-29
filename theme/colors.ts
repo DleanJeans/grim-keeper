@@ -67,17 +67,11 @@ const baseColors = {
   roleInfoTargetLine: '#a78bfa',
   roleInfoTokenTrueBorder: '#6fbf73',
   playerTokenEdgeBadge: {
-    confirmedBackground: '#166534',
-    confirmedIcon: '#dcfce7',
     deadVoteBackground: '#166534',
     deadVoteIcon: '#dcfce7',
-    deathExecutionBackground: '#7f1d1d',
     deathExecutionIcon: '#fecaca',
-    deathNightBackground: '#1e3a8a',
     deathNightIcon: '#bfdbfe',
-    nominatedBackground: '#713f12',
     nominatedIcon: '#fef3c7',
-    nominatorBackground: '#312e81',
     nominatorIcon: '#ddd6fe',
   },
 };
