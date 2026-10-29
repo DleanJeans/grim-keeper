@@ -41,10 +41,15 @@ export type RoleInfoTemplate = {
   autoNeighbors?: boolean;
   /** Show the player executed the day before each night. */
   autoExecuted?: boolean;
+  /** Show who nominated, or who voted, the day before each night. */
+  autoDayBefore?: DayBeforePlayers;
   /** One player slot per Demon then Minion in play, sized by `getRoleInfoTemplate`'s counts. */
   evilInPlay?: boolean;
   slots: RoleInfoSlot[];
 };
+
+/** Which players of the day's recorded nominations to show. */
+export type DayBeforePlayers = 'nominators' | 'voters';
 
 type SlotSpec = DistributiveOmit<RoleInfoSlot, 'id'>;
 type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : never;
@@ -84,6 +89,7 @@ type RoleInfoSpec =
   | SlotSpec[]
   | {
       daily?: true;
+      dayBefore?: DayBeforePlayers;
       evilInPlay?: true;
       executed?: true;
       markTrue?: true;
@@ -154,8 +160,8 @@ const ROLE_INFO_SPECS: Record<string, RoleInfoSpec> = {
   dreamer: [player('Player'), role('Good', 'good'), role('Evil', 'evil')],
   snakecharmer: [alivePlayer('Chosen'), yesNo('Demon?')],
   mathematician: [num('Abnormal', 10)],
-  flowergirl: [yesNo('Demon voted?')],
-  towncrier: [yesNo('Minion nominated?')],
+  flowergirl: { dayBefore: 'voters', slots: [yesNo('Demon voted?')] },
+  towncrier: { dayBefore: 'nominators', slots: [yesNo('Minion?')] },
   oracle: [num('Dead evil', 10)],
   savant: { daily: true, markTrue: true, slots: [text('Statement 1'), text('Statement 2')] },
   seamstress: [player('Player 1'), player('Player 2'), yesNo('Same team?')],
@@ -287,6 +293,7 @@ const ROLE_INFO_TEMPLATES: Record<string, RoleInfoTemplate> = Object.fromEntries
     Array.isArray(spec)
       ? { slots: withSlotIds(spec) }
       : {
+          autoDayBefore: spec.dayBefore,
           autoExecuted: spec.executed,
           autoNeighbors: spec.neighbors,
           daily: spec.daily,
@@ -710,6 +717,25 @@ export function getExecutedPlayer(players: Player[], day: number) {
   return players.find(
     (candidate) => candidate.death?.kind === 'execution' && candidate.death.day === day,
   );
+}
+
+/** Players who nominated, or who voted, in the day's recorded nominations, by seat. */
+export function getNominationPlayers(
+  players: Player[],
+  conversations: Conversation[],
+  day: number,
+  kind: DayBeforePlayers,
+) {
+  const playerIds = new Set(
+    conversations
+      .filter((conversation) => conversation.kind === 'nomination' && conversation.day === day)
+      .flatMap((nomination) =>
+        kind === 'nominators' ? [nomination.initiatorId] : (nomination.voterIds ?? []),
+      ),
+  );
+  return players
+    .filter((candidate) => playerIds.has(candidate.id))
+    .sort((first, second) => first.seat - second.seat);
 }
 
 /** The nearest alive non-storyteller players on each side of the given player. */

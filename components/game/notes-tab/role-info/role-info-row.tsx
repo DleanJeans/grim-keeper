@@ -5,10 +5,14 @@ import { RoleReference } from '@/components/role-reference';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Player, Role } from '@/types/game';
-import type { RoleInfoSlot, RoleInfoTemplate } from '@/utils/role-info-utils';
+import type { DayBeforePlayers, RoleInfoSlot, RoleInfoTemplate } from '@/utils/role-info-utils';
 
 const NEIGHBOR_SLOT: RoleInfoSlot = { id: 'neighbor', kind: 'player', label: 'Neighbor' };
 const EXECUTED_SLOT: RoleInfoSlot = { id: 'executed', kind: 'player', label: 'Executed' };
+const DAY_BEFORE_LABELS: Record<DayBeforePlayers, string> = {
+  nominators: 'Nominated',
+  voters: 'Voted',
+};
 
 /** One line of tokens: a single phase, or one night of a character that acts every night. */
 export type RoleInfoLine = {
@@ -17,6 +21,8 @@ export type RoleInfoLine = {
   label?: string;
   /** Player executed the day before, shown read-only for the Undertaker. */
   executed?: Player;
+  /** Who nominated or voted the day before, shown read-only for the Town Crier and Flowergirl. */
+  dayBefore?: { kind: DayBeforePlayers; players: Player[] };
   /** Marks the end of the character's info: its players are dead. */
   isDead?: boolean;
   neighbors?: Player[];
@@ -80,6 +86,11 @@ const styles = StyleSheet.create({
     color: colors.roleInfoCarried,
     fontSize: 10,
     fontStyle: 'italic',
+  },
+  dayBefore: {
+    color: colors.roleInfoNeighbor,
+    fontSize: 11,
+    fontWeight: '700',
   },
   dead: {
     color: colors.danger,
@@ -177,7 +188,7 @@ function RoleInfoLineTokens({
   rolesById: Map<string, Role>;
   template: RoleInfoTemplate;
 }) {
-  const { executed, isDead, label, neighbors, onPressSlot, trueSlotId, values } = line;
+  const { dayBefore, executed, isDead, label, neighbors, onPressSlot, trueSlotId, values } = line;
 
   if (isDead) {
     return <Text style={styles.dead}>{label}</Text>;
@@ -221,6 +232,14 @@ function RoleInfoLineTokens({
             />
           ))}
         </View>
+      ) : null}
+      {dayBefore ? (
+        <Text style={styles.dayBefore}>
+          {DAY_BEFORE_LABELS[dayBefore.kind]}:{' '}
+          {dayBefore.players.length > 0
+            ? dayBefore.players.map((player) => player.name).join(', ')
+            : 'none logged'}
+        </Text>
       ) : null}
       {template.autoNeighbors && !neighbors?.length ? (
         <Text style={styles.neighbors}>Neighbors: claim this role to show</Text>

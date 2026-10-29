@@ -4,6 +4,7 @@ import {
   getDailyRoleInfo,
   getExecutedPlayer,
   getMentionedRoleIds,
+  getNominationPlayers,
   getRoleInfoDays,
   getRoleInfoForPhaseOrPrevious,
   getRoleInfoNights,
@@ -478,6 +479,42 @@ describe('getExecutedPlayer', () => {
     expect(getExecutedPlayer(players, 1)?.id).toBe('ben');
     expect(getExecutedPlayer(players, 2)).toBeUndefined();
     expect(getRoleInfoTemplate({ id: 'undertaker' }).autoExecuted).toBe(true);
+  });
+});
+
+describe('getNominationPlayers', () => {
+  const players = [makePlayer('ann', 0), makePlayer('ben', 1), makePlayer('cat', 2)];
+  const nomination = (id: string, day: number, initiatorId: string, voterIds?: string[]) => ({
+    createdAt: NOW,
+    day,
+    id,
+    initiatorId,
+    kind: 'nomination' as const,
+    participantIds: [initiatorId, 'ann'],
+    voterIds,
+  });
+  const conversations = [
+    nomination('n1', 1, 'cat', ['ben', 'cat']),
+    nomination('n2', 1, 'ben', ['cat']),
+    nomination('n3', 2, 'ann', ['ann']),
+    { createdAt: NOW, day: 1, id: 'i1', initiatorId: 'ann', participantIds: ['ann', 'ben'] },
+  ];
+
+  it("lists the day's nominators and voters by seat, once each", () => {
+    expect(getNominationPlayers(players, conversations, 1, 'nominators').map((p) => p.id)).toEqual([
+      'ben',
+      'cat',
+    ]);
+    expect(getNominationPlayers(players, conversations, 1, 'voters').map((p) => p.id)).toEqual([
+      'ben',
+      'cat',
+    ]);
+    expect(getNominationPlayers(players, conversations, 3, 'voters')).toEqual([]);
+  });
+
+  it('is shown for the Town Crier and Flowergirl', () => {
+    expect(getRoleInfoTemplate({ id: 'towncrier' }).autoDayBefore).toBe('nominators');
+    expect(getRoleInfoTemplate({ id: 'flowergirl' }).autoDayBefore).toBe('voters');
   });
 });
 

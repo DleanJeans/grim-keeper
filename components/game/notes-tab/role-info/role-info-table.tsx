@@ -11,7 +11,14 @@ import { RoleInfoStatementsDialog } from '@/components/game/notes-tab/role-info/
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import type { GamePhase, Player, Role, RoleInfoEntry, StartingNight } from '@/types/game';
+import type {
+  Conversation,
+  GamePhase,
+  Player,
+  Role,
+  RoleInfoEntry,
+  StartingNight,
+} from '@/types/game';
 import {
   type EvilInPlayTeam,
   getEvilInPlayRoleIds,
@@ -27,6 +34,7 @@ import {
   getDailyRoleInfo,
   getExecutedPlayer,
   getMentionedRoleIds,
+  getNominationPlayers,
   getRoleClaimers,
   getRoleInfoDays,
   getRoleInfoForPhaseOrPrevious,
@@ -223,6 +231,7 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
       {sections.map((section) => (
         <RoleInfoSection
           activeDay={activeDay}
+          conversations={game.conversations}
           evilCounts={evilCounts}
           activePhase={activePhase}
           inferredEntries={inferredEntries}
@@ -355,6 +364,7 @@ function getRoleInfoValues(roleInfos: RoleInfoEntry[], slot: ActiveSlot) {
 
 function RoleInfoSection({
   activeDay,
+  conversations,
   evilCounts,
   activePhase,
   inferredEntries,
@@ -370,6 +380,7 @@ function RoleInfoSection({
   startingNight,
 }: {
   activeDay: number;
+  conversations: Conversation[];
   /** Demons and Minions in play, for characters that guess each of them. */
   evilCounts: { demons: number; minions: number };
   activePhase: GamePhase;
@@ -402,6 +413,19 @@ function RoleInfoSection({
         // A night's Undertaker info is about the execution on the day before it.
         const getExecuted = (night: number) =>
           template.autoExecuted ? getExecutedPlayer(players, night - 1) : undefined;
+        // Likewise the Town Crier's and Flowergirl's info is about the nominations on the day before it.
+        const getDayBefore = (night: number) =>
+          template.autoDayBefore
+            ? {
+                kind: template.autoDayBefore,
+                players: getNominationPlayers(
+                  players,
+                  conversations,
+                  night - 1,
+                  template.autoDayBefore,
+                ),
+              }
+            : undefined;
         const getNeighbors = (day: number, phase: GamePhase) =>
           template.autoNeighbors && owners[0]
             ? getAliveNeighbors(players, owners[0].id, day, phase)
@@ -423,6 +447,7 @@ function RoleInfoSection({
                   startingNight,
                 );
                 return {
+                  dayBefore: getDayBefore(night),
                   executed: getExecuted(night),
                   key: `night-${night}`,
                   label:
@@ -440,6 +465,7 @@ function RoleInfoSection({
                   activeDay,
                   activePhase,
                   startingNight,
+                  getDayBefore(activeDay),
                   getExecuted(activeDay),
                   getNeighbors(activeDay, activePhase),
                   onPressSlot,
@@ -508,6 +534,7 @@ function getPhaseLine(
   day: number,
   phase: GamePhase,
   startingNight: StartingNight,
+  dayBefore: RoleInfoLine['dayBefore'],
   executed: Player | undefined,
   neighbors: Player[] | undefined,
   onPressSlot: (slot: ActiveSlot) => void,
@@ -522,6 +549,7 @@ function getPhaseLine(
       : undefined;
 
   return {
+    dayBefore,
     executed,
     key: 'phase',
     label,
