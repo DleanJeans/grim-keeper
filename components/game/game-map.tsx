@@ -4,6 +4,7 @@ import Svg from 'react-native-svg';
 import {
   ConnectionCurve,
   getInteractionCurvePlayerPairs,
+  type PlacedLineEnd,
 } from '@/components/game/connection-curve';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import type { OtherTokenPosition } from '@/components/game/player-token';
@@ -63,6 +64,24 @@ export function GameMap() {
       ),
     [activeTokenSize, mapHeight, mapWidth, players],
   );
+  // Two players nominating each other share one line with an arrowhead at each end.
+  const mapNominationCurves = useMemo(() => {
+    const pairKeys = new Set(
+      nominationCurves.map(({ initiatorId, nomineeId }) => `${initiatorId}>${nomineeId}`),
+    );
+    const drawnPairKeys = new Set<string>();
+
+    return nominationCurves.flatMap((curve) => {
+      const reverseKey = `${curve.nomineeId}>${curve.initiatorId}`;
+
+      if (drawnPairKeys.has(reverseKey)) {
+        return [];
+      }
+      drawnPairKeys.add(`${curve.initiatorId}>${curve.nomineeId}`);
+
+      return [{ ...curve, twoWay: pairKeys.has(reverseKey) }];
+    });
+  }, [nominationCurves]);
   const selectedPlayerIdSet = useMemo(() => new Set(highlightedPlayerIds), [highlightedPlayerIds]);
   const showNominationCurves = activeTab === 'nominations';
   const showInteractionCurves = activeTab === 'interactions';
@@ -105,6 +124,9 @@ export function GameMap() {
     [activeDayNominations],
   );
 
+  // Filled in as each curve renders, so later line ends and arrowheads steer clear of earlier ones.
+  const placedLineEnds: PlacedLineEnd[] = [];
+
   return (
     <View style={[styles.mapViewport, { height: displayMapHeight, width: displayMapWidth }]}>
       <View
@@ -119,7 +141,7 @@ export function GameMap() {
       >
         <Svg height={mapHeight} style={styles.svg} width={mapWidth}>
           {showNominationCurves &&
-            nominationCurves.map(({ conversationId, initiatorId, nomineeId }) => {
+            mapNominationCurves.map(({ conversationId, initiatorId, nomineeId, twoWay }) => {
               const involvesFocused =
                 focusedPlayerId !== null &&
                 (focusedPlayerId === initiatorId || focusedPlayerId === nomineeId);
@@ -139,11 +161,13 @@ export function GameMap() {
                   from={fromPosition}
                   mapHeight={mapHeight}
                   mapWidth={mapWidth}
-                  opacity={connectedToFocused ? 0.76 : 0.18}
+                  opacity={connectedToFocused ? 1 : 0.18}
                   stroke="#a78bfa"
                   strokeWidth={4}
+                  placedLineEnds={placedLineEnds}
                   to={toPosition}
                   tokenSize={activeTokenSize}
+                  twoWay={twoWay}
                 />
               );
             })}
@@ -186,6 +210,7 @@ export function GameMap() {
                       opacity={opacity}
                       stroke={stroke}
                       strokeWidth={highlighted ? 4 : 3}
+                      placedLineEnds={placedLineEnds}
                       to={toPosition}
                       tokenSize={activeTokenSize}
                     />,
@@ -219,6 +244,7 @@ export function GameMap() {
                 opacity={connectedToFocused ? 0.82 : 0.18}
                 stroke={colors.roleRumor}
                 strokeWidth={4}
+                placedLineEnds={placedLineEnds}
                 to={toPosition}
                 tokenSize={activeTokenSize}
               />
