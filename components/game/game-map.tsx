@@ -19,8 +19,10 @@ import {
   hasDeadVoteAvailable,
   isPlayerCurrentlyDead,
 } from '@/utils/player-utils';
+import { getNominationPlayers, getRoleInfoTemplate } from '@/utils/role-info-utils';
 import {
   getLatestRumorMapDisplaysForDayOrPrevious,
+  getRoleDisplayForDayOrPrevious,
   getRoleDisplayForModes,
 } from '@/utils/role-utils';
 
@@ -97,6 +99,37 @@ export function GameMap() {
         activePhase,
       )
     : [];
+  // The focused Town Crier or Flowergirl points at the players their last info was about.
+  const dayBeforeTargets = useMemo(() => {
+    const focusedPlayer = players.find((player) => player.id === focusedPlayerId);
+    if (activeTab !== 'notes' || !showRoles || !focusedPlayer) return [];
+
+    const roles = game.script?.roles ?? [];
+    const { roleIds } = getRoleDisplayForDayOrPrevious(
+      focusedPlayer.roleAssignments,
+      activeDay,
+      roles,
+      activePhase,
+    );
+    const kinds = new Set(
+      roles
+        .filter((role) => roleIds.includes(role.id))
+        .flatMap((role) => getRoleInfoTemplate(role).autoDayBefore ?? []),
+    );
+    const targets = [...kinds].flatMap((kind) =>
+      getNominationPlayers(players, conversations, activeDay - 1, kind),
+    );
+    return [...new Set(targets)].filter((player) => player.id !== focusedPlayer.id);
+  }, [
+    activeDay,
+    activePhase,
+    activeTab,
+    conversations,
+    focusedPlayerId,
+    game.script?.roles,
+    players,
+    showRoles,
+  ]);
   const groupRepeats = useMemo(
     () => buildConversationGroupRepeats(conversations, activeDayCutoff),
     [activeDayCutoff, conversations],
@@ -243,6 +276,32 @@ export function GameMap() {
                 mapWidth={mapWidth}
                 opacity={connectedToFocused ? 0.82 : 0.18}
                 stroke={colors.roleRumor}
+                strokeWidth={4}
+                placedLineEnds={placedLineEnds}
+                to={toPosition}
+                tokenSize={activeTokenSize}
+              />
+            );
+          })}
+          {dayBeforeTargets.map((target) => {
+            const fromPosition = focusedPlayerId ? positions.get(focusedPlayerId) : undefined;
+            const toPosition = positions.get(target.id);
+            if (!fromPosition || !toPosition) {
+              return null;
+            }
+
+            return (
+              <ConnectionCurve
+                key={`day-before-${target.id}`}
+                blockers={players
+                  .filter((player) => player.id !== focusedPlayerId && player.id !== target.id)
+                  .map((player) => positions.get(player.id))
+                  .filter((position): position is PlayerPosition => !!position)}
+                from={fromPosition}
+                mapHeight={mapHeight}
+                mapWidth={mapWidth}
+                opacity={1}
+                stroke={colors.roleInfoDayBeforeLine}
                 strokeWidth={4}
                 placedLineEnds={placedLineEnds}
                 to={toPosition}

@@ -63,6 +63,8 @@ const baseColors = {
   roleInfoTokenFilledBorder: '#d6c7a1',
   roleInfoCarried: '#77716a',
   roleInfoNeighbor: '#93c5fd',
+  /** Map arrows from the focused Town Crier or Flowergirl to the previous day's nominators or voters. */
+  roleInfoDayBeforeLine: '#a78bfa',
   roleInfoTokenTrueBorder: '#6fbf73',
   playerTokenEdgeBadge: {
     confirmedBackground: '#166534',
