@@ -7,12 +7,14 @@ import { RoleInfoToken } from '@/components/game/notes-tab/role-info/role-info-t
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import type { Role } from '@/types/game';
+import type { Player, Role } from '@/types/game';
 import {
   type BluffSlot,
   type EvilInPlaySlot,
   getBluffSlots,
   getGameEvilInPlaySlots,
+  getPlayersWithoutClaims,
+  getUnclaimedRoles,
 } from '@/utils/evil-in-play-utils';
 import type { RoleInfoSlot } from '@/utils/role-info-utils';
 import { getGameScriptRoles } from '@/utils/script-service';
@@ -20,11 +22,11 @@ import { getGameScriptRoles } from '@/utils/script-service';
 type PickerSlot = BluffSlot | EvilInPlaySlot;
 
 /**
- * Tokens for choosing which Demon and Minions are in play, which limits the evil info rows, and a
- * row for the Demon's bluffs.
+ * Tokens for choosing which Demon and Minions are in play, which limits the evil info rows, a row
+ * for the Demon's bluffs, and the good characters nobody has claimed yet.
  */
 export function EvilInPlayPicker() {
-  const { activeDay, activePhase, game, runDayEdit } = useGameRouteContext();
+  const { activeDay, activePhase, game, players, runDayEdit } = useGameRouteContext();
   const setEvilInPlayRole = useGameStore((state) => state.setEvilInPlayRole);
   const setBluffRole = useGameStore((state) => state.setBluffRole);
   const [activeSlot, setActiveSlot] = useState<PickerSlot | null>(null);
@@ -48,6 +50,14 @@ export function EvilInPlayPicker() {
   const bluffSlots = useMemo(
     () => getBluffSlots(scriptRoles, game.bluffs),
     [game.bluffs, scriptRoles],
+  );
+  const unclaimedRoles = useMemo(
+    () => getUnclaimedRoles(scriptRoles, players, game.bluffs, activeDay, activePhase),
+    [activeDay, activePhase, game.bluffs, players, scriptRoles],
+  );
+  const playersWithoutClaims = useMemo(
+    () => getPlayersWithoutClaims(players, activeDay, activePhase),
+    [activeDay, activePhase, players],
   );
   const rolesById = useMemo(
     () => new Map(scriptRoles.map((role) => [role.id, role])),
@@ -88,6 +98,7 @@ export function EvilInPlayPicker() {
         <>
           <Text style={styles.rowLabel}>Bluffs</Text>
           <SlotTokens onPressSlot={setActiveSlot} rolesById={rolesById} slots={bluffSlots} />
+          <UnclaimedRoles playersWithoutClaims={playersWithoutClaims} roles={unclaimedRoles} />
         </>
       ) : null}
       <RoleInfoPickerDialog
@@ -125,6 +136,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
+  unclaimedPlayers: {
+    color: colors.textMuted,
+    fontSize: 12,
+  },
   tokens: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -156,6 +171,40 @@ function SlotTokens({
         );
       })}
     </View>
+  );
+}
+
+/** Read-only tokens for the unclaimed good characters, with the players who could be them. */
+function UnclaimedRoles({
+  playersWithoutClaims,
+  roles,
+}: {
+  playersWithoutClaims: Player[];
+  roles: Role[];
+}) {
+  return (
+    <>
+      <Text style={styles.rowLabel}>Unclaimed</Text>
+      <Text style={styles.unclaimedPlayers}>
+        {playersWithoutClaims.length > 0
+          ? `No claim yet: ${playersWithoutClaims.map((player) => player.name).join(', ')}`
+          : 'Every player has a claim.'}
+      </Text>
+      {roles.length > 0 ? (
+        <View style={styles.tokens}>
+          {roles.map((role) => (
+            <RoleInfoToken
+              key={role.id}
+              role={role}
+              slot={{ filter: 'good', id: role.id, kind: 'role', label: role.name }}
+              value={role.id}
+            />
+          ))}
+        </View>
+      ) : (
+        <Text style={styles.unclaimedPlayers}>Every good character is claimed.</Text>
+      )}
+    </>
   );
 }
 

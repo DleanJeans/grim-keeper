@@ -1,4 +1,8 @@
-import type { CharacterTypeCounts, Game, Role } from '@/types/game';
+import type { CharacterTypeCounts, Game, GamePhase, Player, Role } from '@/types/game';
+import {
+  getAssignedRoleIdsForDayOrPrevious,
+  getClaimedRoleIdsForDayOrPrevious,
+} from '@/utils/role-utils';
 
 export type EvilInPlayTeam = 'demon' | 'minion';
 
@@ -78,11 +82,7 @@ export function getGameEvilInPlaySlots(
 
 /** Bluff slots with the good character chosen in each. */
 export function getBluffSlots(scriptRoles: Role[], bluffs: Game['bluffs']): BluffSlot[] {
-  const goodRoleIds = new Set(
-    scriptRoles
-      .filter((role) => getTeam(role) === 'townsfolk' || getTeam(role) === 'outsider')
-      .map((role) => role.id),
-  );
+  const goodRoleIds = new Set(scriptRoles.filter(isGoodRole).map((role) => role.id));
   return Array.from({ length: BLUFF_COUNT }, (_, index): BluffSlot => {
     const slotId = `bluff-${index}`;
     const roleId = bluffs?.[slotId];
@@ -111,6 +111,35 @@ export function getEvilInPlayRoleIds(slots: EvilInPlaySlot[]) {
 }
 
 /**
+ * Good characters nobody has claimed or been confirmed as by this phase, and not chosen as a bluff,
+ * so they may belong to the players without a claim.
+ */
+export function getUnclaimedRoles(
+  scriptRoles: Role[],
+  players: Player[],
+  bluffs: Game['bluffs'],
+  day: number,
+  phase: GamePhase,
+) {
+  const takenRoleIds = new Set([
+    ...getClaimedRoleIdsForDayOrPrevious(players, day, phase),
+    ...Object.values(bluffs ?? {}),
+  ]);
+  return scriptRoles.filter((role) => isGoodRole(role) && !takenRoleIds.has(role.id));
+}
+
+/** Players (Storytellers excluded) with no claim or confirmed character by this phase, by seat. */
+export function getPlayersWithoutClaims(players: Player[], day: number, phase: GamePhase) {
+  return players
+    .filter(
+      (player) =>
+        !player.isStoryteller &&
+        getAssignedRoleIdsForDayOrPrevious(player.roleAssignments, day, phase).length === 0,
+    )
+    .sort((first, second) => first.seat - second.seat);
+}
+
+/**
  * Sets or clears the character chosen in one slot (in play or bluff), dropping the map once it is
  * empty.
  */
@@ -127,4 +156,8 @@ export function setEvilInPlayRole(
 
 function getTeam(role: Role) {
   return role.team?.toLocaleLowerCase();
+}
+
+function isGoodRole(role: Role) {
+  return getTeam(role) === 'townsfolk' || getTeam(role) === 'outsider';
 }

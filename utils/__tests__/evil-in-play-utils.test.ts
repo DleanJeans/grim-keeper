@@ -4,6 +4,8 @@ import {
   getEvilInPlayRoleIds,
   getEvilInPlaySlots,
   getGameEvilInPlaySlots,
+  getPlayersWithoutClaims,
+  getUnclaimedRoles,
   setEvilInPlayRole,
 } from '@/utils/evil-in-play-utils';
 
@@ -99,6 +101,70 @@ describe('getBluffSlots', () => {
       { locked: false, roleId: 'washerwoman', slotId: 'bluff-0', team: 'bluff' },
       { locked: false, roleId: undefined, slotId: 'bluff-1', team: 'bluff' },
       { locked: false, roleId: undefined, slotId: 'bluff-2', team: 'bluff' },
+    ]);
+  });
+});
+
+const player = (
+  id: string,
+  seat: number,
+  roleAssignments?: Player['roleAssignments'],
+  isStoryteller?: boolean,
+) => ({ id, isStoryteller, name: id, roleAssignments, seat }) as unknown as Player;
+const assignment = (
+  kind: 'claim' | 'confirm' | 'guess',
+  roleIds: string[],
+  day = 1,
+): NonNullable<Player['roleAssignments']>[number] => ({
+  day,
+  kind,
+  phase: 'day',
+  roleIds,
+  updatedAt: `2026-01-0${day}`,
+});
+
+describe('getUnclaimedRoles', () => {
+  const roles = [
+    role('washerwoman', 'townsfolk'),
+    role('chef', 'townsfolk'),
+    role('empath', 'townsfolk'),
+    role('monk', 'townsfolk'),
+    role('drunk', 'outsider'),
+    role('saint', 'outsider'),
+    role('spy', 'minion'),
+    role('imp', 'demon'),
+  ];
+
+  it('leaves out claimed, confirmed and bluffed good characters', () => {
+    const players = [
+      player('a', 1, [assignment('claim', ['chef'])]),
+      player('b', 2, [assignment('confirm', ['washerwoman_evil'])]),
+      player('c', 3, [assignment('guess', ['empath'])]),
+    ];
+    const unclaimed = getUnclaimedRoles(roles, players, { 'bluff-0': 'saint' }, 1, 'day');
+    expect(unclaimed.map((entry) => entry.id)).toEqual(['empath', 'monk', 'drunk']);
+  });
+
+  it('ignores claims made after the active phase', () => {
+    const players = [player('a', 1, [assignment('claim', ['chef'], 2)])];
+    const unclaimed = getUnclaimedRoles(roles, players, undefined, 1, 'day');
+    expect(unclaimed.map((entry) => entry.id)).toContain('chef');
+  });
+});
+
+describe('getPlayersWithoutClaims', () => {
+  it('lists players with no claim or confirm by seat, Storytellers excluded', () => {
+    const players = [
+      player('c', 3),
+      player('st', 0, undefined, true),
+      player('a', 1, [assignment('claim', ['chef'])]),
+      player('b', 2, [assignment('guess', ['empath'])]),
+      player('d', 4, [assignment('claim', ['monk'], 2)]),
+    ];
+    expect(getPlayersWithoutClaims(players, 1, 'day').map((entry) => entry.id)).toEqual([
+      'b',
+      'c',
+      'd',
     ]);
   });
 });
