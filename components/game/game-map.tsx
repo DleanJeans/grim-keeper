@@ -102,7 +102,15 @@ export function GameMap() {
   // The focused Town Crier or Flowergirl points at the players their last info was about.
   const dayBeforeTargets = useMemo(() => {
     const focusedPlayer = players.find((player) => player.id === focusedPlayerId);
-    if (activeTab !== 'notes' || !showRoles || !focusedPlayer) return [];
+    // The info comes on the night that starts this day, which a dead player doesn't get.
+    if (
+      activeTab !== 'notes' ||
+      !showRoles ||
+      !focusedPlayer ||
+      isPlayerCurrentlyDead(focusedPlayer, activeDay, 'night')
+    ) {
+      return [];
+    }
 
     const roles = game.script?.roles ?? [];
     const { roleIds } = getRoleDisplayForDayOrPrevious(
