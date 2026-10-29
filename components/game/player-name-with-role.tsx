@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { StyleProp, TextStyle, ViewStyle } from 'react-native';
 import { StyleSheet, View } from 'react-native';
 
@@ -23,6 +24,8 @@ type PlayerNameWithRoleProps = {
   iconScale?: number;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
+  /** Rendered inside the container, after the name. */
+  trailing?: ReactNode;
   showRoles?: boolean;
   variant?: 'default' | 'note';
 };
@@ -37,6 +40,7 @@ export function PlayerNameWithRole({
   iconScale,
   style,
   textStyle,
+  trailing,
   showRoles: providedShowRoles,
   variant = 'default',
 }: PlayerNameWithRoleProps) {
@@ -75,6 +79,7 @@ export function PlayerNameWithRole({
       <Text selectable style={[textStyle, variant === 'note' && noteReferenceStyles.text]}>
         {player.name}
       </Text>
+      {trailing}
     </View>
   );
 }

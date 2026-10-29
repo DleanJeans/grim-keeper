@@ -25,17 +25,16 @@ export function VoterList({ day, players, voterIds }: VoterListProps) {
           const player = playerById.get(playerId);
 
           return player ? (
-            <View key={player.id} style={{ alignItems: 'center', flexDirection: 'row', gap: 3 }}>
-              {isPlayerCurrentlyDead(player, day) ? (
-                <DeadVoteIcon color={colors.success} size={13} />
-              ) : null}
-              <PlayerNameWithRole
-                bordered
-                player={player}
-                iconSize={14}
-                textStyle={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}
-              />
-            </View>
+            <PlayerNameWithRole
+              key={player.id}
+              bordered
+              trailing={
+                isPlayerCurrentlyDead(player, day) ? <DeadVoteIcon color={colors.success} size={13} /> : null
+              }
+              player={player}
+              iconSize={14}
+              textStyle={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}
+            />
           ) : (
             <Text
               key={playerId}
