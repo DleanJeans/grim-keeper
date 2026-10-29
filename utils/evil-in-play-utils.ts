@@ -10,7 +10,7 @@ export type EvilInPlayTeam = 'demon' | 'minion';
 export const BLUFF_COUNT = 3;
 
 export type EvilInPlaySlot = {
-  /** Fixed to the script's only Demon, so it can't be changed. */
+  /** Fixed to the script's only Demon or a confirmed character, so it can't be changed. */
   locked: boolean;
   roleId?: string;
   slotId: string;
@@ -34,11 +34,15 @@ export function getAutomaticCharacterTypeCounts(playerCount: number): CharacterT
   return { townsfolk: 9, outsiders: 2, minions: 3, demons: 1 };
 }
 
-/** Demon then Minion slots, one per character in the setup, with the chosen character in each. */
+/**
+ * Demon then Minion slots, one per character in the setup, with the chosen character in each.
+ * Confirmed characters fill empty slots first, then replace chosen ones from the last slot.
+ */
 export function getEvilInPlaySlots(
   scriptRoles: Role[],
   counts: CharacterTypeCounts,
   evilInPlay: Game['evilInPlay'],
+  confirmedRoleIds: string[] = [],
 ): EvilInPlaySlot[] {
   const demons = scriptRoles.filter((role) => getTeam(role) === 'demon');
   const onlyDemon = demons.length === 1 ? demons[0] : undefined;
@@ -58,10 +62,38 @@ export function getEvilInPlaySlots(
       };
     });
 
-  return [...getSlots('demon', counts.demons), ...getSlots('minion', counts.minions)];
+  const fillConfirmed = (slots: EvilInPlaySlot[]) => {
+    const confirmed = new Set(
+      confirmedRoleIds.filter((roleId) =>
+        scriptRoles.some((role) => role.id === roleId && getTeam(role) === slots[0]?.team),
+      ),
+    );
+    for (const slot of slots) {
+      if (slot.roleId && confirmed.delete(slot.roleId)) slot.locked = true;
+    }
+    const openSlots = [
+      ...slots.filter((slot) => !slot.roleId),
+      ...slots.filter((slot) => slot.roleId && !slot.locked).reverse(),
+    ];
+    [...confirmed].forEach((roleId, index) => {
+      const slot = openSlots[index];
+      if (!slot) return;
+      slot.roleId = roleId;
+      slot.locked = true;
+    });
+    return slots;
+  };
+
+  return [
+    ...fillConfirmed(getSlots('demon', counts.demons)),
+    ...fillConfirmed(getSlots('minion', counts.minions)),
+  ];
 }
 
-/** In-play slots for a game, sized by its character counts or the standard setup. */
+/**
+ * In-play slots for a game, sized by its character counts or the standard setup, with characters
+ * any player was confirmed as filled in.
+ */
 export function getGameEvilInPlaySlots(
   game: Pick<Game, 'characterTypeCounts' | 'evilInPlay' | 'players'>,
   scriptRoles: Role[],
@@ -77,7 +109,12 @@ export function getGameEvilInPlaySlots(
       ),
   ).length;
   const counts = game.characterTypeCounts ?? getAutomaticCharacterTypeCounts(playerCount);
-  return getEvilInPlaySlots(scriptRoles, counts, game.evilInPlay);
+  const confirmedRoleIds = game.players.flatMap((player) =>
+    (player.roleAssignments ?? [])
+      .filter((assignment) => assignment.kind === 'confirm')
+      .flatMap((assignment) => assignment.roleIds.map((roleId) => roleId.replace(/_evil$/, ''))),
+  );
+  return getEvilInPlaySlots(scriptRoles, counts, game.evilInPlay, confirmedRoleIds);
 }
 
 /** Bluff slots with the good character chosen in each. */

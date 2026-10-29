@@ -47,6 +47,38 @@ describe('getEvilInPlaySlots', () => {
   });
 });
 
+describe('getEvilInPlaySlots with confirmed characters', () => {
+  it('fills empty slots and locks chosen ones that are confirmed', () => {
+    const slots = getEvilInPlaySlots(BAD_MOON_RISING, counts(2), { 'minion-1': 'godfather' }, [
+      'zombuul',
+      'godfather',
+      'washerwoman',
+    ]);
+    expect(slots).toEqual([
+      { locked: true, roleId: 'zombuul', slotId: 'demon-0', team: 'demon' },
+      { locked: false, roleId: undefined, slotId: 'minion-0', team: 'minion' },
+      { locked: true, roleId: 'godfather', slotId: 'minion-1', team: 'minion' },
+    ]);
+  });
+
+  it('replaces a chosen character when every slot is taken', () => {
+    const slots = getEvilInPlaySlots(
+      TROUBLE_BREWING,
+      counts(2),
+      {
+        'minion-0': 'poisoner',
+        'minion-1': 'spy',
+      },
+      ['baron'],
+    );
+    expect(slots.map((slot) => [slot.roleId, slot.locked])).toEqual([
+      ['imp', true],
+      ['poisoner', false],
+      ['baron', true],
+    ]);
+  });
+});
+
 describe('getEvilInPlayRoleIds', () => {
   it('limits only the teams with a chosen character', () => {
     const roleIds = getEvilInPlayRoleIds(
@@ -78,6 +110,18 @@ describe('getGameEvilInPlaySlots', () => {
     ]);
     // 10 players: 2 Minions.
     expect(slots.filter((slot) => slot.team === 'minion')).toHaveLength(2);
+  });
+
+  it('fills in characters a player was confirmed as', () => {
+    const players = [
+      { id: 'a', roleAssignments: [{ day: 1, kind: 'confirm', roleIds: ['spy'] }] },
+      { id: 'b', roleAssignments: [{ day: 1, kind: 'claim', roleIds: ['baron'] }] },
+    ] as unknown as Player[];
+    const slots = getGameEvilInPlaySlots({ players }, TROUBLE_BREWING);
+    expect(slots.find((slot) => slot.team === 'minion')).toMatchObject({
+      locked: true,
+      roleId: 'spy',
+    });
   });
 });
 
