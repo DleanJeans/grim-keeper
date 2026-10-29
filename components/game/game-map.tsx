@@ -19,10 +19,9 @@ import {
   hasDeadVoteAvailable,
   isPlayerCurrentlyDead,
 } from '@/utils/player-utils';
-import { getNominationPlayers, getRoleInfoTemplate } from '@/utils/role-info-utils';
+import { getRoleInfoTargetPlayers, inferRoleInfos } from '@/utils/role-info-utils';
 import {
   getLatestRumorMapDisplaysForDayOrPrevious,
-  getRoleDisplayForDayOrPrevious,
   getRoleDisplayForModes,
 } from '@/utils/role-utils';
 
@@ -99,33 +98,24 @@ export function GameMap() {
         activePhase,
       )
     : [];
-  // The focused Town Crier or Flowergirl points at the players their last info was about.
-  const dayBeforeTargets = useMemo(() => {
+  // The focused player points at the players their character info is about.
+  const roleInfoTargets = useMemo(() => {
     const focusedPlayer = players.find((player) => player.id === focusedPlayerId);
-    // The info comes on the night that starts this day, which a dead player doesn't get.
-    if (
-      activeTab !== 'notes' ||
-      !showRoles ||
-      !focusedPlayer ||
-      isPlayerCurrentlyDead(focusedPlayer, activeDay, 'night')
-    ) {
-      return [];
-    }
+    if (activeTab !== 'notes' || !showRoles || !focusedPlayer) return [];
 
     const roles = game.script?.roles ?? [];
-    const { roleIds } = getRoleDisplayForDayOrPrevious(
-      focusedPlayer.roleAssignments,
-      activeDay,
+    const roleInfos = [
+      ...(game.roleInfos ?? []),
+      ...inferRoleInfos(players, game.playerDayNotes, game.roleInfos, roles, conversations),
+    ];
+    const targets = getRoleInfoTargetPlayers(
+      focusedPlayer,
+      players,
+      conversations,
+      roleInfos,
       roles,
+      activeDay,
       activePhase,
-    );
-    const kinds = new Set(
-      roles
-        .filter((role) => roleIds.includes(role.id))
-        .flatMap((role) => getRoleInfoTemplate(role).autoDayBefore ?? []),
-    );
-    const targets = [...kinds].flatMap((kind) =>
-      getNominationPlayers(players, conversations, activeDay - 1, kind),
     );
     const origin = positions.get(focusedPlayer.id);
     const getDistance = (player: Player) => {
@@ -133,15 +123,15 @@ export function GameMap() {
       return origin && position ? Math.hypot(position.x - origin.x, position.y - origin.y) : 0;
     };
     // Nearest first, so a line to a touching neighbor gets its spot before longer lines take it.
-    return [...new Set(targets)]
-      .filter((player) => player.id !== focusedPlayer.id)
-      .sort((first, second) => getDistance(first) - getDistance(second));
+    return targets.sort((first, second) => getDistance(first) - getDistance(second));
   }, [
     activeDay,
     activePhase,
     activeTab,
     conversations,
     focusedPlayerId,
+    game.playerDayNotes,
+    game.roleInfos,
     game.script?.roles,
     players,
     positions,
@@ -305,7 +295,7 @@ export function GameMap() {
               />
             );
           })}
-          {dayBeforeTargets.map((target) => {
+          {roleInfoTargets.map((target) => {
             const fromPosition = focusedPlayerId ? positions.get(focusedPlayerId) : undefined;
             const toPosition = positions.get(target.id);
             if (!fromPosition || !toPosition) {
@@ -314,7 +304,7 @@ export function GameMap() {
 
             return (
               <ConnectionCurve
-                key={`day-before-${target.id}`}
+                key={`role-info-${target.id}`}
                 blockers={players
                   .filter((player) => player.id !== focusedPlayerId && player.id !== target.id)
                   .map((player) => positions.get(player.id))
@@ -323,7 +313,7 @@ export function GameMap() {
                 mapHeight={mapHeight}
                 mapWidth={mapWidth}
                 opacity={1}
-                stroke={colors.roleInfoDayBeforeLine}
+                stroke={colors.roleInfoTargetLine}
                 strokeWidth={4}
                 placedLineEnds={placedLineEnds}
                 placedPaths={placedPaths}

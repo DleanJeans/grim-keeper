@@ -738,6 +738,53 @@ export function getNominationPlayers(
     .sort((first, second) => first.seat - second.seat);
 }
 
+/**
+ * Players the given player's character info points at in a phase: the players in its info tokens,
+ * plus the previous day's nominators or voters for the Town Crier and Flowergirl while alive.
+ */
+export function getRoleInfoTargetPlayers(
+  owner: Player,
+  players: Player[],
+  conversations: Conversation[],
+  roleInfos: RoleInfoEntry[],
+  roles: Role[],
+  day: number,
+  phase: GamePhase,
+): Player[] {
+  const { roleIds } = getRoleDisplayForDayOrPrevious(owner.roleAssignments, day, roles, phase);
+  const targetIds = new Set<string>();
+
+  for (const role of roles.filter((candidate) => roleIds.includes(candidate.id))) {
+    const template = getRoleInfoTemplate(role);
+    // The info comes on the night that starts this day, which a dead player doesn't get.
+    if (template.autoDayBefore && !isPlayerCurrentlyDead(owner, day, 'night')) {
+      for (const target of getNominationPlayers(
+        players,
+        conversations,
+        day - 1,
+        template.autoDayBefore,
+      )) {
+        targetIds.add(target.id);
+      }
+    }
+
+    // Characters with a line per night only point at that night's info.
+    const entry =
+      getRoleInfoNights(role, day) === undefined
+        ? getRoleInfoForPhaseOrPrevious(roleInfos, role.id, day, phase)
+        : roleInfos.find(
+            (candidate) =>
+              candidate.roleId === role.id && candidate.day === day && candidate.phase === 'night',
+          );
+    for (const slot of template.slots) {
+      const value = entry?.values[slot.id];
+      if ((slot.kind === 'player' || template.evilInPlay) && value) targetIds.add(value);
+    }
+  }
+
+  return players.filter((candidate) => candidate.id !== owner.id && targetIds.has(candidate.id));
+}
+
 /** The nearest alive non-storyteller players on each side of the given player. */
 export function getAliveNeighbors(
   players: Player[],

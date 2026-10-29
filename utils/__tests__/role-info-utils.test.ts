@@ -9,6 +9,7 @@ import {
   getRoleInfoForPhaseOrPrevious,
   getRoleInfoNights,
   getRoleInfoOwners,
+  getRoleInfoTargetPlayers,
   getRoleInfoTemplate,
   getRoleInfoUsedPhase,
   getRolesForInfoSlot,
@@ -515,6 +516,51 @@ describe('getNominationPlayers', () => {
   it('is shown for the Town Crier and Flowergirl', () => {
     expect(getRoleInfoTemplate({ id: 'towncrier' }).autoDayBefore).toBe('nominators');
     expect(getRoleInfoTemplate({ id: 'flowergirl' }).autoDayBefore).toBe('voters');
+  });
+});
+
+describe('getRoleInfoTargetPlayers', () => {
+  const claim = (roleId: string) => ({
+    roleAssignments: [{ day: 1, kind: 'claim' as const, roleIds: [roleId], updatedAt: NOW }],
+  });
+  const crierRoles: Role[] = [...roles, { id: 'towncrier', name: 'Town Crier', team: 'townsfolk' }];
+  const nomination = {
+    createdAt: NOW,
+    day: 1,
+    id: 'n1',
+    initiatorId: 'cat',
+    kind: 'nomination' as const,
+    participantIds: ['cat', 'dan'],
+  };
+
+  it("points at the players in the character's info tokens", () => {
+    const owner = makePlayer('ann', 0, claim('washerwoman'));
+    const players = [owner, makePlayer('ben', 1), makePlayer('cat', 2), makePlayer('dan', 3)];
+    const roleInfos: RoleInfoEntry[] = [
+      {
+        day: 1,
+        phase: 'night',
+        roleId: 'washerwoman',
+        updatedAt: NOW,
+        values: { '0': 'empath', '1': 'ben', '2': 'dan' },
+      },
+    ];
+
+    expect(
+      getRoleInfoTargetPlayers(owner, players, [], roleInfos, roles, 2, 'day').map((p) => p.id),
+    ).toEqual(['ben', 'dan']);
+  });
+
+  it("points a living Town Crier at the previous day's nominators", () => {
+    const owner = makePlayer('ann', 0, claim('towncrier'));
+    const players = [owner, makePlayer('cat', 2), makePlayer('dan', 3)];
+    const targets = (crier: Player) =>
+      getRoleInfoTargetPlayers(crier, players, [nomination], [], crierRoles, 2, 'day').map(
+        (p) => p.id,
+      );
+
+    expect(targets(owner)).toEqual(['cat']);
+    expect(targets({ ...owner, death: { day: 1, kind: 'execution', updatedAt: NOW } })).toEqual([]);
   });
 });
 
