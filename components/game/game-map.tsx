@@ -119,7 +119,15 @@ export function GameMap() {
     const targets = [...kinds].flatMap((kind) =>
       getNominationPlayers(players, conversations, activeDay - 1, kind),
     );
-    return [...new Set(targets)].filter((player) => player.id !== focusedPlayer.id);
+    const origin = positions.get(focusedPlayer.id);
+    const getDistance = (player: Player) => {
+      const position = positions.get(player.id);
+      return origin && position ? Math.hypot(position.x - origin.x, position.y - origin.y) : 0;
+    };
+    // Nearest first, so a line to a touching neighbor gets its spot before longer lines take it.
+    return [...new Set(targets)]
+      .filter((player) => player.id !== focusedPlayer.id)
+      .sort((first, second) => getDistance(first) - getDistance(second));
   }, [
     activeDay,
     activePhase,
@@ -128,6 +136,7 @@ export function GameMap() {
     focusedPlayerId,
     game.script?.roles,
     players,
+    positions,
     showRoles,
   ]);
   const groupRepeats = useMemo(
@@ -157,8 +166,10 @@ export function GameMap() {
     [activeDayNominations],
   );
 
-  // Filled in as each curve renders, so later line ends and arrowheads steer clear of earlier ones.
+  // Filled in as each curve renders, so later curves steer clear of earlier line ends and arrowheads
+  // and avoid crossing earlier lines.
   const placedLineEnds: PlacedLineEnd[] = [];
+  const placedPaths: PlayerPosition[][] = [];
 
   return (
     <View style={[styles.mapViewport, { height: displayMapHeight, width: displayMapWidth }]}>
@@ -198,6 +209,7 @@ export function GameMap() {
                   stroke="#a78bfa"
                   strokeWidth={4}
                   placedLineEnds={placedLineEnds}
+                  placedPaths={placedPaths}
                   to={toPosition}
                   tokenSize={activeTokenSize}
                   twoWay={twoWay}
@@ -244,6 +256,7 @@ export function GameMap() {
                       stroke={stroke}
                       strokeWidth={highlighted ? 4 : 3}
                       placedLineEnds={placedLineEnds}
+                      placedPaths={placedPaths}
                       to={toPosition}
                       tokenSize={activeTokenSize}
                     />,
@@ -278,6 +291,7 @@ export function GameMap() {
                 stroke={colors.roleRumor}
                 strokeWidth={4}
                 placedLineEnds={placedLineEnds}
+                placedPaths={placedPaths}
                 to={toPosition}
                 tokenSize={activeTokenSize}
               />
@@ -304,6 +318,7 @@ export function GameMap() {
                 stroke={colors.roleInfoDayBeforeLine}
                 strokeWidth={4}
                 placedLineEnds={placedLineEnds}
+                placedPaths={placedPaths}
                 to={toPosition}
                 tokenSize={activeTokenSize}
               />

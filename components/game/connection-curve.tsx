@@ -14,6 +14,10 @@ const ARROW_TIP_INSET = ARROW_ROUNDING / 2 / Math.sin(ARROW_SPREAD);
 // Angles (radians) to slide a line end around its token, nearest first.
 const END_SLIDE_ANGLES = [0, 0.2, -0.2, 0.4, -0.4, 0.6, -0.6, 0.8, -0.8];
 const BEND_STEPS = [0, 0.1, 0.18, 0.26, 0.35, 0.45, 0.6, 0.8, 1];
+// Control point offsets for touching tokens, in token radii, so the line loops out past the gap.
+const TOUCHING_BEND_RADII = [1.8, 2.3, 2.8];
+// Straight pieces each curve is split into when checking whether two curves cross.
+const CROSSING_SAMPLES = 32;
 
 export type PlacedLineEnd = { base: PlayerPosition; tip: PlayerPosition };
 
@@ -39,6 +43,7 @@ export function ConnectionCurve({
   stroke,
   strokeWidth,
   placedLineEnds,
+  placedPaths,
   to,
   tokenSize,
   twoWay = false,
@@ -57,6 +62,8 @@ export function ConnectionCurve({
    * included, away from them, then adds its own.
    */
   placedLineEnds?: PlacedLineEnd[];
+  /** Curves drawn so far on this map, as points along them. The curve bends to avoid crossing them. */
+  placedPaths?: PlayerPosition[][];
   /** Draw an arrowhead at both ends, for two players pointing at each other. */
   twoWay?: boolean;
 }) {
@@ -74,6 +81,7 @@ export function ConnectionCurve({
     blockers,
     twoWay,
     placedLineEnds ?? [],
+    placedPaths ?? [],
   );
 
   if (!curve) {
@@ -116,6 +124,7 @@ function getConversationCurve(
   blockers: PlayerPosition[],
   twoWay: boolean,
   placedLineEnds: PlacedLineEnd[],
+  placedPaths: PlayerPosition[][],
 ) {
   const distance = Math.hypot(to.x - from.x, to.y - from.y);
 
@@ -137,11 +146,19 @@ function getConversationCurve(
   const inwardSide =
     normal.x * (center.x - midpoint.x) + normal.y * (center.y - midpoint.y) >= 0 ? 1 : -1;
 
+  // Tokens too close for a line and its arrowheads between them loop out to the side instead,
+  // toward the middle of the map first like other curves.
+  const isTouching = distance - 2 * edgeRadius < headLength * (twoWay ? 3 : 2);
+  const offsets = isTouching
+    ? TOUCHING_BEND_RADII.map((radii) => radii * edgeRadius)
+    : BEND_STEPS.map((step) => step * distance);
+  const sides = [inwardSide, -inwardSide];
+
   let best: { control: PlayerPosition; hits: number } | null = null;
 
-  for (const step of BEND_STEPS) {
-    for (const side of step === 0 ? [1] : [inwardSide, -inwardSide]) {
-      const offset = step * distance * side;
+  for (const bend of offsets) {
+    for (const side of bend === 0 ? [1] : sides) {
+      const offset = bend * side;
       const control = { x: midpoint.x + normal.x * offset, y: midpoint.y + normal.y * offset };
       const start = getTokenEdgePoint(from, control, edgeRadius);
       const end = getTokenEdgePoint(to, control, edgeRadius);
@@ -150,6 +167,7 @@ function getConversationCurve(
       const hits =
         countBlockersHit(start, control, end, blockers, blockerRadius) +
         countLineEndsCrossed(start, control, end, placedLineEnds, endSpacing / 2, headLength) +
+        countPathsCrossed(start, control, end, placedPaths, headLength) +
         (outsideMap ? 1 : 0);
 
       if (!best || hits < best.hits) {
@@ -179,6 +197,7 @@ function getConversationCurve(
   const endTip = endEnd.tip;
 
   placedLineEnds.push(startEnd, endEnd);
+  placedPaths.push(getQuadraticSamples(startTip, control, endTip));
 
   if (Math.hypot(endTip.x - startTip.x, endTip.y - startTip.y) <= headLength * (twoWay ? 2 : 1)) {
     return {
@@ -237,9 +256,26 @@ function getClearLineEnd(
   spacing: number,
 ): PlacedLineEnd {
   const angle = Math.atan2(toward.y - tokenCenter.y, toward.x - tokenCenter.x);
+  // Line ends already on this token, by their angle around it.
+  const tokenEndAngles = placedLineEnds
+    .filter(
+      (placed) =>
+        Math.hypot(placed.tip.x - tokenCenter.x, placed.tip.y - tokenCenter.y) <= radius + 1,
+    )
+    .map((placed) => Math.atan2(placed.tip.y - tokenCenter.y, placed.tip.x - tokenCenter.x));
   let lineEnd: PlacedLineEnd | null = null;
 
   for (const shift of END_SLIDE_ANGLES) {
+    // Never slide past another line end on this token, which would make the two lines cross.
+    const keepsOrder = tokenEndAngles.every(
+      (placedAngle) =>
+        Math.sign(getAngleDifference(angle, placedAngle)) ===
+        Math.sign(getAngleDifference(angle + shift, placedAngle)),
+    );
+    if (!keepsOrder) {
+      continue;
+    }
+
     const tip = {
       x: tokenCenter.x + Math.cos(angle + shift) * radius,
       y: tokenCenter.y + Math.sin(angle + shift) * radius,
@@ -257,6 +293,14 @@ function getClearLineEnd(
   }
 
   return { base: toward, tip: getTokenEdgePoint(tokenCenter, toward, radius) };
+}
+
+/** Signed difference between two angles, in (-π, π]. */
+function getAngleDifference(first: number, second: number) {
+  const difference = (first - second) % (2 * Math.PI);
+  if (difference > Math.PI) return difference - 2 * Math.PI;
+  if (difference <= -Math.PI) return difference + 2 * Math.PI;
+  return difference;
 }
 
 /** Smallest distance between two short segments, sampled along both. */
@@ -349,6 +393,54 @@ function countLineEndsCrossed(
 
     return false;
   }).length;
+}
+
+/** Counts earlier curves this one crosses, away from its own ends where curves meet their tokens. */
+function countPathsCrossed(
+  from: PlayerPosition,
+  control: PlayerPosition,
+  to: PlayerPosition,
+  placedPaths: PlayerPosition[][],
+  ownEndLength: number,
+) {
+  const points = getQuadraticSamples(from, control, to).filter(
+    (point) =>
+      Math.hypot(point.x - from.x, point.y - from.y) >= ownEndLength &&
+      Math.hypot(point.x - to.x, point.y - to.y) >= ownEndLength,
+  );
+
+  return placedPaths.filter((path) =>
+    points.some(
+      (point, index) =>
+        index > 0 &&
+        path.some(
+          (pathPoint, pathIndex) =>
+            pathIndex > 0 &&
+            doSegmentsCross(points[index - 1], point, path[pathIndex - 1], pathPoint),
+        ),
+    ),
+  ).length;
+}
+
+function doSegmentsCross(
+  firstStart: PlayerPosition,
+  firstEnd: PlayerPosition,
+  secondStart: PlayerPosition,
+  secondEnd: PlayerPosition,
+) {
+  const side = (from: PlayerPosition, to: PlayerPosition, point: PlayerPosition) =>
+    Math.sign((to.x - from.x) * (point.y - from.y) - (to.y - from.y) * (point.x - from.x));
+
+  return (
+    side(firstStart, firstEnd, secondStart) * side(firstStart, firstEnd, secondEnd) < 0 &&
+    side(secondStart, secondEnd, firstStart) * side(secondStart, secondEnd, firstEnd) < 0
+  );
+}
+
+function getQuadraticSamples(from: PlayerPosition, control: PlayerPosition, to: PlayerPosition) {
+  return Array.from({ length: CROSSING_SAMPLES + 1 }, (_, index) =>
+    getQuadraticPoint(from, control, to, index / CROSSING_SAMPLES),
+  );
 }
 
 function countBlockersHit(
