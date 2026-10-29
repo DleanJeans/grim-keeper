@@ -6,7 +6,7 @@ import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Player } from '@/types/game';
-import { isPlayerCurrentlyDead } from '@/utils/player-utils';
+import { isDeadVote } from '@/utils/player-utils';
 
 type VoterListProps = {
   day: number;
@@ -29,7 +29,7 @@ export function VoterList({ day, players, voterIds }: VoterListProps) {
               key={player.id}
               bordered
               trailing={
-                isPlayerCurrentlyDead(player, day) ? <DeadVoteIcon color={colors.success} size={13} /> : null
+                isDeadVote(player, day) ? <DeadVoteIcon color={colors.success} size={13} /> : null
               }
               player={player}
               iconSize={14}

@@ -40,31 +40,40 @@ export function hasDeadVoteAvailable(
     return false;
   }
 
-  if (!conversations || !player.death) {
+  if (!conversations) {
     return player.deadVoteUsed !== true;
   }
 
   const activePhaseIndex = getPhaseIndex({ activeDay, activePhase });
+
+  return !conversations.some(
+    (conversation) =>
+      conversation.kind === 'nomination' &&
+      conversation.voterIds?.includes(player.id) &&
+      getEventPhaseIndex(conversation.day, 'day') <= activePhaseIndex &&
+      isDeadVote(player, conversation.day),
+  );
+}
+
+/**
+ * Whether a vote on a nomination that day was cast as a dead vote: the voter died in an earlier
+ * phase and wasn't revived before it. Deaths during the nomination's own day (executions end
+ * the day) don't count.
+ */
+export function isDeadVote(player: Player, nominationDay: number): boolean {
+  if (!player.death) {
+    return false;
+  }
+
+  const nominationPhaseIndex = getEventPhaseIndex(nominationDay, 'day');
   const deathPhaseIndex = getEventPhaseIndex(player.death.day, getDeathPhase(player.death));
   const revivePhaseIndex = player.revive ? getEventPhaseIndex(player.revive.day, 'day') : undefined;
+  const revivedBeforeVote =
+    revivePhaseIndex !== undefined &&
+    revivePhaseIndex >= deathPhaseIndex &&
+    revivePhaseIndex <= nominationPhaseIndex;
 
-  return !conversations.some((conversation) => {
-    if (conversation.kind !== 'nomination' || !conversation.voterIds?.includes(player.id)) {
-      return false;
-    }
-
-    const nominationPhaseIndex = getEventPhaseIndex(conversation.day, 'day');
-    const revivedBeforeVote =
-      revivePhaseIndex !== undefined &&
-      revivePhaseIndex >= deathPhaseIndex &&
-      revivePhaseIndex <= nominationPhaseIndex;
-
-    return (
-      deathPhaseIndex < nominationPhaseIndex &&
-      nominationPhaseIndex <= activePhaseIndex &&
-      !revivedBeforeVote
-    );
-  });
+  return deathPhaseIndex < nominationPhaseIndex && !revivedBeforeVote;
 }
 
 /** First word of the name, or the full name when another player in the game shares that first word. */

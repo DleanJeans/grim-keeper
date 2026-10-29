@@ -32,7 +32,7 @@ import {
   getFriendSummaries,
   hasFriendName,
 } from '@/utils/friend-utils';
-import { getDeathPhase, getEventPhaseIndex, getGameStartingNight } from '@/utils/game-phase-utils';
+import { getGameStartingNight } from '@/utils/game-phase-utils';
 import { type GameTransfer, mergeGameTransfer } from '@/utils/game-transfer';
 import {
   clampMapHeight,
@@ -53,6 +53,7 @@ import {
   mapGamePlayerIdsToFriendIds,
   migrateObjectIds,
 } from '@/utils/object-id';
+import { isDeadVote } from '@/utils/player-utils';
 import {
   mapRoleInfoPlayerIds,
   seedRoleInfos,
@@ -1720,20 +1721,8 @@ function synchronizeDeadVoteUsage(game: Game): Game {
     if (conversation.kind !== 'nomination') continue;
     for (const voterId of conversation.voterIds ?? []) {
       const voter = game.players.find((player) => player.id === voterId);
-      if (voter?.death) {
-        const deathPhaseIndex = getEventPhaseIndex(voter.death.day, getDeathPhase(voter.death));
-        const nominationPhaseIndex = getEventPhaseIndex(conversation.day, 'day');
-        const revivePhaseIndex = voter.revive
-          ? getEventPhaseIndex(voter.revive.day, 'day')
-          : undefined;
-        const revived =
-          revivePhaseIndex !== undefined &&
-          revivePhaseIndex >= deathPhaseIndex &&
-          revivePhaseIndex <= nominationPhaseIndex;
-
-        if (deathPhaseIndex < nominationPhaseIndex && !revived) {
-          usedPlayerIds.add(voterId);
-        }
+      if (voter && isDeadVote(voter, conversation.day)) {
+        usedPlayerIds.add(voterId);
       }
     }
   }

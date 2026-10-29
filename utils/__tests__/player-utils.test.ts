@@ -1,7 +1,8 @@
-import type { Player, PlayerDeath, PlayerRevive } from '@/types/game';
+import type { Conversation, Player, PlayerDeath, PlayerRevive } from '@/types/game';
 import {
   getPlayerTokenName,
   hasDeadVoteAvailable,
+  isDeadVote,
   isPlayerCurrentlyDead,
 } from '@/utils/player-utils';
 
@@ -67,6 +68,48 @@ describe('hasDeadVoteAvailable', () => {
     expect(
       hasDeadVoteAvailable(makePlayer({ death: makeDeath(2), revive: makeRevive(3) }), 3),
     ).toBe(false);
+  });
+});
+
+describe('isDeadVote', () => {
+  it('counts a vote after a death on an earlier day or the night before', () => {
+    expect(isDeadVote(makePlayer({ death: makeDeath(1, 'execution') }), 2)).toBe(true);
+    expect(isDeadVote(makePlayer({ death: makeDeath(2, 'night') }), 2)).toBe(true);
+  });
+
+  it('does not count a vote on the day the voter is executed', () => {
+    expect(isDeadVote(makePlayer({ death: makeDeath(2, 'execution') }), 2)).toBe(false);
+  });
+
+  it('does not count a vote by a living or revived player', () => {
+    expect(isDeadVote(makePlayer(), 2)).toBe(false);
+    expect(isDeadVote(makePlayer({ death: makeDeath(1), revive: makeRevive(2) }), 2)).toBe(false);
+  });
+});
+
+describe('hasDeadVoteAvailable with conversations', () => {
+  function makeNomination(day: number, voterIds: string[]): Conversation {
+    return {
+      createdAt: '2026-01-01T00:00:00.000Z',
+      day,
+      id: `n${day}`,
+      initiatorId: 'p2',
+      kind: 'nomination',
+      participantIds: ['p2', 'p3'],
+      voterIds,
+    };
+  }
+
+  it('keeps the dead vote when the only vote was cast on the day of execution', () => {
+    const player = makePlayer({ death: makeDeath(2, 'execution') });
+
+    expect(hasDeadVoteAvailable(player, 3, 'day', [makeNomination(2, ['p1'])])).toBe(true);
+  });
+
+  it('uses up the dead vote after voting while dead', () => {
+    const player = makePlayer({ death: makeDeath(2, 'execution') });
+
+    expect(hasDeadVoteAvailable(player, 3, 'day', [makeNomination(3, ['p1'])])).toBe(false);
   });
 });
 
