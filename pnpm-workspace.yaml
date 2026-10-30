@@ -1,3 +1,5 @@
+allowBuilds:
+  esbuild: true
 patchedDependencies:
   expo-router@57.0.3: patches/expo-router@57.0.3.patch
   react-native-draggable-flatlist@4.0.3: patches/react-native-draggable-flatlist@4.0.3.patch

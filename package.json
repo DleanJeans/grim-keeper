@@ -60,5 +60,5 @@
     "ota:android:pre": "eas update --platform android --branch preview --environment preview --auto"
   },
   "private": true,
-  "packageManager": "pnpm@10.34.1"
+  "packageManager": "pnpm@12.16.1"
 }
