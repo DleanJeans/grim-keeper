@@ -45,8 +45,7 @@
   "scripts": {
     "format:changed": "biome format --write $(git diff --name-only HEAD --diff-filter=ACMR; git ls-files --others --exclude-standard | grep -E '\\.(ts|tsx|json)$')",
     "format:imports": "biome check --write --only=organizeImports",
-    "start": "expo start",
-    "web": "expo start --web",
+    "start": "expo start --web",
     "build:web": "expo export --platform web",
     "deploy:web": "node scripts/deploy-web.mjs",
     "deploy:web:dev": "node scripts/deploy-web.mjs --alias dev",
