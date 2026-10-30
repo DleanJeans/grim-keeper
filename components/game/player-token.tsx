@@ -279,7 +279,6 @@ export function PlayerToken({
           style={{
             alignItems: 'center',
             justifyContent: 'center',
-            paddingBottom: hasDeadVote ? badgeSize : 0,
             width: '100%',
             zIndex: 1,
           }}
