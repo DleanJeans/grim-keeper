@@ -35,6 +35,7 @@ export function FriendNameForm({ friends, onAddFriend }: FriendNameFormProps) {
       </Text>
       <View style={styles.row}>
         <TextInput
+          accessibilityLabel="Friend name"
           autoCapitalize="words"
           autoCorrect={false}
           enterKeyHint="done"

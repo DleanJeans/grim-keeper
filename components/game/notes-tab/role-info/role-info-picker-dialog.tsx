@@ -329,6 +329,7 @@ function SlotOptions({
     case 'text':
       return (
         <TextInput
+          accessibilityLabel={slot.label}
           autoFocus
           multiline
           onChangeText={onChangeDraft}

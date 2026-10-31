@@ -18,6 +18,7 @@ export function FriendNameInputRow({
   return (
     <View style={styles.inputRow}>
       <TextInput
+        accessibilityLabel="Friend name"
         autoCapitalize="words"
         autoCorrect={false}
         enterKeyHint="done"

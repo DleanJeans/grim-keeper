@@ -318,6 +318,7 @@ function StatementInput({
   return (
     <View style={styles.statement}>
       <TextInput
+        accessibilityLabel={slot.label}
         multiline
         onChangeText={onChangeText}
         placeholder={slot.label}
