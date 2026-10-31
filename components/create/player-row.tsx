@@ -1,4 +1,4 @@
-import { GripVertical, Trash2 } from 'lucide-react-native';
+import { ArrowUpDown, Trash2 } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
@@ -10,32 +10,36 @@ export type DraftPlayer = {
 };
 
 export function PlayerRow({
-  drag,
   index,
-  isActive = false,
   isEditing,
   isFixed = false,
+  isMoving = false,
   item,
+  onPress,
   onRemove,
 }: {
-  drag?: () => void;
   index: number;
-  isActive?: boolean;
   isEditing: boolean;
   isFixed?: boolean;
+  /** This player is picked to move; tapping a gap or another player places them. */
+  isMoving?: boolean;
   item: DraftPlayer;
+  onPress?: (playerId: string) => void;
   onRemove?: (playerId: string) => void;
 }) {
+  const canMove = !isEditing && !isFixed && !!onPress;
+
   return (
-    <View style={[styles.row, isActive && styles.rowActive, isFixed && styles.rowFixed]}>
+    <View style={[styles.row, isMoving && styles.rowActive, isFixed && styles.rowFixed]}>
       <Pressable
         accessibilityHint={
-          isEditing || isFixed ? undefined : 'Long press to rearrange this player.'
+          canMove ? 'Moves this player, or swaps with the picked player.' : undefined
         }
         accessibilityLabel={`${item.name}, player ${index}`}
-        accessibilityRole={isEditing || isFixed ? undefined : 'button'}
-        onLongPress={isEditing || isFixed ? undefined : drag}
-        style={styles.dragArea}
+        accessibilityRole={canMove ? 'button' : undefined}
+        accessibilityState={canMove ? { selected: isMoving } : undefined}
+        onPress={canMove ? () => onPress(item.id) : undefined}
+        style={styles.moveArea}
       >
         <Text selectable style={styles.seat}>
           {index + 1}
@@ -47,9 +51,13 @@ export function PlayerRow({
           <Text selectable style={styles.you}>
             You
           </Text>
-        ) : isEditing ? null : (
-          <GripVertical color={colors.textSubtle} size={18} strokeWidth={2.5} />
-        )}
+        ) : canMove ? (
+          <ArrowUpDown
+            color={isMoving ? colors.primary : colors.textSubtle}
+            size={18}
+            strokeWidth={2.5}
+          />
+        ) : null}
       </Pressable>
       {isFixed ? null : (
         <Pressable
@@ -67,7 +75,7 @@ export function PlayerRow({
 }
 
 const styles = StyleSheet.create({
-  dragArea: {
+  moveArea: {
     alignItems: 'center',
     flex: 1,
     flexDirection: 'row',

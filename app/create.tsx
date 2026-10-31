@@ -1,11 +1,11 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TextInput as RNTextInput } from 'react-native';
-import { Keyboard, KeyboardAvoidingView, StyleSheet, View } from 'react-native';
-import DraggableFlatList from 'react-native-draggable-flatlist';
+import { FlatList, Keyboard, KeyboardAvoidingView, StyleSheet, View } from 'react-native';
 import { CreateFormHeader } from '@/components/create/create-form-header';
 import { CreateHeaderDoneButton } from '@/components/create/create-header-done-button';
 import { ExportGameButton } from '@/components/create/export-game-button';
+import { PlayerMoveTarget } from '@/components/create/player-move-target';
 import { type DraftPlayer, PlayerRow } from '@/components/create/player-row';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
@@ -28,6 +28,7 @@ import { DESKTOP_CONTENT_MAX_WIDTH } from '@/utils/responsive-utils';
 import { SUSHI_BUFFET_SCRIPT_ID } from '@/utils/script-constants';
 import { createSushiBuffetScript, isSushiBuffetScript } from '@/utils/script-service';
 import { getScriptPlayCounts, sortScriptsByMostPlayed } from '@/utils/script-utils';
+import { isNoOpGap, movePlayerToGap, swapPlayers } from '@/utils/seat-order-utils';
 import { requestWebFullscreen } from '@/utils/web-fullscreen';
 
 export default function CreateRoute() {
@@ -56,6 +57,7 @@ export default function CreateRoute() {
   const [name, setName] = useState('');
   const [nameFocused, setNameFocused] = useState(false);
   const [draftPlayers, setDraftPlayers] = useState<DraftPlayer[]>([]);
+  const [movingPlayerId, setMovingPlayerId] = useState<string | null>(null);
   const [draftSelectedScriptId, setDraftSelectedScriptId] = useState<string | null>(
     scriptIdParam ?? null,
   );
@@ -148,11 +150,7 @@ export default function CreateRoute() {
     () => getSelectedFriendIds(players, playerPickerFriends),
     [playerPickerFriends, players],
   );
-  const playerOrderKey = useMemo(() => players.map((player) => player.id).join('|'), [players]);
-  const playerIndexes = useMemo(
-    () => new Map(players.map((player, index) => [player.id, index])),
-    [players],
-  );
+  const movingPlayer = players.find((player) => player.id === movingPlayerId);
   const normalizedName = normalizePlayerName(name);
   const duplicateName = hasDuplicatePlayerName(selectedNames, name);
   const canAddPlayer = normalizedName.length > 0 && !duplicateName;
@@ -241,10 +239,14 @@ export default function CreateRoute() {
       return 'Add at least 1 other player.';
     }
 
-    return isEditing
-      ? 'Add or remove players, choose a script, then tap Done.'
-      : 'Long press a player to drag them into seat order.';
-  }, [duplicateName, isEditing, players.length]);
+    if (isEditing) {
+      return 'Add or remove players, choose a script, then tap Done.';
+    }
+
+    return movingPlayer
+      ? `Tap a gap to move ${movingPlayer.name} there, or another player to swap seats. Tap ${movingPlayer.name} again to cancel.`
+      : 'Tap a player to move them in seat order.';
+  }, [duplicateName, isEditing, movingPlayer, players.length]);
 
   function handleAddPlayer() {
     if (!canAddPlayer) {
@@ -296,6 +298,28 @@ export default function CreateRoute() {
 
   function handleRemovePlayer(playerId: string) {
     setDraftPlayers((currentPlayers) => currentPlayers.filter((player) => player.id !== playerId));
+    if (movingPlayerId === playerId) {
+      setMovingPlayerId(null);
+    }
+  }
+
+  function handlePressPlayer(playerId: string) {
+    if (!movingPlayerId || movingPlayerId === playerId) {
+      setMovingPlayerId(movingPlayerId === playerId ? null : playerId);
+      return;
+    }
+
+    setDraftPlayers((currentPlayers) => swapPlayers(currentPlayers, movingPlayerId, playerId));
+    setMovingPlayerId(null);
+  }
+
+  function handleMoveToGap(gapIndex: number) {
+    if (!movingPlayerId) {
+      return;
+    }
+
+    setDraftPlayers((currentPlayers) => movePlayerToGap(currentPlayers, movingPlayerId, gapIndex));
+    setMovingPlayerId(null);
   }
 
   function handleStart() {
@@ -353,14 +377,12 @@ export default function CreateRoute() {
         behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
         style={styles.screen}
       >
-        <DraggableFlatList
-          activationDistance={8}
+        <FlatList
           automaticallyAdjustKeyboardInsets
-          containerStyle={styles.screen}
           contentInsetAdjustmentBehavior="automatic"
           contentContainerStyle={styles.listContent}
           data={players}
-          extraData={playerOrderKey}
+          extraData={movingPlayerId}
           keyboardShouldPersistTaps="handled"
           keyExtractor={(item) => item.id}
           ListEmptyComponent={
@@ -431,23 +453,70 @@ export default function CreateRoute() {
               <ExportGameButton game={editingGame} roleCatalog={roleCatalog} scripts={scripts} />
             ) : null
           }
-          onDragEnd={({ data }) => {
-            setDraftPlayers(data);
-          }}
-          renderItem={(params) => (
-            <PlayerRow
-              drag={params.drag}
-              index={(playerIndexes.get(params.item.id) ?? params.getIndex() ?? 0) + 1}
-              isActive={params.isActive}
+          renderItem={({ index, item }) => (
+            <SeatListItem
+              index={index}
               isEditing={isEditing}
-              item={params.item}
+              item={item}
+              movingPlayer={movingPlayer}
+              onMoveToGap={handleMoveToGap}
+              onPressPlayer={handlePressPlayer}
               onRemove={handleRemovePlayer}
+              players={players}
             />
           )}
-          style={styles.list}
+          style={styles.screen}
         />
       </KeyboardAvoidingView>
     </>
+  );
+}
+
+/** A seated player, with the gaps around them while another player is picked to move. */
+function SeatListItem({
+  index,
+  isEditing,
+  item,
+  movingPlayer,
+  onMoveToGap,
+  onPressPlayer,
+  onRemove,
+  players,
+}: {
+  index: number;
+  isEditing: boolean;
+  item: DraftPlayer;
+  movingPlayer?: DraftPlayer;
+  onMoveToGap: (gapIndex: number) => void;
+  onPressPlayer: (playerId: string) => void;
+  onRemove: (playerId: string) => void;
+  players: DraftPlayer[];
+}) {
+  const showGap = (gapIndex: number) =>
+    !!movingPlayer && !isNoOpGap(players, movingPlayer.id, gapIndex);
+  const gapLabel = (gapIndex: number) => {
+    const before = gapIndex === 0 ? 'you' : players[gapIndex - 1]?.name;
+    const after = gapIndex === players.length ? 'you' : players[gapIndex]?.name;
+    return `Move ${movingPlayer?.name} between ${before} and ${after}`;
+  };
+
+  return (
+    <View style={styles.seat}>
+      {index === 0 && showGap(0) ? (
+        <PlayerMoveTarget label={gapLabel(0)} onPress={() => onMoveToGap(0)} />
+      ) : null}
+      <PlayerRow
+        index={index + 1}
+        isEditing={isEditing}
+        isMoving={movingPlayer?.id === item.id}
+        item={item}
+        onPress={onPressPlayer}
+        onRemove={onRemove}
+      />
+      {showGap(index + 1) ? (
+        <PlayerMoveTarget label={gapLabel(index + 1)} onPress={() => onMoveToGap(index + 1)} />
+      ) : null}
+    </View>
   );
 }
 
@@ -484,9 +553,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
   },
-  list: {
-    backgroundColor: colors.background,
-  },
   listContent: {
     alignSelf: 'center',
     gap: 6,
@@ -502,5 +568,8 @@ const styles = StyleSheet.create({
   screen: {
     backgroundColor: colors.background,
     flex: 1,
+  },
+  seat: {
+    gap: 6,
   },
 });
