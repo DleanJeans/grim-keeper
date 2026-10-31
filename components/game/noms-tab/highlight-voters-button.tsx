@@ -1,5 +1,5 @@
 import { Users } from 'lucide-react-native';
-import { Pressable } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 
 import { onDarkText, outlinedActionStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
@@ -35,7 +35,13 @@ export function HighlightVotersButton({ active, disabled, onPress }: HighlightVo
       }
     >
       <Users color={iconColor} size={17} strokeWidth={2.6} />
-      <Text style={{ ...onDarkText, color: iconColor }}>{label}</Text>
+      <Text style={[styles.label, { color: iconColor }]}>{label}</Text>
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  label: {
+    ...onDarkText,
+  },
+});
