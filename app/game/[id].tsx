@@ -14,6 +14,7 @@ import { ClaimClashWarnings } from '@/components/game/claim-clash-warnings';
 import { DayCount } from '@/components/game/day-count';
 import { DayEditLockButton } from '@/components/game/day-edit-lock-button';
 import { DayJumpButtons } from '@/components/game/day-jump-buttons';
+import { DayRecapSheet } from '@/components/game/day-recap-sheet';
 import { DjGameButton } from '@/components/game/dj-game-button';
 import { GameMap } from '@/components/game/game-map';
 import {
@@ -150,6 +151,7 @@ export default function GameRoute() {
     'confirm',
   ]);
   const [showRoles, setShowRoles] = useState(false);
+  const [recapOpen, setRecapOpen] = useState(false);
   const [dayEditLocked, setDayEditLocked] = useState(false);
   const scrollContentStyle = useMemo(
     () => createScrollContentStyle(isFullscreen ? insets.top : 0),
@@ -1081,7 +1083,17 @@ export default function GameRoute() {
                     activeDay={activeGame.activeDay}
                     activePhase={activePhase}
                     lastDayWithData={lastDayWithData}
+                    onPress={() => setRecapOpen(true)}
                     startingNight={startingNight}
+                  />
+                  <DayRecapSheet
+                    day={activeGame.activeDay}
+                    game={activeGame}
+                    onClose={() => setRecapOpen(false)}
+                    roles={[...gameRoles, ...roleCatalog]}
+                    showRoles={showRoles}
+                    startingNight={startingNight}
+                    visible={recapOpen}
                   />
                   <View style={styles.dayEditLock}>
                     <DayEditLockButton
