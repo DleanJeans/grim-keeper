@@ -59,7 +59,11 @@ export function RoleInfoPickerDialog({
               {slot?.label}
             </Text>
           </View>
-          <ScrollView contentContainerStyle={styles.options} style={styles.scroll}>
+          <ScrollView
+            contentContainerStyle={styles.options}
+            keyboardShouldPersistTaps="handled"
+            style={styles.scroll}
+          >
             {slot ? (
               <SlotOptions
                 day={day}

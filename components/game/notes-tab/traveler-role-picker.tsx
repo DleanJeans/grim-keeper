@@ -152,6 +152,7 @@ export function TravelerRolePicker({
             <ScrollView
               contentContainerStyle={styles.scrollContent}
               contentInsetAdjustmentBehavior="automatic"
+              keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator
               style={styles.scroll}
             >
