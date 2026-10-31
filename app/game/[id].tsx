@@ -1087,6 +1087,7 @@ export default function GameRoute() {
                     startingNight={startingNight}
                   />
                   <DayRecapSheet
+                    activePhase={activePhase}
                     day={activeGame.activeDay}
                     game={activeGame}
                     onClose={() => setRecapOpen(false)}

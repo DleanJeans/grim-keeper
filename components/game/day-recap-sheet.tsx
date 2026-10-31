@@ -1,12 +1,23 @@
-import { Gavel, HeartPulse, MessageSquareQuote, Skull, Vote, X } from 'lucide-react-native';
-import type { ComponentType } from 'react';
+import * as Clipboard from 'expo-clipboard';
+import {
+  Check,
+  Copy,
+  Gavel,
+  HeartPulse,
+  MessageSquareQuote,
+  Skull,
+  Vote,
+  X,
+} from 'lucide-react-native';
+import { type ComponentType, useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { Game, Role, StartingNight } from '@/types/game';
+import type { Game, GamePhase, Role, StartingNight } from '@/types/game';
 import { getDayRecap, type RecapEvent, type RecapEventKind } from '@/utils/day-recap-utils';
 import { getPhaseLabel } from '@/utils/game-phase-utils';
+import { getGameSummaryText } from '@/utils/game-summary-utils';
 
 type IconComponent = ComponentType<{ color: string; size: number; strokeWidth?: number }>;
 
@@ -18,9 +29,13 @@ const EVENT_ICONS: Record<RecapEventKind, { color: string; icon: IconComponent }
   revive: { color: colors.revive, icon: HeartPulse },
 };
 
+const COPIED_RESET_MS = 2000;
+
 type DayRecapSheetProps = {
+  /** Phase on screen; the copied summary runs up to here. */
+  activePhase: GamePhase;
   day: number;
-  game: Pick<Game, 'conversations' | 'players'>;
+  game: Pick<Game, 'conversations' | 'players' | 'script'>;
   onClose: () => void;
   roles: Role[];
   showRoles: boolean;
@@ -30,6 +45,7 @@ type DayRecapSheetProps = {
 
 /** Night `day` then Day `day` at a glance, to catch up after a busy day. */
 export function DayRecapSheet({
+  activePhase,
   day,
   game,
   onClose,
@@ -41,6 +57,29 @@ export function DayRecapSheet({
   const recap = visible ? getDayRecap(game, day, roles, showRoles) : { day: [], night: [] };
   const dayLabel = getPhaseLabel({ activeDay: day, activePhase: 'day' }, startingNight);
   const nightLabel = getPhaseLabel({ activeDay: day, activePhase: 'night' }, startingNight);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timeout = setTimeout(() => setCopied(false), COPIED_RESET_MS);
+    return () => clearTimeout(timeout);
+  }, [copied]);
+
+  async function copySummary() {
+    const text = getGameSummaryText(game, {
+      activeDay: day,
+      activePhase,
+      roles,
+      showRoles,
+      startingNight,
+    });
+    try {
+      await Clipboard.setStringAsync(text);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  }
 
   return (
     <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
@@ -56,6 +95,20 @@ export function DayRecapSheet({
             <Text selectable style={styles.title}>
               {dayLabel} recap
             </Text>
+            <Pressable
+              accessibilityHint="Copies players, claims and events so far as plain text"
+              accessibilityLabel={copied ? 'Summary copied' : 'Copy game summary'}
+              accessibilityRole="button"
+              onPress={() => void copySummary()}
+              style={({ pressed }) => [styles.copyButton, pressed && styles.closePressed]}
+            >
+              {copied ? (
+                <Check color={colors.success} size={16} strokeWidth={2.6} />
+              ) : (
+                <Copy color={colors.text} size={16} strokeWidth={2.4} />
+              )}
+              <Text style={styles.copyText}>{copied ? 'Copied' : 'Copy summary'}</Text>
+            </Pressable>
             <Pressable
               accessibilityLabel="Close recap"
               accessibilityRole="button"
@@ -92,6 +145,18 @@ const styles = StyleSheet.create({
   },
   closePressed: { backgroundColor: colors.surfacePressed },
   content: { gap: 16, paddingBottom: 8 },
+  copyButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 6,
+    minHeight: 36,
+    paddingHorizontal: 10,
+  },
+  copyText: { color: colors.text, fontSize: 13, fontWeight: '800' },
   empty: { color: colors.textMuted, fontSize: 14 },
   event: { alignItems: 'flex-start', flexDirection: 'row', gap: 8 },
   eventIcon: { paddingTop: 2 },
