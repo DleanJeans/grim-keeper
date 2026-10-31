@@ -87,7 +87,10 @@ export function getClaimClashes(
       if (scriptRoleIds.size > 0 && !scriptRoleIds.has(roleId) && !travellerIds.has(roleId)) {
         offScriptClaims.push({ playerId: player.id, roleId });
       }
-      playerIdsByRole.set(roleId, [...(playerIdsByRole.get(roleId) ?? []), player.id]);
+      // A "3 for 3" claim names characters the player might not be, so it can't clash.
+      if (roleIds.length === 1) {
+        playerIdsByRole.set(roleId, [...(playerIdsByRole.get(roleId) ?? []), player.id]);
+      }
     }
     if (
       roleIds.length > 0 &&

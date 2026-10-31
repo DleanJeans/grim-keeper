@@ -91,4 +91,12 @@ describe('getClaimClashes', () => {
     expect(clashes.bluffClaims).toEqual([{ playerId: 'a', roleId: 'chef' }]);
     expect(clashes.offScriptClaims).toEqual([{ playerId: 'b', roleId: 'clockmaker' }]);
   });
+
+  it('does not count a multi-character claim as a double claim', () => {
+    const players = [
+      player('a', [assignment('claim', ['chef', 'empath', 'saint'])]),
+      player('b', [assignment('claim', ['chef'])]),
+    ];
+    expect(getClaimClashes(players, roles, counts, 1, 'day').doubleClaims).toEqual([]);
+  });
 });
