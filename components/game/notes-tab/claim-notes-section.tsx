@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { ClaimNoteRow } from '@/components/game/notes-tab/claim-note-row';
+import { ConfirmClaimsButton } from '@/components/game/notes-tab/confirm-claims-button';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
@@ -52,12 +53,13 @@ export function ClaimNotesSection() {
             Game over. Edit a note and save it to see it next time you play with them or these
             characters.
           </Text>
+          <ConfirmClaimsButton />
           {drafts.map((draft) => (
             <ClaimNoteRow
               day={game.activeDay}
               draft={draft}
               gameId={game.id}
-              key={draft.playerId}
+              key={`${draft.playerId}:${draft.text}`}
               scriptId={game.scriptId ?? game.script?.id}
             />
           ))}
