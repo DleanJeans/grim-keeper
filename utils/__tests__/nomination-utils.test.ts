@@ -2,6 +2,7 @@ import type { Conversation, Player } from '@/types/game';
 import {
   getAlivePlayerCount,
   getDaysLeft,
+  getNominationAvailability,
   getOnTheBlockNominationId,
   getPlayerNominationHistory,
   getVotesToExecute,
@@ -98,5 +99,14 @@ describe('getVotingBuddies', () => {
       ['d', 1, 4],
       ['f', 1, 4],
     ]);
+  });
+});
+
+describe('getNominationAvailability', () => {
+  it('lists living players who have not nominated and players not nominated today', () => {
+    const noms = [nomination('n1', []), { ...nomination('n0', []), day: 1, initiatorId: 'c' }];
+    const result = getNominationAvailability(players, noms, 2);
+    expect(result.canNominate.map((p) => p.id)).toEqual(['b', 'c', 'e', 'f']);
+    expect(result.notNominated.map((p) => p.id)).toEqual(['a', 'c', 'd', 'e', 'f']);
   });
 });

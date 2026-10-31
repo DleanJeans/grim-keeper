@@ -134,3 +134,36 @@ export function getVotingBuddies(
     .filter((buddy) => buddy.total >= MIN_SHARED_NOMINATIONS)
     .sort((a, b) => b.agreed / b.total - a.agreed / a.total || b.total - a.total);
 }
+
+export type NominationAvailability = {
+  /** Living players who haven't nominated today. */
+  canNominate: Player[];
+  /** Players nobody has nominated today. */
+  notNominated: Player[];
+};
+
+/** Who may still nominate and who hasn't been nominated, by the usual one-each rule. */
+export function getNominationAvailability(
+  players: Player[],
+  nominations: Conversation[],
+  day: number,
+): NominationAvailability {
+  const todays = nominations.filter(
+    (nomination) => nomination.kind === 'nomination' && nomination.day === day,
+  );
+  const nominatorIds = new Set(todays.map((nomination) => nomination.initiatorId));
+  const nomineeIds = new Set(
+    todays.map(
+      (nomination) =>
+        nomination.participantIds.find((id) => id !== nomination.initiatorId) ??
+        nomination.initiatorId,
+    ),
+  );
+  const playing = players.filter((player) => !player.isStoryteller);
+  return {
+    canNominate: playing.filter(
+      (player) => !isDeadVote(player, day) && !nominatorIds.has(player.id),
+    ),
+    notNominated: playing.filter((player) => !nomineeIds.has(player.id)),
+  };
+}

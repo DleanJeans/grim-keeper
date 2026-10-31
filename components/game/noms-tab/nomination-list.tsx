@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { NominateButton } from '@/components/game/noms-tab/action-buttons/nominate-button';
 import { HighlightVotersButton } from '@/components/game/noms-tab/highlight-voters-button';
+import { NominationAvailability } from '@/components/game/noms-tab/nomination-availability';
 import { NominationRow } from '@/components/game/noms-tab/nomination-row';
 import { PlayerNominationHistory } from '@/components/game/noms-tab/player-nomination-history';
 import { innerActionRow } from '@/components/game/styles';
@@ -74,6 +75,9 @@ export function NominationList() {
         </View>
       ) : null}
 
+      {activePhase === 'day' && activeDayCutoff >= 1 && !trackingMode && !votingNominationId ? (
+        <NominationAvailability day={activeDayCutoff} nominations={nominations} players={players} />
+      ) : null}
       {nominations.length === 0 ? (
         <View style={styles.empty}>
           <Text selectable style={styles.emptyText}>
