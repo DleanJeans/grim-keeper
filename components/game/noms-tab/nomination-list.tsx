@@ -1,4 +1,5 @@
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { NominateButton } from '@/components/game/noms-tab/action-buttons/nominate-button';
 import { HighlightVotersButton } from '@/components/game/noms-tab/highlight-voters-button';
@@ -55,7 +56,7 @@ export function NominationList() {
     : undefined;
 
   return (
-    <View style={{ gap: 10 }}>
+    <View style={styles.list}>
       {activePhase === 'day' && focusedPlayer && !trackingMode && !votingNominationId ? (
         <View style={innerActionRow}>
           <NominateButton
@@ -70,16 +71,8 @@ export function NominationList() {
       ) : null}
 
       {nominations.length === 0 ? (
-        <View
-          style={{
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-            borderRadius: 8,
-            borderWidth: 1,
-            padding: 16,
-          }}
-        >
-          <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 21 }}>
+        <View style={styles.empty}>
+          <Text selectable style={styles.emptyText}>
             {activeDayCutoff < 1
               ? 'No nominations logged before Day 1.'
               : `No nominations logged for Day ${activeDayCutoff}.`}
@@ -137,3 +130,21 @@ export function NominationList() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  empty: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 16,
+  },
+  emptyText: {
+    color: colors.textMuted,
+    fontSize: 15,
+    lineHeight: 21,
+  },
+  list: {
+    gap: 10,
+  },
+});
