@@ -54,24 +54,6 @@ export function outlinedActionStyle({
   };
 }
 
-export const outlinedActionRow: ViewStyle = {
-  alignSelf: 'stretch',
-  flexDirection: 'row',
-  gap: 10,
-};
-
-export const innerActionRow: ViewStyle = {
-  flexDirection: 'row',
-  gap: 10,
-};
-
-export const confirmRowStyle: ViewStyle = {
-  alignSelf: 'stretch',
-  flexDirection: 'row',
-  gap: 12,
-  marginBottom: 12,
-};
-
 /**
  * Solid "filled" action button — used for vote/tracking Cancel (slate)
  * and Confirm (green) buttons. No border; paddingVertical 14.
@@ -97,14 +79,6 @@ export function solidActionStyle({
   };
 }
 
-/** Outer pill container shared by GameTabs and the Interactions subtab bar. */
-export const tabBarContainer: ViewStyle = {
-  backgroundColor: slateBg,
-  borderRadius: 8,
-  flexDirection: 'row',
-  padding: 4,
-};
-
 export function tabBarButtonStyle(active: boolean, flex: number): ViewStyle {
   return {
     alignItems: 'center',
@@ -127,12 +101,42 @@ export function tabBarLabelStyle(active: boolean): TextStyle {
   };
 }
 
-export const onDarkText: TextStyle = {
-  color: onDark,
-  fontWeight: '800',
-};
+const sharedStyles = StyleSheet.create({
+  outlinedActionRow: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    gap: 10,
+  },
+  innerActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  confirmRowStyle: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  /** Outer pill container shared by GameTabs and the Interactions subtab bar. */
+  tabBarContainer: {
+    backgroundColor: slateBg,
+    borderRadius: 8,
+    flexDirection: 'row',
+    padding: 4,
+  },
+  onDarkText: {
+    color: onDark,
+    fontWeight: '800',
+  },
+  onDarkTextStrong: {
+    color: onDark,
+    fontWeight: '900',
+  },
+});
 
-export const onDarkTextStrong: TextStyle = {
-  color: onDark,
-  fontWeight: '900',
-};
+export const outlinedActionRow = sharedStyles.outlinedActionRow;
+export const innerActionRow = sharedStyles.innerActionRow;
+export const confirmRowStyle = sharedStyles.confirmRowStyle;
+export const tabBarContainer = sharedStyles.tabBarContainer;
+export const onDarkText = sharedStyles.onDarkText;
+export const onDarkTextStrong = sharedStyles.onDarkTextStrong;
