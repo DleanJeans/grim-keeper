@@ -152,6 +152,8 @@ const styles = StyleSheet.create({
     color: colors.inputText,
     flex: 1,
     minHeight: 44,
+    // Web text inputs default to about 20 characters wide, which pushed Add off narrow screens.
+    minWidth: 0,
     paddingHorizontal: 12,
   },
 });
