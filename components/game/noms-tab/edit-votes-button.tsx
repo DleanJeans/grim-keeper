@@ -6,14 +6,21 @@ import { colors } from '@/theme/colors';
 type EditVotesButtonProps = {
   onPress: () => void;
   voteCount: number;
+  /** Votes needed to put the nominee on the block, shown as "3/4 votes". */
+  votesNeeded?: number;
 };
 
-export function EditVotesButton({ onPress, voteCount }: EditVotesButtonProps) {
-  const votesLabel = `${voteCount} ${voteCount === 1 ? 'vote' : 'votes'}`;
+export function EditVotesButton({ onPress, voteCount, votesNeeded }: EditVotesButtonProps) {
+  const votesLabel =
+    votesNeeded === undefined
+      ? `${voteCount} ${voteCount === 1 ? 'vote' : 'votes'}`
+      : `${voteCount}/${votesNeeded} votes`;
+  const accessibilityVotes =
+    votesNeeded === undefined ? votesLabel : `${voteCount} of ${votesNeeded} votes needed`;
 
   return (
     <Pressable
-      accessibilityLabel={`Edit ${votesLabel}`}
+      accessibilityLabel={`Edit votes, ${accessibilityVotes}`}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}

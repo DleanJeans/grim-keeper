@@ -25,7 +25,10 @@ type NominationRowProps = {
   onKillBigWig: (player: Player, bigWig: Role) => void;
   onSelectBigWig: (playerId?: string) => void;
   onUndoExecution: (player: Player) => void;
+  /** This nominee has the most votes and enough of them to be executed. */
+  onTheBlock: boolean;
   players: Player[];
+  votesNeeded: number;
 };
 
 export function NominationRow({
@@ -40,7 +43,9 @@ export function NominationRow({
   onKillBigWig,
   onSelectBigWig,
   onUndoExecution,
+  onTheBlock,
   players,
+  votesNeeded,
 }: NominationRowProps) {
   const playerById = new Map(players.map((player) => [player.id, player]));
   const nominator = playerById.get(nomination.initiatorId);
@@ -61,9 +66,12 @@ export function NominationRow({
   return (
     <View style={styles.row}>
       <View style={styles.header}>
-        <Text selectable style={styles.label}>
-          Nomination {index + 1}
-        </Text>
+        <View style={styles.labelRow}>
+          <Text selectable style={styles.label}>
+            Nomination {index + 1}
+          </Text>
+          {onTheBlock ? <OnTheBlockBadge /> : null}
+        </View>
         <NominationPlayers nominee={nominee} nominator={nominator} />
       </View>
       {bigWig ? (
@@ -85,7 +93,11 @@ export function NominationRow({
       ) : null}
       <VoterList day={nomination.day} players={players} voterIds={voterIds} />
       <View style={styles.actions}>
-        <EditVotesButton onPress={() => onEditVotes(voterIds)} voteCount={voterIds.length} />
+        <EditVotesButton
+          onPress={() => onEditVotes(voterIds)}
+          voteCount={voterIds.length}
+          votesNeeded={votesNeeded}
+        />
         <View style={styles.rightActions}>
           {activePhase === 'day' && nominee ? (
             nomineeWasExecuted ? (
@@ -112,11 +124,32 @@ export function NominationRow({
   );
 }
 
+function OnTheBlockBadge() {
+  return (
+    <View style={styles.badge}>
+      <Text style={styles.badgeText}>On the block</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   actions: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  badge: {
+    backgroundColor: colors.dangerSurface,
+    borderColor: colors.dangerBorder,
+    borderRadius: 6,
+    borderWidth: 1,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  badgeText: {
+    color: colors.danger,
+    fontSize: 12,
+    fontWeight: '800',
   },
   bigWigActions: { alignItems: 'center', flexDirection: 'row', gap: 8 },
   header: { flex: 1, gap: 8 },
@@ -126,6 +159,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
     fontWeight: '800',
   },
+  labelRow: { alignItems: 'center', flexDirection: 'row', gap: 8 },
   rightActions: { alignItems: 'center', flexDirection: 'row', gap: 8 },
   row: {
     backgroundColor: colors.surface,

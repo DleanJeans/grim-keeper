@@ -8,6 +8,7 @@ import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
+import { getOnTheBlockNominationId, getVotesToExecute } from '@/utils/nomination-utils';
 import { getRolesByIds, isFlowerGirlRole } from '@/utils/role-utils';
 
 export function NominationList() {
@@ -37,6 +38,8 @@ export function NominationList() {
   const nominations = conversations.filter(
     (conversation) => conversation.day === activeDayCutoff && conversation.kind === 'nomination',
   );
+  const votesNeeded = getVotesToExecute(players, activeDayCutoff);
+  const onTheBlockId = getOnTheBlockNominationId(nominations, players, activeDayCutoff);
   const voterIds = [...new Set(nominations.flatMap((nomination) => nomination.voterIds ?? []))];
   const hasFlowerGirl = game.script?.roles.some(isFlowerGirlRole) ?? false;
   const bigWig = getRolesByIds(game.lorics ?? [], roleCatalog).find((role) => role.id === 'bigwig');
@@ -116,7 +119,9 @@ export function NominationList() {
             onUndoExecution={(nominee) =>
               runDayEdit(() => setPlayerDeath(game.id, nominee.id, null))
             }
+            onTheBlock={nomination.id === onTheBlockId}
             players={players}
+            votesNeeded={votesNeeded}
           />
         ))
       )}

@@ -1,0 +1,60 @@
+import type { Conversation, Player } from '@/types/game';
+import {
+  getAlivePlayerCount,
+  getOnTheBlockNominationId,
+  getVotesToExecute,
+} from '@/utils/nomination-utils';
+
+const now = '2026-10-31T00:00:00.000Z';
+
+function player(id: string, extra: Partial<Player> = {}): Player {
+  return { id, name: id, seat: 0, ...extra };
+}
+
+function nomination(id: string, voterIds: string[]): Conversation {
+  return {
+    createdAt: now,
+    day: 2,
+    id,
+    initiatorId: 'a',
+    kind: 'nomination',
+    participantIds: ['a', 'b'],
+    voterIds,
+  };
+}
+
+const players = [
+  player('st', { isStoryteller: true }),
+  player('a'),
+  player('b'),
+  player('c'),
+  player('d', { death: { day: 2, kind: 'night', updatedAt: now } }),
+  player('e', { death: { day: 2, kind: 'execution', updatedAt: now } }),
+  player('f'),
+];
+
+describe('nomination utils', () => {
+  it('counts players alive at the start of the day, without Storytellers', () => {
+    expect(getAlivePlayerCount(players, 2)).toBe(5);
+    expect(getVotesToExecute(players, 2)).toBe(3);
+    expect(getAlivePlayerCount(players, 1)).toBe(6);
+    expect(getAlivePlayerCount(players, 3)).toBe(4);
+  });
+
+  it('puts the nominee with the most votes on the block once they reach the votes needed', () => {
+    const noms = [nomination('n1', ['a', 'b', 'c']), nomination('n2', ['a', 'b', 'c', 'f'])];
+    expect(getOnTheBlockNominationId(noms, players, 2)).toBe('n2');
+  });
+
+  it('leaves the block empty on a tie or when nobody has enough votes', () => {
+    expect(
+      getOnTheBlockNominationId(
+        [nomination('n1', ['a', 'b', 'c']), nomination('n2', ['a', 'b', 'f'])],
+        players,
+        2,
+      ),
+    ).toBeUndefined();
+    expect(getOnTheBlockNominationId([nomination('n1', ['a', 'b'])], players, 2)).toBeUndefined();
+    expect(getOnTheBlockNominationId([], players, 2)).toBeUndefined();
+  });
+});
