@@ -55,6 +55,8 @@ type PlayerTokenProps = {
   disabled?: boolean;
   /** Faded but still tappable, e.g. cleared players under the suspect filter. */
   dimmed?: boolean;
+  /** Red ring: evil in the selected theory. */
+  theoryEvil?: boolean;
   /** Short word shown under the token, such as "drunk?". */
   label?: string;
   /** Label shown on the token; defaults to the player's name. */
@@ -100,6 +102,7 @@ export function PlayerToken({
   rolesConfirmed = false,
   showRoleDetails = false,
   suspicion,
+  theoryEvil = false,
   tokenScale = 1,
   tokenSize: tokenSizeProp,
 }: PlayerTokenProps) {
@@ -316,6 +319,21 @@ export function PlayerToken({
             ]}
           />
         ) : null}
+        {theoryEvil ? (
+          <View
+            pointerEvents="none"
+            style={[
+              styles.theoryRing,
+              {
+                borderRadius: tokenSize / 2 + 4,
+                height: tokenSize + 8,
+                left: -4 - borderWidth,
+                top: -4 - borderWidth,
+                width: tokenSize + 8,
+              },
+            ]}
+          />
+        ) : null}
         {label ? (
           <View
             pointerEvents="none"
@@ -462,6 +480,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     paddingVertical: 1,
   },
+  theoryRing: { borderColor: colors.theoryEvil, borderWidth: 3, position: 'absolute' },
   tokenLabelWrap: { alignItems: 'center', position: 'absolute', zIndex: 3 },
   trustedDot: { backgroundColor: colors.suspicionTrusted },
   unsureDot: { backgroundColor: colors.suspicionUnsure },

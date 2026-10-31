@@ -239,6 +239,46 @@ describe('setPlayerTokenLabel', () => {
   });
 });
 
+describe('theories', () => {
+  afterEach(() => {
+    useGameStore.setState({ games: [] });
+  });
+
+  it('adds, fills, switches and deletes theories', () => {
+    useGameStore.setState({
+      games: [
+        {
+          activeDay: 1,
+          conversations: [],
+          createdAt: '2026-07-07T00:00:00.000Z',
+          id: 'game-1',
+          players: [],
+          updatedAt: '2026-07-07T00:00:00.000Z',
+        },
+      ],
+    });
+    const store = useGameStore.getState();
+
+    const first = store.addTheory('game-1');
+    store.toggleTheoryEvil('game-1', first, 'ann');
+    const second = store.addTheory('game-1');
+    expect(second).not.toBe(first);
+    expect(useGameStore.getState().games[0]).toMatchObject({
+      activeTheoryId: second,
+      theories: [
+        { evilPlayerIds: ['ann'], id: first },
+        { evilPlayerIds: [], id: second },
+      ],
+    });
+
+    store.toggleTheoryEvil('game-1', first, 'ann');
+    store.setActiveTheory('game-1', first);
+    store.deleteTheory('game-1', first);
+    expect(useGameStore.getState().games[0].activeTheoryId).toBeUndefined();
+    expect(useGameStore.getState().games[0].theories).toEqual([{ evilPlayerIds: [], id: second }]);
+  });
+});
+
 describe('setGameResult', () => {
   const game: Game = {
     activeDay: 1,

@@ -32,6 +32,7 @@ import {
   getRoleDisplayForModes,
 } from '@/utils/role-utils';
 import { getPlayerSuspicion, type SuspicionLevel } from '@/utils/suspicion-utils';
+import { getActiveTheoryEvilIds } from '@/utils/theory-utils';
 
 const ROLE_INFO_STROKE_WIDTH = 4;
 // Character tokens next to role info arrows, as a fraction of a player token.
@@ -231,6 +232,7 @@ export function GameMap() {
   );
   const disabledPlayerIdSet = useMemo(() => new Set(disabledPlayerIds), [disabledPlayerIds]);
   const dimmedPlayerIdSet = useMemo(() => new Set(dimmedPlayerIds), [dimmedPlayerIds]);
+  const theoryEvilIdSet = new Set(showRoles ? getActiveTheoryEvilIds(game) : []);
 
   // Filled in as each curve renders, so later curves steer clear of earlier line ends and arrowheads
   // and avoid crossing earlier lines.
@@ -477,6 +479,7 @@ export function GameMap() {
               activeTokenSize={activeTokenSize}
               dimmed={dimmedPlayerIdSet.has(player.id)}
               label={showRoles ? game.tokenLabels?.[player.id] : undefined}
+              theoryEvil={theoryEvilIdSet.has(player.id)}
               disabled={disabledPlayerIdSet.has(player.id)}
               gameRoles={game.script?.roles ?? []}
               conversations={conversations}
@@ -521,6 +524,7 @@ function PlayerTokenForMap({
   disabled,
   gameRoles,
   label,
+  theoryEvil,
   conversations,
   handleMovePlayer,
   handleSelectPlayer,
@@ -545,6 +549,7 @@ function PlayerTokenForMap({
   dimmed: boolean;
   disabled: boolean;
   label?: string;
+  theoryEvil: boolean;
   gameRoles: Role[];
   conversations: Conversation[];
   handleMovePlayer: (playerId: string, position: PlayerPosition) => void;
@@ -578,6 +583,7 @@ function PlayerTokenForMap({
       dimmed={dimmed}
       disabled={disabled}
       label={label}
+      theoryEvil={theoryEvil}
       displayName={getPlayerTokenName(player, players)}
       deadVoteAvailable={deadVoteAvailable}
       interactionMode={interactionMode}

@@ -171,6 +171,15 @@ export type Game = {
   suspicions?: Record<string, string>;
   /** Player id → short word shown under their map token, such as "drunk?". */
   tokenLabels?: Record<string, string>;
+  /** "Worlds" the app user is weighing: who is evil in each. */
+  theories?: GameTheory[];
+  /** Theory shown on the map; unset shows none. */
+  activeTheoryId?: string;
+};
+
+export type GameTheory = {
+  id: string;
+  evilPlayerIds: string[];
 };
 
 export type CharacterTypeCounts = {

@@ -15,6 +15,8 @@ import { EvilInPlayPicker } from '@/components/game/notes-tab/role-info/evil-in-
 import { RoleInfoTable } from '@/components/game/notes-tab/role-info/role-info-table';
 import { SavedFriendNotesLink } from '@/components/game/notes-tab/saved-friend-notes-link';
 import { SuspicionPicker } from '@/components/game/notes-tab/suspicion-picker';
+import { TheoriesSection } from '@/components/game/notes-tab/theories-section';
+import { TheoryEvilToggle } from '@/components/game/notes-tab/theory-evil-toggle';
 import { TokenLabelInput } from '@/components/game/notes-tab/token-label-input';
 import { Text } from '@/components/text';
 import { getNotesForPlayer, useGameStore } from '@/store/game-store';
@@ -61,6 +63,7 @@ export function NotesTab() {
         <NotesTabScriptPicker />
         <RoleAssignmentActions />
         <SuspicionPicker />
+        <TheoryEvilToggle player={focusedPlayer} />
         <QuickNoteTags />
         {showRoles ? <TokenLabelInput key={focusedPlayer.id} player={focusedPlayer} /> : null}
         <RoleInfoTable player={focusedPlayer} />
@@ -96,6 +99,7 @@ export function NotesTab() {
         <NotesTabScriptPicker />
         <RoleAssignmentActions />
         <EvilInPlayPicker />
+        <TheoriesSection />
         <RoleInfoTable />
         <NightOrderSection />
         <ClaimNotesSection />
@@ -113,6 +117,7 @@ export function NotesTab() {
       <NotesTabScriptPicker />
       <RoleAssignmentActions />
       <EvilInPlayPicker />
+      <TheoriesSection />
       <RoleInfoTable />
       <NightOrderSection />
       <ClaimNotesSection />

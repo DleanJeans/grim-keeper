@@ -221,6 +221,11 @@ type GameState = GameData & {
   ) => void;
   /** Sets the short word under a player's map token; an empty label removes it. */
   setPlayerTokenLabel: (gameId: string, playerId: string, label: string) => void;
+  /** Adds an empty theory, makes it the active one and returns its id. */
+  addTheory: (gameId: string) => string;
+  deleteTheory: (gameId: string, theoryId: string) => void;
+  setActiveTheory: (gameId: string, theoryId?: string) => void;
+  toggleTheoryEvil: (gameId: string, theoryId: string, playerId: string) => void;
   setGameResult: (gameId: string, result?: GameResult) => void;
   setActiveDay: (gameId: string, day: number) => void;
   setGamePhase: (gameId: string, day: number, phase: GamePhase) => void;
@@ -257,6 +262,19 @@ type PersistedGameState = Omit<Partial<GameState>, 'games' | 'scripts'> & {
   games?: SerializedGame[];
   scripts?: SerializedStoredScript[];
 };
+
+/** Replaces one game through `update` and bumps its updatedAt. */
+function updateGameIn(
+  set: (update: (state: GameState) => Partial<GameState>) => void,
+  gameId: string,
+  update: (game: Game) => Game,
+) {
+  set((state) => ({
+    games: state.games.map((game) =>
+      game.id === gameId ? { ...update(game), updatedAt: new Date().toISOString() } : game,
+    ),
+  }));
+}
 
 export const useGameStore = create<GameState>()(
   persist(
@@ -1396,6 +1414,48 @@ export const useGameStore = create<GameState>()(
               updatedAt: new Date().toISOString(),
             };
           }),
+        }));
+      },
+      addTheory: (gameId) => {
+        const game = get().games.find((candidate) => candidate.id === gameId);
+        const existingIds = new Set((game?.theories ?? []).map((theory) => theory.id));
+        let index = existingIds.size + 1;
+        while (existingIds.has(`theory-${index}`)) index += 1;
+        const id = `theory-${index}`;
+        updateGameIn(set, gameId, (current) => ({
+          ...current,
+          activeTheoryId: id,
+          theories: [...(current.theories ?? []), { evilPlayerIds: [], id }],
+        }));
+        return id;
+      },
+      deleteTheory: (gameId, theoryId) => {
+        updateGameIn(set, gameId, (current) => {
+          const theories = (current.theories ?? []).filter((theory) => theory.id !== theoryId);
+          return {
+            ...current,
+            activeTheoryId:
+              current.activeTheoryId === theoryId ? undefined : current.activeTheoryId,
+            theories: theories.length > 0 ? theories : undefined,
+          };
+        });
+      },
+      setActiveTheory: (gameId, theoryId) => {
+        updateGameIn(set, gameId, (current) => ({ ...current, activeTheoryId: theoryId }));
+      },
+      toggleTheoryEvil: (gameId, theoryId, playerId) => {
+        updateGameIn(set, gameId, (current) => ({
+          ...current,
+          theories: (current.theories ?? []).map((theory) =>
+            theory.id === theoryId
+              ? {
+                  ...theory,
+                  evilPlayerIds: theory.evilPlayerIds.includes(playerId)
+                    ? theory.evilPlayerIds.filter((id) => id !== playerId)
+                    : [...theory.evilPlayerIds, playerId],
+                }
+              : theory,
+          ),
         }));
       },
       setGameResult: (gameId, result) => {

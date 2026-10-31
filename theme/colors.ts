@@ -55,6 +55,8 @@ const baseColors = {
   suspicionTrusted: '#86efac',
   suspicionUnsure: '#fcd34d',
   suspicionSuspect: '#f87171',
+  /** Ring around players who are evil in the selected theory. */
+  theoryEvil: '#ef4444',
   // Alive, dead and Traveller counts above the map
   statusAlive: '#86efac',
   statusDead: '#fca5a5',

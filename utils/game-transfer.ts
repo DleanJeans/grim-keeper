@@ -260,6 +260,8 @@ function isGame(value: unknown): value is SerializedGame {
     isOptionalStringRecord(value.bluffs) &&
     isOptionalStringRecord(value.suspicions) &&
     isOptionalStringRecord(value.tokenLabels) &&
+    isOptionalTheories(value.theories) &&
+    isOptionalString(value.activeTheoryId) &&
     (value.script === undefined || isSerializedStoredScript(value.script))
   );
 }
@@ -368,6 +370,16 @@ function isPlayerDayNoteEntry(value: unknown): value is PlayerDayNoteEntry {
 
 function isOptionalStringRecord(value: unknown): value is Record<string, string> | undefined {
   return value === undefined || (isRecord(value) && Object.values(value).every(isString));
+}
+
+function isOptionalTheories(value: unknown) {
+  return (
+    value === undefined ||
+    (Array.isArray(value) &&
+      value.every(
+        (theory) => isRecord(theory) && isString(theory.id) && isStringArray(theory.evilPlayerIds),
+      ))
+  );
 }
 
 function isOptionalRoleInfos(value: unknown): value is RoleInfoEntry[] | undefined {
