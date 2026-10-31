@@ -1,6 +1,6 @@
 import { Check, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { RolePicker } from '@/components/game/notes-tab/role-picker';
@@ -75,28 +75,15 @@ export function KillAttributionPanel({
   }
 
   return (
-    <View
-      style={{
-        backgroundColor: colors.surface,
-        borderColor: colors.border,
-        borderRadius: 8,
-        borderWidth: 1,
-        gap: 14,
-        marginBottom: 24,
-        padding: 14,
-      }}
-    >
-      <View style={{ gap: 4 }}>
-        <View style={{ alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
-          <Text selectable style={{ color: colors.text, fontSize: 17, fontWeight: '900' }}>
+    <View style={styles.panel}>
+      <View style={styles.header}>
+        <View style={styles.titleRow}>
+          <Text selectable style={styles.title}>
             {title}
           </Text>
-          <PlayerNameWithRole
-            player={targetPlayer}
-            textStyle={{ color: colors.text, fontSize: 17, fontWeight: '900' }}
-          />
+          <PlayerNameWithRole player={targetPlayer} textStyle={styles.title} />
         </View>
-        <Text selectable style={{ color: colors.textMuted, fontSize: 13, lineHeight: 18 }}>
+        <Text selectable style={styles.description}>
           {getPhaseLabel({ activeDay, activePhase }, startingNight)}. Optionally record who killed
           them and which roles were responsible.
         </Text>
@@ -155,27 +142,71 @@ function KillFormButton({
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => ({
-        alignItems: 'center',
-        backgroundColor: pressed
-          ? colors.surfacePressed
-          : primary
-            ? colors.primary
-            : colors.surfaceRaised,
-        borderColor: primary ? colors.primary : colors.borderStrong,
-        borderRadius: 8,
-        borderWidth: 1,
-        flex: 1,
-        flexDirection: 'row',
-        gap: 6,
-        justifyContent: 'center',
-        paddingVertical: 12,
-      })}
+      style={({ pressed }) => [
+        styles.button,
+        primary && styles.buttonPrimary,
+        pressed && styles.buttonPressed,
+      ]}
     >
       <Icon color={primary ? colors.onPrimary : colors.textMuted} size={16} strokeWidth={2.7} />
-      <Text style={{ color: primary ? colors.onPrimary : colors.text, fontWeight: '900' }}>
-        {label}
-      </Text>
+      <Text style={[styles.buttonText, primary && styles.buttonTextPrimary]}>{label}</Text>
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  button: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.borderStrong,
+    borderRadius: 8,
+    borderWidth: 1,
+    flex: 1,
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'center',
+    paddingVertical: 12,
+  },
+  buttonPressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  buttonPrimary: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  buttonText: {
+    color: colors.text,
+    fontWeight: '900',
+  },
+  buttonTextPrimary: {
+    color: colors.onPrimary,
+  },
+  description: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  header: {
+    gap: 4,
+  },
+  panel: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 14,
+    marginBottom: 24,
+    padding: 14,
+  },
+  title: {
+    color: colors.text,
+    fontSize: 17,
+    fontWeight: '900',
+  },
+  titleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+});
