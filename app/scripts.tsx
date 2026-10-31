@@ -29,7 +29,13 @@ import {
   isSushiBuffetScript,
   type RemoteScript,
 } from '@/utils/script-service';
-import { getScriptPlayCounts, sortScriptsByMostPlayed } from '@/utils/script-utils';
+import {
+  formatWinRecord,
+  getScriptPlayCounts,
+  getScriptWinRecords,
+  type ScriptWinRecord,
+  sortScriptsByMostPlayed,
+} from '@/utils/script-utils';
 
 /** Space kept above a script card scrolled into view. */
 const SCROLL_TO_SCRIPT_MARGIN = 12;
@@ -67,6 +73,7 @@ export default function ScriptsRoute() {
   /** A just-duplicated script to scroll to once its card has laid out. */
   const scrollToScriptId = useRef<string | null>(null);
   const scriptPlayCounts = getScriptPlayCounts(games);
+  const scriptWinRecords = getScriptWinRecords(games);
   const shouldRefreshRoleCatalog =
     roleCatalog.length === 0 || !roleCatalog.some((role) => role.ability);
 
@@ -382,6 +389,7 @@ export default function ScriptsRoute() {
             editingScriptId={editingScriptId}
             roleCatalog={roleCatalog}
             scriptPlayCounts={scriptPlayCounts}
+            scriptWinRecords={scriptWinRecords}
             scripts={sortScriptsByMostPlayed(
               scripts.filter((script) => !isSushiBuffetScript(script)),
               games,
@@ -589,6 +597,7 @@ function SavedScriptsSection({
   onUpdate,
   roleCatalog,
   scriptPlayCounts,
+  scriptWinRecords,
   scripts,
   searchText,
 }: {
@@ -606,6 +615,7 @@ function SavedScriptsSection({
   onUpdate: (script: StoredScript) => void;
   roleCatalog: StoredScript['roles'];
   scriptPlayCounts: ReadonlyMap<string, number>;
+  scriptWinRecords: ReadonlyMap<string, ScriptWinRecord>;
   scripts: StoredScript[];
   searchText: string;
 }) {
@@ -646,6 +656,7 @@ function SavedScriptsSection({
             onUpdate={onUpdate}
             roleCatalog={roleCatalog}
             script={script}
+            winRecord={formatWinRecord(scriptWinRecords.get(script.id))}
           />
         ))
       )}

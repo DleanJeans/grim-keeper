@@ -1,8 +1,10 @@
 import type { Game, Role, SavedNote, StoredScript } from '@/types/game';
 import {
+  formatWinRecord,
   getNightOrderRoleEntries,
   getScriptPlayCounts,
   getScriptRoleEntries,
+  getScriptWinRecords,
   sortScriptsByMostPlayed,
 } from '@/utils/script-utils';
 
@@ -28,6 +30,27 @@ describe('script utils', () => {
       ['script-a', 1],
       ['missing-script', 1],
     ]);
+  });
+
+  it('counts your wins and losses per script, skipping storytold and unfinished games', () => {
+    const games = [
+      createGame({ result: 'won', scriptId: 'script-z' }),
+      createGame({ result: 'lost', scriptId: 'script-z' }),
+      createGame({ result: 'won', script: scripts[0] }),
+      createGame({ scriptId: 'script-z' }),
+      createGame({
+        players: [{ id: 'app-user', isStoryteller: true, name: 'Me' } as Game['players'][number]],
+        result: 'won',
+        scriptId: 'script-z',
+      }),
+      createGame({ result: 'lost', scriptId: 'script-a' }),
+    ];
+
+    const records = getScriptWinRecords(games);
+    expect(records.get('script-z')).toEqual({ losses: 1, wins: 2 });
+    expect(records.get('script-a')).toEqual({ losses: 1, wins: 0 });
+    expect(formatWinRecord(records.get('script-z'))).toBe('2W 1L (67%)');
+    expect(formatWinRecord(records.get('script-unused'))).toBeNull();
   });
 
   it('sorts scripts by all saved games, including legacy embedded script IDs', () => {

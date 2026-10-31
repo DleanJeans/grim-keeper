@@ -13,6 +13,8 @@ type ScriptCardProps = {
   canSelect: boolean;
   editing: boolean;
   gamesPlayed: number;
+  /** Your record on this script, e.g. "3W 1L (75%)". */
+  winRecord?: string | null;
   roleCatalog: Role[];
   script: StoredScript;
   onDelete: () => void;
@@ -39,6 +41,7 @@ export function ScriptCard({
   onUpdate,
   roleCatalog,
   script,
+  winRecord,
 }: ScriptCardProps) {
   const custom = isCustomScript(script);
 
@@ -59,6 +62,7 @@ export function ScriptCard({
           <Text selectable style={styles.metadata}>
             {script.author ? `${script.author} · ` : ''}v{script.version} · {script.roles.length}{' '}
             roles · {gamesPlayed} {gamesPlayed === 1 ? 'game' : 'games'}
+            {winRecord ? ` · ${winRecord}` : ''}
           </Text>
           {custom ? (
             <>

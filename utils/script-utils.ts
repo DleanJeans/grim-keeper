@@ -1,4 +1,5 @@
 import type { Game, Role, SavedNote, StoredScript } from '@/types/game';
+import { APP_USER_ID } from '@/utils/object-id';
 
 export type ScriptRoleEntry = {
   description?: string;
@@ -29,6 +30,34 @@ export function getScriptPlayCounts(games: Game[]) {
   }
 
   return gamesPlayedByScript;
+}
+
+export type ScriptWinRecord = { losses: number; wins: number };
+
+/** Your wins and losses per script, from games with a result where you played (not storytold). */
+export function getScriptWinRecords(games: Game[]) {
+  const records = new Map<string, ScriptWinRecord>();
+
+  for (const game of games) {
+    const scriptId = game.scriptId ?? game.script?.id;
+    if (!scriptId || game.result === undefined) continue;
+    const appUser = game.players.find((player) => player.id === APP_USER_ID);
+    if (appUser?.isStoryteller) continue;
+    const record = records.get(scriptId) ?? { losses: 0, wins: 0 };
+    if (game.result === 'won') record.wins += 1;
+    else record.losses += 1;
+    records.set(scriptId, record);
+  }
+
+  return records;
+}
+
+/** "3W 1L (75%)", or nothing when no game on the script has a result. */
+export function formatWinRecord(record: ScriptWinRecord | undefined) {
+  if (!record) return null;
+  const total = record.wins + record.losses;
+  if (total === 0) return null;
+  return `${record.wins}W ${record.losses}L (${Math.round((record.wins / total) * 100)}%)`;
 }
 
 export function sortScriptsByMostPlayed(scripts: StoredScript[], games: Game[]) {
