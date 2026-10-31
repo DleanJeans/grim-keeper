@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { ClaimedRoleNotesLink } from '@/components/game/notes-tab/claimed-role-notes-link';
 import { DayNoteRow } from '@/components/game/notes-tab/day-note-row';
+import { NightOrderSection } from '@/components/game/notes-tab/night-order-section';
 import { NotesTabScriptPicker } from '@/components/game/notes-tab/notes-tab-script-picker';
 import { PlayerNoteSection } from '@/components/game/notes-tab/player-note-section';
 import { RoleAssignmentActions } from '@/components/game/notes-tab/role-assignment-actions';
@@ -89,6 +90,7 @@ export function NotesTab() {
         <RoleAssignmentActions />
         <EvilInPlayPicker />
         <RoleInfoTable />
+        <NightOrderSection />
         <Text style={styles.phaseHeader}>
           {getPhaseLabel({ activeDay, activePhase }, startingNight)}
         </Text>
@@ -104,6 +106,7 @@ export function NotesTab() {
       <RoleAssignmentActions />
       <EvilInPlayPicker />
       <RoleInfoTable />
+      <NightOrderSection />
       <Text style={styles.phaseHeader}>
         {getPhaseLabel({ activeDay, activePhase }, startingNight)}
       </Text>
