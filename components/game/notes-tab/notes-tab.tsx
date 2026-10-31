@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { ClaimNotesSection } from '@/components/game/notes-tab/claim-notes-section';
 import { ClaimedRoleNotesLink } from '@/components/game/notes-tab/claimed-role-notes-link';
 import { DayNoteRow } from '@/components/game/notes-tab/day-note-row';
 import { NightOrderSection } from '@/components/game/notes-tab/night-order-section';
@@ -95,6 +96,7 @@ export function NotesTab() {
         <EvilInPlayPicker />
         <RoleInfoTable />
         <NightOrderSection />
+        <ClaimNotesSection />
         <Text style={styles.phaseHeader}>
           {getPhaseLabel({ activeDay, activePhase }, startingNight)}
         </Text>
@@ -111,6 +113,7 @@ export function NotesTab() {
       <EvilInPlayPicker />
       <RoleInfoTable />
       <NightOrderSection />
+      <ClaimNotesSection />
       <Text style={styles.phaseHeader}>
         {getPhaseLabel({ activeDay, activePhase }, startingNight)}
       </Text>
