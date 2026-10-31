@@ -101,36 +101,12 @@ export function CharacterTypeCountEditor({
 
             <View style={styles.fields}>
               {characterTypes.map(({ key, label }) => (
-                <View key={key} style={styles.fieldRow}>
-                  <RoleIcon role={getCharacterTypeRole(label)} size={26} />
-                  <Text selectable style={styles.fieldLabel}>
-                    {label}
-                  </Text>
-                  <Pressable
-                    accessibilityLabel={`Decrease ${label}`}
-                    accessibilityRole="button"
-                    onPress={() => updateCount(key, draft[key] - 1)}
-                    style={({ pressed }) => [styles.stepButton, pressed && styles.buttonPressed]}
-                  >
-                    <Minus color={colors.text} size={17} strokeWidth={2.6} />
-                  </Pressable>
-                  <TextInput
-                    accessibilityLabel={`${label} count`}
-                    inputMode="numeric"
-                    onChangeText={(value) => updateCount(key, Number.parseInt(value, 10) || 0)}
-                    selectTextOnFocus
-                    style={styles.countInput}
-                    value={String(draft[key])}
-                  />
-                  <Pressable
-                    accessibilityLabel={`Increase ${label}`}
-                    accessibilityRole="button"
-                    onPress={() => updateCount(key, draft[key] + 1)}
-                    style={({ pressed }) => [styles.stepButton, pressed && styles.buttonPressed]}
-                  >
-                    <Plus color={colors.text} size={17} strokeWidth={2.6} />
-                  </Pressable>
-                </View>
+                <CountField
+                  key={key}
+                  label={label}
+                  onChange={(value) => updateCount(key, value)}
+                  value={draft[key]}
+                />
               ))}
             </View>
 
@@ -261,6 +237,49 @@ const styles = StyleSheet.create({
   title: { color: colors.text, fontSize: 18, fontWeight: '900' },
   titleGroup: { flex: 1, gap: 2 },
 });
+
+function CountField({
+  label,
+  onChange,
+  value,
+}: {
+  label: string;
+  onChange: (value: number) => void;
+  value: number;
+}) {
+  return (
+    <View style={styles.fieldRow}>
+      <RoleIcon role={getCharacterTypeRole(label)} size={26} />
+      <Text selectable style={styles.fieldLabel}>
+        {label}
+      </Text>
+      <Pressable
+        accessibilityLabel={`Decrease ${label}`}
+        accessibilityRole="button"
+        onPress={() => onChange(value - 1)}
+        style={({ pressed }) => [styles.stepButton, pressed && styles.buttonPressed]}
+      >
+        <Minus color={colors.text} size={17} strokeWidth={2.6} />
+      </Pressable>
+      <TextInput
+        accessibilityLabel={`${label} count`}
+        inputMode="numeric"
+        onChangeText={(text) => onChange(Number.parseInt(text, 10) || 0)}
+        selectTextOnFocus
+        style={styles.countInput}
+        value={String(value)}
+      />
+      <Pressable
+        accessibilityLabel={`Increase ${label}`}
+        accessibilityRole="button"
+        onPress={() => onChange(value + 1)}
+        style={({ pressed }) => [styles.stepButton, pressed && styles.buttonPressed]}
+      >
+        <Plus color={colors.text} size={17} strokeWidth={2.6} />
+      </Pressable>
+    </View>
+  );
+}
 
 function formatCounts(counts: CharacterTypeCounts) {
   return characterTypes.map(({ key, label }) => `${counts[key]} ${label}`).join(', ');
