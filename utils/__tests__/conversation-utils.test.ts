@@ -3,6 +3,7 @@ import {
   buildConversationGroupRepeats,
   buildConversationRows,
   getConversationGroupKey,
+  getPlayersNotTalkedWith,
   hasDuplicatePlayerName,
   normalizePlayerName,
 } from '@/utils/conversation-utils';
@@ -108,5 +109,25 @@ describe('conversation utils', () => {
     expect(dayOneRepeat).toEqual({ dayCount: 2, dayLabels: ['D2'], repeated: true });
     expect(dayTwoRepeat).toEqual({ dayCount: 2, dayLabels: ['D1'], repeated: true });
     expect(dayTwoGroupRepeat).toEqual({ dayCount: 1, dayLabels: [], repeated: false });
+  });
+});
+
+describe('getPlayersNotTalkedWith', () => {
+  it('lists players without a talk with the player that day, ignoring nominations', () => {
+    const conversations: Conversation[] = [
+      { createdAt: 'x', day: 1, id: 'c1', initiatorId: 'alice', participantIds: ['alice', 'ben'] },
+      { createdAt: 'x', day: 2, id: 'c2', initiatorId: 'alice', participantIds: ['alice', 'cora'] },
+      {
+        createdAt: 'x',
+        day: 1,
+        id: 'n1',
+        initiatorId: 'alice',
+        kind: 'nomination',
+        participantIds: ['alice', 'cora'],
+      },
+    ];
+    expect(
+      getPlayersNotTalkedWith(conversations, players, 'alice', 1).map((player) => player.id),
+    ).toEqual(['cora']);
   });
 });

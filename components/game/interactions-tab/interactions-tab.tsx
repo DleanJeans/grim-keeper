@@ -5,6 +5,7 @@ import { useGameRouteContext } from '@/components/game/game-route-context';
 import { InteractionButton } from '@/components/game/interactions-tab/action-buttons/interaction-button';
 import { ConversationTable } from '@/components/game/interactions-tab/conversation-table';
 import { InteractionList } from '@/components/game/interactions-tab/interaction-list';
+import { NotTalkedWith } from '@/components/game/interactions-tab/not-talked-with';
 import { TrackingConfirmActions } from '@/components/game/interactions-tab/tracking-confirm-actions';
 import {
   innerActionRow,
@@ -79,6 +80,8 @@ export function InteractionsTab() {
           );
         })}
       </View>
+
+      {activePhase === 'day' && trackingMode !== 'interaction' ? <NotTalkedWith /> : null}
 
       {subtab === 'table' ? (
         <ConversationTable

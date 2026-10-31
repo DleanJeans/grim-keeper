@@ -203,3 +203,25 @@ export function buildConversationRows(
 function getSeat(players: Player[], playerId: string) {
   return players.find((player) => player.id === playerId)?.seat ?? Number.MAX_SAFE_INTEGER;
 }
+
+/** Players `playerId` hasn't been in a talk with on `day`, in seat order. Storytellers are left out. */
+export function getPlayersNotTalkedWith(
+  conversations: Conversation[],
+  players: Player[],
+  playerId: string,
+  day: number,
+): Player[] {
+  const talkedWith = new Set(
+    conversations
+      .filter(
+        (conversation) =>
+          conversation.kind !== 'nomination' &&
+          conversation.day === day &&
+          conversation.participantIds.includes(playerId),
+      )
+      .flatMap((conversation) => conversation.participantIds),
+  );
+  return players.filter(
+    (player) => player.id !== playerId && !player.isStoryteller && !talkedWith.has(player.id),
+  );
+}
