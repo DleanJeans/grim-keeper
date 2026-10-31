@@ -417,6 +417,16 @@ export default function GameRoute() {
     isPlayerCurrentlyDead(player, activeGame.activeDay, activePhase),
   ).length;
   const alivePlayerCount = nonTravelerPlayers.length - deadPlayerCount;
+  const ghostVoterNames =
+    alivePlayerCount === 3
+      ? activeGame.players
+          .filter(
+            (player) =>
+              !player.isStoryteller &&
+              hasDeadVoteAvailable(player, activeGame.activeDay, 'day', activeGame.conversations),
+          )
+          .map((player) => player.name)
+      : EMPTY_IDS;
   const travelerPlayerCount = travelerPlayerIds.size;
   const claimClashes = showRoles
     ? getClaimClashes(
@@ -1172,7 +1182,11 @@ export default function GameRoute() {
               </View>
 
               {activePhase === 'day' ? (
-                <DaysLeftNote key="days-left" alivePlayerCount={alivePlayerCount} />
+                <DaysLeftNote
+                  key="days-left"
+                  alivePlayerCount={alivePlayerCount}
+                  ghostVoterNames={ghostVoterNames}
+                />
               ) : null}
               {claimClashes ? (
                 <ClaimClashWarnings
