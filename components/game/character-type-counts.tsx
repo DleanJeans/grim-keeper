@@ -177,7 +177,7 @@ export function CharacterTypeCountEditor({
 
 const styles = StyleSheet.create({
   actions: { flexDirection: 'row', gap: 10 },
-  backdrop: { backgroundColor: '#00000099', flex: 1, justifyContent: 'flex-end' },
+  backdrop: { backgroundColor: colors.backdrop, flex: 1, justifyContent: 'flex-end' },
   backdropDismiss: { flex: 1 },
   buttonPressed: { backgroundColor: colors.surfacePressed },
   closeButton: {

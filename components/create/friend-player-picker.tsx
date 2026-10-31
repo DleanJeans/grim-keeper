@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 42,
   },
-  backdrop: { backgroundColor: '#00000099', flex: 1, justifyContent: 'flex-end' },
+  backdrop: { backgroundColor: colors.backdrop, flex: 1, justifyContent: 'flex-end' },
   buttonPressed: { backgroundColor: colors.surfacePressed },
   closeButton: {
     alignItems: 'center',
