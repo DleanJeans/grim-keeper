@@ -5,6 +5,7 @@ import {
   getOnTheBlockNominationId,
   getPlayerNominationHistory,
   getVotesToExecute,
+  getVotingBuddies,
 } from '@/utils/nomination-utils';
 
 const now = '2026-10-31T00:00:00.000Z';
@@ -78,6 +79,24 @@ describe('getPlayerNominationHistory', () => {
     expect(getPlayerNominationHistory(noms, players, 'a', 2)).toEqual([
       { day: 2, didNotVoteFor: ['c'], nominated: [], nominatedBy: [], votedFor: [] },
       { day: 1, didNotVoteFor: [], nominated: ['b'], nominatedBy: ['c'], votedFor: ['b'] },
+    ]);
+  });
+});
+
+describe('getVotingBuddies', () => {
+  it('ranks players by how often they voted the same way, skipping their own nominations', () => {
+    const noms: Conversation[] = [
+      { ...nomination('n1', ['a', 'c']), participantIds: ['a', 'e'] },
+      { ...nomination('n2', ['a', 'c', 'f']), participantIds: ['a', 'e'] },
+      { ...nomination('n3', ['f']), participantIds: ['a', 'e'] },
+      { ...nomination('n4', ['a']), initiatorId: 'c', participantIds: ['c', 'b'] },
+    ];
+    const buddies = getVotingBuddies(noms, players, 'a', 2);
+    expect(buddies.map((buddy) => [buddy.player.id, buddy.agreed, buddy.total])).toEqual([
+      ['c', 3, 4],
+      ['b', 1, 3],
+      ['d', 1, 4],
+      ['f', 1, 4],
     ]);
   });
 });

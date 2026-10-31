@@ -3,7 +3,15 @@ import { StyleSheet, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import { getPlayerNominationHistory, type PlayerNominationDay } from '@/utils/nomination-utils';
+import {
+  getPlayerNominationHistory,
+  getVotingBuddies,
+  type PlayerNominationDay,
+  type VotingBuddy,
+} from '@/utils/nomination-utils';
+
+/** Voting matches listed for the focused player. */
+const BUDDY_COUNT = 3;
 
 /** The focused player's nominations and votes on every day so far. */
 export function PlayerNominationHistory() {
@@ -22,10 +30,22 @@ export function PlayerNominationHistory() {
   if (history.length === 0) {
     return null;
   }
+  const buddies = getVotingBuddies(conversations, players, focusedPlayer.id, activeDayCutoff).slice(
+    0,
+    BUDDY_COUNT,
+  );
 
   return (
     <View style={styles.section}>
       <Text style={styles.title}>{focusedPlayer.name}’s nominations and votes</Text>
+      {buddies.length > 0 ? (
+        <View style={styles.day}>
+          <Text style={styles.dayLabel}>Votes most like {focusedPlayer.name}</Text>
+          {buddies.map((buddy) => (
+            <BuddyLine buddy={buddy} key={buddy.player.id} />
+          ))}
+        </View>
+      ) : null}
       {history.map((entry) => (
         <HistoryDay entry={entry} key={entry.day} />
       ))}
@@ -34,6 +54,7 @@ export function PlayerNominationHistory() {
 }
 
 const styles = StyleSheet.create({
+  buddyCount: { color: colors.textMuted, fontSize: 14, fontVariant: ['tabular-nums'] },
   day: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
@@ -71,6 +92,17 @@ function HistoryDay({ entry }: { entry: PlayerNominationDay }) {
         .map(([label, names]) => (
           <HistoryLine key={label} label={label} names={names} />
         ))}
+    </View>
+  );
+}
+
+function BuddyLine({ buddy }: { buddy: VotingBuddy }) {
+  return (
+    <View style={styles.line}>
+      <Text selectable style={styles.lineValue}>
+        {buddy.player.name}
+      </Text>
+      <Text style={styles.buddyCount}>{`same vote ${buddy.agreed} of ${buddy.total}`}</Text>
     </View>
   );
 }

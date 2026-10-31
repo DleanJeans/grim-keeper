@@ -90,3 +90,47 @@ export function getPlayerNominationHistory(
 
   return [...byDay.values()].sort((a, b) => b.day - a.day);
 }
+
+export type VotingBuddy = {
+  /** Nominations where both voted the same way. */
+  agreed: number;
+  player: Player;
+  /** Nominations both could vote on. */
+  total: number;
+};
+
+/** Fewest shared nominations before a voting match counts. */
+const MIN_SHARED_NOMINATIONS = 2;
+
+/**
+ * Players who voted the same way as `playerId` (both for, or both not) most often up to
+ * `lastDay`, best match first. Storytellers and players with too few shared votes are left out.
+ */
+export function getVotingBuddies(
+  conversations: Conversation[],
+  players: Player[],
+  playerId: string,
+  lastDay: number,
+): VotingBuddy[] {
+  const nominations = conversations.filter(
+    (conversation) => conversation.kind === 'nomination' && conversation.day <= lastDay,
+  );
+
+  return players
+    .filter((player) => player.id !== playerId && !player.isStoryteller)
+    .map((player) => {
+      let agreed = 0;
+      let total = 0;
+      for (const nomination of nominations) {
+        // Nominees rarely vote on themselves, so their nomination says little.
+        const nomineeId = nomination.participantIds.find((id) => id !== nomination.initiatorId);
+        if (nomineeId === playerId || nomineeId === player.id) continue;
+        const voters = nomination.voterIds ?? [];
+        total += 1;
+        if (voters.includes(playerId) === voters.includes(player.id)) agreed += 1;
+      }
+      return { agreed, player, total };
+    })
+    .filter((buddy) => buddy.total >= MIN_SHARED_NOMINATIONS)
+    .sort((a, b) => b.agreed / b.total - a.agreed / a.total || b.total - a.total);
+}
