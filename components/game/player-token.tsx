@@ -268,21 +268,10 @@ export function PlayerToken({
                 overflow: 'hidden',
               },
             ]}
-            imageStyle={{
-              borderRadius: tokenSize / 2,
-              opacity: ROLE_IMAGE_OPACITY,
-              transform: [{ scale: ROLE_IMAGE_SCALE }],
-            }}
+            imageStyle={[styles.roleImage, { borderRadius: tokenSize / 2 }]}
           />
         ) : null}
-        <View
-          style={{
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%',
-            zIndex: 1,
-          }}
-        >
+        <View style={styles.content}>
           <PlayerTokenContent
             color={
               isDragReady
@@ -364,13 +353,7 @@ function PlayerTokenName({ color, name }: PlayerTokenNameProps) {
       ellipsizeMode="tail"
       minimumFontScale={0.72}
       numberOfLines={1}
-      style={{
-        color,
-        fontSize: 12,
-        fontWeight: '800',
-        lineHeight: 13,
-        textAlign: 'center',
-      }}
+      style={[styles.name, { color }]}
     >
       {name}
     </Text>
@@ -379,21 +362,14 @@ function PlayerTokenName({ color, name }: PlayerTokenNameProps) {
 
 function PlayerTokenRoles({ color, roles }: { color: string; roles: Role[] }) {
   return (
-    <View style={{ alignItems: 'center', flexDirection: 'row', gap: 1, maxWidth: '100%' }}>
+    <View style={styles.roles}>
       <Text
         adjustsFontSizeToFit
         ellipsizeMode="tail"
         minimumFontScale={0.6}
         numberOfLines={1}
         selectable
-        style={{
-          color,
-          flexShrink: 1,
-          fontSize: 8.5,
-          fontWeight: '900',
-          lineHeight: 10,
-          textAlign: 'center',
-        }}
+        style={[styles.rolesText, { color }]}
       >
         {roles.map((role) => role.name).join(' / ')}
       </Text>
@@ -414,11 +390,40 @@ function getStorytellerLabelColorStyle(color: string) {
 }
 
 const styles = StyleSheet.create({
+  content: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    zIndex: 1,
+  },
   deadVoteBadge: {
     alignItems: 'center',
     backgroundColor: badgeColors.deadVoteBackground,
     justifyContent: 'center',
     position: 'absolute',
+  },
+  name: {
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 13,
+    textAlign: 'center',
+  },
+  roleImage: {
+    opacity: ROLE_IMAGE_OPACITY,
+    transform: [{ scale: ROLE_IMAGE_SCALE }],
+  },
+  roles: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 1,
+    maxWidth: '100%',
+  },
+  rolesText: {
+    flexShrink: 1,
+    fontSize: 8.5,
+    fontWeight: '900',
+    lineHeight: 10,
+    textAlign: 'center',
   },
   storytellerLabel: {
     fontSize: 8,
