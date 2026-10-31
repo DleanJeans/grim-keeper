@@ -550,6 +550,8 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
     minHeight: 46,
+    // Lets the field shrink below the web input's default width on narrow phones.
+    minWidth: 0,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
