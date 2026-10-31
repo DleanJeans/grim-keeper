@@ -127,6 +127,7 @@ export default function RootLayout() {
             <Stack.Screen name="scripts" options={{ title: 'Scripts' }} />
             <Stack.Screen name="scripts/[id]" options={{ title: 'Script' }} />
             <Stack.Screen name="role-notes" options={{ title: 'Role Notes' }} />
+            <Stack.Screen name="search-notes" options={{ title: 'Search notes' }} />
             <Stack.Screen name="settings" options={{ title: 'Settings' }} />
             <Stack.Screen name="dj/[id]" options={{ title: 'DJ' }} />
             <Stack.Screen name="dj-callback" options={{ headerShown: false, title: 'Spotify' }} />

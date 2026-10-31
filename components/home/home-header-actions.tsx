@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Settings } from 'lucide-react-native';
+import { Search, Settings } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { FullscreenButton } from '@/components/fullscreen-button';
@@ -9,6 +9,15 @@ export function HomeHeaderActions() {
   return (
     <View style={styles.actions}>
       <FullscreenButton />
+      <Pressable
+        accessibilityLabel="Search notes"
+        accessibilityRole="button"
+        hitSlop={8}
+        onPress={() => router.push('/search-notes')}
+        style={({ pressed }) => [styles.button, pressed && styles.pressed]}
+      >
+        <Search color={colors.text} size={22} strokeWidth={2.4} />
+      </Pressable>
       <Pressable
         accessibilityLabel="Open settings"
         accessibilityRole="button"

@@ -62,6 +62,8 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     minHeight: 46,
+    // Web inputs keep a default min width that pushes the clear button out of the box.
+    minWidth: 0,
     paddingVertical: 10,
   },
 });
