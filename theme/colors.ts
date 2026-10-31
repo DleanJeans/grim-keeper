@@ -4,6 +4,9 @@ import { applyTheme } from '@/theme/themes';
 const baseColors = {
   background: '#0b0d10',
   backdrop: '#00000099',
+  /** Darker backdrop behind centered dialogs. */
+  dialogBackdrop: 'rgba(0, 0, 0, 0.68)',
+  dialogShadow: 'rgba(0, 0, 0, 0.45)',
   surface: '#121417',
   surfaceRaised: '#181b20',
   surfacePressed: '#20242a',

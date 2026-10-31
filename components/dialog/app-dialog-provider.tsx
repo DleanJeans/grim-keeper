@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.68)',
+    backgroundColor: colors.dialogBackdrop,
     flex: 1,
     justifyContent: 'center',
     padding: 24,
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     borderRadius: 12,
     borderWidth: 1,
-    boxShadow: '0 18px 48px rgba(0, 0, 0, 0.45)',
+    boxShadow: `0 18px 48px ${colors.dialogShadow}`,
     gap: 20,
     maxWidth: 420,
     padding: 20,
