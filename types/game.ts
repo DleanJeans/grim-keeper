@@ -167,6 +167,8 @@ export type Game = {
   evilInPlay?: Record<string, string>;
   /** Bluff slot id (such as `bluff-0`) → good character the Demon is bluffing. */
   bluffs?: Record<string, string>;
+  /** `<phase index>:<player id>` → trusted, unsure, suspect or none; see utils/suspicion-utils. */
+  suspicions?: Record<string, string>;
 };
 
 export type CharacterTypeCounts = {

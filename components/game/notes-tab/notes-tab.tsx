@@ -10,6 +10,7 @@ import { RoleAssignmentActions } from '@/components/game/notes-tab/role-assignme
 import { EvilInPlayPicker } from '@/components/game/notes-tab/role-info/evil-in-play-picker';
 import { RoleInfoTable } from '@/components/game/notes-tab/role-info/role-info-table';
 import { SavedFriendNotesLink } from '@/components/game/notes-tab/saved-friend-notes-link';
+import { SuspicionPicker } from '@/components/game/notes-tab/suspicion-picker';
 import { Text } from '@/components/text';
 import { getNotesForPlayer, useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
@@ -54,6 +55,7 @@ export function NotesTab() {
       <View style={styles.focusedContainer}>
         <NotesTabScriptPicker />
         <RoleAssignmentActions />
+        <SuspicionPicker />
         <RoleInfoTable player={focusedPlayer} />
         <PlayerNoteSection player={focusedPlayer} />
         {claimedRoleCounts.map(({ count, role }) => (

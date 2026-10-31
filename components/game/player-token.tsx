@@ -16,12 +16,14 @@ import { colors } from '@/theme/colors';
 import type { Player, PlayerPosition, Role } from '@/types/game';
 import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
 import { isTravelerRole } from '@/utils/role-utils';
+import type { SuspicionLevel } from '@/utils/suspicion-utils';
 
 const MAX_BADGE_SIZE = 18;
 const BADGE_SIZE_RATIO = 0.22;
 const DEFAULT_BORDER_WIDTH = 2;
 const SELECTED_BORDER_WIDTH = 3;
 const ROLE_IMAGE_SCALE = 1.4;
+const SUSPICION_DOT_RATIO = 0.75;
 const ROLE_IMAGE_OPACITY = 0.4;
 const EMPTY_OTHER_TOKEN_POSITIONS: OtherTokenPosition[] = [];
 const badgeColors = colors.playerTokenEdgeBadge;
@@ -63,6 +65,8 @@ type PlayerTokenProps = {
   rolesConfirmed?: boolean;
   rearrangeMode?: boolean;
   showRoleDetails?: boolean;
+  /** Small dot at the top right: the app user's trust in this player. */
+  suspicion?: SuspicionLevel;
   tokenSize: number;
   /** Multiplier on `tokenSize`, e.g. 0.75 for Storytellers when there are several. */
   tokenScale?: number;
@@ -89,6 +93,7 @@ export function PlayerToken({
   roles = [],
   rolesConfirmed = false,
   showRoleDetails = false,
+  suspicion,
   tokenScale = 1,
   tokenSize: tokenSizeProp,
 }: PlayerTokenProps) {
@@ -105,6 +110,11 @@ export function PlayerToken({
   const reduceMotion = useReducedMotion();
   const hasDeadVote = !!player.death && (deadVoteAvailable ?? player.deadVoteUsed !== true);
   const badgeSize = Math.min(MAX_BADGE_SIZE, tokenSize * BADGE_SIZE_RATIO);
+  const suspicionDotSize = badgeSize * SUSPICION_DOT_RATIO;
+  // On the border at the top right (45°), measured from the token's padding box.
+  const suspicionDotReach = (tokenSize / 2) * Math.SQRT1_2;
+  const suspicionDotLeft = tokenSize / 2 + suspicionDotReach - borderWidth - suspicionDotSize / 2;
+  const suspicionDotTop = tokenSize / 2 - suspicionDotReach - borderWidth - suspicionDotSize / 2;
   const x = useSharedValue(position.x);
   const y = useSharedValue(position.y);
   const startX = useSharedValue(position.x);
@@ -285,6 +295,21 @@ export function PlayerToken({
             roles={visibleRoles}
           />
         </View>
+        {suspicion ? (
+          <View
+            style={[
+              styles.suspicionDot,
+              suspicionDotStyles[suspicion],
+              {
+                borderRadius: suspicionDotSize / 2,
+                height: suspicionDotSize,
+                left: suspicionDotLeft,
+                top: suspicionDotTop,
+                width: suspicionDotSize,
+              },
+            ]}
+          />
+        ) : null}
         {hasDeadVote ? (
           <View
             style={[
@@ -396,6 +421,14 @@ const styles = StyleSheet.create({
     width: '100%',
     zIndex: 1,
   },
+  suspicionDot: {
+    borderColor: colors.gameBackground,
+    borderWidth: 1.5,
+    position: 'absolute',
+  },
+  suspectDot: { backgroundColor: colors.suspicionSuspect },
+  trustedDot: { backgroundColor: colors.suspicionTrusted },
+  unsureDot: { backgroundColor: colors.suspicionUnsure },
   deadVoteBadge: {
     alignItems: 'center',
     backgroundColor: badgeColors.deadVoteBackground,
@@ -437,3 +470,9 @@ const styles = StyleSheet.create({
   storytellerLabelDefault: { color: Colors.textDefault },
   storytellerLabelDragReady: { color: Colors.textDragReady },
 });
+
+const suspicionDotStyles = {
+  suspect: styles.suspectDot,
+  trusted: styles.trustedDot,
+  unsure: styles.unsureDot,
+};

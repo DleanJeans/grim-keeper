@@ -31,6 +31,7 @@ import {
   getLatestRumorMapDisplaysForDayOrPrevious,
   getRoleDisplayForModes,
 } from '@/utils/role-utils';
+import { getPlayerSuspicion, type SuspicionLevel } from '@/utils/suspicion-utils';
 
 const ROLE_INFO_STROKE_WIDTH = 4;
 // Character tokens next to role info arrows, as a fraction of a player token.
@@ -488,6 +489,11 @@ export function GameMap() {
               players={players}
               position={ownPosition}
               showRoles={showRoles}
+              suspicion={
+                showRoles
+                  ? getPlayerSuspicion(game.suspicions, player.id, activeDay, activePhase)
+                  : undefined
+              }
             />
           );
         })}
@@ -523,6 +529,7 @@ function PlayerTokenForMap({
   players,
   position,
   showRoles,
+  suspicion,
 }: {
   activeDay: number;
   phaseDay: number;
@@ -545,6 +552,7 @@ function PlayerTokenForMap({
   players: Player[];
   position: PlayerPosition;
   showRoles: boolean;
+  suspicion?: SuspicionLevel;
 }) {
   const roleDisplay = getRoleDisplayForModes(
     player,
@@ -577,6 +585,7 @@ function PlayerTokenForMap({
       roles={roleDisplay.roles}
       rolesConfirmed={roleDisplay.kind === 'confirm'}
       showRoleDetails={showRoles}
+      suspicion={suspicion}
       tokenScale={getPlayerTokenScale(player, players)}
       tokenSize={activeTokenSize}
     />

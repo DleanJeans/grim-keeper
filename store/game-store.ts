@@ -82,6 +82,10 @@ import {
   serializeStoredScript,
   stripDuplicateScriptImages,
 } from '@/utils/script-storage';
+import {
+  type SuspicionLevel,
+  setPlayerSuspicion as setSuspicionMark,
+} from '@/utils/suspicion-utils';
 import { webStorage } from '@/utils/web-storage';
 
 export { getNotesForPlayer, migrateV2ToV3 };
@@ -205,6 +209,13 @@ type GameState = GameData & {
   setCharacterTypeCounts: (gameId: string, counts?: CharacterTypeCounts) => void;
   setEvilInPlayRole: (gameId: string, slotId: string, roleId?: string) => void;
   setBluffRole: (gameId: string, slotId: string, roleId?: string) => void;
+  setPlayerSuspicion: (
+    gameId: string,
+    playerId: string,
+    day: number,
+    phase: GamePhase,
+    level?: SuspicionLevel,
+  ) => void;
   setGameResult: (gameId: string, result?: GameResult) => void;
   setActiveDay: (gameId: string, day: number) => void;
   setGamePhase: (gameId: string, day: number, phase: GamePhase) => void;
@@ -1313,6 +1324,19 @@ export const useGameStore = create<GameState>()(
               ? {
                   ...game,
                   bluffs: setEvilInPlayRole(game.bluffs, slotId, roleId),
+                  updatedAt: new Date().toISOString(),
+                }
+              : game,
+          ),
+        }));
+      },
+      setPlayerSuspicion: (gameId, playerId, day, phase, level) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? {
+                  ...game,
+                  suspicions: setSuspicionMark(game.suspicions, playerId, day, phase, level),
                   updatedAt: new Date().toISOString(),
                 }
               : game,

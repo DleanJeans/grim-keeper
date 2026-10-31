@@ -51,6 +51,10 @@ const baseColors = {
   deathNight: '#93c5fd',
   revive: '#86efac',
   reviveBorder: '#22c55e',
+  // Suspicion marks on map tokens and the focused player's mark buttons
+  suspicionTrusted: '#86efac',
+  suspicionUnsure: '#fcd34d',
+  suspicionSuspect: '#f87171',
   // Alive, dead and Traveller counts above the map
   statusAlive: '#86efac',
   statusDead: '#fca5a5',
