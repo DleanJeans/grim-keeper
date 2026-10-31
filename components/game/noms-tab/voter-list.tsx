@@ -1,5 +1,5 @@
 import { Hand } from 'lucide-react-native';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { DeadVoteIcon } from '@/components/game/dead-vote-icon';
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
@@ -18,7 +18,7 @@ export function VoterList({ day, players, voterIds }: VoterListProps) {
   const playerById = new Map(players.map((player) => [player.id, player]));
 
   return (
-    <View style={{ alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 5 }}>
+    <View style={styles.list}>
       <Hand color={colors.textMuted} size={12} />
       {voterIds.length > 0 ? (
         voterIds.map((playerId) => {
@@ -33,23 +33,33 @@ export function VoterList({ day, players, voterIds }: VoterListProps) {
               }
               player={player}
               iconSize={14}
-              textStyle={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}
+              textStyle={styles.text}
             />
           ) : (
-            <Text
-              key={playerId}
-              selectable
-              style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}
-            >
+            <Text key={playerId} selectable style={styles.text}>
               Unknown
             </Text>
           );
         })
       ) : (
-        <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
+        <Text selectable style={styles.text}>
           No votes recorded
         </Text>
       )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  list: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 5,
+  },
+  text: {
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+});

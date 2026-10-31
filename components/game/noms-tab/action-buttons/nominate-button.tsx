@@ -1,4 +1,5 @@
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+
 import { NomIcon } from '@/components/game/noms-tab/nom-icon';
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { onDarkTextStrong, outlinedActionStyle } from '@/components/game/styles';
@@ -46,26 +47,32 @@ export function NominateButton({
         strokeWidth={2.7}
       />
       {disabled && alreadyNominatedPlayer ? (
-        <View style={{ alignItems: 'center', flexDirection: 'row', gap: 4, minWidth: 0 }}>
-          <Text style={{ ...onDarkTextStrong, color: colors.gameTextMuted }}>
-            Already Nominated
-          </Text>
+        <View style={styles.alreadyNominated}>
+          <Text style={[styles.label, styles.labelDisabled]}>Already Nominated</Text>
           <PlayerNameWithRole
             player={alreadyNominatedPlayer}
             iconSize={14}
-            textStyle={{ ...onDarkTextStrong, color: colors.gameTextMuted }}
+            textStyle={[styles.label, styles.labelDisabled]}
           />
         </View>
       ) : (
-        <Text
-          style={{
-            ...onDarkTextStrong,
-            color: disabled ? colors.gameTextMuted : colors.gameText,
-          }}
-        >
-          {label}
-        </Text>
+        <Text style={[styles.label, disabled && styles.labelDisabled]}>{label}</Text>
       )}
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  alreadyNominated: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4,
+    minWidth: 0,
+  },
+  label: {
+    ...onDarkTextStrong,
+  },
+  labelDisabled: {
+    color: colors.gameTextMuted,
+  },
+});
