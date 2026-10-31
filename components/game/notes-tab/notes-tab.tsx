@@ -7,6 +7,7 @@ import { DayNoteRow } from '@/components/game/notes-tab/day-note-row';
 import { NightOrderSection } from '@/components/game/notes-tab/night-order-section';
 import { NotesTabScriptPicker } from '@/components/game/notes-tab/notes-tab-script-picker';
 import { PlayerNoteSection } from '@/components/game/notes-tab/player-note-section';
+import { PlayerTimelineButton } from '@/components/game/notes-tab/player-timeline-button';
 import { QuickNoteTags } from '@/components/game/notes-tab/quick-note-tags';
 import { RoleAssignmentActions } from '@/components/game/notes-tab/role-assignment-actions';
 import { EvilInPlayPicker } from '@/components/game/notes-tab/role-info/evil-in-play-picker';
@@ -61,6 +62,7 @@ export function NotesTab() {
         <QuickNoteTags />
         <RoleInfoTable player={focusedPlayer} />
         <PlayerNoteSection player={focusedPlayer} />
+        <PlayerTimelineButton player={focusedPlayer} />
         {claimedRoleCounts.map(({ count, role }) => (
           <ClaimedRoleNotesLink
             count={count}
