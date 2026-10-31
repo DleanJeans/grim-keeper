@@ -214,7 +214,7 @@ export function RoleAssignmentActions() {
                 ) : null
               ) : isTravelerClaim ? (
                 <RolePicker
-                  description="Choose which alignment this traveler is claiming."
+                  description="Choose which alignment this traveller is claiming."
                   onToggleRole={handleToggleRoleAssignment}
                   roles={travelerClaimRoles}
                   selectedRoleIds={roleAssignmentRoleIds}
@@ -248,7 +248,7 @@ export function RoleAssignmentActions() {
               {!showTravelerAlignmentOnly &&
               (roleAssignmentKind === 'confirm' || roleAssignmentKind === 'guess') ? (
                 <TravelerRolePicker
-                  description={`Choose one traveler role to ${getRoleAssignmentLabel(roleAssignmentKind).toLocaleLowerCase()} for this player.`}
+                  description={`Choose one traveller role to ${getRoleAssignmentLabel(roleAssignmentKind).toLocaleLowerCase()} for this player.`}
                   onToggleRole={handleToggleRoleAssignment}
                   roles={assignmentRoles.filter(isTravelerRole)}
                   selectedRoleIds={roleAssignmentRoleIds}

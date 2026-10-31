@@ -19,7 +19,7 @@ type TravelerRolePickerProps = {
 };
 
 export function TravelerRolePicker({
-  description = 'Choose one traveler role to confirm for this player.',
+  description = 'Choose one traveller role to confirm for this player.',
   onToggleRole,
   roles,
   selectedRoleIds,
@@ -55,7 +55,7 @@ export function TravelerRolePicker({
   }, [roles, searchQuery]);
   const summary =
     roles.length === 0
-      ? 'Traveler characters are unavailable offline'
+      ? 'Traveller characters are unavailable offline'
       : selectedTravelerRole
         ? `${selectedTravelerRole.name} selected`
         : 'None selected';
@@ -63,10 +63,10 @@ export function TravelerRolePicker({
   return (
     <View style={styles.container}>
       <Text selectable style={styles.label}>
-        Traveler characters
+        Traveller characters
       </Text>
       <Pressable
-        accessibilityLabel={`Traveler characters: ${summary}`}
+        accessibilityLabel={`Traveller characters: ${summary}`}
         accessibilityRole="button"
         disabled={disabled}
         onPress={() => setPickerOpen(true)}
@@ -89,7 +89,7 @@ export function TravelerRolePicker({
             </Text>
           </View>
           <Text selectable style={[styles.selectorHint, disabled && styles.disabledText]}>
-            Choose a traveler role for this player
+            Choose a traveller role for this player
           </Text>
         </View>
         <ChevronDown
@@ -112,7 +112,7 @@ export function TravelerRolePicker({
           style={styles.overlay}
         >
           <Pressable
-            accessibilityLabel="Close traveler character picker"
+            accessibilityLabel="Close traveller character picker"
             accessibilityRole="button"
             onPress={() => setPickerOpen(false)}
             style={styles.backdropClose}
@@ -120,10 +120,10 @@ export function TravelerRolePicker({
           <View style={styles.sheet}>
             <View style={styles.header}>
               <Text selectable style={styles.title}>
-                Traveler roles
+                Traveller roles
               </Text>
               <Pressable
-                accessibilityLabel="Close traveler character picker"
+                accessibilityLabel="Close traveller character picker"
                 accessibilityRole="button"
                 hitSlop={8}
                 onPress={() => {
@@ -138,11 +138,11 @@ export function TravelerRolePicker({
             <View style={styles.search}>
               <Search color={colors.textMuted} size={18} strokeWidth={2.4} />
               <TextInput
-                accessibilityLabel="Search traveler characters"
+                accessibilityLabel="Search traveller characters"
                 autoCapitalize="none"
                 autoCorrect={false}
                 onChangeText={setSearchQuery}
-                placeholder="Search traveler characters"
+                placeholder="Search traveller characters"
                 placeholderTextColor={colors.textSubtle}
                 returnKeyType="search"
                 style={styles.searchInput}
@@ -181,7 +181,7 @@ export function TravelerRolePicker({
                 </>
               ) : (
                 <Text selectable style={styles.noResults}>
-                  No traveler characters found.
+                  No traveller characters found.
                 </Text>
               )}
             </ScrollView>
