@@ -6,6 +6,7 @@ import {
   defaultMapHeight,
   defaultMapWidth,
   defaultTokenSize,
+  findFreeTokenPosition,
   getDefaultMapHeight,
   getDefaultMapWidth,
   getLegacyMapHeight,
@@ -259,5 +260,28 @@ describe('resolveTokenCollisions', () => {
 
     expect(result.positions.b).toBeUndefined();
     expect(result.positions.c).toBeUndefined();
+  });
+});
+
+describe('findFreeTokenPosition', () => {
+  it('keeps the preferred spot when nothing covers it', () => {
+    expect(findFreeTokenPosition([], { x: 250, y: 250 }, 500, 500, 90)).toEqual({ x: 250, y: 250 });
+  });
+
+  it('moves out of the way of a token on the preferred spot', () => {
+    const blocker: Player = { id: 'st', name: 'Sam', position: { x: 250, y: 250 }, seat: -1 };
+    const position = findFreeTokenPosition([blocker], { x: 250, y: 250 }, 500, 500, 90);
+
+    expect(Math.hypot(position.x - 250, position.y - 250)).toBeGreaterThanOrEqual(90 - 0.5);
+    expect(position).toEqual({ x: 250, y: 340 });
+  });
+
+  it('falls back to the preferred spot when the map has no room', () => {
+    const blocker: Player = { id: 'a', name: 'A', position: { x: 50, y: 50 }, seat: 0 };
+
+    expect(findFreeTokenPosition([blocker], { x: 50, y: 50 }, 100, 100, 90)).toEqual({
+      x: 50,
+      y: 50,
+    });
   });
 });

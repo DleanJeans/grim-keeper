@@ -36,7 +36,7 @@ import { getGameStartingNight } from '@/utils/game-phase-utils';
 import { type GameTransfer, mergeGameTransfer } from '@/utils/game-transfer';
 import {
   clampMapHeight,
-  clampTokenPosition,
+  findFreeTokenPosition,
   getStorytellerPosition,
   getTokenSize,
   resolveTokenCollisions,
@@ -650,7 +650,7 @@ export const useGameStore = create<GameState>()(
           const updatedAt = new Date().toISOString();
           const friends = addMissingFriends(state.friends, [normalizedName], updatedAt);
           const friend = getFriendByName(friends, normalizedName);
-          const position = getMapCenterPosition(game);
+          const position = getNewPlayerPosition(game, game.players);
           const games = state.games.map((existingGame) =>
             existingGame.id === gameId
               ? {
@@ -703,7 +703,8 @@ export const useGameStore = create<GameState>()(
           const existingPlayersById = new Map(game.players.map((player) => [player.id, player]));
           const appUser = game.players.find((player) => player.id === APP_USER_ID);
           const retainedPlayerIds = new Set(appUser ? [appUser.id] : []);
-          const newPlayerPosition = getMapCenterPosition(game);
+          // New players take free spots around the map center, one after another.
+          const placedPlayers = [...game.players];
           const players = [
             appUser ?? { id: APP_USER_ID, name: state.appUserName, seat: 0 },
             ...regularDraftPlayers.map((player, index) => {
@@ -715,12 +716,15 @@ export const useGameStore = create<GameState>()(
                 return { ...existingPlayer, name, seat: index + 1 };
               }
 
-              return {
+              const position = getNewPlayerPosition(game, placedPlayers);
+              const newPlayer: Player = {
                 id: friendIdsByName.get(name.toLocaleLowerCase()) ?? player.id,
                 name,
                 seat: index + 1,
-                ...(newPlayerPosition ? { position: newPlayerPosition } : {}),
+                ...(position ? { position } : {}),
               };
+              placedPlayers.push(newPlayer);
+              return newPlayer;
             }),
             ...storytellerFriends.map((storytellerFriend, index) => {
               const existingPlayer = existingPlayersById.get(storytellerFriend.id);
@@ -1705,12 +1709,14 @@ function normalizeSushiRoleIds(roleIds: string[], script: StoredScript) {
   );
 }
 
-function getMapCenterPosition(game: Game): PlayerPosition | undefined {
+/** A spot near the map center that no token (such as the Storyteller's) covers yet. */
+function getNewPlayerPosition(game: Game, players: Player[]): PlayerPosition | undefined {
   if (game.mapWidth === undefined || game.mapHeight === undefined) {
     return undefined;
   }
 
-  return clampTokenPosition(
+  return findFreeTokenPosition(
+    players,
     { x: game.mapWidth / 2, y: game.mapHeight / 2 },
     game.mapWidth,
     game.mapHeight,

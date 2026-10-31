@@ -217,6 +217,58 @@ export function clampTokenPosition(
   };
 }
 
+/** Angles tried on each ring when looking for a free spot for a new token. */
+const FREE_SPOT_ANGLES = 12;
+
+/**
+ * The spot nearest `preferred` where a new token of `tokenSize` covers no other token: the
+ * preferred spot itself, else rings around it, each one token further out. Falls back to the
+ * preferred spot when the map is full; the caller can then push tokens apart.
+ */
+export function findFreeTokenPosition(
+  players: Player[],
+  preferred: PlayerPosition,
+  mapWidth: number,
+  mapHeight: number,
+  tokenSize = defaultTokenSize,
+): PlayerPosition {
+  const resolvedTokenSize = getTokenSize(tokenSize);
+  const placedTokens = players.map((player) => ({
+    position: getPlayerMapPosition(player, players, mapWidth, mapHeight, resolvedTokenSize),
+    size: resolvedTokenSize * getPlayerTokenScale(player, players),
+  }));
+  const isFree = (position: PlayerPosition) =>
+    placedTokens.every(
+      (token) =>
+        Math.hypot(token.position.x - position.x, token.position.y - position.y) >=
+        (token.size + resolvedTokenSize) / 2 - COLLISION_RESOLUTION_EPSILON,
+    );
+  const start = clampTokenPosition(preferred, mapWidth, mapHeight, resolvedTokenSize);
+
+  if (isFree(start)) {
+    return start;
+  }
+
+  const maxRadius = Math.hypot(mapWidth, mapHeight);
+  for (let radius = resolvedTokenSize / 2; radius <= maxRadius; radius += resolvedTokenSize / 2) {
+    // Start straight below and go round, so the first free spot is the one nearest the bottom.
+    for (let step = 0; step < FREE_SPOT_ANGLES; step += 1) {
+      const angle = Math.PI / 2 + (step * 2 * Math.PI) / FREE_SPOT_ANGLES;
+      const candidate = {
+        x: start.x + Math.cos(angle) * radius,
+        y: start.y + Math.sin(angle) * radius,
+      };
+      const clamped = clampTokenPosition(candidate, mapWidth, mapHeight, resolvedTokenSize);
+      // Skip spots off the map; clamping them would only stack tokens against the edge.
+      if (Math.hypot(clamped.x - candidate.x, clamped.y - candidate.y) < 0.5 && isFree(clamped)) {
+        return clamped;
+      }
+    }
+  }
+
+  return start;
+}
+
 export type TokenCollisionResolution = {
   /** Map of player id → resolved position. Only includes players whose position changed. */
   positions: Record<string, PlayerPosition>;

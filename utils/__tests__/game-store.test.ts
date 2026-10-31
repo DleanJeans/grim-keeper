@@ -497,6 +497,29 @@ describe('addPlayer', () => {
       position: { x: 300, y: 200 },
     });
   });
+
+  it('places a newly added player beside the Storyteller instead of under them', () => {
+    const game: Game = {
+      activeDay: 1,
+      conversations: [],
+      createdAt: '2026-07-07T00:00:00.000Z',
+      id: 'game-1',
+      mapHeight: 400,
+      mapWidth: 600,
+      players: [
+        { id: 'app-user', name: 'You', seat: 0 },
+        { id: 'st', isStoryteller: true, name: 'Sam', position: { x: 300, y: 200 }, seat: -1 },
+      ],
+      tokenSize: 68,
+      updatedAt: '2026-07-07T00:00:00.000Z',
+    };
+
+    useGameStore.setState({ games: [game] });
+
+    useGameStore.getState().addPlayer('game-1', 'Traveler');
+
+    expect(useGameStore.getState().games[0].players[2].position).toEqual({ x: 300, y: 268 });
+  });
 });
 
 describe('dead vote usage', () => {
