@@ -1,9 +1,11 @@
 import {
   getCurrentlyPlayingSpotifySong,
+  parseSpotifySearchResponse,
   parseSpotifySong,
   parseYouTubeVideoId,
   queueSpotifySong,
   resolveDjSongMetadata,
+  searchSpotifyTracks,
 } from '@/utils/spotify';
 
 describe('DJ provider parsing', () => {
@@ -127,6 +129,56 @@ describe('Spotify queueing', () => {
       'https://api.spotify.com/v1/me/player?additional_types=track%2Cepisode',
       { headers: { Authorization: 'Bearer access-token' } },
     );
+  });
+
+  it('searches Spotify tracks and returns song URLs with artists and small album art', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      json: async () => ({
+        tracks: {
+          items: [
+            {
+              album: { images: [{ url: 'large.jpg' }, { url: 'small.jpg' }] },
+              artists: [{ name: 'Artist One' }, { name: 'Artist Two' }],
+              id: 'track1',
+              name: 'Song One',
+            },
+          ],
+        },
+      }),
+      ok: true,
+      status: 200,
+    });
+    globalThis.fetch = fetchMock;
+
+    await expect(searchSpotifyTracks('  song one ')).resolves.toEqual([
+      {
+        artists: 'Artist One, Artist Two',
+        imageUrl: 'small.jpg',
+        title: 'Song One',
+        url: 'https://open.spotify.com/track/track1',
+      },
+    ]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.spotify.com/v1/search?limit=5&q=song+one&type=track',
+      { headers: { Authorization: 'Bearer access-token' }, signal: undefined },
+    );
+  });
+
+  it('asks to connect Spotify before searching without authorization', async () => {
+    storage.clear();
+    globalThis.fetch = jest.fn();
+
+    await expect(searchSpotifyTracks('song')).rejects.toMatchObject({ kind: 'unauthorized' });
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it('skips malformed Spotify search items', () => {
+    expect(
+      parseSpotifySearchResponse({
+        tracks: { items: [null, { id: 'no-name' }, { id: 'track2', name: 'Bare Song' }] },
+      }),
+    ).toEqual([{ artists: '', title: 'Bare Song', url: 'https://open.spotify.com/track/track2' }]);
+    expect(parseSpotifySearchResponse({})).toEqual([]);
   });
 
   it('returns no song when Spotify has no active playback', async () => {

@@ -16,6 +16,13 @@ export type SpotifyQueueResult = {
   success: boolean;
 };
 
+export type SpotifySearchResult = {
+  artists: string;
+  imageUrl?: string;
+  title: string;
+  url: string;
+};
+
 type SpotifyAuth = {
   accessToken: string;
   expiresAt: number;
@@ -32,6 +39,7 @@ type SpotifyPendingAuthorization = {
 const SPOTIFY_AUTH_KEY = 'grim-keeper-spotify-auth-v1';
 const SPOTIFY_PENDING_KEY = 'grim-keeper-spotify-pending-v1';
 const SPOTIFY_RESULT_KEY = 'grim-keeper-spotify-result-v1';
+const SPOTIFY_SEARCH_LIMIT = 5;
 const SPOTIFY_SCOPE = 'user-modify-playback-state user-read-playback-state';
 
 export class SpotifyError extends Error {
@@ -217,6 +225,86 @@ export async function getCurrentlyPlayingSpotifySong() {
   }
 
   throw new SpotifyError('device', 'Spotify could not read the current playback.');
+}
+
+/** Finds Spotify tracks by name or artist, for picking a song without copying its link. */
+export async function searchSpotifyTracks(
+  query: string,
+  signal?: AbortSignal,
+): Promise<SpotifySearchResult[]> {
+  if (!isWeb()) {
+    throw new SpotifyError('unsupported', 'Spotify search is available in the web app only.');
+  }
+
+  const trimmedQuery = query.trim();
+  if (!trimmedQuery) {
+    return [];
+  }
+
+  const auth = await getValidSpotifyAuth();
+  if (!auth) {
+    throw new SpotifyError('unauthorized', 'Connect Spotify to search for songs.');
+  }
+
+  const searchParams = new URLSearchParams({
+    limit: String(SPOTIFY_SEARCH_LIMIT),
+    q: trimmedQuery,
+    type: 'track',
+  });
+  const response = await fetch(`https://api.spotify.com/v1/search?${searchParams.toString()}`, {
+    headers: { Authorization: `Bearer ${auth.accessToken}` },
+    signal,
+  });
+  if (response.ok) {
+    let value: unknown;
+    try {
+      value = await response.json();
+    } catch {
+      throw new SpotifyError('device', 'Spotify returned an invalid search response.');
+    }
+    return parseSpotifySearchResponse(value);
+  }
+  if (response.status === 401) {
+    removeStorage(SPOTIFY_AUTH_KEY);
+    throw new SpotifyError('unauthorized', 'Your Spotify authorization expired. Please reconnect.');
+  }
+  if (response.status === 429) {
+    throw new SpotifyError('rate-limit', 'Spotify is rate-limiting requests. Try again shortly.');
+  }
+
+  throw new SpotifyError('device', 'Spotify search failed. Try again.');
+}
+
+export function parseSpotifySearchResponse(value: unknown): SpotifySearchResult[] {
+  const items = isRecord(value) && isRecord(value.tracks) ? value.tracks.items : undefined;
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items.flatMap((item) => {
+    if (!isRecord(item) || !isString(item.id) || !isString(item.name)) {
+      return [];
+    }
+
+    const artists = Array.isArray(item.artists)
+      ? item.artists.flatMap((artist) =>
+          isRecord(artist) && isString(artist.name) ? [artist.name] : [],
+        )
+      : [];
+    const images =
+      isRecord(item.album) && Array.isArray(item.album.images) ? item.album.images : [];
+    // Spotify lists album art largest first; the smallest is enough for a result row.
+    const image = images.findLast((candidate) => isRecord(candidate) && isString(candidate.url));
+
+    return [
+      {
+        artists: artists.join(', '),
+        ...(isRecord(image) && isString(image.url) ? { imageUrl: image.url } : {}),
+        title: item.name,
+        url: `https://open.spotify.com/track/${item.id}`,
+      },
+    ];
+  });
 }
 
 export async function startSpotifyAuthorization(songUrl?: string) {

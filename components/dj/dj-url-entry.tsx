@@ -2,10 +2,14 @@ import { ClipboardPaste, Plus } from 'lucide-react-native';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
 
+import { SpotifySearchResults } from '@/components/dj/spotify-search-results';
 import { Text, TextInput } from '@/components/text';
 import { useClipboardSongUrl } from '@/hooks/use-clipboard-song-url';
 import { colors } from '@/theme/colors';
 import { normalizeSongUrl } from '@/utils/dj-utils';
+import { getSpotifyClientId } from '@/utils/spotify';
+
+const canSearchSpotify = process.env.EXPO_OS === 'web' && !!getSpotifyClientId();
 
 type DjUrlEntryProps = {
   onAdd: (songUrl: string) => void;
@@ -16,14 +20,22 @@ export function DjUrlEntry({ onAdd }: DjUrlEntryProps) {
   const [error, setError] = useState<string | null>(null);
   const { songUrl: clipboardSongUrl, refresh: refreshClipboard } = useClipboardSongUrl();
   const showPaste = !draft.trim() && !!clipboardSongUrl;
+  const draftSongUrl = normalizeSongUrl(draft);
 
   function handleAdd() {
-    const songUrl = normalizeSongUrl(draft);
-    if (!songUrl) {
-      setError('Enter an http(s) or Spotify song URL.');
+    if (!draftSongUrl) {
+      setError(
+        canSearchSpotify
+          ? 'Enter a song URL, or pick a Spotify song below.'
+          : 'Enter an http(s) or Spotify song URL.',
+      );
       return;
     }
 
+    addSong(draftSongUrl);
+  }
+
+  function addSong(songUrl: string) {
     onAdd(songUrl);
     setDraft('');
     setError(null);
@@ -47,7 +59,11 @@ export function DjUrlEntry({ onAdd }: DjUrlEntryProps) {
             }
           }}
           onSubmitEditing={handleAdd}
-          placeholder="Paste a Spotify, YouTube, or other URL"
+          placeholder={
+            canSearchSpotify
+              ? 'Search Spotify or paste a song URL'
+              : 'Paste a Spotify, YouTube, or other URL'
+          }
           placeholderTextColor={colors.inputPlaceholder}
           returnKeyType="done"
           style={styles.input}
@@ -87,6 +103,7 @@ export function DjUrlEntry({ onAdd }: DjUrlEntryProps) {
         )}
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
+      {draftSongUrl ? null : <SpotifySearchResults onSelect={addSong} query={draft} />}
     </KeyboardAvoidingView>
   );
 }
