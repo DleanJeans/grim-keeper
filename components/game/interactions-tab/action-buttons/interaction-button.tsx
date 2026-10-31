@@ -3,6 +3,7 @@ import { Pressable } from 'react-native';
 
 import { onDarkTextStrong, outlinedActionStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
+import { colors } from '@/theme/colors';
 
 type InteractionButtonProps = {
   flex?: number;
@@ -18,7 +19,7 @@ export function InteractionButton({ flex = 1, onPress, playerName }: Interaction
       onPress={onPress}
       style={({ pressed }) => outlinedActionStyle({ pressed, flex })}
     >
-      <MessageCircle color="#f8fafc" size={17} strokeWidth={2.7} />
+      <MessageCircle color={colors.gameText} size={17} strokeWidth={2.7} />
       <Text style={onDarkTextStrong}>Track Interaction</Text>
     </Pressable>
   );

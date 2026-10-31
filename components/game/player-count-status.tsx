@@ -23,10 +23,10 @@ export function PlayerCountStatus({
 }: PlayerCountStatusProps) {
   return (
     <View style={styles.row}>
-      <CountPill color="#86efac" count={alivePlayerCount} icon={HeartPulse} />
-      <CountPill color="#fca5a5" count={deadPlayerCount} icon={Skull} />
+      <CountPill color={colors.statusAlive} count={alivePlayerCount} icon={HeartPulse} />
+      <CountPill color={colors.statusDead} count={deadPlayerCount} icon={Skull} />
       {travelerPlayerCount > 0 ? (
-        <CountPill color="#fcd34d" count={travelerPlayerCount} icon={Footprints} />
+        <CountPill color={colors.statusTraveller} count={travelerPlayerCount} icon={Footprints} />
       ) : null}
     </View>
   );

@@ -32,9 +32,9 @@ export function DayStepperButton({
         disabled && styles.disabled,
       ]}
     >
-      {direction === 'prev' ? <Icon color="#f8fafc" size={17} strokeWidth={2.7} /> : null}
+      {direction === 'prev' ? <Icon color={colors.gameText} size={17} strokeWidth={2.7} /> : null}
       <Text style={styles.label}>{label}</Text>
-      {direction === 'next' ? <Icon color="#f8fafc" size={17} strokeWidth={2.7} /> : null}
+      {direction === 'next' ? <Icon color={colors.gameText} size={17} strokeWidth={2.7} /> : null}
     </Pressable>
   );
 }

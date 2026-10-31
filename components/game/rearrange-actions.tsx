@@ -78,7 +78,7 @@ export function RearrangeActions() {
           onPress={() => handleRotateTokens(-rotationStepRadians)}
           style={({ pressed }) => outlinedActionStyle({ pressed, flex: 1 })}
         >
-          <RotateCcw color="#f8fafc" size={17} strokeWidth={2.7} />
+          <RotateCcw color={colors.gameText} size={17} strokeWidth={2.7} />
           <Text style={onDarkTextStrong}>Left</Text>
         </Pressable>
         <MapModeButton
@@ -93,7 +93,7 @@ export function RearrangeActions() {
           onPress={() => handleRotateTokens(rotationStepRadians)}
           style={({ pressed }) => outlinedActionStyle({ pressed, flex: 1 })}
         >
-          <RotateCw color="#f8fafc" size={17} strokeWidth={2.7} />
+          <RotateCw color={colors.gameText} size={17} strokeWidth={2.7} />
           <Text style={onDarkTextStrong}>Right</Text>
         </Pressable>
       </View>
@@ -107,7 +107,7 @@ export function RearrangeActions() {
             outlinedActionStyle({ pressed, disabled: !canUndoRotation, flex: 1 })
           }
         >
-          <Undo2 color="#f8fafc" size={17} strokeWidth={2.7} />
+          <Undo2 color={colors.gameText} size={17} strokeWidth={2.7} />
           <Text style={onDarkTextStrong}>Undo</Text>
         </Pressable>
       </View>
@@ -143,7 +143,7 @@ function DimensionAdjustRow({
         onPress={onDecrease}
         style={({ pressed }) => outlinedActionStyle({ pressed, disabled: !canDecrease, flex: 1 })}
       >
-        <Minus color="#f8fafc" size={17} strokeWidth={2.7} />
+        <Minus color={colors.gameText} size={17} strokeWidth={2.7} />
       </Pressable>
       <View style={styles.dimensionDisplay}>
         <Text style={styles.dimensionTitle}>{title}</Text>
@@ -158,7 +158,7 @@ function DimensionAdjustRow({
         onPress={onIncrease}
         style={({ pressed }) => outlinedActionStyle({ pressed, disabled: !canIncrease, flex: 1 })}
       >
-        <Plus color="#f8fafc" size={17} strokeWidth={2.7} />
+        <Plus color={colors.gameText} size={17} strokeWidth={2.7} />
       </Pressable>
     </View>
   );
