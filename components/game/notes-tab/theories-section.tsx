@@ -1,18 +1,20 @@
-import { Plus, Trash2 } from 'lucide-react-native';
+import { Plus, Trash2, TriangleAlert } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import { getTheoryLabel } from '@/utils/theory-utils';
+import { getAutomaticCharacterTypeCounts } from '@/utils/evil-in-play-utils';
+import { getActiveTheoryEvilIds, getTheoryLabel, getTheoryWarnings } from '@/utils/theory-utils';
 
 /**
  * Saved "worlds" of who might be evil. The selected one rings its evil players on the map; mark
  * players from their Roles tab. Shown only while Show roles is on.
  */
 export function TheoriesSection() {
-  const { game, showRoles } = useGameRouteContext();
+  const { activeDay, activePhase, game, showRoles } = useGameRouteContext();
+  const roleCatalog = useGameStore((state) => state.roleCatalog);
   const addTheory = useGameStore((state) => state.addTheory);
   const deleteTheory = useGameStore((state) => state.deleteTheory);
   const setActiveTheory = useGameStore((state) => state.setActiveTheory);
@@ -24,6 +26,17 @@ export function TheoriesSection() {
   const theories = game.theories ?? [];
   const activeId = game.activeTheoryId;
   const playingPlayers = game.players.filter((player) => !player.isStoryteller);
+  const counts = game.characterTypeCounts ?? getAutomaticCharacterTypeCounts(playingPlayers.length);
+  const warnings = activeId
+    ? getTheoryWarnings(
+        getActiveTheoryEvilIds(game),
+        playingPlayers,
+        [...(game.script?.roles ?? []), ...roleCatalog],
+        activeDay,
+        activePhase,
+        counts.minions + counts.demons,
+      )
+    : [];
 
   return (
     <View style={styles.section}>
@@ -62,6 +75,14 @@ export function TheoriesSection() {
           Tap a player to mark them evil in this theory. Evil players get a red ring on the map.
         </Text>
       ) : null}
+      {warnings.map((warning) => (
+        <View key={warning} style={styles.warning}>
+          <TriangleAlert color={colors.warning} size={13} strokeWidth={2.6} />
+          <Text selectable style={styles.warningText}>
+            {warning}
+          </Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -85,6 +106,8 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   hint: { color: colors.gameTextMuted, fontSize: 12, lineHeight: 17 },
   section: { gap: 8 },
+  warning: { alignItems: 'center', flexDirection: 'row', gap: 6 },
+  warningText: { color: colors.warning, flexShrink: 1, fontSize: 12, fontWeight: '700' },
   title: {
     color: colors.noteDayHeader,
     fontSize: 12,
