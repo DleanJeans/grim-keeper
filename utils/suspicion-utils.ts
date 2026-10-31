@@ -1,5 +1,7 @@
-import type { GamePhase } from '@/types/game';
+import type { GamePhase, Player, Role } from '@/types/game';
 import { getEventPhaseIndex } from '@/utils/game-phase-utils';
+import { APP_USER_ID } from '@/utils/object-id';
+import { getEffectiveRoleForPlayer, getRoleAlignment } from '@/utils/role-utils';
 
 export type SuspicionLevel = 'suspect' | 'trusted' | 'unsure';
 
@@ -51,4 +53,27 @@ export function setPlayerSuspicion(
     next[key] = level ?? CLEARED;
   }
   return next;
+}
+
+/**
+ * Players the suspect filter dims: marked trusted, or confirmed as a good character, plus you
+ * and Storytellers. Everyone else is still an open suspect.
+ */
+export function getClearedPlayerIds(
+  players: Player[],
+  marks: SuspicionMarks | undefined,
+  roles: Role[],
+  day: number,
+  phase: GamePhase,
+): string[] {
+  return players
+    .filter((player) => {
+      if (player.id === APP_USER_ID || player.isStoryteller) return true;
+      if (getPlayerSuspicion(marks, player.id, day, phase) === 'trusted') return true;
+      const effective = getEffectiveRoleForPlayer(player, roles, day, phase);
+      return (
+        effective.kind === 'confirm' && !!effective.role && getRoleAlignment(effective.role) === 'g'
+      );
+    })
+    .map((player) => player.id);
 }

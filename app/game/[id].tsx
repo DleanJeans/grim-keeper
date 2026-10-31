@@ -33,6 +33,7 @@ import { PlayerCountStatus } from '@/components/game/player-count-status';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
 import { RevealRolesButton } from '@/components/game/reveal-roles-button';
 import { RoleDisplayModes } from '@/components/game/role-display-modes';
+import { SuspectFilterButton } from '@/components/game/suspect-filter-button';
 import { UndoBar } from '@/components/game/undo-bar';
 import { NotFoundScreen } from '@/components/not-found-screen';
 import { ResponsiveContent } from '@/components/responsive-content';
@@ -86,7 +87,10 @@ import {
   toggleRoleSelection,
 } from '@/utils/role-utils';
 import { isSushiBuffetScript } from '@/utils/script-service';
+import { getClearedPlayerIds } from '@/utils/suspicion-utils';
 import { describeGameChange, PENDING_CHANGE } from '@/utils/undo-utils';
+
+const EMPTY_IDS: string[] = [];
 
 export default function GameRoute() {
   const {
@@ -159,6 +163,7 @@ export default function GameRoute() {
   ]);
   const [showRoles, setShowRoles] = useState(false);
   const [recapOpen, setRecapOpen] = useState(false);
+  const [suspectFilter, setSuspectFilter] = useState(false);
   const [undo, setUndo] = useState<{ before: Game; id: number; label: string } | null>(null);
   // Game before a new nomination, kept until its votes are saved so one Undo covers both.
   const pendingUndoBase = useRef<Game | null>(null);
@@ -384,6 +389,16 @@ export default function GameRoute() {
           )
         : [];
   const gameRoles = activeGame.script?.roles ?? [];
+  const dimmedPlayerIds =
+    suspectFilter && showRoles
+      ? getClearedPlayerIds(
+          activeGame.players,
+          activeGame.suspicions,
+          [...gameRoles, ...roleCatalog],
+          activeGame.activeDay,
+          activePhase,
+        )
+      : EMPTY_IDS;
   const countedPlayers = activeGame.players.filter((player) => !player.isStoryteller);
   const travelerPlayerIds = new Set(
     countedPlayers
@@ -1010,6 +1025,7 @@ export default function GameRoute() {
     alivePlayerCount,
     deadPlayerCount,
     travelerPlayerCount,
+    dimmedPlayerIds,
     disabledPlayerIds,
     nominatedPlayerIds,
     hideConnectionCurves,
@@ -1225,6 +1241,12 @@ export default function GameRoute() {
 
           <View style={styles.fabStack}>
             {djEnabled ? <DjGameButton gameId={activeGame.id} /> : null}
+            {showRoles ? (
+              <SuspectFilterButton
+                active={suspectFilter}
+                onToggle={() => setSuspectFilter((value) => !value)}
+              />
+            ) : null}
             <RevealRolesButton
               onRevealRolesChange={setShowRoles}
               showRoles={showRoles}

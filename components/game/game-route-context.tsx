@@ -36,6 +36,8 @@ export type GameRouteContextValue = {
   alivePlayerCount: number;
   deadPlayerCount: number;
   travelerPlayerCount: number;
+  /** Faded on the map by the suspect filter. */
+  dimmedPlayerIds: string[];
   disabledPlayerIds: string[];
   nominatedPlayerIds: Set<string>;
 

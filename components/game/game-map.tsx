@@ -56,6 +56,7 @@ export function GameMap() {
     activeRoleDisplayModes,
     activeTab,
     conversations,
+    dimmedPlayerIds,
     disabledPlayerIds,
     focusedPlayerId,
     hideConnectionCurves,
@@ -229,6 +230,7 @@ export function GameMap() {
     [activeDayCutoff, conversations],
   );
   const disabledPlayerIdSet = useMemo(() => new Set(disabledPlayerIds), [disabledPlayerIds]);
+  const dimmedPlayerIdSet = useMemo(() => new Set(dimmedPlayerIds), [dimmedPlayerIds]);
 
   // Filled in as each curve renders, so later curves steer clear of earlier line ends and arrowheads
   // and avoid crossing earlier lines.
@@ -473,6 +475,7 @@ export function GameMap() {
               activePhase={activePhase}
               activeRoleDisplayModes={activeRoleDisplayModes}
               activeTokenSize={activeTokenSize}
+              dimmed={dimmedPlayerIdSet.has(player.id)}
               disabled={disabledPlayerIdSet.has(player.id)}
               gameRoles={game.script?.roles ?? []}
               conversations={conversations}
@@ -513,6 +516,7 @@ function PlayerTokenForMap({
   activePhase,
   activeRoleDisplayModes,
   activeTokenSize,
+  dimmed,
   disabled,
   gameRoles,
   conversations,
@@ -536,6 +540,7 @@ function PlayerTokenForMap({
   activePhase: GamePhasePosition['activePhase'];
   activeRoleDisplayModes: RoleDisplayMode[];
   activeTokenSize: number;
+  dimmed: boolean;
   disabled: boolean;
   gameRoles: Role[];
   conversations: Conversation[];
@@ -567,6 +572,7 @@ function PlayerTokenForMap({
   return (
     <PlayerToken
       confirmedRoleIds={roleDisplay.kind === 'confirm' ? roleDisplay.roleIds : undefined}
+      dimmed={dimmed}
       disabled={disabled}
       displayName={getPlayerTokenName(player, players)}
       deadVoteAvailable={deadVoteAvailable}

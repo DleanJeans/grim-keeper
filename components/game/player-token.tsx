@@ -53,6 +53,8 @@ type PlayerTokenProps = {
   confirmedRoleIds?: string[];
   deadVoteAvailable?: boolean;
   disabled?: boolean;
+  /** Faded but still tappable, e.g. cleared players under the suspect filter. */
+  dimmed?: boolean;
   /** Label shown on the token; defaults to the player's name. */
   displayName?: string;
   interactionMode?: boolean;
@@ -77,6 +79,7 @@ type PlayerTokenProps = {
 export function PlayerToken({
   confirmedRoleIds,
   deadVoteAvailable,
+  dimmed = false,
   disabled = false,
   displayName,
   isInitiator = false,
@@ -256,7 +259,7 @@ export function PlayerToken({
                     : Colors.borderDefault,
             borderRadius: tokenSize / 2,
             borderWidth,
-            opacity: disabled ? 0.42 : player.death && !isDragReady ? 0.72 : 1,
+            opacity: disabled ? 0.42 : dimmed ? 0.28 : player.death && !isDragReady ? 0.72 : 1,
             height: tokenSize,
             justifyContent: 'center',
             paddingHorizontal: 6,
