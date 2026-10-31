@@ -274,7 +274,7 @@ export type TokenCollisionResolution = {
   positions: Record<string, PlayerPosition>;
 };
 
-const COLLISION_RESOLUTION_MAX_ITERATIONS = 16;
+const COLLISION_RESOLUTION_MAX_ITERATIONS = 48;
 const COLLISION_RESOLUTION_EPSILON = 0.5;
 
 type ResolvablePlayer = {
@@ -430,6 +430,24 @@ export function resolveTokenCollisions(
   }
 
   return { positions: resolved };
+}
+
+/**
+ * Pushes overlapping tokens apart after the map or token size changed, counting tokens that
+ * still sit at their default spot too. Returns only the positions that moved.
+ */
+export function resolveMapOverlaps(
+  players: Player[],
+  mapWidth: number,
+  mapHeight: number,
+  tokenSize: number,
+): Record<string, PlayerPosition> {
+  const placedPlayers = players.map((player) => ({
+    ...player,
+    position: getPlayerMapPosition(player, players, mapWidth, mapHeight, tokenSize),
+  }));
+
+  return resolveTokenCollisions(placedPlayers, mapWidth, mapHeight, tokenSize).positions;
 }
 
 export function rotatePlayerMapPositions(

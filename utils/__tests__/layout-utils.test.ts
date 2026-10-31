@@ -15,6 +15,7 @@ import {
   getPlayerMapPosition,
   getPlayerTokenScale,
   getTokenSize,
+  resolveMapOverlaps,
   resolveTokenCollisions,
   scalePlayerMapPositions,
 } from '@/utils/layout-utils';
@@ -283,5 +284,35 @@ describe('findFreeTokenPosition', () => {
       x: 50,
       y: 50,
     });
+  });
+});
+
+describe('resolveMapOverlaps', () => {
+  it('pushes apart tokens that overlap, including ones still at their default spot', () => {
+    const crowded: Player[] = [
+      { id: 'a', name: 'A', position: { x: 250, y: 455 }, seat: 0 },
+      // Seat 1 of 2 has no saved position, so it sits at its default spot on the top edge.
+      { id: 'b', name: 'B', seat: 1 },
+      { id: 'c', name: 'C', position: { x: 260, y: 45 }, seat: 2, isStoryteller: true },
+    ];
+    const positions = resolveMapOverlaps(crowded, 500, 500, 90);
+    const placed = crowded.map((player) =>
+      getPlayerMapPosition(
+        { ...player, position: positions[player.id] ?? player.position },
+        crowded,
+        500,
+        500,
+        90,
+      ),
+    );
+
+    for (let i = 0; i < placed.length; i += 1) {
+      for (let j = i + 1; j < placed.length; j += 1) {
+        expect(
+          Math.hypot(placed[i].x - placed[j].x, placed[i].y - placed[j].y),
+        ).toBeGreaterThanOrEqual(89);
+      }
+    }
+    expect(positions.a).toBeUndefined();
   });
 });

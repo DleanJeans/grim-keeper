@@ -40,6 +40,7 @@ import { colors } from '@/theme/colors';
 import type {
   GamePhase,
   KillAttribution,
+  Player,
   PlayerPosition,
   PlayerRoleAssignment,
   RoleDisplayMode,
@@ -63,7 +64,7 @@ import {
   getTokenSize,
   mapHeightStep,
   mapWidthStep,
-  resolveTokenCollisions,
+  resolveMapOverlaps,
   rotatePlayerMapPositions,
   scalePlayerMapPositions,
 } from '@/utils/layout-utils';
@@ -199,16 +200,27 @@ export default function GameRoute() {
       return;
     }
 
+    const tokenSize = getTokenSize(game.tokenSize);
     const legacyPositions = scalePlayerMapPositions(
       game.players,
       game.mapWidth ?? fallbackDimensions.mapWidth,
       game.mapHeight ?? fallbackDimensions.legacyMapHeight,
       mapWidth,
       mapHeight,
-      getTokenSize(game.tokenSize),
+      tokenSize,
     );
-    if (Object.keys(legacyPositions).length > 0) {
-      updatePlayerPositions(game.id, legacyPositions);
+    // A smaller screen squeezes tokens together, so push any that now overlap apart.
+    const positions = {
+      ...legacyPositions,
+      ...resolveMapOverlaps(
+        withPositions(game.players, legacyPositions),
+        mapWidth,
+        mapHeight,
+        tokenSize,
+      ),
+    };
+    if (Object.keys(positions).length > 0) {
+      updatePlayerPositions(game.id, positions);
     }
     setMapDimensions(game.id, mapWidth, mapHeight);
   }, [
@@ -645,12 +657,7 @@ export default function GameRoute() {
       if (nextSize <= activeTokenSize) {
         return;
       }
-      const { positions } = resolveTokenCollisions(
-        activeGame.players,
-        mapWidth,
-        mapHeight,
-        nextSize,
-      );
+      const positions = resolveMapOverlaps(activeGame.players, mapWidth, mapHeight, nextSize);
       if (Object.keys(positions).length > 0) {
         updatePlayerPositions(activeGame.id, positions);
       }
@@ -665,6 +672,16 @@ export default function GameRoute() {
 
     runDayEdit(() => {
       setLastRotationPositions(null);
+      // A shorter map pushes tokens at the bottom edge into the ones above them.
+      const positions = resolveMapOverlaps(
+        activeGame.players,
+        mapWidth,
+        nextHeight,
+        activeTokenSize,
+      );
+      if (Object.keys(positions).length > 0) {
+        updatePlayerPositions(activeGame.id, positions);
+      }
       setMapDimensions(activeGame.id, mapWidth, nextHeight);
     });
   }
@@ -685,12 +702,8 @@ export default function GameRoute() {
         mapHeight,
         activeTokenSize,
       );
-      const resizedPlayers = activeGame.players.map((player) => {
-        const position = scaledPositions[player.id];
-        return position ? { ...player, position } : player;
-      });
-      const { positions: collisionPositions } = resolveTokenCollisions(
-        resizedPlayers,
+      const collisionPositions = resolveMapOverlaps(
+        withPositions(activeGame.players, scaledPositions),
         nextWidth,
         mapHeight,
         activeTokenSize,
@@ -1144,6 +1157,13 @@ function createScrollContentStyle(topInset: number) {
       paddingTop: INLINE_GAME_HEADER_HEIGHT + topInset,
     },
   }).scrollContent;
+}
+
+function withPositions(players: Player[], positions: Record<string, PlayerPosition>) {
+  return players.map((player) => {
+    const position = positions[player.id];
+    return position ? { ...player, position } : player;
+  });
 }
 
 const styles = StyleSheet.create({
