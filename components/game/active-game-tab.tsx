@@ -3,6 +3,7 @@ import { DeathLog } from '@/components/game/deaths-tab/death-log';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { InteractionsTab } from '@/components/game/interactions-tab/interactions-tab';
 import { TrackingConfirmActions } from '@/components/game/interactions-tab/tracking-confirm-actions';
+import { LikelyVoters } from '@/components/game/noms-tab/likely-voters';
 import { NominationList } from '@/components/game/noms-tab/nomination-list';
 import { VoteConfirmActions } from '@/components/game/noms-tab/vote-confirm-actions';
 import { NotesTab } from '@/components/game/notes-tab/notes-tab';
@@ -15,7 +16,10 @@ export function ActiveGameTab() {
     return (
       <>
         {votingNominationId ? (
-          <VoteConfirmActions />
+          <>
+            <VoteConfirmActions />
+            <LikelyVoters />
+          </>
         ) : trackingMode ? (
           <TrackingConfirmActions />
         ) : null}
