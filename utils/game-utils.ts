@@ -237,3 +237,46 @@ export function isGameResult(value: unknown): value is GameResult {
 function getBaseRoleId(roleId: string) {
   return roleId.replace(/_(evil|good)$/, '');
 }
+
+export type HeadToHeadSide = {
+  /** Games with this friend on this side, results or not. */
+  games: number;
+  /** Games on this side that have a result. */
+  completedGames: number;
+  /** Games the app user won, out of `completedGames`. */
+  wins: number;
+};
+
+export type HeadToHeadStats = {
+  opposite: HeadToHeadSide;
+  same: HeadToHeadSide;
+};
+
+/**
+ * The app user's record with a friend: games on the same team and on opposite teams. Games where
+ * either alignment is unknown are left out.
+ */
+export function getHeadToHeadStats(games: Game[], friendId: string): HeadToHeadStats {
+  const stats: HeadToHeadStats = {
+    opposite: { completedGames: 0, games: 0, wins: 0 },
+    same: { completedGames: 0, games: 0, wins: 0 },
+  };
+
+  for (const game of games) {
+    if (friendId === APP_USER_ID || !game.players.some((player) => player.id === friendId)) {
+      continue;
+    }
+    const friendAlignment = getGameAlignment(game, friendId);
+    const appUserAlignment = getGameAlignment(game, APP_USER_ID);
+    if (!friendAlignment || !appUserAlignment) continue;
+
+    const side = friendAlignment === appUserAlignment ? stats.same : stats.opposite;
+    side.games += 1;
+    if (game.result !== undefined) {
+      side.completedGames += 1;
+      if (game.result === 'won') side.wins += 1;
+    }
+  }
+
+  return stats;
+}

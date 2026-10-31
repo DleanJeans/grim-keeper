@@ -3,6 +3,7 @@ import {
   getCharacterStats,
   getGameStats,
   getGamesWithRoleInPlay,
+  getHeadToHeadStats,
   getLastDayWithData,
 } from '@/utils/game-utils';
 import { APP_USER_ID } from '@/utils/object-id';
@@ -393,5 +394,22 @@ describe('getGamesWithRoleInPlay', () => {
     expect(getGamesWithRoleInPlay([picked, storyteller], 'imp').map((g) => g.id)).toEqual([
       'picked',
     ]);
+  });
+});
+
+describe('getHeadToHeadStats', () => {
+  it('splits games with a friend into same team and opposite teams', () => {
+    const games = [
+      makeAlignedGame('townsfolk', 'won', 'friend'),
+      makeAlignedGame('townsfolk', 'lost', 'friend'),
+      makeAlignedGame('townsfolk', undefined, 'friend'),
+      makeAlignedGame('demon', 'won', 'friend'),
+      makeAlignedGame('traveller', 'won', 'friend'),
+      makeAlignedGame('townsfolk', 'won', 'someone-else'),
+    ];
+    expect(getHeadToHeadStats(games, 'friend')).toEqual({
+      opposite: { completedGames: 1, games: 1, wins: 1 },
+      same: { completedGames: 2, games: 3, wins: 1 },
+    });
   });
 });

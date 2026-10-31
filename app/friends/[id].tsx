@@ -7,6 +7,7 @@ import { FriendNameEditToggle } from '@/components/friends/friend-name-edit-togg
 import { FriendNameInputRow } from '@/components/friends/friend-name-input-row';
 import { FriendNameSaveButton } from '@/components/friends/friend-name-save-button';
 import { GameStatsCards } from '@/components/game-stats-cards';
+import { HeadToHeadStatsCard } from '@/components/head-to-head-stats-card';
 import { NotFoundScreen } from '@/components/not-found-screen';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { SavedNotes } from '@/components/saved-notes';
@@ -126,6 +127,7 @@ export default function FriendDetailRoute() {
           ) : null}
 
           <GameStatsCards games={games} playerId={friend.id} />
+          <HeadToHeadStatsCard friendId={friend.id} friendName={friend.name} games={games} />
 
           {djEnabled ? (
             <DjSongSection editable target={{ id: friend.id, type: 'friend' }} title="DJ songs" />
