@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   summaryCount: { alignItems: 'center', flexDirection: 'row', gap: 1 },
   summaryPressed: { opacity: 0.65 },
   summaryText: {
-    color: '#cbd5e1',
+    color: colors.gameTextSoft,
     fontSize: 11,
     fontVariant: ['tabular-nums'],
     fontWeight: '900',

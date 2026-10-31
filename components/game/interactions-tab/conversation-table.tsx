@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   pill: {
-    backgroundColor: '#1e293b',
+    backgroundColor: colors.gameSurfaceRaised,
     borderColor: colors.gameBorder,
     borderRadius: 999,
     borderWidth: 1,
@@ -188,20 +188,20 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   pillRepeated: {
-    backgroundColor: '#78350f',
-    borderColor: '#f59e0b',
+    backgroundColor: colors.repeatBadgeBackground,
+    borderColor: colors.repeatBorder,
     borderRadius: 999,
     borderWidth: 1,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
   pillText: {
-    color: '#cbd5e1',
+    color: colors.gameTextSoft,
     fontSize: 13,
     fontWeight: '600',
   },
   pillTextRepeated: {
-    color: '#fde68a',
+    color: colors.repeatBadgeText,
     fontSize: 13,
     fontWeight: '800',
   },
