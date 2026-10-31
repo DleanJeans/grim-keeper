@@ -76,6 +76,7 @@ export default function RoleNotesScreen() {
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
         style={styles.screen}
       >
         <ResponsiveContent style={styles.content}>

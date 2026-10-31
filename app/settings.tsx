@@ -45,6 +45,7 @@ export default function SettingsRoute() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps="handled"
         style={styles.screen}
       >
         <ResponsiveContent style={styles.content}>
