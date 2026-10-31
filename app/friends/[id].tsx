@@ -3,11 +3,9 @@ import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { DjSongSection } from '@/components/dj/dj-song-section';
 import { FriendGamesList } from '@/components/friends/friend-games-list';
-import {
-  FriendNameEditToggle,
-  FriendNameInputRow,
-  FriendNameSaveButton,
-} from '@/components/friends/friend-name-editor';
+import { FriendNameEditToggle } from '@/components/friends/friend-name-edit-toggle';
+import { FriendNameInputRow } from '@/components/friends/friend-name-input-row';
+import { FriendNameSaveButton } from '@/components/friends/friend-name-save-button';
 import { GameStatsCards } from '@/components/game-stats-cards';
 import { NotFoundScreen } from '@/components/not-found-screen';
 import { ResponsiveContent } from '@/components/responsive-content';
