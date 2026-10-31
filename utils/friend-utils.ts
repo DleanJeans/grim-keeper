@@ -104,17 +104,49 @@ export function sortStorytellerSummaries(friends: FriendSummary[]) {
   });
 }
 
+/**
+ * The friend each seated player is, matched by id or, for players typed in by name or carried
+ * over from a saved game, by name.
+ */
+export function getPlayerFriend(player: Pick<Friend, 'id' | 'name'>, friends: FriendSummary[]) {
+  return friends.find((friend) => friend.id === player.id) ?? getFriendByName(friends, player.name);
+}
+
+/** Ids of the friends who already sit among the players, in seat order. */
+export function getSelectedFriendIds(
+  players: Array<Pick<Friend, 'id' | 'name'>>,
+  friends: FriendSummary[],
+) {
+  return [...new Set(players.flatMap((player) => getPlayerFriend(player, friends)?.id ?? []))];
+}
+
+/**
+ * Players typed in on the New Game screen who aren't friends yet, as picker entries, so the
+ * Choose friends picker shows every seated player.
+ */
+export function getUnsavedPlayerFriends(
+  players: Array<Pick<Friend, 'id' | 'name'>>,
+  friends: FriendSummary[],
+): FriendSummary[] {
+  return players.flatMap((player) =>
+    getPlayerFriend(player, friends)
+      ? []
+      : [{ createdAt: '', gamesPlayed: 0, gamesStorytold: 0, id: player.id, name: player.name }],
+  );
+}
+
 export function mergeFriendPlayerSelection(
   currentPlayers: Array<Pick<Friend, 'id' | 'name'>>,
   friends: FriendSummary[],
   selectedFriendIds: string[],
 ) {
-  const friendIds = new Set(friends.map((friend) => friend.id));
   const selectedFriendIdSet = new Set(selectedFriendIds);
   const friendsById = new Map(friends.map((friend) => [friend.id, friend]));
-  const retainedPlayers = currentPlayers.filter(
-    (player) => !friendIds.has(player.id) || selectedFriendIdSet.has(player.id),
-  );
+  // A player stays unless they are a friend the picker left unselected.
+  const retainedPlayers = currentPlayers.filter((player) => {
+    const friend = getPlayerFriend(player, friends);
+    return !friend || selectedFriendIdSet.has(friend.id);
+  });
   const retainedPlayerIds = new Set(retainedPlayers.map((player) => player.id));
   const retainedNames = retainedPlayers.map((player) => player.name);
   const addedPlayers = selectedFriendIds.flatMap((friendId) => {

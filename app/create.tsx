@@ -16,6 +16,8 @@ import { hasDuplicatePlayerName, normalizePlayerName } from '@/utils/conversatio
 import {
   getFriendByName,
   getFriendSummaries,
+  getSelectedFriendIds,
+  getUnsavedPlayerFriends,
   mergeFriendPlayerSelection,
   sortFriendSummaries,
   sortStorytellerSummaries,
@@ -135,15 +137,17 @@ export default function CreateRoute() {
       ),
     [friends, seatedNames],
   );
-  const playerPickerFriends = useMemo(
-    () => friends.filter((friend) => !draftSelectedStorytellerIds.includes(friend.id)),
-    [draftSelectedStorytellerIds, friends],
-  );
-  const selectedFriendIds = useMemo(() => {
-    const friendIds = new Set(playerPickerFriends.map((friend) => friend.id));
+  const playerPickerFriends = useMemo(() => {
+    const pickerFriends = friends.filter(
+      (friend) => !draftSelectedStorytellerIds.includes(friend.id),
+    );
 
-    return players.flatMap((player) => (friendIds.has(player.id) ? [player.id] : []));
-  }, [playerPickerFriends, players]);
+    return [...getUnsavedPlayerFriends(players, pickerFriends), ...pickerFriends];
+  }, [draftSelectedStorytellerIds, friends, players]);
+  const selectedFriendIds = useMemo(
+    () => getSelectedFriendIds(players, playerPickerFriends),
+    [playerPickerFriends, players],
+  );
   const playerOrderKey = useMemo(() => players.map((player) => player.id).join('|'), [players]);
   const playerIndexes = useMemo(
     () => new Map(players.map((player, index) => [player.id, index])),

@@ -2,6 +2,8 @@ import type { Friend, Game, SavedNote } from '@/types/game';
 import {
   addMissingFriends,
   getFriendSummaries,
+  getSelectedFriendIds,
+  getUnsavedPlayerFriends,
   hasFriendName,
   mergeFriendPlayerSelection,
   sortFriendSummaries,
@@ -146,6 +148,41 @@ describe('friend utils', () => {
       { id: 'manual', name: 'Manual Player' },
       { id: 'alice', name: 'Alice' },
       { id: 'cora', name: 'Cora' },
+    ]);
+  });
+
+  it('matches players typed in by name to their friends', () => {
+    const friends = [
+      { createdAt: '', gamesPlayed: 2, gamesStorytold: 0, id: 'alice', name: 'Alice' },
+      { createdAt: '', gamesPlayed: 1, gamesStorytold: 0, id: 'ben', name: 'Ben' },
+    ];
+    const players = [
+      { id: 'draft-1', name: 'ben' },
+      { id: 'game-player-7', name: 'Alice' },
+      { id: 'draft-2', name: 'Newcomer' },
+    ];
+
+    expect(getSelectedFriendIds(players, friends)).toEqual(['ben', 'alice']);
+    expect(getUnsavedPlayerFriends(players, friends)).toEqual([
+      { createdAt: '', gamesPlayed: 0, gamesStorytold: 0, id: 'draft-2', name: 'Newcomer' },
+    ]);
+  });
+
+  it('keeps typed-in players that stay selected and drops the ones unselected', () => {
+    const players = [
+      { id: 'draft-1', name: 'Ben' },
+      { id: 'game-player-7', name: 'Alice' },
+      { id: 'draft-2', name: 'Newcomer' },
+    ];
+    const friends = [
+      { createdAt: '', gamesPlayed: 2, gamesStorytold: 0, id: 'alice', name: 'Alice' },
+      { createdAt: '', gamesPlayed: 1, gamesStorytold: 0, id: 'ben', name: 'Ben' },
+    ];
+    const pickerFriends = [...getUnsavedPlayerFriends(players, friends), ...friends];
+
+    expect(mergeFriendPlayerSelection(players, pickerFriends, ['alice', 'draft-2'])).toEqual([
+      { id: 'game-player-7', name: 'Alice' },
+      { id: 'draft-2', name: 'Newcomer' },
     ]);
   });
 });
