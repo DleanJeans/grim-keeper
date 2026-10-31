@@ -33,6 +33,7 @@ import { PlayerCountStatus } from '@/components/game/player-count-status';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
 import { RevealRolesButton } from '@/components/game/reveal-roles-button';
 import { RoleDisplayModes } from '@/components/game/role-display-modes';
+import { UndoBar } from '@/components/game/undo-bar';
 import { NotFoundScreen } from '@/components/not-found-screen';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { Text } from '@/components/text';
@@ -41,6 +42,7 @@ import { useDjStore } from '@/store/dj-store';
 import { getGameById, useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type {
+  Game,
   GamePhase,
   KillAttribution,
   Player,
@@ -81,6 +83,7 @@ import {
   isTravelerRole,
 } from '@/utils/role-utils';
 import { isSushiBuffetScript } from '@/utils/script-service';
+import { describeGameChange, PENDING_CHANGE } from '@/utils/undo-utils';
 
 export default function GameRoute() {
   const {
@@ -153,6 +156,10 @@ export default function GameRoute() {
   ]);
   const [showRoles, setShowRoles] = useState(false);
   const [recapOpen, setRecapOpen] = useState(false);
+  const [undo, setUndo] = useState<{ before: Game; id: number; label: string } | null>(null);
+  // Game before a new nomination, kept until its votes are saved so one Undo covers both.
+  const pendingUndoBase = useRef<Game | null>(null);
+  const restoreGame = useGameStore((state) => state.restoreGame);
   const [dayEditLocked, setDayEditLocked] = useState(false);
   const scrollContentStyle = useMemo(
     () => createScrollContentStyle(isFullscreen ? insets.top : 0),
@@ -404,7 +411,27 @@ export default function GameRoute() {
         { bluffRoleIds: Object.values(activeGame.bluffs ?? {}), catalog: roleCatalog },
       )
     : undefined;
-  function runDayEdit(edit: () => void, day = recordDay, phase = activePhase) {
+  function getStoredGame() {
+    return useGameStore.getState().games.find((candidate) => candidate.id === activeGame.id);
+  }
+
+  function runDayEdit(rawEdit: () => void, day = recordDay, phase = activePhase) {
+    const edit = () => {
+      const before = getStoredGame();
+      rawEdit();
+      const after = getStoredGame();
+      if (!before || !after) return;
+      const change = describeGameChange(before, after);
+      if (change === PENDING_CHANGE) {
+        pendingUndoBase.current ??= before;
+      } else if (change) {
+        // Read the ref now: the state updater runs later, after the ref is cleared.
+        const undoBase = pendingUndoBase.current ?? before;
+        const label = pendingUndoBase.current ? 'Nomination saved' : change;
+        pendingUndoBase.current = null;
+        setUndo((current) => ({ before: undoBase, id: (current?.id ?? 0) + 1, label }));
+      }
+    };
     const isHistoricalDay = day < lastDayWithData && day !== recordDay;
     const targetPosition = { activeDay: day, activePhase: phase };
     const isHistoricalPhase = getPhaseIndex(targetPosition) < latestPhaseIndex;
@@ -594,6 +621,7 @@ export default function GameRoute() {
 
   function handleCancelVoting() {
     const returnTab = votingReturnTab;
+    pendingUndoBase.current = null;
     if (votingNominationId && votingNominationIsNew) {
       // The nomination was added to the log by handleConfirmTracking before
       // we entered vote-confirming. Cancelling now should drop it entirely.
@@ -1172,6 +1200,18 @@ export default function GameRoute() {
             <View style={styles.selectingBar}>
               <Text style={styles.selectingLabel}>Selecting: {focusedPlayer.name}</Text>
             </View>
+          ) : null}
+
+          {undo ? (
+            <UndoBar
+              key={undo.id}
+              label={undo.label}
+              onDismiss={() => setUndo(null)}
+              onUndo={() => {
+                restoreGame(undo.before);
+                setUndo(null);
+              }}
+            />
           ) : null}
 
           <View style={styles.fabStack}>

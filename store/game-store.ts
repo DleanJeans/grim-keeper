@@ -209,6 +209,8 @@ type GameState = GameData & {
   setCharacterTypeCounts: (gameId: string, counts?: CharacterTypeCounts) => void;
   setEvilInPlayRole: (gameId: string, slotId: string, roleId?: string) => void;
   setBluffRole: (gameId: string, slotId: string, roleId?: string) => void;
+  /** Puts back an earlier copy of a game, for Undo. */
+  restoreGame: (game: Game) => void;
   setPlayerSuspicion: (
     gameId: string,
     playerId: string,
@@ -1327,6 +1329,13 @@ export const useGameStore = create<GameState>()(
                   updatedAt: new Date().toISOString(),
                 }
               : game,
+          ),
+        }));
+      },
+      restoreGame: (restored) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === restored.id ? { ...restored, updatedAt: new Date().toISOString() } : game,
           ),
         }));
       },
