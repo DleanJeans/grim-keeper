@@ -12,6 +12,7 @@ import type {
   StartingNight,
 } from '@/types/game';
 import type { GamePhasePosition } from '@/utils/game-phase-utils';
+import type { RoleToggleMode } from '@/utils/role-utils';
 
 export type GameTab = 'interactions' | 'nominations' | 'deaths' | 'notes';
 
@@ -97,7 +98,7 @@ export type GameRouteContextValue = {
   handleResizeTokens: (sizeDelta: number) => void;
   handleStartRoleAssignment: (kind: PlayerRoleAssignment['kind']) => void;
   handleCancelRoleAssignment: () => void;
-  handleToggleRoleAssignment: (roleId: string, keepOpen?: boolean) => void;
+  handleToggleRoleAssignment: (roleId: string, keepOpen?: boolean, mode?: RoleToggleMode) => void;
   handleSaveRoleAssignment: (roleIds?: string[]) => void;
   handleDeleteRumor: (sourcePlayerId: string, day: number, phase?: GamePhase) => void;
   handleSelectRumorSource: (sourcePlayerId: string) => void;

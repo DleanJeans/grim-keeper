@@ -33,6 +33,7 @@ import {
   mergeRoleCatalogMetadata,
   mergeScriptRoles,
   parseRoleIconCatalog,
+  toggleRoleSelection,
 } from '@/utils/role-utils';
 
 describe('role utilities', () => {
@@ -1369,5 +1370,17 @@ describe('role utilities', () => {
     expect(getRolesByIds(['imp_evil'], [{ id: 'imp', name: 'Imp', team: 'demon' }])).toEqual([
       { id: 'imp_evil', name: 'Imp Evil' },
     ]);
+  });
+});
+
+describe('toggleRoleSelection', () => {
+  it('picks one role, or up to three for a multi claim', () => {
+    expect(toggleRoleSelection([], 'chef')).toEqual(['chef']);
+    expect(toggleRoleSelection(['chef'], 'chef')).toEqual([]);
+    expect(toggleRoleSelection(['chef'], 'empath')).toEqual(['empath']);
+    expect(toggleRoleSelection(['chef'], 'empath', 'multi')).toEqual(['chef', 'empath']);
+    expect(toggleRoleSelection(['chef', 'empath'], 'chef', 'multi')).toEqual(['empath']);
+    expect(toggleRoleSelection(['a', 'b', 'c'], 'd', 'multi')).toEqual(['b', 'c', 'd']);
+    expect(toggleRoleSelection(['a', 'b', 'c'], 'a', 'only')).toEqual(['a']);
   });
 });

@@ -1,4 +1,4 @@
-import { CircleHelp, Megaphone, ShieldCheck, Skull, Tag } from 'lucide-react-native';
+import { CircleHelp, Layers, Megaphone, ShieldCheck, Skull, Tag } from 'lucide-react-native';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -54,6 +54,8 @@ export function RoleAssignmentActions() {
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   // Keyed to the open panel so the Evil toggle resets for another player or kind.
   const [evilPickingKey, setEvilPickingKey] = useState<string | null>(null);
+  // Same idea for the "3 for 3" toggle on claims.
+  const [multiClaimKey, setMultiClaimKey] = useState<string | null>(null);
 
   if (!focusedPlayer || interactionMode || !game.script) {
     return null;
@@ -107,6 +109,20 @@ export function RoleAssignmentActions() {
     ? getTravelerClaimRoles(confirmedTravelerBaseRole)
     : [];
   const isTravelerClaim = roleAssignmentKind === 'claim' && !!confirmedTravelerRole;
+  const canMultiClaim = roleAssignmentKind === 'claim' && !isTravelerClaim;
+  const multiClaim =
+    canMultiClaim && (multiClaimKey === pickingKey || roleAssignmentRoleIds.length > 1);
+  const handleToggleMultiClaim = () => {
+    if (!multiClaim) {
+      setMultiClaimKey(pickingKey);
+      return;
+    }
+    setMultiClaimKey(null);
+    const [firstRoleId] = roleAssignmentRoleIds;
+    if (roleAssignmentRoleIds.length > 1 && firstRoleId) {
+      handleToggleRoleAssignment(firstRoleId, true, 'only');
+    }
+  };
   // Confirm keeps the full picker in the phase the Traveller joined, so it can still be changed.
   const activePhaseIndex = getEventPhaseIndex(activeDay, activePhase);
   const travelerConfirmedEarlier = (focusedPlayer.roleAssignments ?? []).some(
@@ -222,6 +238,18 @@ export function RoleAssignmentActions() {
                 />
               ) : (
                 <>
+                  {canMultiClaim ? (
+                    <RoleAssignmentButton
+                      accessibilityLabel={
+                        multiClaim ? 'Claim one character only' : 'Claim up to 3 characters'
+                      }
+                      compact
+                      icon={Layers}
+                      label="3 for 3"
+                      onPress={handleToggleMultiClaim}
+                      selected={multiClaim}
+                    />
+                  ) : null}
                   {showEvilToggle ? (
                     <RoleAssignmentButton
                       accessibilityLabel={
@@ -235,8 +263,16 @@ export function RoleAssignmentActions() {
                     />
                   ) : null}
                   <RolePicker
-                    description={`Tap a role to ${getRoleAssignmentLabel(roleAssignmentKind).toLocaleLowerCase()} or clear it.`}
-                    onToggleRole={handleToggleRoleAssignment}
+                    description={
+                      multiClaim
+                        ? 'Tap up to 3 roles this player is claiming, as in a 3 for 3.'
+                        : `Tap a role to ${getRoleAssignmentLabel(roleAssignmentKind).toLocaleLowerCase()} or clear it.`
+                    }
+                    onToggleRole={
+                      multiClaim
+                        ? (roleId) => handleToggleRoleAssignment(roleId, true, 'multi')
+                        : handleToggleRoleAssignment
+                    }
                     roles={pickerRoles}
                     roleOwnerNames={roleOwnerNames}
                     sectioned

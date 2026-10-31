@@ -191,6 +191,26 @@ export function getRoleAlignment(role: Role): 'g' | 'e' | undefined {
   return undefined;
 }
 
+/** Most characters one player can claim at once, as in a "3 for 3". */
+export const MAX_MULTI_CLAIM_ROLES = 3;
+
+export type RoleToggleMode = 'multi' | 'only' | 'single';
+
+/**
+ * Role ids after tapping `roleId`: `single` picks it or clears it, `multi` adds or removes it in
+ * a list of up to MAX_MULTI_CLAIM_ROLES (dropping the oldest), `only` keeps just that role.
+ */
+export function toggleRoleSelection(
+  current: string[],
+  roleId: string,
+  mode: RoleToggleMode = 'single',
+): string[] {
+  if (mode === 'only') return [roleId];
+  if (mode === 'single') return current[0] === roleId ? [] : [roleId];
+  if (current.includes(roleId)) return current.filter((id) => id !== roleId);
+  return [...current, roleId].slice(-MAX_MULTI_CLAIM_ROLES);
+}
+
 export function isTravelerRole(role: Role) {
   return getRoleTeam(role) === 'traveller';
 }

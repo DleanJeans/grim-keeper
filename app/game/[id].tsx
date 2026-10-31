@@ -81,6 +81,9 @@ import {
   getRoleAssignmentForDay,
   getRolesForDayOrPrevious,
   isTravelerRole,
+  MAX_MULTI_CLAIM_ROLES,
+  type RoleToggleMode,
+  toggleRoleSelection,
 } from '@/utils/role-utils';
 import { isSushiBuffetScript } from '@/utils/script-service';
 import { describeGameChange, PENDING_CHANGE } from '@/utils/undo-utils';
@@ -781,7 +784,9 @@ export default function GameRoute() {
         ? currentRoleIds.filter((roleId) => !travelerRoleIds.has(roleId))
         : currentRoleIds;
     setRoleAssignmentKind(kind);
-    setRoleAssignmentRoleIds(selectableRoleIds.slice(0, 1));
+    setRoleAssignmentRoleIds(
+      selectableRoleIds.slice(0, kind === 'claim' ? MAX_MULTI_CLAIM_ROLES : 1),
+    );
     if (kind === 'rumor') {
       // The focused player is the subject. A second map selection can add an
       // optional source while the role picker remains visible.
@@ -812,8 +817,12 @@ export default function GameRoute() {
     setRumorSourcePlayerId(null);
   }
 
-  function handleToggleRoleAssignment(roleId: string, keepOpen = false) {
-    const nextRoleIds = roleAssignmentRoleIds[0] === roleId ? [] : [roleId];
+  function handleToggleRoleAssignment(
+    roleId: string,
+    keepOpen = false,
+    mode: RoleToggleMode = 'single',
+  ) {
+    const nextRoleIds = toggleRoleSelection(roleAssignmentRoleIds, roleId, mode);
 
     const travelerRole = roleCatalog.find((role) => role.id === roleId);
     runDayEdit(() => {
