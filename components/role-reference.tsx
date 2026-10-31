@@ -1,6 +1,13 @@
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
-import { Pressable, type StyleProp, type TextStyle, View, type ViewStyle } from 'react-native';
+import {
+  Pressable,
+  type StyleProp,
+  StyleSheet,
+  type TextStyle,
+  View,
+  type ViewStyle,
+} from 'react-native';
 import {
   NOTE_REFERENCE_ICON_SCALE,
   NOTE_REFERENCE_ICON_SIZE,
@@ -29,12 +36,6 @@ type RoleReferenceProps = {
   variant?: 'default' | 'note';
 };
 
-const baseRowStyle: ViewStyle = {
-  alignItems: 'center',
-  flexDirection: 'row',
-  gap: 2,
-};
-
 export function RoleReference({
   accessibilityLabel,
   children,
@@ -60,14 +61,10 @@ export function RoleReference({
     <>
       {leading}
       <RoleIcon role={role} scale={resolvedIconScale} size={resolvedIconSize} />
-      <View style={[{ flexShrink: 1, gap: 1 }, contentStyle]}>
+      <View style={[styles.content, contentStyle]}>
         <Text
           selectable
-          style={[
-            { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
-            textStyle,
-            variant === 'note' && noteReferenceStyles.text,
-          ]}
+          style={[styles.name, textStyle, variant === 'note' && noteReferenceStyles.text]}
         >
           {role.name}
         </Text>
@@ -81,7 +78,7 @@ export function RoleReference({
       <View
         accessibilityLabel={accessibilityLabel ?? role.name}
         style={[
-          baseRowStyle,
+          styles.row,
           variant === 'note' && noteReferenceStyles.container,
           resolvedContainerStyle,
         ]}
@@ -105,7 +102,8 @@ export function RoleReference({
       }
       onPress={onPress}
       style={({ pressed }) => [
-        { ...baseRowStyle, opacity: pressed ? 0.65 : 1 },
+        styles.row,
+        pressed && styles.rowPressed,
         variant === 'note' && noteReferenceStyles.container,
         typeof containerStyle === 'function' ? containerStyle({ pressed }) : containerStyle,
       ]}
@@ -114,3 +112,23 @@ export function RoleReference({
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  content: {
+    flexShrink: 1,
+    gap: 1,
+  },
+  name: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  row: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 2,
+  },
+  rowPressed: {
+    opacity: 0.65,
+  },
+});
