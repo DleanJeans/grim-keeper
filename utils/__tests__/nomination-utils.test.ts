@@ -1,6 +1,7 @@
 import type { Conversation, Player } from '@/types/game';
 import {
   getAlivePlayerCount,
+  getDaysLeft,
   getOnTheBlockNominationId,
   getVotesToExecute,
 } from '@/utils/nomination-utils';
@@ -56,5 +57,11 @@ describe('nomination utils', () => {
     ).toBeUndefined();
     expect(getOnTheBlockNominationId([nomination('n1', ['a', 'b'])], players, 2)).toBeUndefined();
     expect(getOnTheBlockNominationId([], players, 2)).toBeUndefined();
+  });
+});
+
+describe('getDaysLeft', () => {
+  it('counts days with an execution each day and a kill each night', () => {
+    expect([2, 3, 4, 5, 6, 7, 12].map(getDaysLeft)).toEqual([0, 1, 1, 2, 2, 3, 5]);
   });
 });

@@ -38,3 +38,11 @@ export function getOnTheBlockNominationId(
 
   return topId && !tied && topVotes >= votesNeeded ? topId : undefined;
 }
+
+/**
+ * Days left, counting today, if someone is executed every day and the Demon kills every night:
+ * each day and night removes two players and evil wins at two alive.
+ */
+export function getDaysLeft(alivePlayerCount: number): number {
+  return Math.max(0, Math.ceil((alivePlayerCount - 2) / 2));
+}

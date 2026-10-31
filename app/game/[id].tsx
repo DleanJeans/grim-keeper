@@ -15,6 +15,7 @@ import { DayCount } from '@/components/game/day-count';
 import { DayEditLockButton } from '@/components/game/day-edit-lock-button';
 import { DayJumpButtons } from '@/components/game/day-jump-buttons';
 import { DayRecapSheet } from '@/components/game/day-recap-sheet';
+import { DaysLeftNote } from '@/components/game/days-left-note';
 import { DjGameButton } from '@/components/game/dj-game-button';
 import { GameMap } from '@/components/game/game-map';
 import {
@@ -1116,6 +1117,9 @@ export default function GameRoute() {
                 </View>
               </View>
 
+              {activePhase === 'day' ? (
+                <DaysLeftNote key="days-left" alivePlayerCount={alivePlayerCount} />
+              ) : null}
               {claimClashes ? (
                 <ClaimClashWarnings
                   key="claim-clashes"
