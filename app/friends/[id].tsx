@@ -2,6 +2,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { DjSongSection } from '@/components/dj/dj-song-section';
+import { FriendClaimsCard } from '@/components/friend-claims-card';
 import { FriendGamesList } from '@/components/friends/friend-games-list';
 import { FriendNameEditToggle } from '@/components/friends/friend-name-edit-toggle';
 import { FriendNameInputRow } from '@/components/friends/friend-name-input-row';
@@ -128,6 +129,7 @@ export default function FriendDetailRoute() {
 
           <GameStatsCards games={games} playerId={friend.id} />
           <HeadToHeadStatsCard friendId={friend.id} friendName={friend.name} games={games} />
+          <FriendClaimsCard friendId={friend.id} games={games} roles={roleCatalog} />
 
           {djEnabled ? (
             <DjSongSection editable target={{ id: friend.id, type: 'friend' }} title="DJ songs" />

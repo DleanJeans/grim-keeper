@@ -1,6 +1,7 @@
 import type { Game, Player } from '@/types/game';
 import {
   getCharacterStats,
+  getFriendClaimStats,
   getGameStats,
   getGamesWithRoleInPlay,
   getHeadToHeadStats,
@@ -411,5 +412,47 @@ describe('getHeadToHeadStats', () => {
       opposite: { completedGames: 1, games: 1, wins: 1 },
       same: { completedGames: 2, games: 3, wins: 1 },
     });
+  });
+});
+
+describe('getFriendClaimStats', () => {
+  const at = '2026-01-01T00:00:00.000Z';
+  function friendGame(id: string, claims: string[][], confirm?: string[]): Game {
+    return makeGame({
+      id,
+      players: [
+        makePlayer({
+          id: 'friend',
+          roleAssignments: [
+            ...claims.map((roleIds, index) => ({
+              day: index + 1,
+              kind: 'claim' as const,
+              roleIds,
+              updatedAt: at,
+            })),
+            ...(confirm
+              ? [{ day: 3, kind: 'confirm' as const, roleIds: confirm, updatedAt: at }]
+              : []),
+          ],
+        }),
+      ],
+    });
+  }
+
+  it('counts claimed characters once per game and checks the last claim', () => {
+    const stats = getFriendClaimStats(
+      [
+        friendGame('g1', [['chef'], ['empath']], ['imp']),
+        friendGame('g2', [['chef']], ['chef_evil']),
+        friendGame('g3', [['chef'], ['chef']]),
+        friendGame('g4', [['generic_outsider']]),
+      ],
+      'friend',
+    );
+    expect(stats.topClaims).toEqual([
+      { count: 3, roleId: 'chef' },
+      { count: 1, roleId: 'empath' },
+    ]);
+    expect(stats).toMatchObject({ checkedClaims: 2, trueClaims: 1 });
   });
 });

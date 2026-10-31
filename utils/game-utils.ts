@@ -1,4 +1,5 @@
-import type { Game, GameResult, Role } from '@/types/game';
+import type { Game, GameResult, Player, Role } from '@/types/game';
+import { getEventPhaseIndex } from '@/utils/game-phase-utils';
 import { APP_USER_ID } from '@/utils/object-id';
 import { getEffectiveRoleForPlayer, getRoleAlignment } from '@/utils/role-utils';
 
@@ -279,4 +280,71 @@ export function getHeadToHeadStats(games: Game[], friendId: string): HeadToHeadS
   }
 
   return stats;
+}
+
+export type FriendClaimStats = {
+  /** Games where the friend's claim could be checked against a confirmed character. */
+  checkedClaims: number;
+  /** Characters the friend claimed, most often first; one count per game. */
+  topClaims: Array<{ count: number; roleId: string }>;
+  /** Checked claims that matched the confirmed character. */
+  trueClaims: number;
+};
+
+/**
+ * What a friend tends to claim, and how often their final claim in a game matched the character
+ * they were confirmed as. Evil and Traveller suffixes are ignored.
+ */
+export function getFriendClaimStats(games: Game[], friendId: string): FriendClaimStats {
+  const counts = new Map<string, number>();
+  let checkedClaims = 0;
+  let trueClaims = 0;
+
+  for (const game of games) {
+    const player = game.players.find((candidate) => candidate.id === friendId);
+    if (!player) continue;
+    const assignments = player.roleAssignments ?? [];
+    const claimed = new Set(
+      assignments
+        .filter((assignment) => assignment.kind === 'claim')
+        .flatMap((assignment) => assignment.roleIds.map(getBaseRoleId))
+        .filter((roleId) => !roleId.startsWith('generic_')),
+    );
+    for (const roleId of claimed) counts.set(roleId, (counts.get(roleId) ?? 0) + 1);
+
+    const lastClaim = getLastAssignment(assignments, 'claim');
+    const lastConfirm = getLastAssignment(assignments, 'confirm');
+    const claimIds = (lastClaim?.roleIds ?? []).map(getBaseRoleId);
+    if (claimIds.length > 0 && lastConfirm?.roleIds.length) {
+      checkedClaims += 1;
+      const confirmed = new Set(lastConfirm.roleIds.map(getBaseRoleId));
+      if (claimIds.some((roleId) => confirmed.has(roleId))) trueClaims += 1;
+    }
+  }
+
+  const topClaims = [...counts]
+    .map(([roleId, count]) => ({ count, roleId }))
+    .sort((a, b) => b.count - a.count || a.roleId.localeCompare(b.roleId));
+
+  return { checkedClaims, topClaims, trueClaims };
+}
+
+function getLastAssignment(
+  assignments: NonNullable<Player['roleAssignments']>,
+  kind: 'claim' | 'confirm',
+) {
+  return assignments
+    .filter((assignment) => assignment.kind === kind)
+    .reduce<(typeof assignments)[number] | undefined>(
+      (latest, assignment) =>
+        !latest ||
+        getEventPhaseIndex(assignment.day, assignment.phase ?? 'day') >
+          getEventPhaseIndex(latest.day, latest.phase ?? 'day') ||
+        (assignment.day === latest.day &&
+          (assignment.phase ?? 'day') === (latest.phase ?? 'day') &&
+          assignment.updatedAt > latest.updatedAt)
+          ? assignment
+          : latest,
+      undefined,
+    );
 }
