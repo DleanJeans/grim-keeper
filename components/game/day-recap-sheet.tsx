@@ -54,9 +54,11 @@ export function DayRecapSheet({
   startingNight,
   visible,
 }: DayRecapSheetProps) {
-  const recap = visible ? getDayRecap(game, day, roles, showRoles) : { day: [], night: [] };
-  const dayLabel = getPhaseLabel({ activeDay: day, activePhase: 'day' }, startingNight);
-  const nightLabel = getPhaseLabel({ activeDay: day, activePhase: 'night' }, startingNight);
+  // At night, the day that just ended and tonight; during the day, last night and today.
+  const sections = visible
+    ? getRecapSections(game, day, activePhase, roles, showRoles, startingNight)
+    : [];
+  const title = `${getPhaseLabel({ activeDay: day, activePhase }, startingNight)} recap`;
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -93,7 +95,7 @@ export function DayRecapSheet({
         <View style={styles.sheet}>
           <View style={styles.header}>
             <Text selectable style={styles.title}>
-              {dayLabel} recap
+              {title}
             </Text>
             <Pressable
               accessibilityHint="Copies players, claims and events so far as plain text"
@@ -120,8 +122,9 @@ export function DayRecapSheet({
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={styles.content}>
-            <RecapSection events={recap.night} title={nightLabel} />
-            <RecapSection events={recap.day} title={dayLabel} />
+            {sections.map((section) => (
+              <RecapSection events={section.events} key={section.title} title={section.title} />
+            ))}
             {showRoles ? null : (
               <Text style={styles.hint}>Turn on Show roles to include claims.</Text>
             )}
@@ -182,6 +185,29 @@ const styles = StyleSheet.create({
   },
   title: { color: colors.text, flex: 1, fontSize: 18, fontWeight: '900' },
 });
+
+function getRecapSections(
+  game: Pick<Game, 'conversations' | 'players'>,
+  day: number,
+  phase: GamePhase,
+  roles: Role[],
+  showRoles: boolean,
+  startingNight: StartingNight,
+) {
+  const label = (labelDay: number, labelPhase: GamePhase) =>
+    getPhaseLabel({ activeDay: labelDay, activePhase: labelPhase }, startingNight);
+  const today = getDayRecap(game, day, roles, showRoles);
+  if (phase === 'day') {
+    return [
+      { events: today.night, title: label(day, 'night') },
+      { events: today.day, title: label(day, 'day') },
+    ];
+  }
+  const tonight = { events: today.night, title: label(day, 'night') };
+  if (day <= 1) return [tonight];
+  const yesterday = getDayRecap(game, day - 1, roles, showRoles);
+  return [{ events: yesterday.day, title: label(day - 1, 'day') }, tonight];
+}
 
 function RecapSection({ events, title }: { events: RecapEvent[]; title: string }) {
   return (
