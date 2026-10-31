@@ -37,6 +37,8 @@ export type RoleInfoTemplate = {
   daily?: boolean;
   /** The text slots are statements, and one can be marked as possibly true (the Savant). */
   markTrue?: boolean;
+  /** Show the slots as rectangles instead of circle tokens, so long text fits (the Artist). */
+  rectangles?: boolean;
   /** Show the alive neighbors of the role's owner for each phase. */
   autoNeighbors?: boolean;
   /** Show the player executed the day before each night. */
@@ -97,6 +99,7 @@ type RoleInfoSpec =
       executed?: true;
       markTrue?: true;
       neighbors?: true;
+      rectangles?: true;
       slots: SlotSpec[];
     };
 
@@ -169,7 +172,7 @@ const ROLE_INFO_SPECS: Record<string, RoleInfoSpec> = {
   savant: { daily: true, markTrue: true, slots: [text('Statement 1'), text('Statement 2')] },
   seamstress: [player('Player 1'), player('Player 2'), yesNo('Same team?')],
   philosopher: [role('Became', 'good')],
-  artist: [text('Question'), yesNo('Answer')],
+  artist: { rectangles: true, slots: [text('Question'), yesNo('Answer')] },
   juggler: [
     player('Player 1'),
     role('Guess 1'),
@@ -302,6 +305,7 @@ const ROLE_INFO_TEMPLATES: Record<string, RoleInfoTemplate> = Object.fromEntries
           daily: spec.daily,
           evilInPlay: spec.evilInPlay,
           markTrue: spec.markTrue,
+          rectangles: spec.rectangles,
           slots: withSlotIds(spec.slots),
         },
   ]),

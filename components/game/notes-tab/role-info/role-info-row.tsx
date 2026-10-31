@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { RoleInfoToken } from '@/components/game/notes-tab/role-info/role-info-token';
@@ -115,6 +116,53 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
   },
+  rect: {
+    alignItems: 'center',
+    backgroundColor: colors.roleInfoTokenBackground,
+    borderColor: colors.roleInfoTokenFilledBorder,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    minHeight: 46,
+    minWidth: 60,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  rectContainer: {
+    alignItems: 'center',
+    flexShrink: 0,
+    gap: 3,
+  },
+  rectContainerText: {
+    alignItems: 'stretch',
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  rectEmpty: {
+    borderColor: colors.roleInfoTokenEmptyBorder,
+    borderStyle: 'dashed',
+  },
+  rectLabel: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  rectPressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  rectText: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  rects: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: 6,
+  },
   roleCell: {
     gap: 6,
     width: 136,
@@ -208,6 +256,17 @@ function RoleInfoLineTokens({
           trueSlotId={trueSlotId}
           values={values}
         />
+      ) : template.rectangles ? (
+        <View style={styles.rects}>
+          {template.slots.map((slot) => (
+            <SlotRect
+              key={slot.id}
+              onPress={() => onPressSlot(slot)}
+              slot={slot}
+              value={values[slot.id]}
+            />
+          ))}
+        </View>
       ) : template.slots.length > 0 || neighbors?.length ? (
         <View style={styles.tokens}>
           {executed ? (
@@ -319,6 +378,41 @@ function StatementText({
         {value ?? slot.label}
       </Text>
     </Text>
+  );
+}
+
+/** One slot as a rectangle that grows to fit long text; a text slot takes the free width. */
+function SlotRect({
+  onPress,
+  slot,
+  value,
+}: {
+  onPress: () => void;
+  slot: RoleInfoSlot;
+  value?: string;
+}) {
+  return (
+    <View style={[styles.rectContainer, slot.kind === 'text' && styles.rectContainerText]}>
+      <Pressable
+        accessibilityLabel={`${slot.label}: ${value ?? 'empty'}`}
+        accessibilityRole="button"
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.rect,
+          value === undefined && styles.rectEmpty,
+          pressed && styles.rectPressed,
+        ]}
+      >
+        {value === undefined ? (
+          <Plus color={colors.textSubtle} size={18} strokeWidth={2.5} />
+        ) : (
+          <Text style={styles.rectText}>{value}</Text>
+        )}
+      </Pressable>
+      <Text numberOfLines={1} style={styles.rectLabel}>
+        {slot.label}
+      </Text>
+    </View>
   );
 }
 
