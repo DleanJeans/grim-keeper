@@ -5,6 +5,7 @@ import {
   getExecutedPlayer,
   getMentionedRoleIds,
   getNominationPlayers,
+  getRoleInfoClaimer,
   getRoleInfoDays,
   getRoleInfoForPhaseOrPrevious,
   getRoleInfoNights,
@@ -18,6 +19,7 @@ import {
   inferRoleInfos,
   inferRoleInfosFromNotes,
   inferVirginNominations,
+  isClaimerRoleInfo,
   isPlayerChoosableForSlot,
   isRoleInfoOver,
   isRoleInfoShownInPhase,
@@ -755,5 +757,191 @@ describe('isPlayerChoosableForSlot', () => {
 
   it('allows anyone for other player slots', () => {
     expect(isPlayerChoosableForSlot(killedNight2, master, 3, 'night')).toBe(true);
+  });
+});
+
+describe('double claims', () => {
+  const claim = (roleId: string) => ({
+    roleAssignments: [{ day: 1, kind: 'claim' as const, roleIds: [roleId], updatedAt: NOW }],
+  });
+  const ann = makePlayer('ann', 0, claim('washerwoman'));
+  const ben = makePlayer('ben', 1, claim('washerwoman'));
+  const players = [ann, ben, makePlayer('cat', 2), makePlayer('dan', 3)];
+  const annInfo = getRoleInfoClaimer([ann, ben], ann);
+  const benInfo = getRoleInfoClaimer([ann, ben], ben);
+
+  it('keeps one info per claimer for the same phase', () => {
+    let roleInfos = setRoleInfoValue(
+      undefined,
+      'washerwoman',
+      1,
+      'night',
+      '1',
+      'cat',
+      NOW,
+      true,
+      annInfo,
+    );
+    roleInfos = setRoleInfoValue(
+      roleInfos,
+      'washerwoman',
+      1,
+      'night',
+      '1',
+      'dan',
+      NOW,
+      true,
+      benInfo,
+    );
+    roleInfos = setRoleInfoValue(
+      roleInfos,
+      'washerwoman',
+      1,
+      'night',
+      '2',
+      'ben',
+      NOW,
+      true,
+      annInfo,
+    );
+
+    expect(roleInfos).toEqual([
+      {
+        day: 1,
+        phase: 'night',
+        playerId: 'ann',
+        roleId: 'washerwoman',
+        updatedAt: NOW,
+        values: { '1': 'cat', '2': 'ben' },
+      },
+      {
+        day: 1,
+        phase: 'night',
+        playerId: 'ben',
+        roleId: 'washerwoman',
+        updatedAt: NOW,
+        values: { '1': 'dan' },
+      },
+    ]);
+    expect(
+      getRoleInfoForPhaseOrPrevious(roleInfos, 'washerwoman', 2, 'day', benInfo)?.values,
+    ).toEqual({ '1': 'dan' });
+  });
+
+  it('gives infos saved before the double claim to the first claimer', () => {
+    const legacy: RoleInfoEntry = {
+      day: 1,
+      phase: 'night',
+      roleId: 'washerwoman',
+      updatedAt: NOW,
+      values: { '1': 'cat' },
+    };
+
+    expect(isClaimerRoleInfo(legacy, annInfo)).toBe(true);
+    expect(isClaimerRoleInfo(legacy, benInfo)).toBe(false);
+    expect(isClaimerRoleInfo({ ...legacy, playerId: 'ben' }, undefined)).toBe(true);
+  });
+
+  it('points each claimer at their own info', () => {
+    const roleInfos: RoleInfoEntry[] = [
+      {
+        ...{ day: 1, phase: 'night' as const, roleId: 'washerwoman', updatedAt: NOW },
+        values: { '1': 'cat' },
+      },
+      {
+        day: 1,
+        phase: 'night',
+        playerId: 'ben',
+        roleId: 'washerwoman',
+        updatedAt: NOW,
+        values: { '1': 'dan' },
+      },
+    ];
+    const targets = (owner: Player) =>
+      getRoleInfoTargetPlayers(owner, players, [], roleInfos, roles, 2, 'day').map((p) => p.id);
+
+    expect(targets(ann)).toEqual(['cat']);
+    expect(targets(ben)).toEqual(['dan']);
+  });
+
+  it("saves a daily character's days per claimer", () => {
+    const first = setDailyRoleInfoValues(
+      undefined,
+      'savant',
+      new Map([[1, { '0': 'A' }]]),
+      NOW,
+      annInfo,
+    );
+    const both = setDailyRoleInfoValues(
+      first,
+      'savant',
+      new Map([[1, { '0': 'B' }]]),
+      NOW,
+      benInfo,
+    );
+
+    expect(getDailyRoleInfo(both, 'savant', 1, annInfo)?.values).toEqual({ '0': 'A' });
+    expect(getDailyRoleInfo(both, 'savant', 1, benInfo)?.values).toEqual({ '0': 'B' });
+  });
+
+  it("tracks each claimer's once-per-game ability apart", () => {
+    const roleInfos: RoleInfoEntry[] = [
+      {
+        day: 2,
+        phase: 'day',
+        playerId: 'ben',
+        roleId: 'slayer',
+        updatedAt: NOW,
+        values: { '0': 'cat' },
+      },
+    ];
+
+    expect(getRoleInfoUsedPhase({ id: 'slayer' }, roleInfos, annInfo)).toBeUndefined();
+    expect(getRoleInfoUsedPhase({ id: 'slayer' }, roleInfos, benInfo)?.day).toBe(2);
+  });
+
+  it('drops the infos of a removed claimer', () => {
+    const roleInfos: RoleInfoEntry[] = [
+      {
+        day: 1,
+        phase: 'night',
+        playerId: 'ben',
+        roleId: 'washerwoman',
+        updatedAt: NOW,
+        values: {},
+      },
+      {
+        day: 1,
+        phase: 'night',
+        playerId: 'ann',
+        roleId: 'washerwoman',
+        updatedAt: NOW,
+        values: {},
+      },
+    ];
+
+    expect(
+      mapRoleInfoPlayerIds(roleInfos, (id) => (id === 'ben' ? undefined : id))?.map(
+        (entry) => entry.playerId,
+      ),
+    ).toEqual(['ann']);
+  });
+
+  it("reads each claimer's notes into their own info", () => {
+    const notes = [ann, ben].map((claimer, index) => ({
+      day: 1,
+      notes: [
+        { createdAt: NOW, id: claimer.id, text: index === 0 ? 'cat' : 'dan', updatedAt: NOW },
+      ],
+      phase: 'night' as const,
+      playerId: claimer.id,
+      updatedAt: NOW,
+    }));
+    const inferred = inferRoleInfosFromNotes(players, notes, undefined, roles);
+
+    expect(inferred.map((entry) => [entry.playerId, entry.values['1']])).toEqual([
+      ['ann', 'cat'],
+      ['ben', 'dan'],
+    ]);
   });
 });

@@ -376,6 +376,7 @@ function isRoleInfoEntry(value: unknown): value is RoleInfoEntry {
   return (
     isRecord(value) &&
     isString(value.roleId) &&
+    isOptionalString(value.playerId) &&
     isFiniteNumber(value.day) &&
     (value.phase === 'day' || value.phase === 'night') &&
     isString(value.updatedAt) &&

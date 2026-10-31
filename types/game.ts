@@ -129,6 +129,11 @@ export type SavedNote = {
 export type RoleInfoEntry = {
   /** Script role whose info this entry records. */
   roleId: string;
+  /**
+   * Claimer whose info this is, so a double-claimed character keeps one info per claimer. Unset
+   * on entries saved before double claims; those belong to the first claimer by seat.
+   */
+  playerId?: string;
   day: number;
   phase: GamePhase;
   /** Slot id → stored value (player id, role id, number, choice or free text). */

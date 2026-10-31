@@ -36,6 +36,7 @@ import {
   getMentionedRoleIds,
   getNominationPlayers,
   getRoleClaimers,
+  getRoleInfoClaimer,
   getRoleInfoDays,
   getRoleInfoForPhaseOrPrevious,
   getRoleInfoNights,
@@ -43,9 +44,11 @@ import {
   getRoleInfoUsedPhase,
   hasRoleInfo,
   inferRoleInfos,
+  isClaimerRoleInfo,
   isRoleInfoOver,
   isRoleInfoShownInPhase,
   ROLE_INFO_TRUE_KEY,
+  type RoleInfoClaimer,
   type RoleInfoSlot,
 } from '@/utils/role-info-utils';
 import { getGameScriptRoles, isSushiBuffetScript } from '@/utils/script-service';
@@ -60,6 +63,8 @@ const TEAM_SECTIONS = [
 
 type ActiveSlot = {
   carryForward: boolean;
+  /** Whose info it is when several players claim the character. */
+  claimer?: RoleInfoClaimer;
   day: number;
   phase: GamePhase;
   role: Role;
@@ -141,7 +146,13 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
                 ? team !== 'traveller'
                 : hasRoleInfo(role) &&
                   isRoleInfoShownInPhase(role, activeDay, activePhase) &&
-                  isUnusedOrUsedIn(role, roleInfos, activeDay, activePhase) &&
+                  isUnusedOrUsedIn(
+                    role,
+                    roleInfos,
+                    getRoleClaimers(players, role.id),
+                    activeDay,
+                    activePhase,
+                  ) &&
                   !isRoleInfoOver(
                     role,
                     getRoleClaimers(players, role.id),
@@ -189,8 +200,15 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
   );
   const activeTemplate = activeSlot ? getRoleInfoTemplate(activeSlot.role) : undefined;
   const activeDailyRole = activeTemplate?.daily ? activeSlot?.role : undefined;
+  const activeClaimerId = activeSlot?.claimer?.playerId;
   const dailyDays = activeDailyRole
-    ? getRoleInfoDays(activeDailyRole, lastDay, getRoleClaimers(players, activeDailyRole.id))
+    ? getRoleInfoDays(
+        activeDailyRole,
+        lastDay,
+        activeClaimerId
+          ? players.filter((candidate) => candidate.id === activeClaimerId)
+          : getRoleClaimers(players, activeDailyRole.id),
+      )
     : undefined;
   const activeValue = activeSlot
     ? getRoleInfoValues(roleInfos, activeSlot)[activeSlot.slot.id]
@@ -199,7 +217,7 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
   function handleSelect(value: string | undefined) {
     if (!activeSlot) return;
 
-    const { carryForward, day, phase, role, slot } = activeSlot;
+    const { carryForward, claimer, day, phase, role, slot } = activeSlot;
     setActiveSlot(null);
     runDayEdit(() =>
       setRoleInfoValue(
@@ -211,6 +229,7 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
         value,
         inferredRoleInfos,
         carryForward,
+        claimer,
       ),
     );
   }
@@ -218,8 +237,9 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
   function handleSaveDaily(valuesByDay: Map<number, Record<string, string>>) {
     if (!activeDailyRole) return;
 
+    const claimer = activeSlot?.claimer;
     setActiveSlot(null);
-    runDayEdit(() => setDailyRoleInfoValues(game.id, activeDailyRole.id, valuesByDay));
+    runDayEdit(() => setDailyRoleInfoValues(game.id, activeDailyRole.id, valuesByDay, claimer));
   }
 
   return (
@@ -234,6 +254,8 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
           conversations={game.conversations}
           evilCounts={evilCounts}
           activePhase={activePhase}
+          focusedPlayer={player}
+          hideFinishedClaimers={!player && !isSushiBuffet}
           inferredEntries={inferredEntries}
           key={section.label}
           label={section.label}
@@ -250,7 +272,11 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
       ))}
       <RoleInfoPickerDialog
         day={activeSlot?.day ?? activeDay}
-        key={activeSlot ? `${activeSlot.role.id}-${activeSlot.slot.id}` : 'closed'}
+        key={
+          activeSlot
+            ? `${activeSlot.role.id}-${activeClaimerId ?? ''}-${activeSlot.slot.id}`
+            : 'closed'
+        }
         onClose={() => setActiveSlot(null)}
         onSelect={handleSelect}
         phase={activeSlot?.phase ?? activePhase}
@@ -265,7 +291,9 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
         days={dailyDays ?? []}
         focusDay={activeSlot?.day}
         focusSlotId={activeSlot?.slot.id}
-        key={activeDailyRole ? `daily-${activeDailyRole.id}` : 'daily-closed'}
+        key={
+          activeDailyRole ? `daily-${activeDailyRole.id}-${activeClaimerId ?? ''}` : 'daily-closed'
+        }
         markTrue={activeTemplate?.markTrue === true}
         onClose={() => setActiveSlot(null)}
         onSave={handleSaveDaily}
@@ -276,7 +304,8 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
           new Map(
             (dailyDays ?? []).map((day) => [
               day,
-              getDailyRoleInfo(roleInfos, activeSlot?.role.id ?? '', day)?.values ?? {},
+              getDailyRoleInfo(roleInfos, activeSlot?.role.id ?? '', day, activeSlot?.claimer)
+                ?.values ?? {},
             ]),
           )
         }
@@ -338,9 +367,34 @@ function isShownTeamRole(
   return !inPlayRoleIds || inPlayRoleIds.has(role.id);
 }
 
-/** Once-per-game characters only show in the phase their ability was used, once used. */
-function isUnusedOrUsedIn(role: Role, roleInfos: RoleInfoEntry[], day: number, phase: GamePhase) {
-  const used = getRoleInfoUsedPhase(role, roleInfos);
+/**
+ * Once-per-game characters only show in the phase their ability was used, once used. A
+ * double-claimed character shows while any of its claimers' abilities is unused or used then.
+ */
+function isUnusedOrUsedIn(
+  role: Role,
+  roleInfos: RoleInfoEntry[],
+  claimers: Player[],
+  day: number,
+  phase: GamePhase,
+) {
+  const claimerInfos =
+    claimers.length > 1
+      ? claimers.map((claimer) => getRoleInfoClaimer(claimers, claimer))
+      : [undefined];
+  return claimerInfos.some((claimer) =>
+    isClaimerUnusedOrUsedIn(role, roleInfos, claimer, day, phase),
+  );
+}
+
+function isClaimerUnusedOrUsedIn(
+  role: Role,
+  roleInfos: RoleInfoEntry[],
+  claimer: RoleInfoClaimer | undefined,
+  day: number,
+  phase: GamePhase,
+) {
+  const used = getRoleInfoUsedPhase(role, roleInfos, claimer);
   return !used || (used.day === day && used.phase === phase);
 }
 
@@ -352,12 +406,13 @@ function getLastDayReached({ activeDay, activePhase }: GamePhasePosition) {
 /** Values shown for the slot's line: that night only, or carried from earlier phases. */
 function getRoleInfoValues(roleInfos: RoleInfoEntry[], slot: ActiveSlot) {
   const entry = slot.carryForward
-    ? getRoleInfoForPhaseOrPrevious(roleInfos, slot.role.id, slot.day, slot.phase)
+    ? getRoleInfoForPhaseOrPrevious(roleInfos, slot.role.id, slot.day, slot.phase, slot.claimer)
     : roleInfos.find(
         (candidate) =>
           candidate.roleId === slot.role.id &&
           candidate.day === slot.day &&
-          candidate.phase === slot.phase,
+          candidate.phase === slot.phase &&
+          isClaimerRoleInfo(candidate, slot.claimer),
       );
   return entry?.values ?? {};
 }
@@ -367,6 +422,8 @@ function RoleInfoSection({
   conversations,
   evilCounts,
   activePhase,
+  focusedPlayer,
+  hideFinishedClaimers,
   inferredEntries,
   label,
   lastDay,
@@ -378,14 +435,81 @@ function RoleInfoSection({
   roles,
   rolesById,
   startingNight,
-}: {
+}: Omit<RoleInfoClaimerRowProps, 'claimer' | 'claimers' | 'role'> & {
+  /** Put this player's row of a double-claimed character first, above the other claimers'. */
+  focusedPlayer?: Player;
+  /**
+   * Leave out the rows of a double claim's claimer who already used a once-per-game ability in
+   * another phase or who died, as the whole character is left out for a single claim.
+   */
+  hideFinishedClaimers: boolean;
+  label: string;
+  roles: Role[];
+}) {
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionLabel}>{label}</Text>
+      {roles.flatMap((role) => {
+        const claimers = getRoleClaimers(players, role.id);
+        // A double-claimed character gets a row per claimer, each with its own info.
+        const rowClaimers =
+          claimers.length > 1
+            ? claimers
+                .filter(
+                  (claimer) =>
+                    !hideFinishedClaimers ||
+                    (isClaimerUnusedOrUsedIn(
+                      role,
+                      roleInfos,
+                      getRoleInfoClaimer(claimers, claimer),
+                      activeDay,
+                      activePhase,
+                    ) &&
+                      !isRoleInfoOver(role, [claimer], activeDay, activePhase)),
+                )
+                .sort(
+                  (first, second) =>
+                    Number(second.id === focusedPlayer?.id) -
+                    Number(first.id === focusedPlayer?.id),
+                )
+            : [undefined];
+
+        return rowClaimers.map((claimer) => (
+          <RoleInfoClaimerRow
+            activeDay={activeDay}
+            activePhase={activePhase}
+            claimer={claimer}
+            claimers={claimers}
+            conversations={conversations}
+            evilCounts={evilCounts}
+            inferredEntries={inferredEntries}
+            key={`${role.id}-${claimer?.id ?? ''}`}
+            lastDay={lastDay}
+            lastNightDay={lastNightDay}
+            onPressSlot={onPressSlot}
+            players={players}
+            playersById={playersById}
+            roleInfos={roleInfos}
+            role={role}
+            rolesById={rolesById}
+            startingNight={startingNight}
+          />
+        ));
+      })}
+    </View>
+  );
+}
+
+type RoleInfoClaimerRowProps = {
   activeDay: number;
+  activePhase: GamePhase;
+  /** The claimer this row is for, when several players claim the character. */
+  claimer?: Player;
+  claimers: Player[];
   conversations: Conversation[];
   /** Demons and Minions in play, for characters that guess each of them. */
   evilCounts: { demons: number; minions: number };
-  activePhase: GamePhase;
   inferredEntries: Set<RoleInfoEntry>;
-  label: string;
   /** Give daily characters a line per day through this day. */
   lastDay: number;
   /**
@@ -396,111 +520,119 @@ function RoleInfoSection({
   onPressSlot: (slot: ActiveSlot) => void;
   players: Player[];
   playersById: Map<string, Player>;
+  role: Role;
   roleInfos: RoleInfoEntry[];
-  roles: Role[];
   rolesById: Map<string, Role>;
   startingNight: StartingNight;
-}) {
-  return (
-    <View style={styles.section}>
-      <Text style={styles.sectionLabel}>{label}</Text>
-      {roles.map((role) => {
-        const template = getRoleInfoTemplate(role, evilCounts);
-        const owners = getRoleClaimers(players, role.id);
-        const nights =
-          lastNightDay === undefined ? undefined : getRoleInfoNights(role, lastNightDay, owners);
-        const days = template.daily ? getRoleInfoDays(role, lastDay, owners) : undefined;
-        // A night's Undertaker info is about the execution on the day before it.
-        const getExecuted = (night: number) =>
-          template.autoExecuted ? getExecutedPlayer(players, night - 1) : undefined;
-        // Likewise the Town Crier's and Flowergirl's info is about the nominations on the day before it.
-        const getDayBefore = (night: number) =>
-          template.autoDayBefore
-            ? {
-                kind: template.autoDayBefore,
-                players: getNominationPlayers(
-                  players,
-                  conversations,
-                  night - 1,
-                  template.autoDayBefore,
-                ),
-              }
-            : undefined;
-        const getNeighbors = (day: number, phase: GamePhase) =>
-          template.autoNeighbors && owners[0]
-            ? getAliveNeighbors(players, owners[0].id, day, phase)
-            : undefined;
+};
 
-        const lines: RoleInfoLine[] = days
-          ? getDayLines(role, days, roleInfos, startingNight, onPressSlot)
-          : nights
-            ? nights.map((night) => {
-                const position = { carryForward: false, day: night, phase: 'night' as const, role };
-                const entry = roleInfos.find(
-                  (candidate) =>
-                    candidate.roleId === role.id &&
-                    candidate.day === night &&
-                    candidate.phase === 'night',
-                );
-                const nightLabel = getPhaseLabel(
-                  { activeDay: night, activePhase: 'night' },
-                  startingNight,
-                );
-                return {
-                  dayBefore: getDayBefore(night),
-                  executed: getExecuted(night),
-                  key: `night-${night}`,
-                  label:
-                    entry && inferredEntries.has(entry) ? `${nightLabel} · from notes` : nightLabel,
-                  neighbors: getNeighbors(night, 'night'),
-                  onPressSlot: (slot) => onPressSlot({ ...position, slot }),
-                  values: entry?.values ?? {},
-                };
-              })
-            : [
-                getPhaseLine(
-                  role,
-                  roleInfos,
-                  inferredEntries,
-                  activeDay,
-                  activePhase,
-                  startingNight,
-                  getDayBefore(activeDay),
-                  getExecuted(activeDay),
-                  getNeighbors(activeDay, activePhase),
-                  onPressSlot,
-                ),
-              ];
-
-        // Mark where the character's info ends when all of its players have died.
-        if (
-          (nights &&
-            lastNightDay !== undefined &&
-            isRoleInfoOver(role, owners, lastNightDay, 'night')) ||
-          (days && isRoleInfoOver(role, owners, lastDay, 'day'))
-        ) {
-          lines.push({
-            isDead: true,
-            key: 'dead',
-            label: 'Dead',
-            onPressSlot: () => undefined,
-            values: {},
-          });
+/** One character's row, or one claimer's row of a double-claimed character. */
+function RoleInfoClaimerRow({
+  activeDay,
+  activePhase,
+  claimer,
+  claimers,
+  conversations,
+  evilCounts,
+  inferredEntries,
+  lastDay,
+  lastNightDay,
+  onPressSlot,
+  players,
+  playersById,
+  role,
+  roleInfos,
+  rolesById,
+  startingNight,
+}: RoleInfoClaimerRowProps) {
+  const template = getRoleInfoTemplate(role, evilCounts);
+  const owners = claimer ? [claimer] : claimers;
+  const claimerInfo = getRoleInfoClaimer(claimers, claimer);
+  const onPressClaimerSlot = (slot: ActiveSlot) => onPressSlot({ ...slot, claimer: claimerInfo });
+  const nights =
+    lastNightDay === undefined ? undefined : getRoleInfoNights(role, lastNightDay, owners);
+  const days = template.daily ? getRoleInfoDays(role, lastDay, owners) : undefined;
+  // A night's Undertaker info is about the execution on the day before it.
+  const getExecuted = (night: number) =>
+    template.autoExecuted ? getExecutedPlayer(players, night - 1) : undefined;
+  // Likewise the Town Crier's and Flowergirl's info is about the nominations on the day before it.
+  const getDayBefore = (night: number) =>
+    template.autoDayBefore
+      ? {
+          kind: template.autoDayBefore,
+          players: getNominationPlayers(players, conversations, night - 1, template.autoDayBefore),
         }
+      : undefined;
+  const getNeighbors = (day: number, phase: GamePhase) =>
+    template.autoNeighbors && owners[0]
+      ? getAliveNeighbors(players, owners[0].id, day, phase)
+      : undefined;
 
-        return (
-          <RoleInfoRow
-            key={role.id}
-            lines={lines}
-            owners={owners}
-            playersById={playersById}
-            role={role}
-            rolesById={rolesById}
-            template={template}
-          />
-        );
-      })}
-    </View>
+  const lines: RoleInfoLine[] = days
+    ? getDayLines(role, days, roleInfos, startingNight, claimerInfo, onPressClaimerSlot)
+    : nights
+      ? nights.map((night) => {
+          const position = { carryForward: false, day: night, phase: 'night' as const, role };
+          const entry = roleInfos.find(
+            (candidate) =>
+              candidate.roleId === role.id &&
+              candidate.day === night &&
+              candidate.phase === 'night' &&
+              isClaimerRoleInfo(candidate, claimerInfo),
+          );
+          const nightLabel = getPhaseLabel(
+            { activeDay: night, activePhase: 'night' },
+            startingNight,
+          );
+          return {
+            dayBefore: getDayBefore(night),
+            executed: getExecuted(night),
+            key: `night-${night}`,
+            label: entry && inferredEntries.has(entry) ? `${nightLabel} · from notes` : nightLabel,
+            neighbors: getNeighbors(night, 'night'),
+            onPressSlot: (slot) => onPressClaimerSlot({ ...position, slot }),
+            values: entry?.values ?? {},
+          };
+        })
+      : [
+          getPhaseLine(
+            role,
+            roleInfos,
+            inferredEntries,
+            activeDay,
+            activePhase,
+            startingNight,
+            getDayBefore(activeDay),
+            getExecuted(activeDay),
+            getNeighbors(activeDay, activePhase),
+            claimerInfo,
+            onPressClaimerSlot,
+          ),
+        ];
+
+  // Mark where the character's info ends when all of its players have died.
+  if (
+    (nights && lastNightDay !== undefined && isRoleInfoOver(role, owners, lastNightDay, 'night')) ||
+    (days && isRoleInfoOver(role, owners, lastDay, 'day'))
+  ) {
+    lines.push({
+      isDead: true,
+      key: 'dead',
+      label: 'Dead',
+      onPressSlot: () => undefined,
+      values: {},
+    });
+  }
+
+  return (
+    <RoleInfoRow
+      lines={lines}
+      owners={owners}
+      playersById={playersById}
+      role={role}
+      rolesById={rolesById}
+      template={template}
+    />
   );
 }
 
@@ -510,12 +642,13 @@ function getDayLines(
   days: number[],
   roleInfos: RoleInfoEntry[],
   startingNight: StartingNight,
+  claimer: RoleInfoClaimer | undefined,
   onPressSlot: (slot: ActiveSlot) => void,
 ): RoleInfoLine[] {
   const { markTrue } = getRoleInfoTemplate(role);
 
   return days.map((day) => {
-    const values = getDailyRoleInfo(roleInfos, role.id, day)?.values ?? {};
+    const values = getDailyRoleInfo(roleInfos, role.id, day, claimer)?.values ?? {};
     return {
       trueSlotId: markTrue ? values[ROLE_INFO_TRUE_KEY] : undefined,
       key: `day-${day}`,
@@ -537,9 +670,10 @@ function getPhaseLine(
   dayBefore: RoleInfoLine['dayBefore'],
   executed: Player | undefined,
   neighbors: Player[] | undefined,
+  claimer: RoleInfoClaimer | undefined,
   onPressSlot: (slot: ActiveSlot) => void,
 ): RoleInfoLine {
-  const entry = getRoleInfoForPhaseOrPrevious(roleInfos, role.id, day, phase);
+  const entry = getRoleInfoForPhaseOrPrevious(roleInfos, role.id, day, phase, claimer);
   const isCarried = entry && (entry.day !== day || entry.phase !== phase);
   const fromNotes = entry && inferredEntries.has(entry);
   const label = isCarried

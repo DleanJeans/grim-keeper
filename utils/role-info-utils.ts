@@ -51,6 +51,9 @@ export type RoleInfoTemplate = {
 /** Which players of the day's recorded nominations to show. */
 export type DayBeforePlayers = 'nominators' | 'voters';
 
+/** One claimer's info of a character, among all of its claimers' ids by seat. */
+export type RoleInfoClaimer = { claimerIds: string[]; playerId: string };
+
 type SlotSpec = DistributiveOmit<RoleInfoSlot, 'id'>;
 type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : never;
 
@@ -489,11 +492,20 @@ export function getRoleInfoNights(
  * The first phase a once-per-game character's info was recorded in, meaning its ability was used;
  * undefined for other characters or before it is used.
  */
-export function getRoleInfoUsedPhase(role: Pick<Role, 'id'>, roleInfos: RoleInfoEntry[]) {
+export function getRoleInfoUsedPhase(
+  role: Pick<Role, 'id'>,
+  roleInfos: RoleInfoEntry[],
+  claimer?: RoleInfoClaimer,
+) {
   if (!ONCE_ROLE_IDS.has(normalizeRoleInfoId(role.id))) return undefined;
 
   return roleInfos
-    .filter((entry) => entry.roleId === role.id && Object.keys(entry.values).length > 0)
+    .filter(
+      (entry) =>
+        entry.roleId === role.id &&
+        isClaimerRoleInfo(entry, claimer) &&
+        Object.keys(entry.values).length > 0,
+    )
     .sort(
       (first, second) =>
         getEventPhaseIndex(first.day, first.phase) - getEventPhaseIndex(second.day, second.phase),
@@ -520,8 +532,15 @@ export function getRoleInfoDays(
  * A daily character's entry for one day. Entries saved before daily rows during that day's night
  * still count for it.
  */
-export function getDailyRoleInfo(roleInfos: RoleInfoEntry[], roleId: string, day: number) {
-  const entries = roleInfos.filter((entry) => entry.roleId === roleId && entry.day === day);
+export function getDailyRoleInfo(
+  roleInfos: RoleInfoEntry[],
+  roleId: string,
+  day: number,
+  claimer?: RoleInfoClaimer,
+) {
+  const entries = roleInfos.filter(
+    (entry) => entry.roleId === roleId && entry.day === day && isClaimerRoleInfo(entry, claimer),
+  );
   return entries.find((entry) => entry.phase === 'day') ?? entries[0];
 }
 
@@ -534,13 +553,24 @@ export function setDailyRoleInfoValues(
   roleId: string,
   valuesByDay: Map<number, Record<string, string>>,
   updatedAt: string,
+  claimer?: RoleInfoClaimer,
 ): RoleInfoEntry[] {
   const kept = (roleInfos ?? []).filter(
-    (entry) => entry.roleId !== roleId || !valuesByDay.has(entry.day),
+    (entry) =>
+      entry.roleId !== roleId || !valuesByDay.has(entry.day) || !isClaimerRoleInfo(entry, claimer),
   );
   const saved = [...valuesByDay]
     .filter(([, values]) => Object.keys(values).length > 0)
-    .map(([day, values]): RoleInfoEntry => ({ day, phase: 'day', roleId, updatedAt, values }));
+    .map(
+      ([day, values]): RoleInfoEntry => ({
+        day,
+        phase: 'day',
+        roleId,
+        ...withClaimerId(claimer),
+        updatedAt,
+        values,
+      }),
+    );
 
   return [...kept, ...saved];
 }
@@ -563,6 +593,29 @@ export function getRoleClaimers(players: Player[], roleId: string) {
   return players
     .filter((candidate) => claimerIds.has(candidate.id))
     .sort((first, second) => first.seat - second.seat);
+}
+
+/** The given claimer's info among the character's claimers; undefined when it has no claimers. */
+export function getRoleInfoClaimer(
+  claimers: Player[],
+  claimer: Player | undefined = claimers[0],
+): RoleInfoClaimer | undefined {
+  if (!claimer || !claimers.some((candidate) => candidate.id === claimer.id)) return undefined;
+
+  return { claimerIds: claimers.map((candidate) => candidate.id), playerId: claimer.id };
+}
+
+/**
+ * Whether the entry is the claimer's info. Entries without a claimer, or whose player no longer
+ * claims the character, go to the first claimer; with no claimer given, every entry counts.
+ */
+export function isClaimerRoleInfo(entry: RoleInfoEntry, claimer: RoleInfoClaimer | undefined) {
+  if (!claimer || entry.playerId === claimer.playerId) return true;
+
+  return (
+    claimer.playerId === claimer.claimerIds[0] &&
+    (entry.playerId === undefined || !claimer.claimerIds.includes(entry.playerId))
+  );
 }
 
 /** Characters anyone has claimed, been confirmed as or been rumored as at any point. */
@@ -602,11 +655,12 @@ export function getRoleInfoForPhaseOrPrevious(
   roleId: string,
   day: number,
   phase: GamePhase,
+  claimer?: RoleInfoClaimer,
 ) {
   const phaseIndex = getEventPhaseIndex(day, phase);
 
   return (roleInfos ?? []).reduce<RoleInfoEntry | undefined>((latest, entry) => {
-    if (entry.roleId !== roleId) return latest;
+    if (entry.roleId !== roleId || !isClaimerRoleInfo(entry, claimer)) return latest;
 
     const entryIndex = getEventPhaseIndex(entry.day, entry.phase);
     if (entryIndex > phaseIndex) return latest;
@@ -629,19 +683,31 @@ export function setRoleInfoValue(
   value: string | undefined,
   updatedAt: string,
   carryForward = true,
+  claimer?: RoleInfoClaimer,
 ): RoleInfoEntry[] {
   const entries = roleInfos ?? [];
   const index = entries.findIndex(
-    (entry) => entry.roleId === roleId && entry.day === day && entry.phase === phase,
+    (entry) =>
+      entry.roleId === roleId &&
+      entry.day === day &&
+      entry.phase === phase &&
+      isClaimerRoleInfo(entry, claimer),
   );
   const previousValues = carryForward
-    ? getRoleInfoForPhaseOrPrevious(entries, roleId, day, phase)?.values
+    ? getRoleInfoForPhaseOrPrevious(entries, roleId, day, phase, claimer)?.values
     : undefined;
   const baseValues = index >= 0 ? entries[index].values : (previousValues ?? {});
   const { [slotId]: _previous, ...otherValues } = baseValues;
   const values =
     value === undefined || value === '' ? otherValues : { ...otherValues, [slotId]: value };
-  const nextEntry: RoleInfoEntry = { day, phase, roleId, updatedAt, values };
+  const nextEntry: RoleInfoEntry = {
+    day,
+    phase,
+    roleId,
+    ...withClaimerId(claimer),
+    updatedAt,
+    values,
+  };
 
   if (index < 0) {
     return [...entries, nextEntry];
@@ -662,7 +728,10 @@ export function seedRoleInfos(
         seed.roleId === roleId &&
         !roleInfos?.some(
           (entry) =>
-            entry.roleId === roleId && entry.day === seed.day && entry.phase === seed.phase,
+            entry.roleId === roleId &&
+            entry.day === seed.day &&
+            entry.phase === seed.phase &&
+            entry.playerId === seed.playerId,
         ),
     ) ?? [];
   if (roleSeeds.length === 0) return roleInfos;
@@ -670,12 +739,18 @@ export function seedRoleInfos(
   return [...(roleInfos ?? []), ...roleSeeds];
 }
 
-/** Rewrites player-slot values; returning undefined drops the value. */
+/**
+ * Rewrites player-slot values and claimers; returning undefined drops the value, or the whole
+ * entry for its claimer.
+ */
 export function mapRoleInfoPlayerIds(
   roleInfos: RoleInfoEntry[] | undefined,
   mapPlayerId: (playerId: string) => string | undefined,
 ): RoleInfoEntry[] | undefined {
-  return roleInfos?.map((entry) => {
+  return roleInfos?.flatMap((entry) => {
+    const playerId = entry.playerId === undefined ? undefined : mapPlayerId(entry.playerId);
+    if (entry.playerId !== undefined && playerId === undefined) return [];
+
     const template = getRoleInfoTemplate({ id: entry.roleId });
     const playerSlotIds = new Set(
       template.slots.filter((slot) => slot.kind === 'player').map((slot) => slot.id),
@@ -683,6 +758,7 @@ export function mapRoleInfoPlayerIds(
 
     return {
       ...entry,
+      ...(playerId === undefined ? {} : { playerId }),
       values: Object.fromEntries(
         Object.entries(entry.values).flatMap(([slotId, value]) => {
           // Every slot of an in-play guess is a player, however many the game had.
@@ -756,6 +832,7 @@ export function getRoleInfoTargetPlayers(
 
   for (const role of roles.filter((candidate) => roleIds.includes(candidate.id))) {
     const template = getRoleInfoTemplate(role);
+    const claimer = getRoleInfoClaimer(getRoleClaimers(players, role.id), owner);
     // The info comes on the night that starts this day, which a dead player doesn't get.
     if (template.autoDayBefore && !isPlayerCurrentlyDead(owner, day, 'night')) {
       for (const target of getNominationPlayers(
@@ -771,10 +848,13 @@ export function getRoleInfoTargetPlayers(
     // Characters with a line per night only point at that night's info.
     const entry =
       getRoleInfoNights(role, day) === undefined
-        ? getRoleInfoForPhaseOrPrevious(roleInfos, role.id, day, phase)
+        ? getRoleInfoForPhaseOrPrevious(roleInfos, role.id, day, phase, claimer)
         : roleInfos.find(
             (candidate) =>
-              candidate.roleId === role.id && candidate.day === day && candidate.phase === 'night',
+              candidate.roleId === role.id &&
+              candidate.day === day &&
+              candidate.phase === 'night' &&
+              isClaimerRoleInfo(candidate, claimer),
           );
     for (const slot of template.slots) {
       const value = entry?.values[slot.id];
@@ -866,13 +946,16 @@ export function inferRoleInfosFromNotes(
         // A day's notes usually record what was learned the night before, so they fill both.
         const phases: GamePhase[] = dayNote.phase === 'night' ? ['night'] : ['night', 'day'];
         for (const phase of phases) {
-          const key = `${dayNote.day}-${phase}`;
+          // A double-claimed character keeps each claimer's info apart.
+          const playerId = owners.length > 1 ? owner.id : undefined;
+          const key = `${playerId ?? ''}-${dayNote.day}-${phase}`;
           if (entriesByPhase.has(key)) continue;
 
           entriesByPhase.set(key, {
             day: dayNote.day,
             phase,
             roleId: role.id,
+            ...(playerId === undefined ? {} : { playerId }),
             updatedAt: dayNote.updatedAt,
             values,
           });
@@ -1171,6 +1254,10 @@ function areAllDead(players: Player[], day: number, phase: GamePhase) {
   return (
     players.length > 0 && players.every((candidate) => isPlayerCurrentlyDead(candidate, day, phase))
   );
+}
+
+function withClaimerId(claimer: RoleInfoClaimer | undefined) {
+  return claimer ? { playerId: claimer.playerId } : {};
 }
 
 function getEntryPhaseKey(entry: RoleInfoEntry) {

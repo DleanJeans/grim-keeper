@@ -56,6 +56,7 @@ import {
 import { isDeadVote } from '@/utils/player-utils';
 import {
   mapRoleInfoPlayerIds,
+  type RoleInfoClaimer,
   seedRoleInfos,
   setDailyRoleInfoValues,
   setRoleInfoValue,
@@ -189,12 +190,15 @@ type GameState = GameData & {
     seedEntries?: RoleInfoEntry[],
     /** Start a new phase from the previous phase's values; off for per-night rows. */
     carryForward?: boolean,
+    /** Whose info it is when several players claim the character. */
+    claimer?: RoleInfoClaimer,
   ) => void;
   /** Replaces a daily character's values for each listed day (the Savant's statements). */
   setDailyRoleInfoValues: (
     gameId: string,
     roleId: string,
     valuesByDay: Map<number, Record<string, string>>,
+    claimer?: RoleInfoClaimer,
   ) => void;
   setMapDimensions: (gameId: string, mapWidth: number, mapHeight: number) => void;
   setTokenSize: (gameId: string, tokenSize: number) => void;
@@ -1209,7 +1213,17 @@ export const useGameStore = create<GameState>()(
           ),
         }));
       },
-      setRoleInfoValue: (gameId, roleId, day, phase, slotId, value, seedEntries, carryForward) => {
+      setRoleInfoValue: (
+        gameId,
+        roleId,
+        day,
+        phase,
+        slotId,
+        value,
+        seedEntries,
+        carryForward,
+        claimer,
+      ) => {
         const updatedAt = new Date().toISOString();
         set((state) => ({
           games: state.games.map((game) =>
@@ -1225,6 +1239,7 @@ export const useGameStore = create<GameState>()(
                     value,
                     updatedAt,
                     carryForward,
+                    claimer,
                   ),
                   updatedAt,
                 }
@@ -1232,14 +1247,20 @@ export const useGameStore = create<GameState>()(
           ),
         }));
       },
-      setDailyRoleInfoValues: (gameId, roleId, valuesByDay) => {
+      setDailyRoleInfoValues: (gameId, roleId, valuesByDay, claimer) => {
         const updatedAt = new Date().toISOString();
         set((state) => ({
           games: state.games.map((game) =>
             game.id === gameId
               ? {
                   ...game,
-                  roleInfos: setDailyRoleInfoValues(game.roleInfos, roleId, valuesByDay, updatedAt),
+                  roleInfos: setDailyRoleInfoValues(
+                    game.roleInfos,
+                    roleId,
+                    valuesByDay,
+                    updatedAt,
+                    claimer,
+                  ),
                   updatedAt,
                 }
               : game,
