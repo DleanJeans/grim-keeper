@@ -191,31 +191,18 @@ export function CreateFormHeader({
             accessibilityRole="button"
             disabled={!canAddPlayer}
             onPress={onAddPlayer}
-            style={({ pressed }) => ({
-              alignItems: 'center',
-              backgroundColor: !canAddPlayer
-                ? colors.disabled
-                : pressed
-                  ? colors.surfacePressed
-                  : colors.surfaceRaised,
-              borderColor: colors.border,
-              borderRadius: 8,
-              borderWidth: 1,
-              flexDirection: 'row',
-              gap: 7,
-              justifyContent: 'center',
-              minHeight: 52,
-              paddingHorizontal: 12,
-            })}
+            style={({ pressed }) => [
+              styles.addButton,
+              pressed && styles.buttonPressed,
+              !canAddPlayer && styles.buttonDisabled,
+            ]}
           >
             <Plus
               color={canAddPlayer ? colors.text : colors.onDisabled}
               size={17}
               strokeWidth={2.7}
             />
-            <Text
-              style={{ color: canAddPlayer ? colors.text : colors.onDisabled, fontWeight: '800' }}
-            >
+            <Text style={[styles.addButtonText, !canAddPlayer && styles.buttonTextDisabled]}>
               Add
             </Text>
           </Pressable>
@@ -223,49 +210,30 @@ export function CreateFormHeader({
       </View>
 
       {!isEditing ? (
-        <View style={{ flexDirection: 'row', gap: 12 }}>
+        <View style={styles.startRow}>
           <Pressable
             accessibilityRole="button"
             disabled={!canStart}
             onPress={onStart}
-            style={({ pressed }) => ({
-              alignItems: 'center',
-              backgroundColor: !canStart
-                ? colors.disabled
-                : pressed
-                  ? colors.surfacePressed
-                  : colors.primary,
-              borderRadius: 8,
-              flex: 1,
-              flexDirection: 'row',
-              gap: 7,
-              justifyContent: 'center',
-              minHeight: 48,
-              paddingVertical: 13,
-            })}
+            style={({ pressed }) => [
+              styles.startButton,
+              pressed && styles.buttonPressed,
+              !canStart && styles.buttonDisabled,
+            ]}
           >
             <Play
               color={canStart ? colors.onPrimary : colors.onDisabled}
               size={16}
               strokeWidth={2.7}
             />
-            <Text
-              style={{ color: canStart ? colors.onPrimary : colors.onDisabled, fontWeight: '800' }}
-            >
+            <Text style={[styles.startButtonText, !canStart && styles.buttonTextDisabled]}>
               Start
             </Text>
           </Pressable>
         </View>
       ) : null}
 
-      <Text
-        selectable
-        style={{
-          color: duplicateName ? colors.danger : colors.textMuted,
-          fontSize: 14,
-          lineHeight: 20,
-        }}
-      >
+      <Text selectable style={[styles.helperText, duplicateName && styles.helperTextDuplicate]}>
         {helperText}
       </Text>
       <FixedPlayerRow name={fixedPlayerName} />
@@ -274,6 +242,31 @@ export function CreateFormHeader({
 }
 
 const styles = StyleSheet.create({
+  addButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 7,
+    justifyContent: 'center',
+    minHeight: 52,
+    paddingHorizontal: 12,
+  },
+  addButtonText: {
+    color: colors.text,
+    fontWeight: '800',
+  },
+  buttonDisabled: {
+    backgroundColor: colors.disabled,
+  },
+  buttonPressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  buttonTextDisabled: {
+    color: colors.onDisabled,
+  },
   container: {
     gap: 14,
     paddingBottom: 12,
@@ -290,6 +283,14 @@ const styles = StyleSheet.create({
   friendPopoverHidden: {
     opacity: 0,
     pointerEvents: 'none',
+  },
+  helperText: {
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  helperTextDuplicate: {
+    color: colors.danger,
   },
   inputContainer: {
     flex: 1,
@@ -335,5 +336,24 @@ const styles = StyleSheet.create({
   nameSection: {
     gap: 8,
     zIndex: 10,
+  },
+  startButton: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    flex: 1,
+    flexDirection: 'row',
+    gap: 7,
+    justifyContent: 'center',
+    minHeight: 48,
+    paddingVertical: 13,
+  },
+  startButtonText: {
+    color: colors.onPrimary,
+    fontWeight: '800',
+  },
+  startRow: {
+    flexDirection: 'row',
+    gap: 12,
   },
 });
