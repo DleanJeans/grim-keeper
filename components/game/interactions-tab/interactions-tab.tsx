@@ -1,6 +1,6 @@
 import { List, Table2 } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { InteractionButton } from '@/components/game/interactions-tab/action-buttons/interaction-button';
 import { ConversationTable } from '@/components/game/interactions-tab/conversation-table';
@@ -46,7 +46,7 @@ export function InteractionsTab() {
   const [subtab, setSubtab] = useState<InteractionSubtab>('list');
 
   return (
-    <View style={{ gap: 12 }}>
+    <View style={styles.container}>
       {activePhase === 'day' && trackingMode === 'interaction' ? (
         <TrackingConfirmActions />
       ) : activePhase === 'day' && focusedPlayer ? (
@@ -99,3 +99,9 @@ export function InteractionsTab() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    gap: 12,
+  },
+});

@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react-native';
-import { Pressable } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
@@ -17,25 +17,40 @@ export function CreateHeaderDoneButton({
       accessibilityRole="button"
       disabled={!canStart}
       onPress={onPress}
-      style={({ pressed }) => ({
-        alignItems: 'center',
-        backgroundColor: !canStart
-          ? colors.disabled
-          : pressed
-            ? colors.surfacePressed
-            : colors.primary,
-        borderRadius: 8,
-        flexDirection: 'row',
-        gap: 5,
-        opacity: !canStart ? 0.75 : 1,
-        paddingHorizontal: 10,
-        paddingVertical: 7,
-      })}
+      style={({ pressed }) => [
+        styles.button,
+        pressed && styles.buttonPressed,
+        !canStart && styles.buttonDisabled,
+      ]}
     >
       <Check color={canStart ? colors.onPrimary : colors.onDisabled} size={15} strokeWidth={2.7} />
-      <Text style={{ color: canStart ? colors.onPrimary : colors.onDisabled, fontWeight: '800' }}>
-        Done
-      </Text>
+      <Text style={[styles.label, !canStart && styles.labelDisabled]}>Done</Text>
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  button: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    flexDirection: 'row',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  buttonDisabled: {
+    backgroundColor: colors.disabled,
+    opacity: 0.75,
+  },
+  buttonPressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  label: {
+    color: colors.onPrimary,
+    fontWeight: '800',
+  },
+  labelDisabled: {
+    color: colors.onDisabled,
+  },
+});

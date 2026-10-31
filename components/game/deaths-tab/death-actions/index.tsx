@@ -4,7 +4,7 @@ export { ReviveButton } from './revive-button';
 export { UndoDeathButton } from './undo-death-button';
 
 import { useState } from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { innerActionRow } from '@/components/game/styles';
 import { ExecuteButton } from './execute-button';
@@ -66,7 +66,7 @@ export function FocusedDeathActionPanel() {
   const deathKind = focusedPlayer.death?.kind;
 
   return (
-    <View style={{ alignSelf: 'stretch', gap: 10, marginBottom: 24 }}>
+    <View style={styles.container}>
       {focusedPlayerIsDead ? (
         <View style={innerActionRow}>
           {deathKind === 'execution' ? (
@@ -115,3 +115,11 @@ export function FocusedDeathActionPanel() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    alignSelf: 'stretch',
+    gap: 10,
+    marginBottom: 24,
+  },
+});

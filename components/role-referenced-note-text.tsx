@@ -1,4 +1,4 @@
-import { type StyleProp, type TextStyle, View } from 'react-native';
+import { type StyleProp, StyleSheet, type TextStyle, View } from 'react-native';
 import { RoleReferenceNoteLine } from '@/components/role-reference-note-line';
 import { useGameStore } from '@/store/game-store';
 import type { Game, Player, Role } from '@/types/game';
@@ -48,7 +48,7 @@ export function RoleReferencedNoteText({
   });
 
   return (
-    <View style={{ flexShrink: 1, gap: 0 }}>
+    <View style={styles.lines}>
       {lines.map((line) => (
         <RoleReferenceNoteLine
           key={line.key}
@@ -65,3 +65,9 @@ export function RoleReferencedNoteText({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  lines: {
+    flexShrink: 1,
+  },
+});

@@ -88,7 +88,7 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={styles.root}>
       <ThemeProvider value={grimKeeperTheme}>
         <AppDialogProvider>
           <PwaHead />
@@ -146,5 +146,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     flex: 1,
     justifyContent: 'center',
+  },
+  root: {
+    flex: 1,
   },
 });
