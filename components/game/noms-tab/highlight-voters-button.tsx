@@ -13,7 +13,11 @@ type HighlightVotersButtonProps = {
 
 export function HighlightVotersButton({ active, disabled, onPress }: HighlightVotersButtonProps) {
   const label = active ? 'Clear voter highlights' : 'Highlight voters';
-  const iconColor = disabled ? colors.gameTextSubtle : active ? '#86efac' : colors.gameText;
+  const iconColor = disabled
+    ? colors.gameTextSubtle
+    : active
+      ? colors.gameHighlightActive
+      : colors.gameText;
 
   return (
     <Pressable
@@ -23,7 +27,7 @@ export function HighlightVotersButton({ active, disabled, onPress }: HighlightVo
       onPress={onPress}
       style={({ pressed }) =>
         outlinedActionStyle({
-          borderColor: active ? '#86efac' : undefined,
+          borderColor: active ? colors.gameHighlightActive : undefined,
           disabled,
           paddingVertical: 12,
           pressed,

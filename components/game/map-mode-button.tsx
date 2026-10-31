@@ -34,7 +34,7 @@ export function MapModeButton({
         onPress={onPress}
         style={({ pressed }) => ({
           alignItems: 'center',
-          backgroundColor: pressed ? '#dbeafe' : colors.gameText,
+          backgroundColor: pressed ? colors.gameTextPressed : colors.gameText,
           borderColor: colors.gameText,
           borderRadius: 8,
           borderWidth: 1,

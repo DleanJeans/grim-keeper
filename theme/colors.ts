@@ -34,6 +34,12 @@ const baseColors = {
   gameSurfacePressed: '#1f2937',
   gameSurfaceRaised: '#1e293b',
   gameText: '#f8fafc',
+  /** Pressed state of light buttons that use gameText as their fill. */
+  gameTextPressed: '#dbeafe',
+  /** Active "Highlight voters" button. */
+  gameHighlightActive: '#86efac',
+  /** Map lines between players who had a conversation. */
+  interactionLine: '#38bdf8',
   gameTextMuted: '#94a3b8',
   gameTextSoft: '#cbd5e1',
   gameTextSubtle: '#64748b',
@@ -47,6 +53,8 @@ const baseColors = {
   inputBorder: '#334155',
   inputText: '#f8fafc',
   inputPlaceholder: '#64748b',
+  /** Bookmark icon on a note that is saved for future games. */
+  savedNoteIcon: '#fbbf24',
   // Note save button
   saveButton: '#16a34a',
   saveButtonPressed: '#15803d',

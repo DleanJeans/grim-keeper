@@ -27,7 +27,7 @@ export function SaveNoteForFutureButton({
   const savedForRole =
     !!savedText && !!game.script?.roles.some((role) => role.notes?.includes(savedText));
   const saved = !!savedNote || savedForRole;
-  const iconColor = saved ? '#fbbf24' : colors.textMuted;
+  const iconColor = saved ? colors.savedNoteIcon : colors.textMuted;
 
   function handlePress() {
     router.push({

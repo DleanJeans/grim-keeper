@@ -374,7 +374,7 @@ export function GameMap() {
                     return [];
                   }
 
-                  const stroke = highlighted ? '#f59e0b' : '#38bdf8';
+                  const stroke = highlighted ? colors.repeatBorder : colors.interactionLine;
                   const connectedToSelected =
                     selectedPlayerIdSet.size === 0 ||
                     selectedPlayerIdSet.has(fromId) ||
