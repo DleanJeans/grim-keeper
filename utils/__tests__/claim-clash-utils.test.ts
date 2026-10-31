@@ -73,4 +73,22 @@ describe('getClaimClashes', () => {
       setup: 1,
     });
   });
+
+  it('flags claims of a bluff or of a character not on the script, but not Travellers', () => {
+    const players = [
+      player('a', [assignment('claim', ['chef'])]),
+      player('b', [assignment('claim', ['clockmaker'])]),
+      player('c', [assignment('claim', ['gunslinger'])]),
+    ];
+    const catalog: Role[] = [
+      { id: 'clockmaker', name: 'Clockmaker', team: 'townsfolk' },
+      { id: 'gunslinger', name: 'Gunslinger', team: 'traveller' },
+    ];
+    const clashes = getClaimClashes(players, roles, counts, 1, 'day', {
+      bluffRoleIds: ['chef'],
+      catalog,
+    });
+    expect(clashes.bluffClaims).toEqual([{ playerId: 'a', roleId: 'chef' }]);
+    expect(clashes.offScriptClaims).toEqual([{ playerId: 'b', roleId: 'clockmaker' }]);
+  });
 });

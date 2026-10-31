@@ -401,6 +401,7 @@ export default function GameRoute() {
           getAutomaticCharacterTypeCounts(nonTravelerPlayers.length),
         activeGame.activeDay,
         activePhase,
+        { bluffRoleIds: Object.values(activeGame.bluffs ?? {}), catalog: roleCatalog },
       )
     : undefined;
   function runDayEdit(edit: () => void, day = recordDay, phase = activePhase) {

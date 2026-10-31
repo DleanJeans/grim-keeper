@@ -23,6 +23,17 @@ export function ClaimClashWarnings({ clashes, players, roles }: ClaimClashWarnin
         clash.playerIds.map((playerId) => playerById.get(playerId)?.name ?? 'Unknown'),
       )}`,
   );
+  const playerName = (playerId: string) => playerById.get(playerId)?.name ?? 'Unknown';
+  for (const claim of clashes.bluffClaims) {
+    messages.push(
+      `${playerName(claim.playerId)} claims ${roleName(claim.roleId)}, one of your bluffs`,
+    );
+  }
+  for (const claim of clashes.offScriptClaims) {
+    messages.push(
+      `${playerName(claim.playerId)} claims ${roleName(claim.roleId)}, not on the script`,
+    );
+  }
   const { outsiders } = clashes;
   if (outsiders) {
     const modifiers =
