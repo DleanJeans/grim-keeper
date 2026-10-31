@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { ActiveGameTab } from '@/components/game/active-game-tab';
 import { CharacterTypeCountEditor } from '@/components/game/character-type-counts';
+import { ClaimClashWarnings } from '@/components/game/claim-clash-warnings';
 import { DayCount } from '@/components/game/day-count';
 import { DayEditLockButton } from '@/components/game/day-edit-lock-button';
 import { DayJumpButtons } from '@/components/game/day-jump-buttons';
@@ -45,6 +46,8 @@ import type {
   PlayerRoleAssignment,
   RoleDisplayMode,
 } from '@/types/game';
+import { getClaimClashes } from '@/utils/claim-clash-utils';
+import { getAutomaticCharacterTypeCounts } from '@/utils/evil-in-play-utils';
 import {
   getDayCutoffForPhase,
   getGameActivePhase,
@@ -387,6 +390,16 @@ export default function GameRoute() {
   ).length;
   const alivePlayerCount = nonTravelerPlayers.length - deadPlayerCount;
   const travelerPlayerCount = travelerPlayerIds.size;
+  const claimClashes = showRoles
+    ? getClaimClashes(
+        activeGame.players,
+        gameRoles,
+        activeGame.characterTypeCounts ??
+          getAutomaticCharacterTypeCounts(nonTravelerPlayers.length),
+        activeGame.activeDay,
+        activePhase,
+      )
+    : undefined;
   function runDayEdit(edit: () => void, day = recordDay, phase = activePhase) {
     const isHistoricalDay = day < lastDayWithData && day !== recordDay;
     const targetPosition = { activeDay: day, activePhase: phase };
@@ -1089,6 +1102,15 @@ export default function GameRoute() {
                   />
                 </View>
               </View>
+
+              {claimClashes ? (
+                <ClaimClashWarnings
+                  key="claim-clashes"
+                  clashes={claimClashes}
+                  players={activeGame.players}
+                  roles={[...gameRoles, ...roleCatalog]}
+                />
+              ) : null}
 
               <DayJumpButtons
                 key="day-jump-buttons"
