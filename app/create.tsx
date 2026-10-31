@@ -239,12 +239,12 @@ export default function CreateRoute() {
       return 'Add at least 1 other player.';
     }
 
-    if (isEditing) {
-      return 'Add or remove players, choose a script, then tap Done.';
+    if (movingPlayer) {
+      return `Tap a gap to move ${movingPlayer.name} there, or another player to swap seats. Tap ${movingPlayer.name} again to cancel.`;
     }
 
-    return movingPlayer
-      ? `Tap a gap to move ${movingPlayer.name} there, or another player to swap seats. Tap ${movingPlayer.name} again to cancel.`
+    return isEditing
+      ? 'Add or remove players, tap a player to change seat order, choose a script, then tap Done. Tokens stay where they are on the map.'
       : 'Tap a player to move them in seat order.';
   }, [duplicateName, isEditing, movingPlayer, players.length]);
 
@@ -456,7 +456,6 @@ export default function CreateRoute() {
           renderItem={({ index, item }) => (
             <SeatListItem
               index={index}
-              isEditing={isEditing}
               item={item}
               movingPlayer={movingPlayer}
               onMoveToGap={handleMoveToGap}
@@ -475,7 +474,6 @@ export default function CreateRoute() {
 /** A seated player, with the gaps around them while another player is picked to move. */
 function SeatListItem({
   index,
-  isEditing,
   item,
   movingPlayer,
   onMoveToGap,
@@ -484,7 +482,6 @@ function SeatListItem({
   players,
 }: {
   index: number;
-  isEditing: boolean;
   item: DraftPlayer;
   movingPlayer?: DraftPlayer;
   onMoveToGap: (gapIndex: number) => void;
@@ -507,7 +504,6 @@ function SeatListItem({
       ) : null}
       <PlayerRow
         index={index + 1}
-        isEditing={isEditing}
         isMoving={movingPlayer?.id === item.id}
         item={item}
         onPress={onPressPlayer}

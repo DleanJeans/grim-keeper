@@ -37,6 +37,7 @@ import { type GameTransfer, mergeGameTransfer } from '@/utils/game-transfer';
 import {
   clampMapHeight,
   findFreeTokenPosition,
+  getPlayerMapPosition,
   getStorytellerPosition,
   getTokenSize,
   resolveTokenCollisions,
@@ -718,15 +719,43 @@ export const useGameStore = create<GameState>()(
           const retainedPlayerIds = new Set(appUser ? [appUser.id] : []);
           // New players take free spots around the map center, one after another.
           const placedPlayers = [...game.players];
+          // Tokens without a saved spot sit by seat; pin them first so a new seat order (or a
+          // removed player) doesn't move them around the map.
+          const newSeatById = new Map(
+            regularDraftPlayers.map((player, index) => [player.id, index + 1]),
+          );
+          const seatsChanged = game.players.some(
+            (player) =>
+              player.id !== APP_USER_ID &&
+              !player.isStoryteller &&
+              newSeatById.get(player.id) !== player.seat,
+          );
+          const pinPosition = (player: Player) =>
+            seatsChanged &&
+            !player.position &&
+            game.mapWidth !== undefined &&
+            game.mapHeight !== undefined
+              ? {
+                  position: getPlayerMapPosition(
+                    player,
+                    game.players,
+                    game.mapWidth,
+                    game.mapHeight,
+                    game.tokenSize,
+                  ),
+                }
+              : {};
           const players = [
-            appUser ?? { id: APP_USER_ID, name: state.appUserName, seat: 0 },
+            appUser
+              ? { ...appUser, ...pinPosition(appUser) }
+              : { id: APP_USER_ID, name: state.appUserName, seat: 0 },
             ...regularDraftPlayers.map((player, index) => {
               const name = names[index];
               const existingPlayer = existingPlayersById.get(player.id);
 
               if (existingPlayer) {
                 retainedPlayerIds.add(existingPlayer.id);
-                return { ...existingPlayer, name, seat: index + 1 };
+                return { ...existingPlayer, ...pinPosition(existingPlayer), name, seat: index + 1 };
               }
 
               const position = getNewPlayerPosition(game, placedPlayers);

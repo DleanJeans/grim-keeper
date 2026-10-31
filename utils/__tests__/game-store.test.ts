@@ -11,6 +11,7 @@ jest.mock('@/utils/web-storage', () => ({
 import { useGameStore } from '@/store/game-store';
 import type { Game, Role, SavedNote, StoredScript } from '@/types/game';
 import { getGameStats } from '@/utils/game-utils';
+import { getPlayerMapPosition } from '@/utils/layout-utils';
 import { getNotesForPlayer, migrateV2ToV3 } from '@/utils/saved-note-store';
 
 const persistedStorage = jest.requireMock('@/utils/web-storage').webStorage as {
@@ -423,6 +424,70 @@ describe('updateGamePlayers', () => {
       position: { x: 300, y: 200 },
       seat: 2,
     });
+  });
+
+  it('keeps tokens where they were when the seat order changes', () => {
+    const game: Game = {
+      activeDay: 1,
+      conversations: [],
+      createdAt: '2026-07-07T00:00:00.000Z',
+      id: 'game-1',
+      mapHeight: 400,
+      mapWidth: 600,
+      players: [
+        { id: 'app-user', name: 'You', seat: 0 },
+        { id: 'alice', name: 'Alice', seat: 1 },
+        { id: 'bob', name: 'Bob', seat: 2 },
+        { id: 'cat', name: 'Cat', seat: 3, position: { x: 50, y: 60 } },
+      ],
+      updatedAt: '2026-07-07T00:00:00.000Z',
+    };
+    const before = Object.fromEntries(
+      game.players.map((player) => [
+        player.id,
+        getPlayerMapPosition(player, game.players, 600, 400, game.tokenSize),
+      ]),
+    );
+
+    useGameStore.setState({ games: [game] });
+    useGameStore.getState().updateGamePlayers('game-1', [
+      { id: 'bob', name: 'Bob' },
+      { id: 'alice', name: 'Alice' },
+      { id: 'cat', name: 'Cat' },
+    ]);
+
+    const players = useGameStore.getState().games[0].players;
+    expect(players.map((player) => [player.id, player.seat])).toEqual([
+      ['app-user', 0],
+      ['bob', 1],
+      ['alice', 2],
+      ['cat', 3],
+    ]);
+    for (const player of players) {
+      expect(player.position).toEqual(before[player.id]);
+    }
+  });
+
+  it('leaves unsaved token spots alone when only adding players', () => {
+    const game: Game = {
+      activeDay: 1,
+      conversations: [],
+      createdAt: '2026-07-07T00:00:00.000Z',
+      id: 'game-1',
+      mapHeight: 400,
+      mapWidth: 600,
+      players: [
+        { id: 'app-user', name: 'You', seat: 0 },
+        { id: 'alice', name: 'Alice', seat: 1 },
+      ],
+      updatedAt: '2026-07-07T00:00:00.000Z',
+    };
+    useGameStore.setState({ games: [game] });
+    useGameStore.getState().updateGamePlayers('game-1', [
+      { id: 'alice', name: 'Alice' },
+      { id: 'draft-bob', name: 'Bob' },
+    ]);
+    expect(useGameStore.getState().games[0].players[1].position).toBeUndefined();
   });
 
   it('cleans references only for players removed by the edit', () => {

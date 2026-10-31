@@ -11,7 +11,6 @@ export type DraftPlayer = {
 
 export function PlayerRow({
   index,
-  isEditing,
   isFixed = false,
   isMoving = false,
   item,
@@ -19,7 +18,6 @@ export function PlayerRow({
   onRemove,
 }: {
   index: number;
-  isEditing: boolean;
   isFixed?: boolean;
   /** This player is picked to move; tapping a gap or another player places them. */
   isMoving?: boolean;
@@ -27,7 +25,7 @@ export function PlayerRow({
   onPress?: (playerId: string) => void;
   onRemove?: (playerId: string) => void;
 }) {
-  const canMove = !isEditing && !isFixed && !!onPress;
+  const canMove = !isFixed && !!onPress;
 
   return (
     <View style={[styles.row, isMoving && styles.rowActive, isFixed && styles.rowFixed]}>
