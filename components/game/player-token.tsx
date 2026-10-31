@@ -55,6 +55,8 @@ type PlayerTokenProps = {
   disabled?: boolean;
   /** Faded but still tappable, e.g. cleared players under the suspect filter. */
   dimmed?: boolean;
+  /** Short word shown under the token, such as "drunk?". */
+  label?: string;
   /** Label shown on the token; defaults to the player's name. */
   displayName?: string;
   interactionMode?: boolean;
@@ -84,6 +86,7 @@ export function PlayerToken({
   displayName,
   isInitiator = false,
   isSelected = false,
+  label,
   mapHeight,
   mapScale,
   mapWidth,
@@ -313,6 +316,23 @@ export function PlayerToken({
             ]}
           />
         ) : null}
+        {label ? (
+          <View
+            pointerEvents="none"
+            style={[
+              styles.tokenLabelWrap,
+              {
+                left: -tokenSize / 2,
+                top: tokenSize - borderWidth + (hasDeadVote ? badgeSize / 2 : 0) + 2,
+                width: tokenSize * 2,
+              },
+            ]}
+          >
+            <Text numberOfLines={1} style={styles.tokenLabel}>
+              {label}
+            </Text>
+          </View>
+        ) : null}
         {hasDeadVote ? (
           <View
             style={[
@@ -430,6 +450,19 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   suspectDot: { backgroundColor: colors.suspicionSuspect },
+  tokenLabel: {
+    backgroundColor: colors.gameSurfaceRaised,
+    borderColor: colors.gameBorder,
+    borderRadius: 6,
+    borderWidth: 1,
+    color: colors.gameText,
+    fontSize: 11,
+    fontWeight: '800',
+    overflow: 'hidden',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  tokenLabelWrap: { alignItems: 'center', position: 'absolute', zIndex: 3 },
   trustedDot: { backgroundColor: colors.suspicionTrusted },
   unsureDot: { backgroundColor: colors.suspicionUnsure },
   deadVoteBadge: {

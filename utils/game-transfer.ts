@@ -259,6 +259,7 @@ function isGame(value: unknown): value is SerializedGame {
     isOptionalStringRecord(value.evilInPlay) &&
     isOptionalStringRecord(value.bluffs) &&
     isOptionalStringRecord(value.suspicions) &&
+    isOptionalStringRecord(value.tokenLabels) &&
     (value.script === undefined || isSerializedStoredScript(value.script))
   );
 }

@@ -219,6 +219,8 @@ type GameState = GameData & {
     phase: GamePhase,
     level?: SuspicionLevel,
   ) => void;
+  /** Sets the short word under a player's map token; an empty label removes it. */
+  setPlayerTokenLabel: (gameId: string, playerId: string, label: string) => void;
   setGameResult: (gameId: string, result?: GameResult) => void;
   setActiveDay: (gameId: string, day: number) => void;
   setGamePhase: (gameId: string, day: number, phase: GamePhase) => void;
@@ -1379,6 +1381,21 @@ export const useGameStore = create<GameState>()(
                 }
               : game,
           ),
+        }));
+      },
+      setPlayerTokenLabel: (gameId, playerId, label) => {
+        const trimmed = label.trim();
+        set((state) => ({
+          games: state.games.map((game) => {
+            if (game.id !== gameId) return game;
+            const { [playerId]: _removed, ...rest } = game.tokenLabels ?? {};
+            const tokenLabels = trimmed ? { ...rest, [playerId]: trimmed } : rest;
+            return {
+              ...game,
+              tokenLabels: Object.keys(tokenLabels).length > 0 ? tokenLabels : undefined,
+              updatedAt: new Date().toISOString(),
+            };
+          }),
         }));
       },
       setGameResult: (gameId, result) => {

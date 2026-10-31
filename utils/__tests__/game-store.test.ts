@@ -212,6 +212,33 @@ describe('getNotesForPlayer', () => {
   });
 });
 
+describe('setPlayerTokenLabel', () => {
+  afterEach(() => {
+    useGameStore.setState({ games: [] });
+  });
+
+  it('sets, trims and removes a map token label', () => {
+    useGameStore.setState({
+      games: [
+        {
+          activeDay: 1,
+          conversations: [],
+          createdAt: '2026-07-07T00:00:00.000Z',
+          id: 'game-1',
+          players: [],
+          updatedAt: '2026-07-07T00:00:00.000Z',
+        },
+      ],
+    });
+
+    useGameStore.getState().setPlayerTokenLabel('game-1', 'ann', '  drunk? ');
+    expect(useGameStore.getState().games[0].tokenLabels).toEqual({ ann: 'drunk?' });
+
+    useGameStore.getState().setPlayerTokenLabel('game-1', 'ann', '');
+    expect(useGameStore.getState().games[0].tokenLabels).toBeUndefined();
+  });
+});
+
 describe('setGameResult', () => {
   const game: Game = {
     activeDay: 1,

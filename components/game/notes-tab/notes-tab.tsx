@@ -15,6 +15,7 @@ import { EvilInPlayPicker } from '@/components/game/notes-tab/role-info/evil-in-
 import { RoleInfoTable } from '@/components/game/notes-tab/role-info/role-info-table';
 import { SavedFriendNotesLink } from '@/components/game/notes-tab/saved-friend-notes-link';
 import { SuspicionPicker } from '@/components/game/notes-tab/suspicion-picker';
+import { TokenLabelInput } from '@/components/game/notes-tab/token-label-input';
 import { Text } from '@/components/text';
 import { getNotesForPlayer, useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
@@ -61,6 +62,7 @@ export function NotesTab() {
         <RoleAssignmentActions />
         <SuspicionPicker />
         <QuickNoteTags />
+        {showRoles ? <TokenLabelInput key={focusedPlayer.id} player={focusedPlayer} /> : null}
         <RoleInfoTable player={focusedPlayer} />
         <PlayerNoteSection player={focusedPlayer} />
         <PlayerTimelineButton player={focusedPlayer} />

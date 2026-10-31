@@ -169,6 +169,8 @@ export type Game = {
   bluffs?: Record<string, string>;
   /** `<phase index>:<player id>` → trusted, unsure, suspect or none; see utils/suspicion-utils. */
   suspicions?: Record<string, string>;
+  /** Player id → short word shown under their map token, such as "drunk?". */
+  tokenLabels?: Record<string, string>;
 };
 
 export type CharacterTypeCounts = {

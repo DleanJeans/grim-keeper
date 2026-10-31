@@ -476,6 +476,7 @@ export function GameMap() {
               activeRoleDisplayModes={activeRoleDisplayModes}
               activeTokenSize={activeTokenSize}
               dimmed={dimmedPlayerIdSet.has(player.id)}
+              label={showRoles ? game.tokenLabels?.[player.id] : undefined}
               disabled={disabledPlayerIdSet.has(player.id)}
               gameRoles={game.script?.roles ?? []}
               conversations={conversations}
@@ -519,6 +520,7 @@ function PlayerTokenForMap({
   dimmed,
   disabled,
   gameRoles,
+  label,
   conversations,
   handleMovePlayer,
   handleSelectPlayer,
@@ -542,6 +544,7 @@ function PlayerTokenForMap({
   activeTokenSize: number;
   dimmed: boolean;
   disabled: boolean;
+  label?: string;
   gameRoles: Role[];
   conversations: Conversation[];
   handleMovePlayer: (playerId: string, position: PlayerPosition) => void;
@@ -574,6 +577,7 @@ function PlayerTokenForMap({
       confirmedRoleIds={roleDisplay.kind === 'confirm' ? roleDisplay.roleIds : undefined}
       dimmed={dimmed}
       disabled={disabled}
+      label={label}
       displayName={getPlayerTokenName(player, players)}
       deadVoteAvailable={deadVoteAvailable}
       interactionMode={interactionMode}
