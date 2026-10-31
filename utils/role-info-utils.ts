@@ -845,17 +845,7 @@ export function getRoleInfoTargetPlayers(
       }
     }
 
-    // Characters with a line per night only point at that night's info.
-    const entry =
-      getRoleInfoNights(role, day) === undefined
-        ? getRoleInfoForPhaseOrPrevious(roleInfos, role.id, day, phase, claimer)
-        : roleInfos.find(
-            (candidate) =>
-              candidate.roleId === role.id &&
-              candidate.day === day &&
-              candidate.phase === 'night' &&
-              isClaimerRoleInfo(candidate, claimer),
-          );
+    const entry = getMapRoleInfoEntry(roleInfos, role, day, phase, claimer);
     for (const slot of template.slots) {
       const value = entry?.values[slot.id];
       if ((slot.kind === 'player' || template.evilInPlay) && value) targetIds.add(value);
@@ -863,6 +853,94 @@ export function getRoleInfoTargetPlayers(
   }
 
   return players.filter((candidate) => candidate.id !== owner.id && targetIds.has(candidate.id));
+}
+
+/** Characters a player's info tokens name, placed on the map next to its arrows. */
+export type RoleInfoMapRoles = {
+  /**
+   * Characters the info names about several players at once (the Washerwoman's Townsfolk), drawn
+   * where the arrows to those players start.
+   */
+  sourceRoles: { role: Role; targetIds: string[] }[];
+  /** Characters the info names about one player (the Dreamer's two), keyed by that player's id. */
+  targetRoles: Map<string, Role[]>;
+};
+
+/**
+ * Characters in the given player's info tokens for a phase. A character slot before the player
+ * slots is about all of them; one after a player slot is about that player. Killed players are
+ * left out, since the Godfather's or Ojo's characters aren't about who they kill.
+ */
+export function getRoleInfoMapRoles(
+  owner: Player,
+  players: Player[],
+  roleInfos: RoleInfoEntry[],
+  roles: Role[],
+  day: number,
+  phase: GamePhase,
+): RoleInfoMapRoles {
+  const { roleIds } = getRoleDisplayForDayOrPrevious(owner.roleAssignments, day, roles, phase);
+  const rolesById = new Map(roles.map((role) => [role.id, role]));
+  const playerIds = new Set(
+    players.filter((candidate) => candidate.id !== owner.id).map((candidate) => candidate.id),
+  );
+  const sourceRoles: RoleInfoMapRoles['sourceRoles'] = [];
+  const targetRoles: RoleInfoMapRoles['targetRoles'] = new Map();
+
+  for (const role of roles.filter((candidate) => roleIds.includes(candidate.id))) {
+    const template = getRoleInfoTemplate(role);
+    if (template.evilInPlay) continue;
+    const claimer = getRoleInfoClaimer(getRoleClaimers(players, role.id), owner);
+    const entry = getMapRoleInfoEntry(roleInfos, role, day, phase, claimer);
+    if (!entry) continue;
+
+    const leadingRoles: Role[] = [];
+    const slotPlayerIds: string[] = [];
+    let seenPlayerSlot = false;
+    let lastPlayerId: string | undefined;
+    for (const slot of template.slots) {
+      const value = entry.values[slot.id];
+      if (slot.kind === 'player') {
+        seenPlayerSlot = true;
+        lastPlayerId = value && playerIds.has(value) && !isKillSlot(slot) ? value : undefined;
+        if (lastPlayerId) slotPlayerIds.push(lastPlayerId);
+        continue;
+      }
+      const slotRole = slot.kind === 'role' && value ? rolesById.get(value) : undefined;
+      if (!slotRole) continue;
+      if (!seenPlayerSlot) {
+        leadingRoles.push(slotRole);
+      } else if (lastPlayerId) {
+        targetRoles.set(lastPlayerId, [...(targetRoles.get(lastPlayerId) ?? []), slotRole]);
+      }
+    }
+
+    if (slotPlayerIds.length === 0) continue;
+    for (const leadingRole of leadingRoles) {
+      sourceRoles.push({ role: leadingRole, targetIds: slotPlayerIds });
+    }
+  }
+
+  return { sourceRoles, targetRoles };
+}
+
+/** The info entry a character points at on the map; ones with a line per night use that night's. */
+function getMapRoleInfoEntry(
+  roleInfos: RoleInfoEntry[],
+  role: Role,
+  day: number,
+  phase: GamePhase,
+  claimer: RoleInfoClaimer | undefined,
+) {
+  return getRoleInfoNights(role, day) === undefined
+    ? getRoleInfoForPhaseOrPrevious(roleInfos, role.id, day, phase, claimer)
+    : roleInfos.find(
+        (candidate) =>
+          candidate.roleId === role.id &&
+          candidate.day === day &&
+          candidate.phase === 'night' &&
+          isClaimerRoleInfo(candidate, claimer),
+      );
 }
 
 /** The nearest alive non-storyteller players on each side of the given player. */

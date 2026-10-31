@@ -1,18 +1,17 @@
-import { G, Path, Polygon } from 'react-native-svg';
-
+import { ARROW_ROUNDING, ConnectionCurveShape } from '@/components/game/connection-curve-shape';
 import type { PlayerPosition } from '@/types/game';
 import { getTokenSize } from '@/utils/layout-utils';
 
 const TOKEN_GAP = 3;
 const BLOCKER_MARGIN = 6;
 const ARROW_SPREAD = Math.PI / 6;
-// Stroke width around the arrowhead that rounds its corners.
-const ARROW_ROUNDING = 3;
 // How far the rounded corner pokes past the arrowhead's sharp tip.
 const ARROW_TIP_INSET = ARROW_ROUNDING / 2 / Math.sin(ARROW_SPREAD);
 // Control point offsets, as a fraction of the distance between the two tokens.
 // Angles (radians) to slide a line end around its token, nearest first.
 const END_SLIDE_ANGLES = [0, 0.2, -0.2, 0.4, -0.4, 0.6, -0.6, 0.8, -0.8];
+// Further slides for an end that has to fit something beside it, such as character tokens.
+const FIT_SLIDE_ANGLES = [...END_SLIDE_ANGLES, 1, -1, 1.2, -1.2, 1.4, -1.4, 1.6, -1.6];
 const BEND_STEPS = [0, 0.1, 0.18, 0.26, 0.35, 0.45, 0.6, 0.8, 1];
 // Control point offsets for touching tokens, in token radii, so the line loops out past the gap.
 const TOUCHING_BEND_RADII = [1.8, 2.3, 2.8];
@@ -20,6 +19,8 @@ const TOUCHING_BEND_RADII = [1.8, 2.3, 2.8];
 const CROSSING_SAMPLES = 32;
 
 export type PlacedLineEnd = { base: PlayerPosition; tip: PlayerPosition };
+/** A curve worked out ahead of drawing: its arrowheads, its line, and where it ends. */
+export type ConnectionCurveGeometry = NonNullable<ReturnType<typeof getConnectionCurve>>;
 
 export function getInteractionCurvePlayerPairs(conversation: { participantIds: string[] }) {
   const playerIds = [...new Set(conversation.participantIds)];
@@ -37,6 +38,7 @@ export function getInteractionCurvePlayerPairs(conversation: { participantIds: s
 export function ConnectionCurve({
   blockers,
   from,
+  fromRadius,
   mapHeight,
   mapWidth,
   opacity = 0.9,
@@ -45,17 +47,22 @@ export function ConnectionCurve({
   placedLineEnds,
   placedPaths,
   to,
+  toRadius,
   tokenSize,
   twoWay = false,
 }: {
   blockers: PlayerPosition[];
   from?: PlayerPosition;
+  /** Radius of a smaller token the line starts from, instead of a player token. */
+  fromRadius?: number;
   mapHeight: number;
   mapWidth: number;
   opacity?: number;
   stroke: string;
   strokeWidth: number;
   to?: PlayerPosition;
+  /** Radius of a smaller token the line ends at, instead of a player token. */
+  toRadius?: number;
   tokenSize: number;
   /**
    * Line ends drawn so far on this map. The curve bends to keep its own ends, arrowheads
@@ -71,7 +78,7 @@ export function ConnectionCurve({
     return null;
   }
 
-  const curve = getConversationCurve(
+  const curve = getConnectionCurve(
     from,
     to,
     mapWidth,
@@ -82,39 +89,30 @@ export function ConnectionCurve({
     twoWay,
     placedLineEnds ?? [],
     placedPaths ?? [],
+    fromRadius,
+    toRadius,
   );
 
   if (!curve) {
     return null;
   }
 
-  // One group opacity so the line and arrowhead don't darken where they meet.
   return (
-    <G opacity={opacity}>
-      {curve.path ? (
-        <Path
-          d={curve.path}
-          fill="none"
-          stroke={stroke}
-          strokeLinecap="round"
-          strokeWidth={strokeWidth}
-        />
-      ) : null}
-      {curve.arrowPoints.map((points) => (
-        <Polygon
-          key={points}
-          fill={stroke}
-          points={points}
-          stroke={stroke}
-          strokeLinejoin="round"
-          strokeWidth={ARROW_ROUNDING}
-        />
-      ))}
-    </G>
+    <ConnectionCurveShape
+      curve={curve}
+      opacity={opacity}
+      stroke={stroke}
+      strokeWidth={strokeWidth}
+    />
   );
 }
 
-function getConversationCurve(
+/**
+ * Works out a curve between two tokens, steering clear of `placedLineEnds` and `placedPaths`, and
+ * adds its own ends and path to them. `fromRadius` and `toRadius` replace the player token radius
+ * at that end. `endFits` turns down end points where something drawn beside the end wouldn't fit.
+ */
+export function getConnectionCurve(
   from: PlayerPosition,
   to: PlayerPosition,
   mapWidth: number,
@@ -125,6 +123,9 @@ function getConversationCurve(
   twoWay: boolean,
   placedLineEnds: PlacedLineEnd[],
   placedPaths: PlayerPosition[][],
+  fromRadius?: number,
+  toRadius?: number,
+  endFits?: (tip: PlayerPosition) => boolean,
 ) {
   const distance = Math.hypot(to.x - from.x, to.y - from.y);
 
@@ -134,6 +135,8 @@ function getConversationCurve(
 
   const tokenRadius = getTokenSize(tokenSize) / 2;
   const edgeRadius = tokenRadius + TOKEN_GAP;
+  const startEdgeRadius = fromRadius === undefined ? edgeRadius : fromRadius + TOKEN_GAP;
+  const endEdgeRadius = toRadius === undefined ? edgeRadius : toRadius + TOKEN_GAP;
   const blockerRadius = tokenRadius + BLOCKER_MARGIN;
   const arrowLength = 5 + strokeWidth * 2.5;
   // Arrowhead width plus a little air, so two line ends never touch.
@@ -148,7 +151,7 @@ function getConversationCurve(
 
   // Tokens too close for a line and its arrowheads between them loop out to the side instead,
   // toward the middle of the map first like other curves.
-  const isTouching = distance - 2 * edgeRadius < headLength * (twoWay ? 3 : 2);
+  const isTouching = distance - startEdgeRadius - endEdgeRadius < headLength * (twoWay ? 3 : 2);
   const offsets = isTouching
     ? TOUCHING_BEND_RADII.map((radii) => radii * edgeRadius)
     : BEND_STEPS.map((step) => step * distance);
@@ -160,8 +163,8 @@ function getConversationCurve(
     for (const side of bend === 0 ? [1] : sides) {
       const offset = bend * side;
       const control = { x: midpoint.x + normal.x * offset, y: midpoint.y + normal.y * offset };
-      const start = getTokenEdgePoint(from, control, edgeRadius);
-      const end = getTokenEdgePoint(to, control, edgeRadius);
+      const start = getTokenEdgePoint(from, control, startEdgeRadius);
+      const end = getTokenEdgePoint(to, control, endEdgeRadius);
       const apex = getQuadraticPoint(start, control, end, 0.5);
       const outsideMap = apex.x < 0 || apex.y < 0 || apex.x > mapWidth || apex.y > mapHeight;
       const hits =
@@ -187,12 +190,20 @@ function getConversationCurve(
   const startEnd = getClearLineEnd(
     from,
     control,
-    edgeRadius,
+    startEdgeRadius,
     headLength,
     placedLineEnds,
     endSpacing,
   );
-  const endEnd = getClearLineEnd(to, control, edgeRadius, headLength, placedLineEnds, endSpacing);
+  const endEnd = getClearLineEnd(
+    to,
+    control,
+    endEdgeRadius,
+    headLength,
+    placedLineEnds,
+    endSpacing,
+    endFits,
+  );
   const startTip = startEnd.tip;
   const endTip = endEnd.tip;
 
@@ -207,6 +218,7 @@ function getConversationCurve(
             getArrowPoints(startTip, endTip, arrowLength),
           ]
         : [getArrowPoints(endTip, startTip, arrowLength)],
+      endTip,
       path: null,
     };
   }
@@ -227,6 +239,7 @@ function getConversationCurve(
 
   return {
     arrowPoints,
+    endTip,
     path: `M ${lineStart.x} ${lineStart.y} Q ${lineControl.x} ${lineControl.y} ${lineEnd.x} ${lineEnd.y}`,
   };
 }
@@ -254,6 +267,7 @@ function getClearLineEnd(
   headLength: number,
   placedLineEnds: PlacedLineEnd[],
   spacing: number,
+  fits?: (tip: PlayerPosition) => boolean,
 ): PlacedLineEnd {
   const angle = Math.atan2(toward.y - tokenCenter.y, toward.x - tokenCenter.x);
   // Line ends already on this token, by their angle around it.
@@ -264,8 +278,9 @@ function getClearLineEnd(
     )
     .map((placed) => Math.atan2(placed.tip.y - tokenCenter.y, placed.tip.x - tokenCenter.x));
   let lineEnd: PlacedLineEnd | null = null;
+  let firstFit: PlacedLineEnd | null = null;
 
-  for (const shift of END_SLIDE_ANGLES) {
+  for (const shift of fits ? FIT_SLIDE_ANGLES : END_SLIDE_ANGLES) {
     // Never slide past another line end on this token, which would make the two lines cross.
     const keepsOrder = tokenEndAngles.every(
       (placedAngle) =>
@@ -285,14 +300,18 @@ function getClearLineEnd(
       x: tip.x + ((toward.x - tip.x) / toControl) * headLength,
       y: tip.y + ((toward.y - tip.y) / toControl) * headLength,
     };
+    if (fits && !fits(tip)) {
+      continue;
+    }
     lineEnd = { base, tip };
+    firstFit ??= lineEnd;
 
     if (placedLineEnds.every((placed) => getSegmentGap(lineEnd ?? placed, placed) >= spacing)) {
       return lineEnd;
     }
   }
 
-  return { base: toward, tip: getTokenEdgePoint(tokenCenter, toward, radius) };
+  return firstFit ?? { base: toward, tip: getTokenEdgePoint(tokenCenter, toward, radius) };
 }
 
 /** Signed difference between two angles, in (-π, π]. */

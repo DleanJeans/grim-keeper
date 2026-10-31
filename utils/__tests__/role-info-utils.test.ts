@@ -8,6 +8,7 @@ import {
   getRoleInfoClaimer,
   getRoleInfoDays,
   getRoleInfoForPhaseOrPrevious,
+  getRoleInfoMapRoles,
   getRoleInfoNights,
   getRoleInfoOwners,
   getRoleInfoTargetPlayers,
@@ -563,6 +564,61 @@ describe('getRoleInfoTargetPlayers', () => {
 
     expect(targets(owner)).toEqual(['cat']);
     expect(targets({ ...owner, death: { day: 1, kind: 'execution', updatedAt: NOW } })).toEqual([]);
+  });
+});
+
+describe('getRoleInfoMapRoles', () => {
+  const claim = (roleId: string) => ({
+    roleAssignments: [{ day: 1, kind: 'claim' as const, roleIds: [roleId], updatedAt: NOW }],
+  });
+  const mapRoles: Role[] = [
+    ...roles,
+    { id: 'dreamer', name: 'Dreamer', team: 'townsfolk' },
+    { id: 'juggler', name: 'Juggler', team: 'townsfolk' },
+    { id: 'godfather', name: 'Godfather', team: 'minion' },
+  ];
+  const players = [makePlayer('ben', 1), makePlayer('cat', 2), makePlayer('dan', 3)];
+  const mapRolesFor = (roleId: string, values: Record<string, string>) => {
+    const owner = makePlayer('ann', 0, claim(roleId));
+    const roleInfos: RoleInfoEntry[] = [{ day: 1, phase: 'night', roleId, updatedAt: NOW, values }];
+    const { sourceRoles, targetRoles } = getRoleInfoMapRoles(
+      owner,
+      [owner, ...players],
+      roleInfos,
+      mapRoles,
+      1,
+      'day',
+    );
+    return {
+      sourceRoles: sourceRoles.map(({ role, targetIds }) => [role.id, targetIds]),
+      targetRoles: Object.fromEntries(
+        [...targetRoles].map(([playerId, playerRoles]) => [playerId, playerRoles.map((r) => r.id)]),
+      ),
+    };
+  };
+
+  it("puts the Washerwoman's Townsfolk where the arrows to both players start", () => {
+    expect(mapRolesFor('washerwoman', { '0': 'empath', '1': 'ben', '2': 'dan' })).toEqual({
+      sourceRoles: [['empath', ['ben', 'dan']]],
+      targetRoles: {},
+    });
+  });
+
+  it("puts the Dreamer's two characters on the dreamed player", () => {
+    expect(mapRolesFor('dreamer', { '0': 'cat', '1': 'empath', '2': 'imp' })).toEqual({
+      sourceRoles: [],
+      targetRoles: { cat: ['empath', 'imp'] },
+    });
+  });
+
+  it("puts each Juggler guess on its player and skips the Godfather's kill", () => {
+    expect(
+      mapRolesFor('juggler', { '0': 'ben', '1': 'empath', '2': 'dan', '3': 'imp' }).targetRoles,
+    ).toEqual({ ben: ['empath'], dan: ['imp'] });
+    expect(mapRolesFor('godfather', { '0': 'butler', '2': 'cat' })).toEqual({
+      sourceRoles: [],
+      targetRoles: {},
+    });
   });
 });
 

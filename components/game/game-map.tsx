@@ -3,27 +3,49 @@ import { StyleSheet, View } from 'react-native';
 import Svg from 'react-native-svg';
 import {
   ConnectionCurve,
+  getConnectionCurve,
   getInteractionCurvePlayerPairs,
   type PlacedLineEnd,
 } from '@/components/game/connection-curve';
+import { ConnectionCurveShape } from '@/components/game/connection-curve-shape';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import type { OtherTokenPosition } from '@/components/game/player-token';
 import { PlayerToken } from '@/components/game/player-token';
+import { RoleInfoMapToken } from '@/components/game/role-info-map-token';
 import { colors } from '@/theme/colors';
 import type { Conversation, Player, PlayerPosition, Role, RoleDisplayMode } from '@/types/game';
 import { buildConversationGroupRepeats, getConversationGroupKey } from '@/utils/conversation-utils';
 import type { GamePhasePosition } from '@/utils/game-phase-utils';
-import { getPlayerMapPosition, getPlayerTokenScale } from '@/utils/layout-utils';
+import { getPlayerMapPosition, getPlayerTokenScale, getTokenSize } from '@/utils/layout-utils';
 import {
   getPlayerTokenName,
   hasDeadVoteAvailable,
   isPlayerCurrentlyDead,
 } from '@/utils/player-utils';
-import { getRoleInfoTargetPlayers, inferRoleInfos } from '@/utils/role-info-utils';
+import {
+  getRoleInfoMapRoles,
+  getRoleInfoTargetPlayers,
+  inferRoleInfos,
+} from '@/utils/role-info-utils';
 import {
   getLatestRumorMapDisplaysForDayOrPrevious,
   getRoleDisplayForModes,
 } from '@/utils/role-utils';
+
+const ROLE_INFO_STROKE_WIDTH = 4;
+// Character tokens next to role info arrows, as a fraction of a player token.
+const ROLE_INFO_TOKEN_RATIO = 0.5;
+// How far a character token tucks under the player token it sits beside.
+const ROLE_INFO_TOKEN_OVERLAP = 4;
+// Angle between the start tokens of two characters about the same players.
+const SOURCE_TOKEN_SPREAD = 0.7;
+// Angles (radians) to turn a start token around the focused player when it would cover another
+// token, nearest first.
+const SOURCE_TOKEN_SHIFTS = Array.from({ length: 25 }, (_, step) =>
+  step === 0 ? 0 : (step % 2 === 1 ? 1 : -1) * Math.ceil(step / 2) * (Math.PI / 12),
+);
+
+type RoleInfoMapTokenPlacement = { key: string; position: PlayerPosition; role: Role };
 
 export function GameMap() {
   const {
@@ -98,10 +120,15 @@ export function GameMap() {
         activePhase,
       )
     : [];
-  // The focused player points at the players their character info is about.
-  const roleInfoTargets = useMemo(() => {
+  const roleInfoTokenSize = getTokenSize(activeTokenSize) * ROLE_INFO_TOKEN_RATIO;
+  // The focused player points at the players their character info is about. A character the info
+  // names about several players sits where those arrows start; one about a single player sits
+  // on that player.
+  const roleInfoMap = useMemo(() => {
     const focusedPlayer = players.find((player) => player.id === focusedPlayerId);
-    if (activeTab !== 'notes' || !showRoles || !focusedPlayer) return [];
+    if (activeTab !== 'notes' || !showRoles || !focusedPlayer) {
+      return { sourceTokens: [], targetRoles: new Map<string, Role[]>(), targets: [] };
+    }
 
     const roles = game.script?.roles ?? [];
     const roleInfos = [
@@ -123,18 +150,77 @@ export function GameMap() {
       return origin && position ? Math.hypot(position.x - origin.x, position.y - origin.y) : 0;
     };
     // Nearest first, so a line to a touching neighbor gets its spot before longer lines take it.
-    return targets.sort((first, second) => getDistance(first) - getDistance(second));
+    targets.sort((first, second) => getDistance(first) - getDistance(second));
+    if (!origin) return { sourceTokens: [], targetRoles: new Map<string, Role[]>(), targets };
+
+    const { sourceRoles, targetRoles } = getRoleInfoMapRoles(
+      focusedPlayer,
+      players,
+      roleInfos,
+      roles,
+      activeDay,
+      activePhase,
+    );
+    const getTokenRadius = (player: Player) =>
+      (getTokenSize(activeTokenSize) * getPlayerTokenScale(player, players)) / 2;
+    const clampToMap = (position: PlayerPosition) =>
+      clampRoleInfoToken(position, roleInfoTokenSize, mapWidth, mapHeight);
+    const sourceDistance =
+      getTokenRadius(focusedPlayer) + roleInfoTokenSize / 2 - ROLE_INFO_TOKEN_OVERLAP;
+    // Circles the start tokens must stay clear of: the other players, then earlier start tokens.
+    const sourceObstacles = players.flatMap((player) => {
+      const position = positions.get(player.id);
+      return player.id === focusedPlayer.id || !position
+        ? []
+        : [{ ...position, radius: getTokenRadius(player) }];
+    });
+    const sourceTokens = sourceRoles.map(({ role, targetIds }, index) => {
+      const meanAngle =
+        getMeanAngle(
+          origin,
+          targetIds.flatMap((targetId) => positions.get(targetId) ?? []),
+        ) + getSpreadOffset(index, sourceRoles.length, SOURCE_TOKEN_SPREAD);
+      // Turn around the focused player, nearest the arrows' direction first, until clear.
+      let best: { overlap: number; position: PlayerPosition } | null = null;
+      for (const shift of SOURCE_TOKEN_SHIFTS) {
+        const angle = meanAngle + shift;
+        const unclamped = {
+          x: origin.x + Math.cos(angle) * sourceDistance,
+          y: origin.y + Math.sin(angle) * sourceDistance,
+        };
+        const position = clampToMap(unclamped);
+        const overlap = Math.max(
+          Math.hypot(position.x - unclamped.x, position.y - unclamped.y),
+          ...sourceObstacles.map(
+            (obstacle) =>
+              obstacle.radius +
+              roleInfoTokenSize / 2 -
+              Math.hypot(position.x - obstacle.x, position.y - obstacle.y),
+          ),
+        );
+        if (!best || overlap < best.overlap) best = { overlap, position };
+        if (overlap <= 0) break;
+      }
+      const position = best?.position ?? origin;
+      sourceObstacles.push({ ...position, radius: roleInfoTokenSize / 2 });
+      return { key: `role-info-source-${role.id}-${index}`, position, role, targetIds };
+    });
+    return { sourceTokens, targetRoles, targets };
   }, [
     activeDay,
     activePhase,
     activeTab,
+    activeTokenSize,
     conversations,
     focusedPlayerId,
     game.playerDayNotes,
     game.roleInfos,
     game.script?.roles,
+    mapHeight,
+    mapWidth,
     players,
     positions,
+    roleInfoTokenSize,
     showRoles,
   ]);
   const groupRepeats = useMemo(
@@ -147,6 +233,82 @@ export function GameMap() {
   // and avoid crossing earlier lines.
   const placedLineEnds: PlacedLineEnd[] = [];
   const placedPaths: PlayerPosition[][] = [];
+  // Role info lines are placed first, so their ends, where the character tokens sit, get the
+  // clearest spots. A target's character tokens straddle its edge where the line ends, and the
+  // line stops at their outer edge.
+  const roleInfoCurves = roleInfoMap.targets.flatMap((target) => {
+    const sourceToken = roleInfoMap.sourceTokens.find(({ targetIds }) =>
+      targetIds.includes(target.id),
+    );
+    const fromPosition =
+      sourceToken?.position ?? (focusedPlayerId ? positions.get(focusedPlayerId) : undefined);
+    const toPosition = positions.get(target.id);
+    if (!fromPosition || !toPosition) return [];
+
+    const targetRoleList = roleInfoMap.targetRoles.get(target.id) ?? [];
+    const targetRadius = (getTokenSize(activeTokenSize) * getPlayerTokenScale(target, players)) / 2;
+    // Character tokens straddle the target's edge at the line's end, side by side across the line
+    // so it points between them.
+    const getTokenPositions = (tip: PlayerPosition) => {
+      const angle = Math.atan2(tip.y - toPosition.y, tip.x - toPosition.x);
+      const center = {
+        x: toPosition.x + Math.cos(angle) * targetRadius,
+        y: toPosition.y + Math.sin(angle) * targetRadius,
+      };
+      return targetRoleList.map((_, index) => {
+        const offset = getSpreadOffset(index, targetRoleList.length, roleInfoTokenSize + 2);
+        return { x: center.x - Math.sin(angle) * offset, y: center.y + Math.cos(angle) * offset };
+      });
+    };
+    // The line ends where its character tokens cover no other player and stay on the map.
+    const tokensFit = (tip: PlayerPosition) =>
+      getTokenPositions(tip).every(
+        (position) =>
+          position.x >= roleInfoTokenSize / 2 &&
+          position.y >= roleInfoTokenSize / 2 &&
+          position.x <= mapWidth - roleInfoTokenSize / 2 &&
+          position.y <= mapHeight - roleInfoTokenSize / 2 &&
+          players.every((player) => {
+            const playerPosition = positions.get(player.id);
+            return (
+              player.id === target.id ||
+              !playerPosition ||
+              Math.hypot(position.x - playerPosition.x, position.y - playerPosition.y) >=
+                (getTokenSize(activeTokenSize) * getPlayerTokenScale(player, players)) / 2 +
+                  roleInfoTokenSize / 2
+            );
+          }),
+      );
+    const curve = getConnectionCurve(
+      fromPosition,
+      toPosition,
+      mapWidth,
+      mapHeight,
+      activeTokenSize,
+      ROLE_INFO_STROKE_WIDTH,
+      players
+        .filter((player) => player.id !== focusedPlayerId && player.id !== target.id)
+        .map((player) => positions.get(player.id))
+        .filter((position): position is PlayerPosition => !!position),
+      false,
+      placedLineEnds,
+      placedPaths,
+      sourceToken ? roleInfoTokenSize / 2 : undefined,
+      targetRoleList.length > 0 ? targetRadius + roleInfoTokenSize / 2 : undefined,
+      targetRoleList.length > 0 ? tokensFit : undefined,
+    );
+    if (!curve) return [];
+
+    const tokenPositions = getTokenPositions(curve.endTip);
+    const tokens = targetRoleList.map(
+      (role, index): RoleInfoMapTokenPlacement => ({
+        key: `role-info-target-${target.id}-${role.id}-${index}`,
+        position: clampRoleInfoToken(tokenPositions[index], roleInfoTokenSize, mapWidth, mapHeight),
+        role,
+      }),
+    );
+    return [{ curve, key: `role-info-${target.id}`, tokens }];
+  });
 
   return (
     <View style={[styles.mapViewport, { height: displayMapHeight, width: displayMapWidth }]}>
@@ -274,33 +436,15 @@ export function GameMap() {
               />
             );
           })}
-          {roleInfoTargets.map((target) => {
-            const fromPosition = focusedPlayerId ? positions.get(focusedPlayerId) : undefined;
-            const toPosition = positions.get(target.id);
-            if (!fromPosition || !toPosition) {
-              return null;
-            }
-
-            return (
-              <ConnectionCurve
-                key={`role-info-${target.id}`}
-                blockers={players
-                  .filter((player) => player.id !== focusedPlayerId && player.id !== target.id)
-                  .map((player) => positions.get(player.id))
-                  .filter((position): position is PlayerPosition => !!position)}
-                from={fromPosition}
-                mapHeight={mapHeight}
-                mapWidth={mapWidth}
-                opacity={1}
-                stroke={colors.roleInfoTargetLine}
-                strokeWidth={4}
-                placedLineEnds={placedLineEnds}
-                placedPaths={placedPaths}
-                to={toPosition}
-                tokenSize={activeTokenSize}
-              />
-            );
-          })}
+          {roleInfoCurves.map(({ curve, key }) => (
+            <ConnectionCurveShape
+              key={key}
+              curve={curve}
+              opacity={1}
+              stroke={colors.roleInfoTargetLine}
+              strokeWidth={ROLE_INFO_STROKE_WIDTH}
+            />
+          ))}
         </Svg>
 
         {players.map((player) => {
@@ -347,6 +491,11 @@ export function GameMap() {
             />
           );
         })}
+        {[...roleInfoMap.sourceTokens, ...roleInfoCurves.flatMap(({ tokens }) => tokens)].map(
+          ({ key, position, role }) => (
+            <RoleInfoMapToken key={key} position={position} role={role} size={roleInfoTokenSize} />
+          ),
+        )}
       </View>
     </View>
   );
@@ -432,6 +581,40 @@ function PlayerTokenForMap({
       tokenSize={activeTokenSize}
     />
   );
+}
+
+/** Keeps a character token of the given size inside the map. */
+function clampRoleInfoToken(
+  position: PlayerPosition,
+  size: number,
+  mapWidth: number,
+  mapHeight: number,
+) {
+  return {
+    x: Math.min(Math.max(position.x, size / 2), mapWidth - size / 2),
+    y: Math.min(Math.max(position.y, size / 2), mapHeight - size / 2),
+  };
+}
+
+/** Direction from `origin` that points between the given positions on average. */
+function getMeanAngle(origin: PlayerPosition, positions: PlayerPosition[]) {
+  let x = 0;
+  let y = 0;
+  for (const position of positions) {
+    const distance = Math.hypot(position.x - origin.x, position.y - origin.y) || 1;
+    x += (position.x - origin.x) / distance;
+    y += (position.y - origin.y) / distance;
+  }
+  // Players on opposite sides cancel out; fall back to the first one.
+  if (Math.hypot(x, y) < 0.01 && positions[0]) {
+    return Math.atan2(positions[0].y - origin.y, positions[0].x - origin.x);
+  }
+  return Math.atan2(y, x);
+}
+
+/** Angle offset for item `index` of `count`, fanned evenly around the middle. */
+function getSpreadOffset(index: number, count: number, spread: number) {
+  return (index - (count - 1) / 2) * spread;
 }
 
 function stripFutureAndRevivedDeath(player: Player, activePosition: GamePhasePosition): Player {
