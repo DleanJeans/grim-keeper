@@ -348,3 +348,13 @@ function getLastAssignment(
       undefined,
     );
 }
+
+/** The most recently updated game without a result, to offer resuming it from Home. */
+export function getResumeGame(games: Game[]): Game | undefined {
+  return games
+    .filter((game) => game.result === undefined)
+    .reduce<Game | undefined>(
+      (latest, game) => (!latest || game.updatedAt > latest.updatedAt ? game : latest),
+      undefined,
+    );
+}

@@ -6,6 +6,7 @@ import {
   getGamesWithRoleInPlay,
   getHeadToHeadStats,
   getLastDayWithData,
+  getResumeGame,
 } from '@/utils/game-utils';
 import { APP_USER_ID } from '@/utils/object-id';
 
@@ -454,5 +455,17 @@ describe('getFriendClaimStats', () => {
       { count: 1, roleId: 'empath' },
     ]);
     expect(stats).toMatchObject({ checkedClaims: 2, trueClaims: 1 });
+  });
+});
+
+describe('getResumeGame', () => {
+  it('picks the most recently updated game without a result', () => {
+    const games = [
+      makeGame({ id: 'old', updatedAt: '2026-01-01T00:00:00.000Z' }),
+      makeGame({ id: 'done', result: 'won', updatedAt: '2026-03-01T00:00:00.000Z' }),
+      makeGame({ id: 'recent', updatedAt: '2026-02-01T00:00:00.000Z' }),
+    ];
+    expect(getResumeGame(games)?.id).toBe('recent');
+    expect(getResumeGame([games[1]])).toBeUndefined();
   });
 });

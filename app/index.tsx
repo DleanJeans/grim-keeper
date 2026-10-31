@@ -7,6 +7,7 @@ import { AppUserNameCard } from '@/components/app-user-name-card';
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { HomeGameStats } from '@/components/home/home-game-stats';
 import { HomeHeaderActions } from '@/components/home/home-header-actions';
+import { ResumeGameButton } from '@/components/home/resume-game-button';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { SavedGameRow } from '@/components/saved-game-row';
 import { Text } from '@/components/text';
@@ -56,6 +57,8 @@ export default function HomeRoute() {
       >
         <ResponsiveContent style={styles.content}>
           <AppUserNameCard appUserName={appUserName} onSave={setAppUserName} />
+
+          <ResumeGameButton />
 
           <View style={styles.primaryActions}>
             <HomeActionButton icon="plus" label="New Game" onPress={() => router.push('/create')} />
