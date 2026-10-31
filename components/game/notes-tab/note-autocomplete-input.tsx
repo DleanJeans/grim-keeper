@@ -199,7 +199,7 @@ function NoteSuggestionDropdown({
               game={game}
               player={suggestion.player}
               iconSize={20}
-              textStyle={{ color: colors.text, fontWeight: '700' }}
+              textStyle={styles.suggestionText}
             />
           ) : (
             <View style={styles.roleSuggestion}>
