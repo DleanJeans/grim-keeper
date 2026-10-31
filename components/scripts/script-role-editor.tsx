@@ -54,8 +54,8 @@ export function ScriptRoleEditor({ onChange, roleCatalog, script }: ScriptRoleEd
   }
 
   return (
-    <View style={{ gap: 10 }}>
-      <Text selectable style={styles.nameLabel}>
+    <View style={styles.container}>
+      <Text selectable style={styles.label}>
         Script name
       </Text>
       <TextInput
@@ -71,12 +71,12 @@ export function ScriptRoleEditor({ onChange, roleCatalog, script }: ScriptRoleEd
         returnKeyType="done"
         submitBehavior="submit"
         value={scriptName}
-        style={styles.nameInput}
+        style={styles.input}
       />
-      <Text selectable style={{ color: colors.textMuted, fontSize: 13, fontWeight: '800' }}>
+      <Text selectable style={styles.label}>
         Roles in this script
       </Text>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+      <View style={styles.chips}>
         {script.roles.map((role) => (
           <RoleChip
             key={role.id}
@@ -94,21 +94,12 @@ export function ScriptRoleEditor({ onChange, roleCatalog, script }: ScriptRoleEd
         placeholder="Add a role"
         placeholderTextColor={colors.textSubtle}
         value={query}
-        style={{
-          backgroundColor: colors.surface,
-          borderColor: colors.border,
-          borderRadius: 8,
-          borderWidth: 1,
-          color: colors.text,
-          minHeight: 44,
-          paddingHorizontal: 12,
-          paddingVertical: 10,
-        }}
+        style={styles.input}
       />
       {query.trim() ? (
-        <View style={{ gap: 6 }}>
+        <View style={styles.suggestions}>
           {suggestions.length === 0 ? (
-            <Text selectable style={{ color: colors.textMuted, fontSize: 13 }}>
+            <Text selectable style={styles.noMatches}>
               No matching roles.
             </Text>
           ) : (
@@ -123,19 +114,12 @@ export function ScriptRoleEditor({ onChange, roleCatalog, script }: ScriptRoleEd
                 }}
                 role={role}
                 scriptId={script.id}
-                containerStyle={({ pressed }) => ({
-                  alignItems: 'center',
-                  backgroundColor: pressed ? colors.surfacePressed : colors.surface,
-                  borderColor: colors.border,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  flexDirection: 'row',
-                  gap: 8,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                })}
-                contentStyle={{ flex: 1 }}
-                textStyle={{ color: colors.text, fontWeight: '700' }}
+                containerStyle={({ pressed }) => [
+                  styles.suggestion,
+                  pressed && styles.suggestionPressed,
+                ]}
+                contentStyle={styles.suggestionContent}
+                textStyle={styles.suggestionText}
               />
             ))
           )}
@@ -155,21 +139,8 @@ function RoleChip({
   scriptId: string;
 }) {
   return (
-    <View
-      style={{
-        alignItems: 'center',
-        backgroundColor: colors.surfaceRaised,
-        borderColor: colors.borderStrong,
-        borderRadius: 999,
-        borderWidth: 1,
-        flexDirection: 'row',
-        gap: 6,
-        paddingLeft: 10,
-        paddingRight: 6,
-        paddingVertical: 6,
-      }}
-    >
-      <RoleReference role={role} scriptId={scriptId} textStyle={{ color: colors.text }} />
+    <View style={styles.chip}>
+      <RoleReference role={role} scriptId={scriptId} textStyle={styles.chipText} />
       <Pressable
         accessibilityLabel={`Remove ${role.name} from script`}
         accessibilityRole="button"
@@ -183,7 +154,30 @@ function RoleChip({
 }
 
 const styles = StyleSheet.create({
-  nameInput: {
+  chip: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.borderStrong,
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 6,
+    paddingLeft: 10,
+    paddingRight: 6,
+    paddingVertical: 6,
+  },
+  chipText: {
+    color: colors.text,
+  },
+  chips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  container: {
+    gap: 10,
+  },
+  input: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderRadius: 8,
@@ -193,9 +187,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  nameLabel: {
+  label: {
     color: colors.textMuted,
     fontSize: 13,
     fontWeight: '800',
+  },
+  noMatches: {
+    color: colors.textMuted,
+    fontSize: 13,
+  },
+  suggestion: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  suggestionContent: {
+    flex: 1,
+  },
+  suggestionPressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  suggestionText: {
+    color: colors.text,
+    fontWeight: '700',
+  },
+  suggestions: {
+    gap: 6,
   },
 });
