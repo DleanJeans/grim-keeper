@@ -35,6 +35,11 @@ const baseColors = {
   gameText: '#f8fafc',
   gameTextMuted: '#94a3b8',
   gameTextSubtle: '#64748b',
+  // Deaths tab: execution, night death and revive accents
+  deathExecution: '#fca5a5',
+  deathNight: '#93c5fd',
+  revive: '#86efac',
+  reviveBorder: '#22c55e',
   // Note input
   inputBackground: '#111827',
   inputBorder: '#334155',

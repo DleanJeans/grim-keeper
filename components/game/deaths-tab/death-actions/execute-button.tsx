@@ -32,7 +32,7 @@ export function ExecuteButton({
         ...outlinedActionStyle({
           pressed,
           disabled,
-          borderColor: '#fca5a5',
+          borderColor: colors.deathExecution,
           flex: compact ? undefined : flex,
           paddingVertical: compact ? 8 : 14,
         }),
@@ -41,7 +41,7 @@ export function ExecuteButton({
       })}
     >
       <FlameKindling
-        color={disabled ? colors.gameTextMuted : '#fca5a5'}
+        color={disabled ? colors.gameTextMuted : colors.deathExecution}
         size={compact ? 15 : 17}
         strokeWidth={2.7}
       />

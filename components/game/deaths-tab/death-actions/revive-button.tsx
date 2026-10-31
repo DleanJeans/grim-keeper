@@ -1,6 +1,7 @@
 import { HeartPulse } from 'lucide-react-native';
-import { Pressable } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 
+import { outlinedActionStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 
@@ -26,31 +27,26 @@ export function ReviveButton({
       accessibilityRole="button"
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => ({
-        alignItems: 'center',
-        backgroundColor: pressed ? colors.gameSurfacePressed : colors.gameSurface,
-        borderColor: disabled ? colors.gameSurfacePressed : '#22c55e',
-        borderRadius: 8,
-        borderWidth: 1,
-        flex,
-        flexBasis: 0,
-        flexDirection: 'row',
-        gap: 6,
-        justifyContent: 'center',
-        minWidth: 0,
-        opacity: disabled ? 0.48 : 1,
-        paddingVertical: 14,
-      })}
+      style={({ pressed }) =>
+        outlinedActionStyle({ pressed, disabled, borderColor: colors.reviveBorder, flex })
+      }
     >
-      <HeartPulse color={disabled ? colors.gameTextMuted : '#86efac'} size={17} strokeWidth={2.7} />
-      <Text
-        style={{
-          color: disabled ? colors.gameTextMuted : colors.gameText,
-          fontWeight: '900',
-        }}
-      >
-        Revive
-      </Text>
+      <HeartPulse
+        color={disabled ? colors.gameTextMuted : colors.revive}
+        size={17}
+        strokeWidth={2.7}
+      />
+      <Text style={[styles.label, disabled && styles.labelDisabled]}>Revive</Text>
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  label: {
+    color: colors.gameText,
+    fontWeight: '900',
+  },
+  labelDisabled: {
+    color: colors.gameTextMuted,
+  },
+});

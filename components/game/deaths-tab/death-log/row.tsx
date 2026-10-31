@@ -24,10 +24,6 @@ type KillerDescription = {
   killerRoles: Role[];
 };
 
-const executionColor = '#fca5a5';
-const nightColor = '#93c5fd';
-const reviveColor = '#86efac';
-
 export function getLogEntryKey(entry: DeathLogEntry | ReviveLogEntry): string {
   if ('death' in entry) {
     return `death-${entry.player.id}-${entry.death.day}-${entry.death.kind}`;
@@ -55,7 +51,7 @@ export function DeathLogRow({
   const eventDay = isDeath ? entry.death.day : entry.revive.day;
   const eventPhase = isDeath ? getDeathPhase(entry.death) : 'day';
   const isActiveEvent = getEventPhaseIndex(eventDay, eventPhase) === getPhaseIndex(activePosition);
-  const accent = !isDeath ? reviveColor : isExecution ? executionColor : nightColor;
+  const accent = !isDeath ? colors.revive : isExecution ? colors.deathExecution : colors.deathNight;
   const Icon = !isDeath ? HeartPulse : isExecution ? FlameKindling : Skull;
   const actionLabel = !isDeath ? 'Revived' : isExecution ? 'Executed' : 'Killed';
   const labelDay = eventPhase === 'night' ? eventDay + startingNight - 1 : eventDay;

@@ -23,12 +23,16 @@ export function KillButton({ disabled = false, flex = 1, onPress, playerName }: 
         outlinedActionStyle({
           pressed,
           disabled,
-          borderColor: '#93c5fd',
+          borderColor: colors.deathNight,
           flex,
         })
       }
     >
-      <Skull color={disabled ? colors.gameTextMuted : '#93c5fd'} size={17} strokeWidth={2.7} />
+      <Skull
+        color={disabled ? colors.gameTextMuted : colors.deathNight}
+        size={17}
+        strokeWidth={2.7}
+      />
       <Text style={onDarkTextStrong}>{disabled ? 'Killed' : 'Kill'}</Text>
     </Pressable>
   );
