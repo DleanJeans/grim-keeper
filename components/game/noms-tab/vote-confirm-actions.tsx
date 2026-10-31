@@ -8,6 +8,7 @@ import { colors } from '@/theme/colors';
 
 export function VoteConfirmActions() {
   const { selectedPlayerIds, handleCancelVoting, handleConfirmVotes } = useGameRouteContext();
+  const voteCount = selectedPlayerIds.length;
   return (
     <View style={confirmRowStyle}>
       <Pressable
@@ -30,7 +31,7 @@ export function VoteConfirmActions() {
           numberOfLines={1}
           style={styles.confirmText}
         >
-          Confirm {selectedPlayerIds.length} Votes
+          Confirm {voteCount} {voteCount === 1 ? 'Vote' : 'Votes'}
         </Text>
       </Pressable>
     </View>

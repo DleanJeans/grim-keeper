@@ -9,15 +9,17 @@ type EditVotesButtonProps = {
 };
 
 export function EditVotesButton({ onPress, voteCount }: EditVotesButtonProps) {
+  const votesLabel = `${voteCount} ${voteCount === 1 ? 'vote' : 'votes'}`;
+
   return (
     <Pressable
-      accessibilityLabel={`Edit ${voteCount} votes`}
+      accessibilityLabel={`Edit ${votesLabel}`}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
     >
       <Pencil color={colors.text} size={15} strokeWidth={2.6} />
-      <Text style={styles.label}>{voteCount} votes</Text>
+      <Text style={styles.label}>{votesLabel}</Text>
     </Pressable>
   );
 }
