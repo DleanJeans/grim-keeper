@@ -4,6 +4,7 @@ import { useGameRouteContext } from '@/components/game/game-route-context';
 import { NominateButton } from '@/components/game/noms-tab/action-buttons/nominate-button';
 import { HighlightVotersButton } from '@/components/game/noms-tab/highlight-voters-button';
 import { NominationRow } from '@/components/game/noms-tab/nomination-row';
+import { PlayerNominationHistory } from '@/components/game/noms-tab/player-nomination-history';
 import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
@@ -125,6 +126,7 @@ export function NominationList() {
           />
         ))
       )}
+      <PlayerNominationHistory />
       {activePhase === 'day' && hasFlowerGirl ? (
         <HighlightVotersButton
           active={voterHighlightsActive}

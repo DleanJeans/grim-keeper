@@ -46,3 +46,47 @@ export function getOnTheBlockNominationId(
 export function getDaysLeft(alivePlayerCount: number): number {
   return Math.max(0, Math.ceil((alivePlayerCount - 2) / 2));
 }
+
+export type PlayerNominationDay = {
+  day: number;
+  /** Nominees this player nominated. */
+  nominated: string[];
+  /** Players who nominated this player. */
+  nominatedBy: string[];
+  /** Nominees this player voted for. */
+  votedFor: string[];
+  /** Nominees this player didn't vote for, not counting their own nominations of themselves. */
+  didNotVoteFor: string[];
+};
+
+/** Each day up to `lastDay` with nominations, from one player's side, newest first. */
+export function getPlayerNominationHistory(
+  conversations: Conversation[],
+  players: Player[],
+  playerId: string,
+  lastDay: number,
+): PlayerNominationDay[] {
+  const nameOf = (id: string | undefined) =>
+    players.find((player) => player.id === id)?.name ?? 'Unknown';
+  const byDay = new Map<number, PlayerNominationDay>();
+
+  for (const nomination of conversations) {
+    if (nomination.kind !== 'nomination' || nomination.day > lastDay) continue;
+    const nomineeId = nomination.participantIds.find((id) => id !== nomination.initiatorId);
+    const entry = byDay.get(nomination.day) ?? {
+      day: nomination.day,
+      didNotVoteFor: [],
+      nominated: [],
+      nominatedBy: [],
+      votedFor: [],
+    };
+    const nominee = nameOf(nomineeId);
+    if (nomination.initiatorId === playerId) entry.nominated.push(nominee);
+    if (nomineeId === playerId) entry.nominatedBy.push(nameOf(nomination.initiatorId));
+    if (nomination.voterIds?.includes(playerId)) entry.votedFor.push(nominee);
+    else if (nomineeId !== playerId) entry.didNotVoteFor.push(nominee);
+    byDay.set(nomination.day, entry);
+  }
+
+  return [...byDay.values()].sort((a, b) => b.day - a.day);
+}

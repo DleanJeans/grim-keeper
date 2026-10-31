@@ -3,6 +3,7 @@ import {
   getAlivePlayerCount,
   getDaysLeft,
   getOnTheBlockNominationId,
+  getPlayerNominationHistory,
   getVotesToExecute,
 } from '@/utils/nomination-utils';
 
@@ -63,5 +64,20 @@ describe('nomination utils', () => {
 describe('getDaysLeft', () => {
   it('counts days with an execution each day and a kill each night', () => {
     expect([2, 3, 4, 5, 6, 7, 12].map(getDaysLeft)).toEqual([0, 1, 1, 2, 2, 3, 5]);
+  });
+});
+
+describe('getPlayerNominationHistory', () => {
+  it('lists nominations and votes from one player, newest day first', () => {
+    const noms: Conversation[] = [
+      { ...nomination('n1', ['a', 'c']), day: 1, initiatorId: 'a', participantIds: ['a', 'b'] },
+      { ...nomination('n2', ['b']), day: 1, initiatorId: 'c', participantIds: ['c', 'a'] },
+      { ...nomination('n3', []), day: 2, initiatorId: 'b', participantIds: ['b', 'c'] },
+      { ...nomination('n4', ['a']), day: 3, initiatorId: 'b', participantIds: ['b', 'c'] },
+    ];
+    expect(getPlayerNominationHistory(noms, players, 'a', 2)).toEqual([
+      { day: 2, didNotVoteFor: ['c'], nominated: [], nominatedBy: [], votedFor: [] },
+      { day: 1, didNotVoteFor: [], nominated: ['b'], nominatedBy: ['c'], votedFor: ['b'] },
+    ]);
   });
 });
