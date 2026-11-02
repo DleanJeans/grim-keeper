@@ -199,7 +199,12 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
     getLastDayReached(latestPhase),
   );
   const activeTemplate = activeSlot ? getRoleInfoTemplate(activeSlot.role) : undefined;
-  const activeDailyRole = activeTemplate?.daily ? activeSlot?.role : undefined;
+  // Daily characters with only statements (the Savant) type every day at once; the others (the
+  // Gossip's Died?) pick one slot at a time.
+  const activeDailyRole =
+    activeTemplate?.daily && activeTemplate.slots.every((slot) => slot.kind === 'text')
+      ? activeSlot?.role
+      : undefined;
   const activeClaimerId = activeSlot?.claimer?.playerId;
   const dailyDays = activeDailyRole
     ? getRoleInfoDays(
@@ -636,7 +641,10 @@ function RoleInfoClaimerRow({
   );
 }
 
-/** One line per day of a daily character (the Savant), its statements marked true or false. */
+/**
+ * One line per day of a daily character (Savant, Gossip), the Savant's statements marked true or
+ * false.
+ */
 function getDayLines(
   role: Role,
   days: number[],
@@ -648,12 +656,15 @@ function getDayLines(
   const { markTrue } = getRoleInfoTemplate(role);
 
   return days.map((day) => {
-    const values = getDailyRoleInfo(roleInfos, role.id, day, claimer)?.values ?? {};
+    const entry = getDailyRoleInfo(roleInfos, role.id, day, claimer);
+    const values = entry?.values ?? {};
+    // Edit the entry shown, even one saved during that day's night before daily rows.
+    const phase = entry?.phase ?? 'day';
     return {
       trueSlotId: markTrue ? values[ROLE_INFO_TRUE_KEY] : undefined,
       key: `day-${day}`,
       label: getPhaseLabel({ activeDay: day, activePhase: 'day' }, startingNight),
-      onPressSlot: (slot) => onPressSlot({ carryForward: false, day, phase: 'day', role, slot }),
+      onPressSlot: (slot) => onPressSlot({ carryForward: false, day, phase, role, slot }),
       values,
     };
   });

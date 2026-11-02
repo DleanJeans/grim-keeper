@@ -670,6 +670,11 @@ describe('daily role info', () => {
     expect(isRoleInfoOver({ id: 'savant' }, [savant], 3, 'day')).toBe(true);
   });
 
+  it('gives the Gossip a row per day', () => {
+    expect(getRoleInfoDays({ id: 'gossip' }, 2)).toEqual([1, 2]);
+    expect(isRoleInfoShownInPhase({ id: 'gossip' }, 1, 'day')).toBe(true);
+  });
+
   it('shows the Savant from the first day on', () => {
     expect(isRoleInfoShownInPhase({ id: 'savant' }, 1, 'night')).toBe(false);
     expect(isRoleInfoShownInPhase({ id: 'savant' }, 1, 'day')).toBe(true);

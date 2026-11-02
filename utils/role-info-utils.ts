@@ -33,7 +33,7 @@ export type RoleInfoSlot =
   | (RoleInfoSlotBase & { kind: 'text' });
 
 export type RoleInfoTemplate = {
-  /** One line per day, for characters that learn something each day (the Savant). */
+  /** One line per day, for characters that learn or say something each day (Savant, Gossip). */
   daily?: boolean;
   /** The text slots are statements, and one can be marked as possibly true (the Savant). */
   markTrue?: boolean;
@@ -141,7 +141,7 @@ const ROLE_INFO_SPECS: Record<string, RoleInfoSpec> = {
   exorcist: [player('Chosen')],
   innkeeper: [player('Protected 1'), player('Protected 2')],
   gambler: [player('Player'), role('Guess')],
-  gossip: { rectangles: true, slots: [text('Statement'), yesNo('Died?')] },
+  gossip: { daily: true, rectangles: true, slots: [text('Statement'), yesNo('Died?')] },
   courtier: [role('Drunk')],
   professor: [deadPlayer('Revived')],
   minstrel: [],
