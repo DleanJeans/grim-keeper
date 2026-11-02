@@ -139,6 +139,12 @@ export const GENERIC_KILLER_ROLES: Role[] = [
     name: 'Unknown',
   },
   ...GENERIC_CHARACTER_TYPE_ROLES.filter(({ name }) => name === 'Demon' || name === 'Evil'),
+  // For deaths the Storyteller decides, like the Tinker's.
+  {
+    id: 'generic_storyteller',
+    imageSource: unknownRoleIcon,
+    name: 'Storyteller',
+  },
 ];
 
 export function getRoleIconUrl(role: Role) {
@@ -249,7 +255,7 @@ export function getTravelerClaimRoles(role: Role): Role[] {
 }
 
 // Kill abilities the ability-text patterns below don't catch.
-const KILLER_ROLE_IDS = new Set(['gangster', 'golem', 'tinker']);
+const KILLER_ROLE_IDS = new Set(['gangster', 'golem']);
 
 /** Good (Townsfolk/Outsider) roles that turned evil are stored as `<roleId>_evil`. */
 export function canRoleTurnEvil(role: Role) {
