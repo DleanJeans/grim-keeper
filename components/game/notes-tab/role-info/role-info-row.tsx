@@ -258,14 +258,25 @@ function RoleInfoLineTokens({
         />
       ) : template.rectangles ? (
         <View style={styles.rects}>
-          {template.slots.map((slot) => (
-            <SlotRect
-              key={slot.id}
-              onPress={() => onPressSlot(slot)}
-              slot={slot}
-              value={values[slot.id]}
-            />
-          ))}
+          {template.slots.map((slot) =>
+            slot.kind === 'text' || slot.kind === 'choice' ? (
+              <SlotRect
+                key={slot.id}
+                onPress={() => onPressSlot(slot)}
+                slot={slot}
+                value={values[slot.id]}
+              />
+            ) : (
+              <RoleInfoToken
+                key={slot.id}
+                onPress={() => onPressSlot(slot)}
+                player={getSlotPlayer(slot, values[slot.id], playersById)}
+                role={getSlotRole(slot, values[slot.id], rolesById)}
+                slot={slot}
+                value={values[slot.id]}
+              />
+            ),
+          )}
         </View>
       ) : template.slots.length > 0 || neighbors?.length ? (
         <View style={styles.tokens}>

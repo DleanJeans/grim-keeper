@@ -37,7 +37,10 @@ export type RoleInfoTemplate = {
   daily?: boolean;
   /** The text slots are statements, and one can be marked as possibly true (the Savant). */
   markTrue?: boolean;
-  /** Show the slots as rectangles instead of circle tokens, so long text fits (the Artist). */
+  /**
+   * Show the text and choice slots as rectangles instead of circle tokens, so long text fits (the
+   * Artist). Player, character and number slots stay tokens.
+   */
   rectangles?: boolean;
   /** Show the alive neighbors of the role's owner for each phase. */
   autoNeighbors?: boolean;
@@ -125,7 +128,7 @@ const ROLE_INFO_SPECS: Record<string, RoleInfoSpec> = {
   saint: [],
   // Trouble Brewing — Minions
   poisoner: [player('Poisoned')],
-  spy: [text('Grimoire')],
+  spy: { rectangles: true, slots: [text('Grimoire')] },
   scarletwoman: [],
   baron: [],
   // Trouble Brewing — Demon
@@ -138,7 +141,7 @@ const ROLE_INFO_SPECS: Record<string, RoleInfoSpec> = {
   exorcist: [player('Chosen')],
   innkeeper: [player('Protected 1'), player('Protected 2')],
   gambler: [player('Player'), role('Guess')],
-  gossip: [text('Statement'), yesNo('Died?')],
+  gossip: { rectangles: true, slots: [text('Statement'), yesNo('Died?')] },
   courtier: [role('Drunk')],
   professor: [deadPlayer('Revived')],
   minstrel: [],
@@ -201,7 +204,7 @@ const ROLE_INFO_SPECS: Record<string, RoleInfoSpec> = {
   acrobat: [player('Chosen')],
   alchemist: [role('Minion ability', 'minion')],
   alsaahir: { evilInPlay: true, slots: [player('Demon'), player('Minion')] },
-  amnesiac: [text('Ability'), text('Guess')],
+  amnesiac: { rectangles: true, slots: [text('Ability'), text('Guess')] },
   atheist: [],
   balloonist: [player('Player'), role('Type')],
   banshee: [],
@@ -211,7 +214,7 @@ const ROLE_INFO_SPECS: Record<string, RoleInfoSpec> = {
   cultleader: [choice('Alignment', GOOD_EVIL)],
   engineer: [role('Changed to', 'evil')],
   farmer: [player('New Farmer')],
-  fisherman: [text('Advice')],
+  fisherman: { rectangles: true, slots: [text('Advice')] },
   general: [choice('Winning', ['Good', 'Evil', 'Neither'])],
   highpriestess: [player('Speak with')],
   huntsman: [alivePlayer('Chosen'), yesNo('Damsel?')],
@@ -248,13 +251,13 @@ const ROLE_INFO_SPECS: Record<string, RoleInfoSpec> = {
   goblin: [],
   harpy: [player('Mad'), player('Accused')],
   marionette: [],
-  mezepheles: [text('Secret word'), player('Said it')],
+  mezepheles: { rectangles: true, slots: [text('Secret word'), player('Said it')] },
   organgrinder: [],
   psychopath: [player('Killed')],
   summoner: [player('Demon'), role('Demon', 'demon')],
   vizier: [],
   widow: [player('Poisoned')],
-  wizard: [text('Wish')],
+  wizard: { rectangles: true, slots: [text('Wish')] },
   wraith: [],
   xaan: [num('X', 10, 1)],
   // Experimental & Carousel — Demons
@@ -267,7 +270,7 @@ const ROLE_INFO_SPECS: Record<string, RoleInfoSpec> = {
   lordoftyphon: [player('Killed')],
   ojo: [role('Chosen'), player('Killed')],
   riot: [],
-  yaggababble: [text('Phrase'), num('Said', 10)],
+  yaggababble: { rectangles: true, slots: [text('Phrase'), num('Said', 10)] },
 
   // Travellers
   apprentice: [role('Ability', 'good')],
@@ -290,6 +293,7 @@ const ROLE_INFO_SPECS: Record<string, RoleInfoSpec> = {
 };
 
 const FALLBACK_TEMPLATE: RoleInfoTemplate = {
+  rectangles: true,
   slots: withSlotIds([player('Player'), text('Info')]),
 };
 
