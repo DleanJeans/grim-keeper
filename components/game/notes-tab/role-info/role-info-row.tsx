@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react-native';
+import { MapPin, Plus } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { RoleInfoToken } from '@/components/game/notes-tab/role-info/role-info-token';
@@ -23,7 +23,12 @@ export type RoleInfoLine = {
   /** Player executed the day before, shown read-only for the Undertaker. */
   executed?: Player;
   /** Who nominated or voted the day before, shown read-only for the Town Crier and Flowergirl. */
-  dayBefore?: { kind: DayBeforePlayers; players: Player[] };
+  dayBefore?: {
+    kind: DayBeforePlayers;
+    /** Scrolls up to the map and highlights the players. */
+    onHighlight: () => void;
+    players: Player[];
+  };
   /** Marks the end of the character's info: its players are dead. */
   isDead?: boolean;
   neighbors?: Player[];
@@ -90,8 +95,20 @@ const styles = StyleSheet.create({
   },
   dayBefore: {
     color: colors.roleInfoNeighbor,
+    flexShrink: 1,
     fontSize: 11,
     fontWeight: '700',
+  },
+  dayBeforeButton: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    borderRadius: 6,
+    flexDirection: 'row',
+    gap: 4,
+    paddingVertical: 2,
+  },
+  dayBeforeButtonPressed: {
+    backgroundColor: colors.surfacePressed,
   },
   dead: {
     color: colors.danger,
@@ -304,12 +321,27 @@ function RoleInfoLineTokens({
         </View>
       ) : null}
       {dayBefore ? (
-        <Text style={styles.dayBefore}>
-          {DAY_BEFORE_LABELS[dayBefore.kind]}:{' '}
-          {dayBefore.players.length > 0
-            ? dayBefore.players.map((player) => player.name).join(', ')
-            : 'none logged'}
-        </Text>
+        <Pressable
+          accessibilityHint="Scrolls up to the map and highlights them"
+          accessibilityRole="button"
+          disabled={dayBefore.players.length === 0}
+          hitSlop={6}
+          onPress={dayBefore.onHighlight}
+          style={({ pressed }) => [
+            styles.dayBeforeButton,
+            pressed && styles.dayBeforeButtonPressed,
+          ]}
+        >
+          {dayBefore.players.length > 0 ? (
+            <MapPin color={colors.roleInfoNeighbor} size={14} strokeWidth={2.5} />
+          ) : null}
+          <Text style={styles.dayBefore}>
+            {DAY_BEFORE_LABELS[dayBefore.kind]}:{' '}
+            {dayBefore.players.length > 0
+              ? dayBefore.players.map((player) => player.name).join(', ')
+              : 'none logged'}
+          </Text>
+        </Pressable>
       ) : null}
       {template.autoNeighbors && !neighbors?.length ? (
         <Text style={styles.neighbors}>Neighbors: claim this role to show</Text>

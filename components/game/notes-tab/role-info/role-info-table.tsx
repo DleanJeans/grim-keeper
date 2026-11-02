@@ -78,8 +78,16 @@ export type RoleInfoTableProps = {
 
 /** Per-character info table for the current phase, so infos can be compared side by side. */
 export function RoleInfoTable({ player }: RoleInfoTableProps) {
-  const { activeDay, activePhase, game, players, runDayEdit, showRoles, startingNight } =
-    useGameRouteContext();
+  const {
+    activeDay,
+    activePhase,
+    game,
+    handleHighlightPlayers,
+    players,
+    runDayEdit,
+    showRoles,
+    startingNight,
+  } = useGameRouteContext();
   const setRoleInfoValue = useGameStore((state) => state.setRoleInfoValue);
   const setDailyRoleInfoValues = useGameStore((state) => state.setDailyRoleInfoValues);
   const [activeSlot, setActiveSlot] = useState<ActiveSlot | null>(null);
@@ -264,6 +272,7 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
           inferredEntries={inferredEntries}
           key={section.label}
           label={section.label}
+          onHighlightPlayers={handleHighlightPlayers}
           onPressSlot={setActiveSlot}
           lastDay={lastDay}
           lastNightDay={player ? Math.max(activeDay, latestPhase.activeDay) : undefined}
@@ -433,6 +442,7 @@ function RoleInfoSection({
   label,
   lastDay,
   lastNightDay,
+  onHighlightPlayers,
   onPressSlot,
   players,
   playersById,
@@ -491,6 +501,7 @@ function RoleInfoSection({
             key={`${role.id}-${claimer?.id ?? ''}`}
             lastDay={lastDay}
             lastNightDay={lastNightDay}
+            onHighlightPlayers={onHighlightPlayers}
             onPressSlot={onPressSlot}
             players={players}
             playersById={playersById}
@@ -522,6 +533,8 @@ type RoleInfoClaimerRowProps = {
    * view, which covers the whole game).
    */
   lastNightDay?: number;
+  /** Scrolls up to the map and highlights the players. */
+  onHighlightPlayers: (playerIds: string[]) => void;
   onPressSlot: (slot: ActiveSlot) => void;
   players: Player[];
   playersById: Map<string, Player>;
@@ -542,6 +555,7 @@ function RoleInfoClaimerRow({
   inferredEntries,
   lastDay,
   lastNightDay,
+  onHighlightPlayers,
   onPressSlot,
   players,
   playersById,
@@ -562,18 +576,21 @@ function RoleInfoClaimerRow({
     template.autoExecuted ? getExecutedPlayer(players, night - 1) : undefined;
   // Likewise the Town Crier's and Flowergirl's info is about the nominations on the day before it,
   // leaving out the character's own players, who don't ping themselves.
-  const getDayBefore = (night: number) =>
-    template.autoDayBefore
-      ? {
-          kind: template.autoDayBefore,
-          players: getNominationPlayers(
-            players,
-            conversations,
-            night - 1,
-            template.autoDayBefore,
-          ).filter((candidate) => !owners.some((owner) => owner.id === candidate.id)),
-        }
-      : undefined;
+  const getDayBefore = (night: number) => {
+    if (!template.autoDayBefore) return undefined;
+
+    const dayBeforePlayers = getNominationPlayers(
+      players,
+      conversations,
+      night - 1,
+      template.autoDayBefore,
+    ).filter((candidate) => !owners.some((owner) => owner.id === candidate.id));
+    return {
+      kind: template.autoDayBefore,
+      onHighlight: () => onHighlightPlayers(dayBeforePlayers.map((candidate) => candidate.id)),
+      players: dayBeforePlayers,
+    };
+  };
   const getNeighbors = (day: number, phase: GamePhase) =>
     template.autoNeighbors && owners[0]
       ? getAliveNeighbors(players, owners[0].id, day, phase)

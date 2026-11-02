@@ -91,6 +91,8 @@ export type GameRouteContextValue = {
   handleCancelVoting: () => void;
   handleEditNominationVotes: (nominationId: string, voterIds: string[]) => void;
   handleToggleVoterHighlights: () => void;
+  /** Scrolls up to the map and highlights the players until another player is tapped. */
+  handleHighlightPlayers: (playerIds: string[]) => void;
   handleChangePhase: (position: GamePhasePosition) => void;
   runDayEdit: (edit: () => void, day?: number, phase?: GamePhase) => void;
   handleResizeMapWidth: (sizeDelta: number) => void;

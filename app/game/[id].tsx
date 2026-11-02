@@ -681,6 +681,13 @@ export default function GameRoute() {
     );
   }
 
+  function handleHighlightPlayers(playerIds: string[]) {
+    setHighlightedVoterIds(playerIds.length > 0 ? playerIds : null);
+    requestAnimationFrame(() => {
+      scrollViewRef.current?.scrollTo({ animated: true, y: 0 });
+    });
+  }
+
   function handleChangePhase(day: number, phase: 'day' | 'night') {
     const selectedPlayerId = focusedPlayerId;
     handleCancelTracking();
@@ -1083,6 +1090,7 @@ export default function GameRoute() {
     handleCancelVoting,
     handleEditNominationVotes,
     handleToggleVoterHighlights,
+    handleHighlightPlayers,
     handleChangePhase: (position) => handleChangePhase(position.activeDay, position.activePhase),
     runDayEdit,
     handleResizeMapWidth,
