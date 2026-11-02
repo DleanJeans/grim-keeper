@@ -1,6 +1,7 @@
 import type { Conversation, GamePhase, Player } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
 import { getDeathPhase, getEventPhaseIndex, getPhaseIndex } from '@/utils/game-phase-utils';
+import { APP_USER_ID } from '@/utils/object-id';
 
 export function isPlayerCurrentlyDead(
   player: Player,
@@ -92,4 +93,24 @@ export function getPlayerTokenName(player: Player, players: Player[]): string {
 
 function getFirstName(name: string) {
   return name.split(' ')[0] ?? '';
+}
+
+/** Players a bluff can be about: everyone but you and the Storytellers. */
+export function getBluffTargetPlayers(players: Player[]): Player[] {
+  return players.filter((player) => player.id !== APP_USER_ID && !player.isStoryteller);
+}
+
+/** Up to `count` different players in random order (Fisher-Yates on a copy). */
+export function pickRandomPlayers(
+  players: Player[],
+  count: number,
+  random: () => number = Math.random,
+): Player[] {
+  const shuffled = [...players];
+  const picks = Math.min(Math.max(0, count), shuffled.length);
+  for (let index = 0; index < picks; index += 1) {
+    const swapIndex = index + Math.floor(random() * (shuffled.length - index));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+  }
+  return shuffled.slice(0, picks);
 }

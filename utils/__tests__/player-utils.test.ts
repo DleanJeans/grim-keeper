@@ -1,9 +1,12 @@
 import type { Conversation, Player, PlayerDeath, PlayerRevive } from '@/types/game';
+import { APP_USER_ID } from '@/utils/object-id';
 import {
+  getBluffTargetPlayers,
   getPlayerTokenName,
   hasDeadVoteAvailable,
   isDeadVote,
   isPlayerCurrentlyDead,
+  pickRandomPlayers,
 } from '@/utils/player-utils';
 
 function makePlayer(overrides: Partial<Player> = {}): Player {
@@ -129,5 +132,48 @@ describe('getPlayerTokenName', () => {
 
     expect(getPlayerTokenName(emmaS, players)).toBe('Emma S');
     expect(getPlayerTokenName(emmaW, players)).toBe('emma W');
+  });
+});
+
+describe('getBluffTargetPlayers', () => {
+  it('leaves out you and the Storytellers', () => {
+    const players = [
+      makePlayer({ id: APP_USER_ID, name: 'Me' }),
+      makePlayer({ id: 'st', isStoryteller: true, name: 'Storyteller' }),
+      makePlayer({ id: 'p1', name: 'Alice' }),
+      makePlayer({ death: makeDeath(1), id: 'p2', name: 'Bob' }),
+    ];
+
+    expect(getBluffTargetPlayers(players).map((player) => player.id)).toEqual(['p1', 'p2']);
+  });
+});
+
+describe('pickRandomPlayers', () => {
+  const players = ['a', 'b', 'c', 'd'].map((id, seat) => makePlayer({ id, name: id, seat }));
+
+  it('picks the requested number of different players', () => {
+    const picks = pickRandomPlayers(players, 3);
+
+    expect(picks).toHaveLength(3);
+    expect(new Set(picks.map((player) => player.id)).size).toBe(3);
+  });
+
+  it('uses the random source to choose', () => {
+    expect(pickRandomPlayers(players, 2, () => 0.99).map((player) => player.id)).toEqual([
+      'd',
+      'a',
+    ]);
+  });
+
+  it('never picks more players than there are', () => {
+    expect(pickRandomPlayers(players, 9)).toHaveLength(4);
+    expect(pickRandomPlayers([], 2)).toEqual([]);
+    expect(pickRandomPlayers(players, 0)).toEqual([]);
+  });
+
+  it('does not change the original list', () => {
+    pickRandomPlayers(players, 4, () => 0.5);
+
+    expect(players.map((player) => player.id)).toEqual(['a', 'b', 'c', 'd']);
   });
 });
