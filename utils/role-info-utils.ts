@@ -823,13 +823,12 @@ export function getNominationPlayers(
 }
 
 /**
- * Players the given player's character info points at in a phase: the players in its info tokens,
- * plus the previous day's nominators or voters for the Town Crier and Flowergirl while alive.
+ * Players the given player's character info points at in a phase: the players in its info tokens.
+ * The Town Crier's and Flowergirl's pings are highlighted from Character info instead.
  */
 export function getRoleInfoTargetPlayers(
   owner: Player,
   players: Player[],
-  conversations: Conversation[],
   roleInfos: RoleInfoEntry[],
   roles: Role[],
   day: number,
@@ -841,18 +840,6 @@ export function getRoleInfoTargetPlayers(
   for (const role of roles.filter((candidate) => roleIds.includes(candidate.id))) {
     const template = getRoleInfoTemplate(role);
     const claimer = getRoleInfoClaimer(getRoleClaimers(players, role.id), owner);
-    // The info comes on the night that starts this day, which a dead player doesn't get.
-    if (template.autoDayBefore && !isPlayerCurrentlyDead(owner, day, 'night')) {
-      for (const target of getNominationPlayers(
-        players,
-        conversations,
-        day - 1,
-        template.autoDayBefore,
-      )) {
-        targetIds.add(target.id);
-      }
-    }
-
     const entry = getMapRoleInfoEntry(roleInfos, role, day, phase, claimer);
     for (const slot of template.slots) {
       const value = entry?.values[slot.id];

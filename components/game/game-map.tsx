@@ -141,7 +141,6 @@ export function GameMap() {
     const targets = getRoleInfoTargetPlayers(
       focusedPlayer,
       players,
-      conversations,
       roleInfos,
       roles,
       activeDay,

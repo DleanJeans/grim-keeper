@@ -527,14 +527,6 @@ describe('getRoleInfoTargetPlayers', () => {
     roleAssignments: [{ day: 1, kind: 'claim' as const, roleIds: [roleId], updatedAt: NOW }],
   });
   const crierRoles: Role[] = [...roles, { id: 'towncrier', name: 'Town Crier', team: 'townsfolk' }];
-  const nomination = {
-    createdAt: NOW,
-    day: 1,
-    id: 'n1',
-    initiatorId: 'cat',
-    kind: 'nomination' as const,
-    participantIds: ['cat', 'dan'],
-  };
 
   it("points at the players in the character's info tokens", () => {
     const owner = makePlayer('ann', 0, claim('washerwoman'));
@@ -550,20 +542,15 @@ describe('getRoleInfoTargetPlayers', () => {
     ];
 
     expect(
-      getRoleInfoTargetPlayers(owner, players, [], roleInfos, roles, 2, 'day').map((p) => p.id),
+      getRoleInfoTargetPlayers(owner, players, roleInfos, roles, 2, 'day').map((p) => p.id),
     ).toEqual(['ben', 'dan']);
   });
 
-  it("points a living Town Crier at the previous day's nominators", () => {
+  it("doesn't point the Town Crier at the previous day's nominators", () => {
     const owner = makePlayer('ann', 0, claim('towncrier'));
     const players = [owner, makePlayer('cat', 2), makePlayer('dan', 3)];
-    const targets = (crier: Player) =>
-      getRoleInfoTargetPlayers(crier, players, [nomination], [], crierRoles, 2, 'day').map(
-        (p) => p.id,
-      );
 
-    expect(targets(owner)).toEqual(['cat']);
-    expect(targets({ ...owner, death: { day: 1, kind: 'execution', updatedAt: NOW } })).toEqual([]);
+    expect(getRoleInfoTargetPlayers(owner, players, [], crierRoles, 2, 'day')).toEqual([]);
   });
 });
 
@@ -919,7 +906,7 @@ describe('double claims', () => {
       },
     ];
     const targets = (owner: Player) =>
-      getRoleInfoTargetPlayers(owner, players, [], roleInfos, roles, 2, 'day').map((p) => p.id);
+      getRoleInfoTargetPlayers(owner, players, roleInfos, roles, 2, 'day').map((p) => p.id);
 
     expect(targets(ann)).toEqual(['cat']);
     expect(targets(ben)).toEqual(['dan']);
