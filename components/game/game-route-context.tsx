@@ -102,7 +102,12 @@ export type GameRouteContextValue = {
   handleResizeTokens: (sizeDelta: number) => void;
   handleStartRoleAssignment: (kind: PlayerRoleAssignment['kind']) => void;
   handleCancelRoleAssignment: () => void;
-  handleToggleRoleAssignment: (roleId: string, keepOpen?: boolean, mode?: RoleToggleMode) => void;
+  handleToggleRoleAssignment: (
+    roleId: string,
+    keepOpen?: boolean,
+    mode?: RoleToggleMode,
+    slotIndex?: number,
+  ) => void;
   handleSaveRoleAssignment: (roleIds?: string[]) => void;
   handleDeleteRumor: (sourcePlayerId: string, day: number, phase?: GamePhase) => void;
   handleSelectRumorSource: (sourcePlayerId: string) => void;

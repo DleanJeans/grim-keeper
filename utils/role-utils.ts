@@ -197,24 +197,29 @@ export function getRoleAlignment(role: Role): 'g' | 'e' | undefined {
   return undefined;
 }
 
-/** Most characters one player can claim at once, as in a "3 for 3". */
-export const MAX_MULTI_CLAIM_ROLES = 3;
+/** Claim slots the Claim panel always shows; a + button adds more once they are all filled. */
+export const MIN_CLAIM_SLOTS = 3;
 
-export type RoleToggleMode = 'multi' | 'only' | 'single';
+export type RoleToggleMode = 'only' | 'single' | 'slot';
 
 /**
- * Role ids after tapping `roleId`: `single` picks it or clears it, `multi` adds or removes it in
- * a list of up to MAX_MULTI_CLAIM_ROLES (dropping the oldest), `only` keeps just that role.
+ * Role ids after tapping `roleId`: `single` picks it or clears it, `only` keeps just that role,
+ * `slot` puts it in claim slot `slotIndex` (replacing that slot's role, or adding it when the
+ * slot is empty), and removes it when it is already claimed.
  */
 export function toggleRoleSelection(
   current: string[],
   roleId: string,
   mode: RoleToggleMode = 'single',
+  slotIndex = current.length,
 ): string[] {
   if (mode === 'only') return [roleId];
   if (mode === 'single') return current[0] === roleId ? [] : [roleId];
   if (current.includes(roleId)) return current.filter((id) => id !== roleId);
-  return [...current, roleId].slice(-MAX_MULTI_CLAIM_ROLES);
+  if (slotIndex < current.length) {
+    return current.map((id, index) => (index === slotIndex ? roleId : id));
+  }
+  return [...current, roleId];
 }
 
 export function isTravelerRole(role: Role) {

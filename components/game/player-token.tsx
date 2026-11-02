@@ -10,10 +10,12 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { DeadVoteIcon } from '@/components/game/dead-vote-icon';
+import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
 import { useRoleIconSource } from '@/hooks/use-role-icon-source';
 import { colors } from '@/theme/colors';
 import type { Player, PlayerPosition, Role } from '@/types/game';
+import { type ClaimOrbitObstacle, getClaimOrbitLayout } from '@/utils/claim-orbit-utils';
 import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
 import { isTravelerRole } from '@/utils/role-utils';
 import type { SuspicionLevel } from '@/utils/suspicion-utils';
@@ -25,6 +27,13 @@ const SELECTED_BORDER_WIDTH = 3;
 const ROLE_IMAGE_SCALE = 1.4;
 const SUSPICION_DOT_RATIO = 0.75;
 const ROLE_IMAGE_OPACITY = 0.4;
+// Line heights of the name, the role names and the Storyteller label (styles below), for the
+// band claim tokens keep clear of.
+const NAME_LINE_HEIGHT = 13;
+const ROLES_LINE_HEIGHT = 10;
+const STORYTELLER_LINE_HEIGHT = 10;
+const CLAIM_TEXT_GAP = 1;
+const CLAIM_TOKEN_BORDER_WIDTH = 1;
 const EMPTY_OTHER_TOKEN_POSITIONS: OtherTokenPosition[] = [];
 const badgeColors = colors.playerTokenEdgeBadge;
 const Colors = {
@@ -47,6 +56,8 @@ const Colors = {
 export type OtherTokenPosition = { size?: number; x: number; y: number };
 
 type PlayerTokenProps = {
+  /** Claimed characters drawn as small tokens round the inside edge, e.g. when focused. */
+  claimRoles?: Role[];
   mapHeight: number;
   mapScale: number;
   mapWidth: number;
@@ -81,6 +92,7 @@ type PlayerTokenProps = {
 };
 
 export function PlayerToken({
+  claimRoles,
   confirmedRoleIds,
   deadVoteAvailable,
   dimmed = false,
@@ -124,6 +136,31 @@ export function PlayerToken({
   const suspicionDotReach = (tokenSize / 2) * Math.SQRT1_2;
   const suspicionDotLeft = tokenSize / 2 + suspicionDotReach - borderWidth - suspicionDotSize / 2;
   const suspicionDotTop = tokenSize / 2 - suspicionDotReach - borderWidth - suspicionDotSize / 2;
+  const claimObstacles: ClaimOrbitObstacle[] = [];
+  if (hasDeadVote) {
+    claimObstacles.push({ radius: badgeSize / 2, x: 0, y: tokenSize / 2 - badgeSize / 2 });
+  }
+  if (suspicion) {
+    claimObstacles.push({
+      radius: suspicionDotSize / 2,
+      x: suspicionDotReach,
+      y: -suspicionDotReach,
+    });
+  }
+  const claimLayout = claimRoles?.length
+    ? getClaimOrbitLayout({
+        borderWidth,
+        count: claimRoles.length,
+        obstacles: claimObstacles,
+        textHalfHeight:
+          (NAME_LINE_HEIGHT +
+            (visibleRoles.length > 0 ? ROLES_LINE_HEIGHT : 0) +
+            (player.isStoryteller ? STORYTELLER_LINE_HEIGHT : 0)) /
+            2 +
+          CLAIM_TEXT_GAP,
+        tokenSize,
+      })
+    : undefined;
   const x = useSharedValue(position.x);
   const y = useSharedValue(position.y);
   const startX = useSharedValue(position.x);
@@ -304,6 +341,18 @@ export function PlayerToken({
             roles={visibleRoles}
           />
         </View>
+        {claimRoles && claimLayout
+          ? claimLayout.positions.map((claimPosition, index) => (
+              <PlayerTokenClaim
+                // biome-ignore lint/suspicious/noArrayIndexKey: one claim per slot.
+                key={index}
+                left={tokenSize / 2 - borderWidth + claimPosition.x - claimLayout.size / 2}
+                role={claimRoles[index]}
+                size={claimLayout.size}
+                top={tokenSize / 2 - borderWidth + claimPosition.y - claimLayout.size / 2}
+              />
+            ))
+          : null}
         {suspicion ? (
           <View
             style={[
@@ -369,6 +418,27 @@ export function PlayerToken({
         ) : null}
       </Animated.View>
     </GestureDetector>
+  );
+}
+
+function PlayerTokenClaim({
+  left,
+  role,
+  size,
+  top,
+}: {
+  left: number;
+  role: Role;
+  size: number;
+  top: number;
+}) {
+  return (
+    <View
+      pointerEvents="none"
+      style={[styles.claimToken, { borderRadius: size / 2, height: size, left, top, width: size }]}
+    >
+      <RoleIcon role={role} scale={1.25} size={size - CLAIM_TOKEN_BORDER_WIDTH * 2} />
+    </View>
   );
 }
 
@@ -456,6 +526,16 @@ function getStorytellerLabelColorStyle(color: string) {
 }
 
 const styles = StyleSheet.create({
+  claimToken: {
+    alignItems: 'center',
+    backgroundColor: colors.roleInfoTokenBackground,
+    borderColor: colors.roleClaim,
+    borderWidth: CLAIM_TOKEN_BORDER_WIDTH,
+    justifyContent: 'center',
+    overflow: 'hidden',
+    position: 'absolute',
+    zIndex: 1,
+  },
   content: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -493,7 +573,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 12,
     fontWeight: '800',
-    lineHeight: 13,
+    lineHeight: NAME_LINE_HEIGHT,
     textAlign: 'center',
   },
   roleImage: {
@@ -510,7 +590,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     fontSize: 8.5,
     fontWeight: '900',
-    lineHeight: 10,
+    lineHeight: ROLES_LINE_HEIGHT,
     textAlign: 'center',
   },
   storytellerLabel: {

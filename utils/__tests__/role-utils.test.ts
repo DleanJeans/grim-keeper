@@ -1380,13 +1380,14 @@ describe('role utilities', () => {
 });
 
 describe('toggleRoleSelection', () => {
-  it('picks one role, or up to three for a multi claim', () => {
+  it('picks one role, or fills claim slots', () => {
     expect(toggleRoleSelection([], 'chef')).toEqual(['chef']);
     expect(toggleRoleSelection(['chef'], 'chef')).toEqual([]);
     expect(toggleRoleSelection(['chef'], 'empath')).toEqual(['empath']);
-    expect(toggleRoleSelection(['chef'], 'empath', 'multi')).toEqual(['chef', 'empath']);
-    expect(toggleRoleSelection(['chef', 'empath'], 'chef', 'multi')).toEqual(['empath']);
-    expect(toggleRoleSelection(['a', 'b', 'c'], 'd', 'multi')).toEqual(['b', 'c', 'd']);
+    expect(toggleRoleSelection(['chef'], 'empath', 'slot')).toEqual(['chef', 'empath']);
+    expect(toggleRoleSelection(['chef', 'empath'], 'chef', 'slot', 1)).toEqual(['empath']);
+    expect(toggleRoleSelection(['a', 'b', 'c'], 'd', 'slot', 1)).toEqual(['a', 'd', 'c']);
+    expect(toggleRoleSelection(['a', 'b', 'c'], 'd', 'slot')).toEqual(['a', 'b', 'c', 'd']);
     expect(toggleRoleSelection(['a', 'b', 'c'], 'a', 'only')).toEqual(['a']);
   });
 });

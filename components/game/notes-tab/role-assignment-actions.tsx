@@ -1,8 +1,9 @@
-import { CircleHelp, Layers, Megaphone, ShieldCheck, Skull, Tag } from 'lucide-react-native';
+import { CircleHelp, Megaphone, ShieldCheck, Skull, Tag } from 'lucide-react-native';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { ClaimSlots } from '@/components/game/notes-tab/claim-slots';
 import { RolePicker } from '@/components/game/notes-tab/role-picker';
 import { SushiBuffetRoleAssignmentDialog } from '@/components/game/notes-tab/sushi-buffet-role-assignment-dialog';
 import { TravelerRoleAlignmentButton } from '@/components/game/notes-tab/traveler-role-alignment-button';
@@ -24,6 +25,7 @@ import {
   getRolesByIds,
   getTravelerClaimRoles,
   isTravelerRole,
+  MIN_CLAIM_SLOTS,
 } from '@/utils/role-utils';
 import { isSushiBuffetScript } from '@/utils/script-service';
 
@@ -54,8 +56,14 @@ export function RoleAssignmentActions() {
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   // Keyed to the open panel so the Evil toggle resets for another player or kind.
   const [evilPickingKey, setEvilPickingKey] = useState<string | null>(null);
-  // Same idea for the "3 for 3" toggle on claims.
-  const [multiClaimKey, setMultiClaimKey] = useState<string | null>(null);
+  // Claim slot picked by tapping it, keyed the same way.
+  const [pickedClaimSlot, setPickedClaimSlot] = useState<{ index: number; key: string } | null>(
+    null,
+  );
+  // The + button opens one more empty slot while the claim count stays at `length`.
+  const [addedClaimSlot, setAddedClaimSlot] = useState<{ key: string; length: number } | null>(
+    null,
+  );
 
   if (!focusedPlayer || interactionMode || !game.script) {
     return null;
@@ -109,19 +117,35 @@ export function RoleAssignmentActions() {
     ? getTravelerClaimRoles(confirmedTravelerBaseRole)
     : [];
   const isTravelerClaim = roleAssignmentKind === 'claim' && !!confirmedTravelerRole;
-  const canMultiClaim = roleAssignmentKind === 'claim' && !isTravelerClaim;
-  const multiClaim =
-    canMultiClaim && (multiClaimKey === pickingKey || roleAssignmentRoleIds.length > 1);
-  const handleToggleMultiClaim = () => {
-    if (!multiClaim) {
-      setMultiClaimKey(pickingKey);
+  const showClaimSlots = roleAssignmentKind === 'claim' && !isTravelerClaim;
+  const claimCount = roleAssignmentRoleIds.length;
+  const claimSlotAdded = addedClaimSlot?.key === pickingKey && addedClaimSlot.length === claimCount;
+  const claimSlotCount = Math.max(MIN_CLAIM_SLOTS, claimCount + (claimSlotAdded ? 1 : 0));
+  const hasEmptyClaimSlot = claimSlotCount > claimCount;
+  // Tapped filled slot, else the next slot (the first empty one, or the + button).
+  const activeClaimSlot =
+    pickedClaimSlot?.key === pickingKey && pickedClaimSlot.index < claimCount
+      ? pickedClaimSlot.index
+      : claimCount;
+  const handleClaimRole = (roleId: string) => {
+    setPickedClaimSlot(null);
+    setAddedClaimSlot(null);
+    handleToggleRoleAssignment(roleId, true, 'slot', activeClaimSlot);
+  };
+  const handlePressClaimSlot = (slotIndex: number) => {
+    const slotRoleId = roleAssignmentRoleIds[slotIndex];
+    if (slotRoleId && slotIndex === activeClaimSlot) {
+      // A second tap on the highlighted slot clears it.
+      setPickedClaimSlot(null);
+      setAddedClaimSlot(null);
+      handleToggleRoleAssignment(slotRoleId, true, 'slot', slotIndex);
       return;
     }
-    setMultiClaimKey(null);
-    const [firstRoleId] = roleAssignmentRoleIds;
-    if (roleAssignmentRoleIds.length > 1 && firstRoleId) {
-      handleToggleRoleAssignment(firstRoleId, true, 'only');
-    }
+    setPickedClaimSlot(slotRoleId ? { index: slotIndex, key: pickingKey } : null);
+  };
+  const handleAddClaimSlot = () => {
+    setPickedClaimSlot(null);
+    setAddedClaimSlot({ key: pickingKey, length: claimCount });
   };
   // Confirm keeps the full picker in the phase the Traveller joined, so it can still be changed.
   const activePhaseIndex = getEventPhaseIndex(activeDay, activePhase);
@@ -238,16 +262,14 @@ export function RoleAssignmentActions() {
                 />
               ) : (
                 <>
-                  {canMultiClaim ? (
-                    <RoleAssignmentButton
-                      accessibilityLabel={
-                        multiClaim ? 'Claim one character only' : 'Claim up to 3 characters'
-                      }
-                      compact
-                      icon={Layers}
-                      label="3 for 3"
-                      onPress={handleToggleMultiClaim}
-                      selected={multiClaim}
+                  {showClaimSlots ? (
+                    <ClaimSlots
+                      activeSlot={activeClaimSlot}
+                      canAddSlot={!hasEmptyClaimSlot}
+                      onAddSlot={handleAddClaimSlot}
+                      onPressSlot={handlePressClaimSlot}
+                      roles={getRolesByIds(roleAssignmentRoleIds, selectableRoles)}
+                      slotCount={claimSlotCount}
                     />
                   ) : null}
                   {showEvilToggle ? (
@@ -264,15 +286,11 @@ export function RoleAssignmentActions() {
                   ) : null}
                   <RolePicker
                     description={
-                      multiClaim
-                        ? 'Tap up to 3 roles this player is claiming, as in a 3 for 3.'
+                      showClaimSlots
+                        ? 'Tap a role to put it in the highlighted slot. Tap a claimed role again to remove it.'
                         : `Tap a role to ${getRoleAssignmentLabel(roleAssignmentKind).toLocaleLowerCase()} or clear it.`
                     }
-                    onToggleRole={
-                      multiClaim
-                        ? (roleId) => handleToggleRoleAssignment(roleId, true, 'multi')
-                        : handleToggleRoleAssignment
-                    }
+                    onToggleRole={showClaimSlots ? handleClaimRole : handleToggleRoleAssignment}
                     roles={pickerRoles}
                     roleOwnerNames={roleOwnerNames}
                     sectioned
