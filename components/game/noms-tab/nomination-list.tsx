@@ -114,6 +114,7 @@ export function NominationList() {
                   day: activeDay,
                   killerRoleIds: [role.id],
                   kind: 'night',
+                  phase: 'day',
                   updatedAt: new Date().toISOString(),
                 }),
               )

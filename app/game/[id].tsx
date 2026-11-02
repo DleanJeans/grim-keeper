@@ -940,6 +940,7 @@ export default function GameRoute() {
       setPlayerDeath(activeGame.id, focusedPlayer.id, {
         day: activeGame.activeDay,
         kind,
+        phase: kind === 'execution' ? 'day' : activePhase,
         ...attribution,
         updatedAt: new Date().toISOString(),
       }),

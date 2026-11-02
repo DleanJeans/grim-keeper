@@ -84,6 +84,12 @@ describe('isDeadVote', () => {
     expect(isDeadVote(makePlayer({ death: makeDeath(2, 'execution') }), 2)).toBe(false);
   });
 
+  it('does not count a vote on the day the voter is killed by a day kill', () => {
+    const death = { ...makeDeath(2, 'night'), killerRoleIds: ['tinker'], phase: 'day' as const };
+    expect(isDeadVote(makePlayer({ death }), 2)).toBe(false);
+    expect(isDeadVote(makePlayer({ death }), 3)).toBe(true);
+  });
+
   it('does not count a vote by a living or revived player', () => {
     expect(isDeadVote(makePlayer(), 2)).toBe(false);
     expect(isDeadVote(makePlayer({ death: makeDeath(1), revive: makeRevive(2) }), 2)).toBe(false);

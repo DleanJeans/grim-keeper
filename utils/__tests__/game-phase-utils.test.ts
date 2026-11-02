@@ -93,6 +93,12 @@ describe('getDeathPhase', () => {
     expect(getDeathPhase({ kind: 'night', killerRoleIds: ['witch'] })).toBe('day');
     expect(getDeathPhase({ kind: 'night', killerRoleIds: ['imp'] })).toBe('night');
   });
+
+  it('uses the phase the kill was entered in', () => {
+    expect(getDeathPhase({ kind: 'night', killerRoleIds: ['tinker'], phase: 'day' })).toBe('day');
+    expect(getDeathPhase({ kind: 'night', phase: 'night' })).toBe('night');
+    expect(getDeathPhase({ kind: 'execution', phase: 'night' })).toBe('day');
+  });
 });
 
 describe('getLatestPhaseWithData', () => {

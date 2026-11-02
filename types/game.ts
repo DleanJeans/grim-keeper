@@ -60,6 +60,8 @@ export type KillAttribution = {
 export type PlayerDeath = {
   day: number;
   kind: 'execution' | 'night';
+  /** Phase the death happened in. Missing on older kills: see `getDeathPhase`. */
+  phase?: GamePhase;
   updatedAt: string;
   killerPlayerIds?: KillAttribution['killerPlayerIds'];
   killerPlayerId?: KillAttribution['killerPlayerId'];

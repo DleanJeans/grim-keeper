@@ -1,6 +1,6 @@
 import type { Game, GamePhase, Player, Role, StartingNight } from '@/types/game';
 import { getDayRecap } from '@/utils/day-recap-utils';
-import { getEventPhaseIndex, getPhaseLabel } from '@/utils/game-phase-utils';
+import { getDeathPhase, getEventPhaseIndex, getPhaseLabel } from '@/utils/game-phase-utils';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 import { getRoleAssignmentForDayOrPrevious } from '@/utils/role-utils';
 
@@ -81,7 +81,7 @@ function getPlayerLine(
     if (confirm?.roleIds.length) parts.push(`is ${confirm.roleIds.map(roleName).join(' or ')}`);
   }
   if (player.death && isPlayerCurrentlyDead(player, day, phase)) {
-    const deathPhase = player.death.kind === 'execution' ? 'day' : 'night';
+    const deathPhase = getDeathPhase(player.death);
     const when = getPhaseLabel(
       { activeDay: player.death.day, activePhase: deathPhase },
       startingNight,

@@ -100,6 +100,14 @@ export function getLatestPhaseWithData(game: Game): GamePhasePosition {
 export function getDeathPhase(death: {
   kind: 'execution' | 'night';
   killerRoleIds?: string[];
+  phase?: GamePhase;
 }): GamePhase {
-  return death.kind === 'execution' || death.killerRoleIds?.includes('witch') ? 'day' : 'night';
+  if (death.kind === 'execution') {
+    return 'day';
+  }
+  if (death.phase) {
+    return death.phase;
+  }
+  // Older kills have no phase: only Witch kills counted as day kills.
+  return death.killerRoleIds?.includes('witch') ? 'day' : 'night';
 }
