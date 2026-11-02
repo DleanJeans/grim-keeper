@@ -5,6 +5,7 @@ import {
   getPlayerNameMatches,
   getRoleNameMatches,
   getSavedNote,
+  getSavedNotesForRole,
   getSavedNoteTextsForRole,
 } from '@/utils/saved-note-utils';
 
@@ -110,5 +111,41 @@ describe('saved note utilities', () => {
         GENERIC_CHARACTER_TYPE_ROLE_REFERENCES,
       ).map(({ role }) => role.name),
     ).toEqual(['Goods', 'Evils', 'Townsfolks', 'Traveler', 'Travelers']);
+  });
+});
+
+describe('getSavedNotesForRole', () => {
+  const note = (id: string, roleIds: string[], text: string, createdAt: string): SavedNote => ({
+    createdAt,
+    day: 1,
+    gameId: 'game-1',
+    id,
+    playerName: '',
+    roleIds,
+    scriptName: '',
+    text,
+    updatedAt: createdAt,
+  });
+
+  it('returns the notes for the role, newest first, without repeated texts', () => {
+    const notes = [
+      note('a', ['empath'], 'Old empath note', '2026-01-01T00:00:00.000Z'),
+      note('b', ['imp'], 'Imp note', '2026-01-02T00:00:00.000Z'),
+      note('c', ['empath', 'imp'], 'New empath note', '2026-01-03T00:00:00.000Z'),
+      note('d', ['empath'], 'Old empath note', '2026-01-04T00:00:00.000Z'),
+    ];
+
+    expect(getSavedNotesForRole(notes, 'empath').map((item) => item.id)).toEqual(['d', 'c']);
+    expect(getSavedNotesForRole(notes, 'chef')).toEqual([]);
+  });
+
+  it('includes notes for the plain role when the claim is a good or evil variant', () => {
+    const notes = [
+      note('a', ['gunslinger'], 'Gunslinger note', '2026-01-01T00:00:00.000Z'),
+      note('b', ['empath'], 'Empath note', '2026-01-02T00:00:00.000Z'),
+    ];
+
+    expect(getSavedNotesForRole(notes, 'gunslinger_good').map((item) => item.id)).toEqual(['a']);
+    expect(getSavedNotesForRole(notes, 'empath_evil').map((item) => item.id)).toEqual(['b']);
   });
 });

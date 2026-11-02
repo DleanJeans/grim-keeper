@@ -16,6 +16,25 @@ export function getSavedNoteTextsForRole(savedNotes: SavedNote[], roleId: string
   return savedNotes.filter((note) => note.roleIds.includes(roleId)).map((note) => note.text);
 }
 
+const ALIGNED_ROLE_SUFFIX = /_(good|evil)$/;
+
+/**
+ * Saved notes about a role, newest first, one per text. A "Good Gunslinger" or evil-turned claim
+ * (`gunslinger_good`, `empath_evil`) also gets the notes saved for the plain role.
+ */
+export function getSavedNotesForRole(savedNotes: SavedNote[], roleId: string) {
+  const roleIds = new Set([roleId, roleId.replace(ALIGNED_ROLE_SUFFIX, '')]);
+  const seenTexts = new Set<string>();
+  return savedNotes
+    .filter((note) => note.roleIds.some((id) => roleIds.has(id)))
+    .sort((first, second) => second.createdAt.localeCompare(first.createdAt))
+    .filter((note) => {
+      if (seenTexts.has(note.text)) return false;
+      seenTexts.add(note.text);
+      return true;
+    });
+}
+
 export function detectRoleIdsInNote(text: string, roles: Role[]) {
   return roles
     .filter((role) => {

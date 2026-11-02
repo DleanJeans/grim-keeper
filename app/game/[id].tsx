@@ -11,6 +11,7 @@ import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { ActiveGameTab } from '@/components/game/active-game-tab';
 import { CharacterTypeCountEditor } from '@/components/game/character-type-counts';
 import { ClaimClashWarnings } from '@/components/game/claim-clash-warnings';
+import { ClaimRoleNotesPopup } from '@/components/game/claim-role-notes-popup';
 import { DayCount } from '@/components/game/day-count';
 import { DayEditLockButton } from '@/components/game/day-edit-lock-button';
 import { DayJumpButtons } from '@/components/game/day-jump-buttons';
@@ -49,7 +50,9 @@ import type {
   Player,
   PlayerPosition,
   PlayerRoleAssignment,
+  Role,
   RoleDisplayMode,
+  SavedNote,
 } from '@/types/game';
 import { getClaimClashes } from '@/utils/claim-clash-utils';
 import { getAutomaticCharacterTypeCounts } from '@/utils/evil-in-play-utils';
@@ -80,11 +83,13 @@ import { hasDeadVoteAvailable, isPlayerCurrentlyDead } from '@/utils/player-util
 import {
   addRoleToScript,
   getRoleAssignmentForDay,
+  getRolesByIds,
   getRolesForDayOrPrevious,
   isTravelerRole,
   type RoleToggleMode,
   toggleRoleSelection,
 } from '@/utils/role-utils';
+import { getSavedNotesForRole } from '@/utils/saved-note-utils';
 import { isSushiBuffetScript } from '@/utils/script-service';
 import { getClearedPlayerIds } from '@/utils/suspicion-utils';
 import { describeGameChange, PENDING_CHANGE } from '@/utils/undo-utils';
@@ -164,6 +169,11 @@ export default function GameRoute() {
   const [recapOpen, setRecapOpen] = useState(false);
   const [suspectFilter, setSuspectFilter] = useState(false);
   const [undo, setUndo] = useState<{ before: Game; id: number; label: string } | null>(null);
+  const [claimRoleNotes, setClaimRoleNotes] = useState<{
+    notes: SavedNote[];
+    playerName: string;
+    role: Role;
+  } | null>(null);
   // Game before a new nomination, kept until its votes are saved so one Undo covers both.
   const pendingUndoBase = useRef<Game | null>(null);
   const restoreGame = useGameStore((state) => state.restoreGame);
@@ -867,6 +877,14 @@ export default function GameRoute() {
         setRoleAssignmentRoleIds(nextRoleIds);
       }
       handleSaveRoleAssignment(nextRoleIds, keepOpen);
+      if (
+        roleAssignmentKind === 'claim' &&
+        focusedPlayer &&
+        nextRoleIds.includes(roleId) &&
+        !roleAssignmentRoleIds.includes(roleId)
+      ) {
+        showClaimRoleNotes(focusedPlayer.name, roleId);
+      }
     });
 
     if (travelerRole && isTravelerRole(travelerRole)) {
@@ -874,6 +892,15 @@ export default function GameRoute() {
         scrollViewRef.current?.scrollTo({ animated: true, y: 0 });
       });
     }
+  }
+
+  function showClaimRoleNotes(playerName: string, roleId: string) {
+    const notes = getSavedNotesForRole(useGameStore.getState().savedNotes, roleId);
+    if (notes.length === 0) {
+      return;
+    }
+    const [role] = getRolesByIds([roleId], gameRoles);
+    setClaimRoleNotes({ notes, playerName, role });
   }
 
   function handleSaveRoleAssignment(roleIds = roleAssignmentRoleIds.slice(0, 1), keepOpen = false) {
@@ -1246,6 +1273,19 @@ export default function GameRoute() {
             <View style={styles.selectingBar}>
               <Text style={styles.selectingLabel}>Selecting: {focusedPlayer.name}</Text>
             </View>
+          ) : null}
+
+          {claimRoleNotes ? (
+            <ClaimRoleNotesPopup
+              key={`${claimRoleNotes.playerName}-${claimRoleNotes.role.id}`}
+              notes={claimRoleNotes.notes}
+              onDismiss={() => setClaimRoleNotes(null)}
+              playerName={claimRoleNotes.playerName}
+              players={activeGame.players}
+              role={claimRoleNotes.role}
+              roles={gameRoles}
+              scriptId={activeGame.script?.id}
+            />
           ) : null}
 
           {undo ? (
