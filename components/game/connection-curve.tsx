@@ -12,6 +12,8 @@ const ARROW_TIP_INSET = ARROW_ROUNDING / 2 / Math.sin(ARROW_SPREAD);
 const END_SLIDE_ANGLES = [0, 0.2, -0.2, 0.4, -0.4, 0.6, -0.6, 0.8, -0.8];
 // Further slides for an end that has to fit something beside it, such as character tokens.
 const FIT_SLIDE_ANGLES = [...END_SLIDE_ANGLES, 1, -1, 1.2, -1.2, 1.4, -1.4, 1.6, -1.6];
+// Running under a token is worse than crossing any number of other lines.
+const BLOCKER_WEIGHT = 10;
 const BEND_STEPS = [0, 0.1, 0.18, 0.26, 0.35, 0.45, 0.6, 0.8, 1];
 // Control point offsets for touching tokens, in token radii, so the line loops out past the gap.
 const TOUCHING_BEND_RADII = [1.8, 2.3, 2.8];
@@ -157,25 +159,56 @@ export function getConnectionCurve(
     : BEND_STEPS.map((step) => step * distance);
   const sides = [inwardSide, -inwardSide];
 
-  let best: { control: PlayerPosition; hits: number } | null = null;
+  let best: {
+    control: PlayerPosition;
+    endEnd: PlacedLineEnd;
+    hits: number;
+    startEnd: PlacedLineEnd;
+  } | null = null;
 
   for (const bend of offsets) {
     for (const side of bend === 0 ? [1] : sides) {
       const offset = bend * side;
       const control = { x: midpoint.x + normal.x * offset, y: midpoint.y + normal.y * offset };
-      const start = getTokenEdgePoint(from, control, startEdgeRadius);
-      const end = getTokenEdgePoint(to, control, endEdgeRadius);
+      // Slide each end around its token when another line already ends there, and judge the curve
+      // by where it is really drawn.
+      const startEnd = getClearLineEnd(
+        from,
+        control,
+        startEdgeRadius,
+        headLength,
+        placedLineEnds,
+        endSpacing,
+      );
+      const endEnd = getClearLineEnd(
+        to,
+        control,
+        endEdgeRadius,
+        headLength,
+        placedLineEnds,
+        endSpacing,
+        endFits,
+      );
+      const start = startEnd.tip;
+      const end = endEnd.tip;
       // Never bend out past the map's edge; a straight line through other tokens reads better.
       if (leavesMap(start, control, end, mapWidth, mapHeight, strokeWidth / 2)) {
         continue;
       }
+      const arrowCorners = [
+        ...getArrowCorners(end, getQuadraticPoint(start, control, end, 0.9), arrowLength),
+        ...(twoWay
+          ? getArrowCorners(start, getQuadraticPoint(start, control, end, 0.1), arrowLength)
+          : []),
+      ];
       const hits =
-        countBlockersHit(start, control, end, blockers, blockerRadius) +
+        countBlockersHit(start, control, end, arrowCorners, blockers, blockerRadius, edgeRadius) *
+          BLOCKER_WEIGHT +
         countLineEndsCrossed(start, control, end, placedLineEnds, endSpacing / 2, headLength) +
         countPathsCrossed(start, control, end, placedPaths, headLength);
 
       if (!best || hits < best.hits) {
-        best = { control, hits };
+        best = { control, endEnd, hits, startEnd };
       }
       if (hits === 0) {
         break;
@@ -187,24 +220,12 @@ export function getConnectionCurve(
   }
 
   const control = best?.control ?? midpoint;
-  // Slide each end around its token when another line already ends there.
-  const startEnd = getClearLineEnd(
-    from,
-    control,
-    startEdgeRadius,
-    headLength,
-    placedLineEnds,
-    endSpacing,
-  );
-  const endEnd = getClearLineEnd(
-    to,
-    control,
-    endEdgeRadius,
-    headLength,
-    placedLineEnds,
-    endSpacing,
-    endFits,
-  );
+  const startEnd =
+    best?.startEnd ??
+    getClearLineEnd(from, control, startEdgeRadius, headLength, placedLineEnds, endSpacing);
+  const endEnd =
+    best?.endEnd ??
+    getClearLineEnd(to, control, endEdgeRadius, headLength, placedLineEnds, endSpacing, endFits);
   const startTip = startEnd.tip;
   const endTip = endEnd.tip;
 
@@ -348,6 +369,13 @@ function lerp(from: PlayerPosition, to: PlayerPosition, progress: number): Playe
 }
 
 function getArrowPoints(tip: PlayerPosition, base: PlayerPosition, length: number) {
+  return getArrowCorners(tip, base, length)
+    .map((corner) => `${corner.x},${corner.y}`)
+    .join(' ');
+}
+
+/** The arrowhead's three corners: its sharp tip, then the two back corners. */
+function getArrowCorners(tip: PlayerPosition, base: PlayerPosition, length: number) {
   const angle = Math.atan2(tip.y - base.y, tip.x - base.x);
   // Pull the sharp tip back so the rounded one lands on `tip`.
   const sharpTip = {
@@ -358,10 +386,16 @@ function getArrowPoints(tip: PlayerPosition, base: PlayerPosition, length: numbe
   const side = length / Math.cos(ARROW_SPREAD);
 
   return [
-    `${sharpTip.x},${sharpTip.y}`,
-    `${sharpTip.x - Math.cos(angle - ARROW_SPREAD) * side},${sharpTip.y - Math.sin(angle - ARROW_SPREAD) * side}`,
-    `${sharpTip.x - Math.cos(angle + ARROW_SPREAD) * side},${sharpTip.y - Math.sin(angle + ARROW_SPREAD) * side}`,
-  ].join(' ');
+    sharpTip,
+    {
+      x: sharpTip.x - Math.cos(angle - ARROW_SPREAD) * side,
+      y: sharpTip.y - Math.sin(angle - ARROW_SPREAD) * side,
+    },
+    {
+      x: sharpTip.x - Math.cos(angle + ARROW_SPREAD) * side,
+      y: sharpTip.y - Math.sin(angle + ARROW_SPREAD) * side,
+    },
+  ];
 }
 
 function getProgressAtDistanceFromEnd(
@@ -481,16 +515,27 @@ function leavesMap(
   );
 }
 
+/** Counts tokens the curve runs near, or an arrowhead corner pokes into. */
 function countBlockersHit(
   from: PlayerPosition,
   control: PlayerPosition,
   to: PlayerPosition,
+  arrowCorners: PlayerPosition[],
   blockers: PlayerPosition[],
   blockerRadius: number,
+  cornerRadius: number,
 ) {
   const samples = 64;
 
   return blockers.filter((blocker) => {
+    if (
+      arrowCorners.some(
+        (corner) => Math.hypot(corner.x - blocker.x, corner.y - blocker.y) < cornerRadius,
+      )
+    ) {
+      return true;
+    }
+
     for (let index = 0; index <= samples; index += 1) {
       const point = getQuadraticPoint(from, control, to, index / samples);
 
