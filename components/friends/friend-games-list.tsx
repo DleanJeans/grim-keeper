@@ -28,6 +28,7 @@ type GameEntry = {
   playerId: string;
   claimedRoleIds: string[];
   playedRoleIds: string[];
+  storyteller: boolean;
 };
 
 export function FriendGamesList({ games, friendName, roleCatalog, scripts }: FriendGamesListProps) {
@@ -54,7 +55,7 @@ export function FriendGamesList({ games, friendName, roleCatalog, scripts }: Fri
 }
 
 function FriendGameRow({ entry }: { entry: GameEntry }) {
-  const { game, playerId, claimedRoleIds, playedRoleIds } = entry;
+  const { game, playerId, claimedRoleIds, playedRoleIds, storyteller } = entry;
   const scriptName = game.script?.name ?? 'Untitled game';
   const formattedDate = formatGameDate(game.createdAt);
   const result = getGameResultForPlayer(game, playerId);
@@ -65,7 +66,7 @@ function FriendGameRow({ entry }: { entry: GameEntry }) {
   return (
     <Pressable
       accessibilityHint="Opens this game with this player focused"
-      accessibilityLabel={`${scriptName}, ${formattedDate}`}
+      accessibilityLabel={`${scriptName}, ${formattedDate}${storyteller ? ', Storyteller' : ''}`}
       accessibilityRole="button"
       onPress={() => router.push({ pathname: '/game/[id]', params: { id: game.id, playerId } })}
       style={({ pressed }) => [
@@ -83,10 +84,18 @@ function FriendGameRow({ entry }: { entry: GameEntry }) {
         </Text>
       </View>
 
-      {sameRoles(claimedRoles, playedRoles) || isAllTraveler(playedRoles) ? null : (
-        <RoleLine label="Claimed" roles={claimedRoles} />
+      {storyteller ? (
+        <Text selectable style={styles.storyteller}>
+          Storyteller
+        </Text>
+      ) : (
+        <>
+          {sameRoles(claimedRoles, playedRoles) || isAllTraveler(playedRoles) ? null : (
+            <RoleLine label="Claimed" roles={claimedRoles} />
+          )}
+          <RoleLine label="Started as" roles={playedRoles} />
+        </>
       )}
-      <RoleLine label="Started as" roles={playedRoles} />
     </Pressable>
   );
 }
@@ -144,6 +153,7 @@ function collectEntries(
       playerId: player.id,
       claimedRoleIds: collectClaimedRoleIds(player, roles),
       playedRoleIds: collectPlayedRoleIds(player),
+      storyteller: !!player.isStoryteller,
     });
   }
 
@@ -322,6 +332,13 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 15,
     fontWeight: '800',
+  },
+  storyteller: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
   titleBlock: {
     gap: 2,

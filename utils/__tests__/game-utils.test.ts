@@ -2,6 +2,7 @@ import type { Game, Player } from '@/types/game';
 import {
   getCharacterStats,
   getFriendClaimStats,
+  getGameResultForPlayer,
   getGameStats,
   getGamesWithRoleInPlay,
   getHeadToHeadStats,
@@ -241,6 +242,32 @@ describe('getGameStats', () => {
       winRate: 50,
       wins: 1,
     });
+  });
+});
+
+describe('storytold games', () => {
+  const storytold = makeGame({
+    id: 'storytold',
+    players: [makePlayer({ id: 'st', isStoryteller: true }), makePlayer({ id: APP_USER_ID })],
+    result: 'won',
+  });
+  const played = makeGame({
+    id: 'played',
+    players: [makePlayer({ id: 'st' }), makePlayer({ id: APP_USER_ID })],
+    result: 'lost',
+  });
+
+  it('gives a friend no result in games they storytold', () => {
+    expect(getGameResultForPlayer(storytold, 'st')).toBeUndefined();
+    expect(getGameResultForPlayer(played, 'st')).toBe('lost');
+  });
+
+  it('leaves storytold games out of a friend win rate', () => {
+    const stats = getGameStats([storytold, played], 'st');
+    expect(stats.totalGames).toBe(2);
+    expect(stats.completedGames).toBe(1);
+    expect(stats.wins).toBe(0);
+    expect(stats.winRate).toBe(0);
   });
 });
 

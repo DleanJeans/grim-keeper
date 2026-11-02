@@ -213,9 +213,14 @@ function getGameAlignment(game: Game, playerId: string) {
   return role ? getRoleAlignment(role) : undefined;
 }
 
+/** A friend's result in a game, from their side. Games they storytold have no result. */
 export function getGameResultForPlayer(game: Game, playerId: string): GameResult | undefined {
   if (game.result === undefined || playerId === APP_USER_ID) {
     return game.result;
+  }
+
+  if (isStorytellerInGame(game, playerId)) {
+    return undefined;
   }
 
   const playerAlignment = getGameAlignment(game, playerId);
@@ -225,6 +230,10 @@ export function getGameResultForPlayer(game: Game, playerId: string): GameResult
   }
 
   return game.result === 'won' ? 'lost' : 'won';
+}
+
+function isStorytellerInGame(game: Game, playerId: string) {
+  return game.players.some((player) => player.id === playerId && player.isStoryteller);
 }
 
 function getPercentage(value: number, total: number) {
