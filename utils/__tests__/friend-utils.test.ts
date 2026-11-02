@@ -1,4 +1,4 @@
-import type { Friend, Game, SavedNote } from '@/types/game';
+import type { Friend, FriendSummary, Game, SavedNote } from '@/types/game';
 import {
   addMissingFriends,
   getFriendSummaries,
@@ -6,9 +6,11 @@ import {
   getUnsavedPlayerFriends,
   hasFriendName,
   mergeFriendPlayerSelection,
+  rankFriendsByWinRate,
   sortFriendSummaries,
   sortStorytellerSummaries,
 } from '@/utils/friend-utils';
+import { APP_USER_ID } from '@/utils/object-id';
 
 const games: Game[] = [
   {
@@ -184,5 +186,96 @@ describe('friend utils', () => {
       { id: 'game-player-7', name: 'Alice' },
       { id: 'draft-2', name: 'Newcomer' },
     ]);
+  });
+});
+
+describe('rankFriendsByWinRate', () => {
+  function friendGame(
+    id: string,
+    friendId: string,
+    team: 'demon' | 'townsfolk',
+    result?: 'lost' | 'won',
+    isStoryteller = false,
+  ): Game {
+    return {
+      id,
+      activeDay: 1,
+      createdAt: '2026-07-07T00:00:00.000Z',
+      updatedAt: '2026-07-07T00:00:00.000Z',
+      conversations: [],
+      players: [
+        {
+          id: APP_USER_ID,
+          name: 'Me',
+          seat: 0,
+          roleAssignments: [
+            { day: 1, kind: 'confirm', roleIds: ['townsfolk-role'], updatedAt: '' },
+          ],
+        },
+        {
+          id: friendId,
+          isStoryteller,
+          name: friendId,
+          seat: 1,
+          roleAssignments: isStoryteller
+            ? []
+            : [{ day: 1, kind: 'confirm', roleIds: [`${team}-role`], updatedAt: '' }],
+        },
+      ],
+      result,
+      script: {
+        id: 'script',
+        name: 'Script',
+        roles: [
+          { id: 'townsfolk-role', name: 'Townsfolk', team: 'townsfolk' },
+          { id: 'demon-role', name: 'Demon', team: 'demon' },
+        ],
+        updatedAt: '',
+        version: '1',
+      },
+    };
+  }
+  const friend = (id: string): FriendSummary => ({
+    createdAt: '',
+    gamesPlayed: 0,
+    gamesStorytold: 0,
+    id,
+    name: id,
+  });
+  const friends = [friend('ann'), friend('bob'), friend('cat')];
+  // The app user is good, so a good friend shares the result and an evil friend gets the opposite.
+  const games = [
+    friendGame('a1', 'ann', 'townsfolk', 'won'),
+    friendGame('a2', 'ann', 'townsfolk', 'lost'),
+    friendGame('a3', 'ann', 'demon', 'lost'),
+    friendGame('b1', 'bob', 'townsfolk', 'won'),
+    friendGame('b2', 'bob', 'townsfolk', 'won'),
+    friendGame('b3', 'bob', 'demon', 'lost'),
+    friendGame('b4', 'bob', 'townsfolk'),
+    friendGame('c1', 'cat', 'townsfolk', 'won', true),
+    friendGame('c2', 'cat', 'townsfolk', 'won', true),
+  ];
+
+  it('ranks by overall win rate and hides friends under the minimum games', () => {
+    expect(rankFriendsByWinRate(friends, games, 'winRate', 3)).toEqual({
+      friends: [friends[1], friends[0]],
+      hiddenCount: 1,
+    });
+  });
+
+  it('ranks by good or evil win rate using games on that side only', () => {
+    expect(rankFriendsByWinRate(friends, games, 'goodWinRate', 2).friends).toEqual([
+      friends[1],
+      friends[0],
+    ]);
+    expect(rankFriendsByWinRate(friends, games, 'evilWinRate', 1).friends).toEqual([
+      friends[0],
+      friends[1],
+    ]);
+    expect(rankFriendsByWinRate(friends, games, 'evilWinRate', 2).hiddenCount).toBe(3);
+  });
+
+  it('leaves out storytold games and treats the minimum as at least 1', () => {
+    expect(rankFriendsByWinRate(friends, games, 'winRate', 0)).toMatchObject({ hiddenCount: 1 });
   });
 });

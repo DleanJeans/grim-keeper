@@ -1,5 +1,6 @@
 import type { Friend, FriendSummary, Game, SavedNote } from '@/types/game';
 import { hasDuplicatePlayerName, normalizePlayerName } from '@/utils/conversation-utils';
+import { getGameStats } from '@/utils/game-utils';
 import { APP_USER_ID, createFriendId } from '@/utils/object-id';
 import { getNotesForPlayer } from '@/utils/saved-note-store';
 
@@ -92,6 +93,55 @@ export function sortFriendSummaries(friends: FriendSummary[], savedNotes: SavedN
       notesDifference || first.name.localeCompare(second.name, undefined, { sensitivity: 'base' })
     );
   });
+}
+
+export type FriendSort = 'games' | 'winRate' | 'goodWinRate' | 'evilWinRate';
+
+export type FriendWinRateSort = Exclude<FriendSort, 'games'>;
+
+export const DEFAULT_MIN_RATED_GAMES = 10;
+
+/**
+ * Friends ranked by a win rate, best first. Only games with a result count (storytold games have
+ * none), and friends with fewer than `minGames` such games on that side are left out.
+ */
+export function rankFriendsByWinRate(
+  friends: FriendSummary[],
+  games: Game[],
+  sort: FriendWinRateSort,
+  minGames: number,
+) {
+  const rated = friends.map((friend) => ({
+    friend,
+    ...getFriendWinRecord(games, friend.id, sort),
+  }));
+  const included = rated
+    .filter(({ played }) => played >= Math.max(1, minGames))
+    .sort(
+      (first, second) =>
+        second.wins / second.played - first.wins / first.played ||
+        second.played - first.played ||
+        first.friend.name.localeCompare(second.friend.name, undefined, { sensitivity: 'base' }),
+    );
+
+  return {
+    friends: included.map(({ friend }) => friend),
+    hiddenCount: friends.length - included.length,
+  };
+}
+
+function getFriendWinRecord(games: Game[], friendId: string, sort: FriendWinRateSort) {
+  const stats = getGameStats(games, friendId);
+
+  if (sort === 'goodWinRate') {
+    return { played: stats.goodCompletedGames, wins: stats.goodWins };
+  }
+
+  if (sort === 'evilWinRate') {
+    return { played: stats.evilCompletedGames, wins: stats.evilWins };
+  }
+
+  return { played: stats.completedGames, wins: stats.wins };
 }
 
 export function sortStorytellerSummaries(friends: FriendSummary[]) {
