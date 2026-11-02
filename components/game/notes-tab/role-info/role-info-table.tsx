@@ -560,12 +560,18 @@ function RoleInfoClaimerRow({
   // A night's Undertaker info is about the execution on the day before it.
   const getExecuted = (night: number) =>
     template.autoExecuted ? getExecutedPlayer(players, night - 1) : undefined;
-  // Likewise the Town Crier's and Flowergirl's info is about the nominations on the day before it.
+  // Likewise the Town Crier's and Flowergirl's info is about the nominations on the day before it,
+  // leaving out the character's own players, who don't ping themselves.
   const getDayBefore = (night: number) =>
     template.autoDayBefore
       ? {
           kind: template.autoDayBefore,
-          players: getNominationPlayers(players, conversations, night - 1, template.autoDayBefore),
+          players: getNominationPlayers(
+            players,
+            conversations,
+            night - 1,
+            template.autoDayBefore,
+          ).filter((candidate) => !owners.some((owner) => owner.id === candidate.id)),
         }
       : undefined;
   const getNeighbors = (day: number, phase: GamePhase) =>
