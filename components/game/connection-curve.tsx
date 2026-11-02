@@ -165,13 +165,14 @@ export function getConnectionCurve(
       const control = { x: midpoint.x + normal.x * offset, y: midpoint.y + normal.y * offset };
       const start = getTokenEdgePoint(from, control, startEdgeRadius);
       const end = getTokenEdgePoint(to, control, endEdgeRadius);
-      const apex = getQuadraticPoint(start, control, end, 0.5);
-      const outsideMap = apex.x < 0 || apex.y < 0 || apex.x > mapWidth || apex.y > mapHeight;
+      // Never bend out past the map's edge; a straight line through other tokens reads better.
+      if (leavesMap(start, control, end, mapWidth, mapHeight, strokeWidth / 2)) {
+        continue;
+      }
       const hits =
         countBlockersHit(start, control, end, blockers, blockerRadius) +
         countLineEndsCrossed(start, control, end, placedLineEnds, endSpacing / 2, headLength) +
-        countPathsCrossed(start, control, end, placedPaths, headLength) +
-        (outsideMap ? 1 : 0);
+        countPathsCrossed(start, control, end, placedPaths, headLength);
 
       if (!best || hits < best.hits) {
         best = { control, hits };
@@ -459,6 +460,24 @@ function doSegmentsCross(
 function getQuadraticSamples(from: PlayerPosition, control: PlayerPosition, to: PlayerPosition) {
   return Array.from({ length: CROSSING_SAMPLES + 1 }, (_, index) =>
     getQuadraticPoint(from, control, to, index / CROSSING_SAMPLES),
+  );
+}
+
+/** Whether any part of the curve, stroke included, falls outside the map. */
+function leavesMap(
+  from: PlayerPosition,
+  control: PlayerPosition,
+  to: PlayerPosition,
+  mapWidth: number,
+  mapHeight: number,
+  margin: number,
+) {
+  return getQuadraticSamples(from, control, to).some(
+    (point) =>
+      point.x < margin ||
+      point.y < margin ||
+      point.x > mapWidth - margin ||
+      point.y > mapHeight - margin,
   );
 }
 
