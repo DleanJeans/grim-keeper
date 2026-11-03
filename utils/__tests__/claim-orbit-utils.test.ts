@@ -19,16 +19,29 @@ function expectInsideAndClear(
 }
 
 describe('getClaimOrbitLayout', () => {
-  it('starts at the bottom and goes clockwise', () => {
+  it('groups claims around the bottom, first on the left', () => {
     const layout = getClaimOrbitLayout({ ...TOKEN, count: 3 });
 
     expect(layout.positions).toHaveLength(3);
-    expect(layout.positions[0].x).toBeCloseTo(0);
-    expect(layout.positions[0].y).toBeGreaterThan(0);
-    // Second claim to the bottom left, third over the name on the left.
-    expect(layout.positions[1].x).toBeLessThan(0);
-    expect(layout.positions[1].y).toBeGreaterThan(0);
-    expect(layout.positions[2].y).toBeLessThan(0);
+    expect(layout.positions[1].x).toBeCloseTo(0);
+    expect(layout.positions[0].x).toBeCloseTo(-layout.positions[2].x);
+    expect(layout.positions[0].x).toBeLessThan(0);
+    for (const position of layout.positions) {
+      expect(position.y).toBeGreaterThan(0);
+    }
+    expectInsideAndClear(layout);
+  });
+
+  it('uses bigger tokens for fewer claims', () => {
+    expect(getClaimOrbitLayout({ ...TOKEN, count: 1 }).size).toBe(27);
+    expect(getClaimOrbitLayout({ ...TOKEN, count: 3 }).size).toBeLessThan(27);
+  });
+
+  it('puts the rest in a group at the top when the bottom is full', () => {
+    const layout = getClaimOrbitLayout({ ...TOKEN, count: 6 });
+
+    expect(layout.positions.filter((position) => position.y > 0)).toHaveLength(3);
+    expect(layout.positions.filter((position) => position.y < 0)).toHaveLength(3);
     expectInsideAndClear(layout);
   });
 
