@@ -56,7 +56,7 @@ const Colors = {
 export type OtherTokenPosition = { size?: number; x: number; y: number };
 
 type PlayerTokenProps = {
-  /** Claimed characters drawn as small tokens round the inside edge, e.g. when focused. */
+  /** Claimed characters drawn as small tokens along the inside edge. */
   claimRoles?: Role[];
   mapHeight: number;
   mapScale: number;
@@ -126,7 +126,10 @@ export function PlayerToken({
       ? roles.filter((role) => confirmedRoleIds.includes(role.id))
       : roles;
   const visibleRoles = showRoleDetails ? displayedRoles : displayedRoles.filter(isTravelerRole);
-  const backgroundRole = visibleRoles.find(isTravelerRole) ?? visibleRoles[0];
+  // Several claims show as claim tokens, so none of them is painted behind the name.
+  const hasMultipleClaims = (claimRoles?.length ?? 0) > 1;
+  const backgroundRole =
+    visibleRoles.find(isTravelerRole) ?? (hasMultipleClaims ? undefined : visibleRoles[0]);
   const roleIconSource = useRoleIconSource(backgroundRole);
   const reduceMotion = useReducedMotion();
   const hasDeadVote = !!player.death && (deadVoteAvailable ?? player.deadVoteUsed !== true);

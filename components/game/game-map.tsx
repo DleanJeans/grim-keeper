@@ -479,7 +479,6 @@ export function GameMap() {
               activeRoleDisplayModes={activeRoleDisplayModes}
               activeTokenSize={activeTokenSize}
               dimmed={dimmedPlayerIdSet.has(player.id)}
-              isFocused={player.id === focusedPlayerId}
               label={showRoles ? game.tokenLabels?.[player.id] : undefined}
               theoryEvil={theoryEvilIdSet.has(player.id)}
               disabled={disabledPlayerIdSet.has(player.id)}
@@ -525,7 +524,6 @@ function PlayerTokenForMap({
   dimmed,
   disabled,
   gameRoles,
-  isFocused,
   label,
   theoryEvil,
   conversations,
@@ -551,8 +549,6 @@ function PlayerTokenForMap({
   activeTokenSize: number;
   dimmed: boolean;
   disabled: boolean;
-  /** The focused player shows their claims inside the token. */
-  isFocused: boolean;
   label?: string;
   theoryEvil: boolean;
   gameRoles: Role[];
@@ -581,14 +577,16 @@ function PlayerTokenForMap({
     activePhase,
   );
   const deadVoteAvailable = hasDeadVoteAvailable(player, phaseDay, activePhase, conversations);
-  const claim =
-    isFocused && showRoles
-      ? getRoleAssignmentForDayOrPrevious(player.roleAssignments, activeDay, 'claim', activePhase)
-      : undefined;
+  const claim = showRoles
+    ? getRoleAssignmentForDayOrPrevious(player.roleAssignments, activeDay, 'claim', activePhase)
+    : undefined;
 
   return (
     <PlayerToken
-      claimRoles={claim ? getRolesByIds(claim.roleIds, gameRoles) : undefined}
+      // A single claim already shows as the token's background, so only several get claim tokens.
+      claimRoles={
+        claim && claim.roleIds.length > 1 ? getRolesByIds(claim.roleIds, gameRoles) : undefined
+      }
       confirmedRoleIds={roleDisplay.kind === 'confirm' ? roleDisplay.roleIds : undefined}
       dimmed={dimmed}
       disabled={disabled}
