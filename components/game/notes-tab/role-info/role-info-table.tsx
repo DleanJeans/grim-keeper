@@ -1,14 +1,14 @@
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
-import { ClaimedRoleSavedNotes } from '@/components/game/notes-tab/role-info/claimed-role-saved-notes';
 import { RoleInfoPickerDialog } from '@/components/game/notes-tab/role-info/role-info-picker-dialog';
 import {
   type RoleInfoLine,
   RoleInfoRow,
 } from '@/components/game/notes-tab/role-info/role-info-row';
 import { RoleInfoStatementsDialog } from '@/components/game/notes-tab/role-info/role-info-statements-dialog';
+import { RoleSavedNotes } from '@/components/game/notes-tab/role-info/role-saved-notes';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
@@ -229,6 +229,25 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
 
   if (!showRoles || (sections.length === 0 && claimedRoleNotes.length === 0)) return null;
 
+  const shownRoleIds = new Set(sections.flatMap((section) => section.roles.map((role) => role.id)));
+  const renderRoleNotes = (role: Role, showRole = false) => {
+    const notes = claimedRoleNotes.find((entry) => entry.role.id === role.id)?.notes;
+    return notes ? (
+      <RoleSavedNotes
+        gameId={game.id}
+        key={role.id}
+        notes={notes}
+        players={players}
+        role={role}
+        roles={scriptRoles}
+        scriptId={game.script?.id}
+        showRole={showRole}
+      />
+    ) : null;
+  };
+  // Claimed characters without a Character info row still get their notes, at the bottom.
+  const rowlessRoleNotes = claimedRoleNotes.filter(({ role }) => !shownRoleIds.has(role.id));
+
   const latestPhase = getLatestPhaseWithData(game);
   // Daily characters can be filled in for every day reached so far.
   const lastDay = Math.max(
@@ -297,6 +316,7 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
           evilCounts={evilCounts}
           activePhase={activePhase}
           focusedPlayer={player}
+          getRoleNotes={renderRoleNotes}
           hideFinishedClaimers={!player && !isSushiBuffet}
           inferredEntries={inferredEntries}
           key={section.label}
@@ -313,13 +333,11 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
           startingNight={startingNight}
         />
       ))}
-      <ClaimedRoleSavedNotes
-        gameId={game.id}
-        roleNotes={claimedRoleNotes}
-        players={players}
-        roles={scriptRoles}
-        scriptId={game.script?.id}
-      />
+      {rowlessRoleNotes.length > 0 ? (
+        <View style={styles.rowlessNotes}>
+          {rowlessRoleNotes.map(({ role }) => renderRoleNotes(role, true))}
+        </View>
+      ) : null}
       <RoleInfoPickerDialog
         day={activeSlot?.day ?? activeDay}
         key={
@@ -382,6 +400,10 @@ const styles = StyleSheet.create({
     color: colors.noteDayHeader,
     fontSize: 12,
     fontWeight: '800',
+  },
+  rowlessNotes: {
+    gap: 10,
+    paddingTop: 8,
   },
   section: {
     gap: 0,
@@ -473,6 +495,7 @@ function RoleInfoSection({
   evilCounts,
   activePhase,
   focusedPlayer,
+  getRoleNotes,
   hideFinishedClaimers,
   inferredEntries,
   label,
@@ -486,9 +509,11 @@ function RoleInfoSection({
   roles,
   rolesById,
   startingNight,
-}: Omit<RoleInfoClaimerRowProps, 'claimer' | 'claimers' | 'role'> & {
+}: Omit<RoleInfoClaimerRowProps, 'claimer' | 'claimers' | 'footer' | 'role'> & {
   /** Put this player's row of a double-claimed character first, above the other claimers'. */
   focusedPlayer?: Player;
+  /** The focused player's saved notes for a character they claim, shown under its row. */
+  getRoleNotes: (role: Role) => ReactNode;
   /**
    * Leave out the rows of a double claim's claimer who already used a once-per-game ability in
    * another phase or who died, as the whole character is left out for a single claim.
@@ -533,6 +558,7 @@ function RoleInfoSection({
             claimers={claimers}
             conversations={conversations}
             evilCounts={evilCounts}
+            footer={!claimer || claimer.id === focusedPlayer?.id ? getRoleNotes(role) : null}
             inferredEntries={inferredEntries}
             key={`${role.id}-${claimer?.id ?? ''}`}
             lastDay={lastDay}
@@ -561,6 +587,7 @@ type RoleInfoClaimerRowProps = {
   conversations: Conversation[];
   /** Demons and Minions in play, for characters that guess each of them. */
   evilCounts: { demons: number; minions: number };
+  footer?: ReactNode;
   inferredEntries: Set<RoleInfoEntry>;
   /** Give daily characters a line per day through this day. */
   lastDay: number;
@@ -588,6 +615,7 @@ function RoleInfoClaimerRow({
   claimers,
   conversations,
   evilCounts,
+  footer,
   inferredEntries,
   lastDay,
   lastNightDay,
@@ -690,6 +718,7 @@ function RoleInfoClaimerRow({
 
   return (
     <RoleInfoRow
+      footer={footer}
       lines={lines}
       owners={owners}
       playersById={playersById}

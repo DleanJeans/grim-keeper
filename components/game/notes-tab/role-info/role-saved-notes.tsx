@@ -9,72 +9,77 @@ import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Player, Role, SavedNote } from '@/types/game';
 
-type ClaimedRoleSavedNotesProps = {
+type RoleSavedNotesProps = {
   gameId: string;
+  /** Saved notes for the character not yet dismissed in this game. */
+  notes: SavedNote[];
   players: Player[];
-  /** The focused player's claimed characters with their saved notes not yet dismissed. */
-  roleNotes: { notes: SavedNote[]; role: Role }[];
+  role: Role;
   roles: Role[];
   scriptId?: string;
+  /** Name the character in the header, when the notes aren't under its Character info row. */
+  showRole?: boolean;
 };
 
-/** Saved notes for the characters the focused player claims, at the bottom of Character info. */
-export function ClaimedRoleSavedNotes({
+/** A claimed character's saved notes in Character info, each in its own card with an X. */
+export function RoleSavedNotes({
   gameId,
+  notes,
   players,
-  roleNotes,
+  role,
   roles,
   scriptId,
-}: ClaimedRoleSavedNotesProps) {
+  showRole = false,
+}: RoleSavedNotesProps) {
   const dismissGameNote = useGameStore((state) => state.dismissGameNote);
-
-  if (roleNotes.length === 0) return null;
 
   return (
     <View style={styles.container}>
-      {roleNotes.map(({ notes, role }) => (
-        <View key={role.id} style={styles.roleNotes}>
-          <Pressable
-            accessibilityHint="Opens notes for this role"
-            accessibilityRole="button"
-            onPress={() =>
-              router.push({
-                pathname: '/role-notes',
-                params: scriptId ? { roleId: role.id, scriptId } : { roleId: role.id },
-              })
-            }
-            style={({ pressed }) => [styles.header, pressed && styles.headerPressed]}
-          >
-            <RoleIcon role={role} size={20} />
-            <Text style={styles.title}>
-              {role.name} notes ({notes.length})
-            </Text>
-            <ChevronRight color={colors.textMuted} size={16} strokeWidth={2.5} />
-          </Pressable>
-          {notes.map((note) => (
-            <DismissableNote
-              key={note.id}
-              note={note}
-              onDismiss={() => dismissGameNote(gameId, note.id)}
-              players={players}
-              roles={roles}
-              scriptId={scriptId}
-            />
-          ))}
-        </View>
+      <Pressable
+        accessibilityHint="Opens notes for this role"
+        accessibilityRole="button"
+        onPress={() =>
+          router.push({
+            pathname: '/role-notes',
+            params: scriptId ? { roleId: role.id, scriptId } : { roleId: role.id },
+          })
+        }
+        style={({ pressed }) => [styles.header, pressed && styles.headerPressed]}
+      >
+        {showRole ? <RoleIcon role={role} size={20} /> : null}
+        <Text style={styles.title}>
+          {showRole ? `${role.name} notes` : 'Notes'} ({notes.length})
+        </Text>
+        <ChevronRight color={colors.textMuted} size={16} strokeWidth={2.5} />
+      </Pressable>
+      {notes.map((note) => (
+        <NoteCard
+          key={note.id}
+          note={note}
+          onDismiss={() => dismissGameNote(gameId, note.id)}
+          players={players}
+          roles={roles}
+          scriptId={scriptId}
+        />
       ))}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    borderTopColor: colors.border,
-    borderTopWidth: 1,
-    gap: 10,
-    marginTop: 4,
-    paddingTop: 8,
+  card: {
+    alignItems: 'flex-start',
+    backgroundColor: colors.inputBackground,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 4,
+    paddingLeft: 10,
+    paddingRight: 4,
+    paddingVertical: 6,
   },
+  container: { gap: 6 },
   dismissButton: {
     alignItems: 'center',
     borderRadius: 6,
@@ -83,16 +88,14 @@ const styles = StyleSheet.create({
     width: 28,
   },
   dismissButtonPressed: { backgroundColor: colors.surfacePressed },
-  header: { alignItems: 'center', flexDirection: 'row', gap: 8, minHeight: 32 },
+  header: { alignItems: 'center', flexDirection: 'row', gap: 8, minHeight: 28 },
   headerPressed: { opacity: 0.65 },
-  note: { flex: 1 },
-  noteRow: { alignItems: 'flex-start', flexDirection: 'row', gap: 4 },
+  note: { flex: 1, paddingTop: 2 },
   noteText: { color: colors.textMuted, fontSize: 14, lineHeight: 20 },
-  roleNotes: { gap: 6 },
   title: { color: colors.text, flex: 1, fontSize: 13, fontWeight: '800' },
 });
 
-function DismissableNote({
+function NoteCard({
   note,
   onDismiss,
   players,
@@ -106,7 +109,7 @@ function DismissableNote({
   scriptId?: string;
 }) {
   return (
-    <View style={styles.noteRow}>
+    <View style={styles.card}>
       <View style={styles.note}>
         <RoleReferenceNoteLine
           players={players}

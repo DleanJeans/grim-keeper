@@ -1,4 +1,5 @@
 import { MapPin, Plus } from 'lucide-react-native';
+import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { RoleInfoToken } from '@/components/game/notes-tab/role-info/role-info-token';
@@ -39,6 +40,8 @@ export type RoleInfoLine = {
 };
 
 export type RoleInfoRowProps = {
+  /** Shown under the row, above its separator, such as the character's saved notes. */
+  footer?: ReactNode;
   lines: RoleInfoLine[];
   owners: Player[];
   playersById: Map<string, Player>;
@@ -49,6 +52,7 @@ export type RoleInfoRowProps = {
 
 /** One character's row in the info table: role cell, then a line of tokens per phase shown. */
 export function RoleInfoRow({
+  footer,
   lines,
   owners,
   playersById,
@@ -57,32 +61,35 @@ export function RoleInfoRow({
   template,
 }: RoleInfoRowProps) {
   return (
-    <View style={styles.row}>
-      <RoleReference
-        containerStyle={styles.roleCell}
-        contentStyle={styles.roleText}
-        iconScale={1}
-        iconSize={30}
-        role={role}
-        textStyle={styles.roleName}
-      >
-        {owners.length > 0 ? (
-          <Text numberOfLines={2} style={styles.owners}>
-            {owners.map((owner) => owner.name).join(', ')}
-          </Text>
-        ) : null}
-      </RoleReference>
-      <View style={styles.infoCell}>
-        {lines.map((line) => (
-          <RoleInfoLineTokens
-            key={line.key}
-            line={line}
-            playersById={playersById}
-            rolesById={rolesById}
-            template={template}
-          />
-        ))}
+    <View style={styles.item}>
+      <View style={styles.row}>
+        <RoleReference
+          containerStyle={styles.roleCell}
+          contentStyle={styles.roleText}
+          iconScale={1}
+          iconSize={30}
+          role={role}
+          textStyle={styles.roleName}
+        >
+          {owners.length > 0 ? (
+            <Text numberOfLines={2} style={styles.owners}>
+              {owners.map((owner) => owner.name).join(', ')}
+            </Text>
+          ) : null}
+        </RoleReference>
+        <View style={styles.infoCell}>
+          {lines.map((line) => (
+            <RoleInfoLineTokens
+              key={line.key}
+              line={line}
+              playersById={playersById}
+              rolesById={rolesById}
+              template={template}
+            />
+          ))}
+        </View>
       </View>
+      {footer}
     </View>
   );
 }
@@ -194,13 +201,16 @@ const styles = StyleSheet.create({
     gap: 1,
     minWidth: 0,
   },
-  row: {
-    alignItems: 'flex-start',
+  item: {
     borderBottomColor: colors.border,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
     gap: 8,
     paddingVertical: 8,
+  },
+  row: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: 8,
   },
   statementFalse: {
     color: colors.danger,
