@@ -80,6 +80,10 @@ export default function FriendsRoute() {
         )
       : sortedFriends.friends;
   }, [sortedFriends, searchText]);
+  const rankById = useMemo(
+    () => new Map(sortedFriends.friends.map((friend, index) => [friend.id, index + 1])),
+    [sortedFriends],
+  );
   const newFriendName = normalizePlayerName(searchText);
   const canAddFriend = newFriendName.length > 0 && !hasFriendName(friends, newFriendName);
   const hiddenLabel = `${sortedFriends.hiddenCount} ${
@@ -144,6 +148,7 @@ export default function FriendsRoute() {
                   friend={friend}
                   isYou={friend.id === APP_USER_ID}
                   key={friend.id}
+                  rank={rankById.get(friend.id)}
                   team={team}
                 />
               ))

@@ -13,6 +13,8 @@ type FriendRowProps = {
   friend: FriendSummary;
   /** Marks the app user's own row, which shows where you stand and opens nothing. */
   isYou?: boolean;
+  /** Position in the current sort, starting at 1. */
+  rank?: number;
   team?: TeamFilter;
 };
 
@@ -22,7 +24,7 @@ const TEAM_SUFFIX: Record<TeamFilter, string> = {
   same: ' with you',
 };
 
-export function FriendRow({ friend, isYou = false, team = 'all' }: FriendRowProps) {
+export function FriendRow({ friend, isYou = false, rank, team = 'all' }: FriendRowProps) {
   const games = useGameStore((state) => state.games);
   const savedNotes = useGameStore((state) => state.savedNotes);
   const gamesLabel = `${friend.gamesPlayed} ${friend.gamesPlayed === 1 ? 'game' : 'games'}${TEAM_SUFFIX[team]}`;
@@ -35,7 +37,7 @@ export function FriendRow({ friend, isYou = false, team = 'all' }: FriendRowProp
   return (
     <Pressable
       accessibilityHint={isYou ? undefined : "Opens this friend's details"}
-      accessibilityLabel={`${isYou ? 'You, ' : ''}${friend.name}, ${metadata}, ${stats}`}
+      accessibilityLabel={`${rank ? `Number ${rank}, ` : ''}${isYou ? 'You, ' : ''}${friend.name}, ${metadata}, ${stats}`}
       accessibilityRole={isYou ? 'summary' : 'button'}
       disabled={isYou}
       onPress={() => router.push({ pathname: '/friends/[id]', params: { id: friend.id } })}
@@ -43,6 +45,7 @@ export function FriendRow({ friend, isYou = false, team = 'all' }: FriendRowProp
     >
       <View style={styles.content}>
         <View style={styles.nameRow}>
+          {rank ? <Text style={styles.rank}>{`#${rank}`}</Text> : null}
           <Text selectable style={styles.name}>
             {friend.name}
           </Text>
@@ -110,6 +113,13 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 17,
     fontWeight: '800',
+  },
+  rank: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontVariant: ['tabular-nums'],
+    fontWeight: '800',
+    minWidth: 28,
   },
   youBadge: {
     backgroundColor: colors.primary,
