@@ -1,6 +1,6 @@
 import type { Friend, FriendSummary, Game, SavedNote } from '@/types/game';
 import { hasDuplicatePlayerName, normalizePlayerName } from '@/utils/conversation-utils';
-import { getGameStats } from '@/utils/game-utils';
+import { getFriendStats, type TeamFilter } from '@/utils/game-utils';
 import { APP_USER_ID, createFriendId } from '@/utils/object-id';
 import { getNotesForPlayer } from '@/utils/saved-note-store';
 
@@ -95,6 +95,25 @@ export function sortFriendSummaries(friends: FriendSummary[], savedNotes: SavedN
   });
 }
 
+/**
+ * The friends with their games-played count limited to the games that match the team filter.
+ * With a team filter, friends with no such game are dropped.
+ */
+export function applyTeamFilter(
+  friends: FriendSummary[],
+  games: Game[],
+  team: TeamFilter,
+): FriendSummary[] {
+  if (team === 'all') {
+    return friends;
+  }
+
+  return friends.flatMap((friend) => {
+    const gamesPlayed = getFriendStats(games, friend.id, team).totalGames;
+    return gamesPlayed > 0 ? [{ ...friend, gamesPlayed }] : [];
+  });
+}
+
 export type FriendSort = 'games' | 'winRate' | 'goodWinRate' | 'evilWinRate';
 
 export type FriendWinRateSort = Exclude<FriendSort, 'games'>;
@@ -112,10 +131,11 @@ export function rankFriendsByWinRate(
   games: Game[],
   sort: FriendWinRateSort,
   minGames: number,
+  team: TeamFilter = 'all',
 ) {
   const eligible = friends.filter((friend) => friend.gamesPlayed >= Math.max(1, minGames));
   const ranked = eligible
-    .map((friend) => ({ friend, ...getFriendWinRecord(games, friend.id, sort) }))
+    .map((friend) => ({ friend, ...getFriendWinRecord(games, friend.id, sort, team) }))
     .filter(({ played }) => played > 0)
     .sort(
       (first, second) =>
@@ -130,8 +150,13 @@ export function rankFriendsByWinRate(
   };
 }
 
-function getFriendWinRecord(games: Game[], friendId: string, sort: FriendWinRateSort) {
-  const stats = getGameStats(games, friendId);
+function getFriendWinRecord(
+  games: Game[],
+  friendId: string,
+  sort: FriendWinRateSort,
+  team: TeamFilter,
+) {
+  const stats = getFriendStats(games, friendId, team);
 
   if (sort === 'goodWinRate') {
     return { played: stats.goodCompletedGames, wins: stats.goodWins };

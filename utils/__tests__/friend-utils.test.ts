@@ -1,6 +1,7 @@
 import type { Friend, FriendSummary, Game, SavedNote } from '@/types/game';
 import {
   addMissingFriends,
+  applyTeamFilter,
   getFriendSummaries,
   getSelectedFriendIds,
   getUnsavedPlayerFriends,
@@ -282,5 +283,34 @@ describe('rankFriendsByWinRate', () => {
 
   it('treats the minimum as at least 1', () => {
     expect(rankFriendsByWinRate(friends, games, 'winRate', 0).hiddenCount).toBe(0);
+  });
+
+  it('limits games played to same-team or opposite-team games and drops friends with none', () => {
+    expect(applyTeamFilter(friends, games, 'all')).toBe(friends);
+    expect(
+      applyTeamFilter(friends, games, 'same').map(({ id, gamesPlayed }) => [id, gamesPlayed]),
+    ).toEqual([
+      ['ann', 2],
+      ['bob', 3],
+    ]);
+    expect(
+      applyTeamFilter(friends, games, 'opposite').map(({ id, gamesPlayed }) => [id, gamesPlayed]),
+    ).toEqual([
+      ['ann', 1],
+      ['bob', 1],
+    ]);
+  });
+
+  it('ranks win rates over only the games that match the team filter', () => {
+    // Ann beat the app user in her one game on the other team; Bob lost his.
+    const opposite = applyTeamFilter(friends, games, 'opposite');
+    expect(
+      rankFriendsByWinRate(opposite, games, 'winRate', 1, 'opposite').friends.map(({ id }) => id),
+    ).toEqual(['ann', 'bob']);
+    // Same team: Ann is 1-1 and Bob is 2-0 in games with a result.
+    const same = applyTeamFilter(friends, games, 'same');
+    expect(
+      rankFriendsByWinRate(same, games, 'winRate', 2, 'same').friends.map(({ id }) => id),
+    ).toEqual(['bob', 'ann']);
   });
 });

@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { FriendSort } from '@/utils/friend-utils';
+import type { TeamFilter } from '@/utils/game-utils';
 
 const SORT_OPTIONS: Array<{ description: string; label: string; sort: FriendSort }> = [
   { description: 'games played', label: 'Games', sort: 'games' },
@@ -12,18 +13,34 @@ const SORT_OPTIONS: Array<{ description: string; label: string; sort: FriendSort
   { description: 'evil win rate', label: 'Evil', sort: 'evilWinRate' },
 ];
 
+const TEAM_OPTIONS: Array<{ description: string; label: string; team: TeamFilter }> = [
+  { description: 'all games', label: 'All games', team: 'all' },
+  { description: 'games on the same team as you', label: 'Same team', team: 'same' },
+  { description: 'games on the opposite team', label: 'Opposite', team: 'opposite' },
+];
+
+const TEAM_HINTS: Record<TeamFilter, string | null> = {
+  all: null,
+  opposite: 'Only games where you and the friend were on opposite sides.',
+  same: 'Only games where you and the friend were both good or both evil.',
+};
+
 type FriendSortControlsProps = {
   minGames: number;
   onChangeMinGames: (minGames: number) => void;
   onChangeSort: (sort: FriendSort) => void;
+  onChangeTeam: (team: TeamFilter) => void;
   sort: FriendSort;
+  team: TeamFilter;
 };
 
 export function FriendSortControls({
   minGames,
   onChangeMinGames,
   onChangeSort,
+  onChangeTeam,
   sort,
+  team,
 }: FriendSortControlsProps) {
   const changeMinGames = (value: number) => onChangeMinGames(Math.max(1, value));
 
@@ -32,7 +49,7 @@ export function FriendSortControls({
       <View accessibilityLabel="Sort friends" accessibilityRole="toolbar" style={styles.sortRow}>
         {SORT_OPTIONS.map((option) => (
           <SortButton
-            description={option.description}
+            accessibilityLabel={`Sort by ${option.description}`}
             key={option.sort}
             label={option.label}
             onPress={() => onChangeSort(option.sort)}
@@ -40,6 +57,23 @@ export function FriendSortControls({
           />
         ))}
       </View>
+
+      <View accessibilityLabel="Filter by team" accessibilityRole="toolbar" style={styles.sortRow}>
+        {TEAM_OPTIONS.map((option) => (
+          <SortButton
+            accessibilityLabel={`Show ${option.description}`}
+            key={option.team}
+            label={option.label}
+            onPress={() => onChangeTeam(option.team)}
+            selected={team === option.team}
+          />
+        ))}
+      </View>
+      {TEAM_HINTS[team] ? (
+        <Text selectable style={styles.teamHint}>
+          {TEAM_HINTS[team]}
+        </Text>
+      ) : null}
 
       {sort === 'games' ? null : (
         <View style={styles.minGamesRow}>
@@ -154,6 +188,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 36,
   },
+  teamHint: {
+    color: colors.textMuted,
+    fontSize: 13,
+  },
   stepButtonDisabled: {
     opacity: 0.4,
   },
@@ -163,19 +201,19 @@ const styles = StyleSheet.create({
 });
 
 function SortButton({
-  description,
+  accessibilityLabel,
   label,
   onPress,
   selected,
 }: {
-  description: string;
+  accessibilityLabel: string;
   label: string;
   onPress: () => void;
   selected: boolean;
 }) {
   return (
     <Pressable
-      accessibilityLabel={`Sort by ${description}`}
+      accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}

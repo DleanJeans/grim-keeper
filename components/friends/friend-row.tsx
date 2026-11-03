@@ -2,25 +2,32 @@ import { router } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { FriendWinBars } from '@/components/friends/friend-win-bars';
 import { Text } from '@/components/text';
 import { getNotesForPlayer, useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { FriendSummary } from '@/types/game';
-import type { GameStats } from '@/utils/game-utils';
-import { getGameStats } from '@/utils/game-utils';
+import { type GameStats, getFriendStats, type TeamFilter } from '@/utils/game-utils';
 
 type FriendRowProps = {
   friend: FriendSummary;
+  team?: TeamFilter;
 };
 
-export function FriendRow({ friend }: FriendRowProps) {
+const TEAM_SUFFIX: Record<TeamFilter, string> = {
+  all: '',
+  opposite: ' against you',
+  same: ' with you',
+};
+
+export function FriendRow({ friend, team = 'all' }: FriendRowProps) {
   const games = useGameStore((state) => state.games);
   const savedNotes = useGameStore((state) => state.savedNotes);
-  const gamesLabel = `${friend.gamesPlayed} ${friend.gamesPlayed === 1 ? 'game' : 'games'}`;
+  const gamesLabel = `${friend.gamesPlayed} ${friend.gamesPlayed === 1 ? 'game' : 'games'}${TEAM_SUFFIX[team]}`;
   const notesCount = getNotesForPlayer(savedNotes, friend.name).length;
   const notesLabel = notesCount > 0 ? `${notesCount} ${notesCount === 1 ? 'note' : 'notes'}` : null;
   const metadata = notesLabel ? `${gamesLabel} · ${notesLabel}` : gamesLabel;
-  const gameStats = getGameStats(games, friend.id);
+  const gameStats = getFriendStats(games, friend.id, team);
   const stats = formatFriendStats(gameStats);
 
   return (
@@ -41,9 +48,7 @@ export function FriendRow({ friend }: FriendRowProps) {
           </Text>
           <ChevronRight color={colors.textMuted} size={18} strokeWidth={2.5} />
         </View>
-        <Text numberOfLines={1} selectable style={styles.stats}>
-          {stats}
-        </Text>
+        <FriendWinBars stats={gameStats} />
       </View>
     </Pressable>
   );
@@ -98,10 +103,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 12,
-  },
-  stats: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontVariant: ['tabular-nums'],
   },
 });

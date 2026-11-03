@@ -156,6 +156,30 @@ export function getGameStats(games: Game[], playerId = APP_USER_ID): GameStats {
   };
 }
 
+export type TeamFilter = 'all' | 'same' | 'opposite';
+
+/**
+ * Games where the app user and the friend were on the same side (both good or both evil) or on
+ * opposite sides. Games where either alignment is unknown, such as ones the friend storytold, are
+ * left out of both. 'all' keeps every game.
+ */
+export function filterGamesByTeam(games: Game[], friendId: string, team: TeamFilter): Game[] {
+  if (team === 'all') {
+    return games;
+  }
+
+  return games.filter((game) => {
+    const mine = getGameAlignment(game, APP_USER_ID);
+    const theirs = getGameAlignment(game, friendId);
+    return !!mine && !!theirs && (mine === theirs) === (team === 'same');
+  });
+}
+
+/** A friend's stats over the games that match the team filter. */
+export function getFriendStats(games: Game[], friendId: string, team: TeamFilter = 'all') {
+  return getGameStats(filterGamesByTeam(games, friendId, team), friendId);
+}
+
 export function getCharacterStats(games: Game[], playerId = APP_USER_ID): CharacterStats[] {
   const characterCounts = new Map<
     string,

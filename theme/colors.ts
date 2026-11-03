@@ -57,6 +57,12 @@ const baseColors = {
   suspicionSuspect: '#f87171',
   /** Ring around players who are evil in the selected theory. */
   theoryEvil: '#ef4444',
+  // Win rate bars on the Friends screen
+  winBarGood: '#52b88a',
+  winBarEvil: '#e0645d',
+  winBarOverall: '#f4f1ea',
+  winBarTrack: '#2a2f37',
+  winBarTick: '#a8a29a',
   // Alive, dead and Traveller counts above the map
   statusAlive: '#86efac',
   statusDead: '#fca5a5',

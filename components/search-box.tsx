@@ -8,10 +8,11 @@ type SearchBoxProps = {
   /** Placeholder and accessibility label, such as "Search friends". */
   label: string;
   onChangeText: (value: string) => void;
+  onSubmit?: () => void;
   value: string;
 };
 
-export function SearchBox({ label, onChangeText, value }: SearchBoxProps) {
+export function SearchBox({ label, onChangeText, onSubmit, value }: SearchBoxProps) {
   return (
     <View style={styles.searchBox}>
       <Search color={colors.textMuted} size={18} strokeWidth={2.4} />
@@ -20,6 +21,7 @@ export function SearchBox({ label, onChangeText, value }: SearchBoxProps) {
         autoCapitalize="none"
         autoCorrect={false}
         onChangeText={onChangeText}
+        onSubmitEditing={onSubmit}
         placeholder={label}
         placeholderTextColor={colors.textSubtle}
         returnKeyType="search"
