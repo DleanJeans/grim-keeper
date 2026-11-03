@@ -11,6 +11,7 @@ import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
+import type { FriendSummary } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
 import {
   applyTeamFilter,
@@ -22,6 +23,7 @@ import {
   sortFriendSummaries,
 } from '@/utils/friend-utils';
 import type { TeamFilter } from '@/utils/game-utils';
+import { APP_USER_ID } from '@/utils/object-id';
 
 type FriendListEmptyStateProps = {
   message: string;
@@ -48,10 +50,28 @@ export default function FriendsRoute() {
   );
   const sortedFriends = useMemo(() => {
     const teamFriends = applyTeamFilter(friends, games, team);
-    return sort === 'games'
-      ? { friends: sortFriendSummaries(teamFriends, savedNotes), hiddenCount: 0 }
-      : rankFriendsByWinRate(teamFriends, games, sort, minGames, team);
-  }, [friends, games, minGames, savedNotes, sort, team]);
+    // Your own row joins the ranking, so you can see where you stand. Team filters compare a
+    // friend with you, so they leave your row out.
+    const you: FriendSummary | null =
+      team === 'all' && friends.length > 0 && games.length > 0
+        ? {
+            createdAt: '',
+            gamesPlayed: games.length,
+            gamesStorytold: 0,
+            id: APP_USER_ID,
+            name: normalizePlayerName(appUserName) || 'You',
+          }
+        : null;
+    const ranked = you ? [...teamFriends, you] : teamFriends;
+
+    if (sort === 'games') {
+      return { friends: sortFriendSummaries(ranked, savedNotes), hiddenCount: 0 };
+    }
+
+    const result = rankFriendsByWinRate(ranked, games, sort, minGames, team);
+    const youHidden = !!you && you.gamesPlayed < Math.max(1, minGames);
+    return { ...result, hiddenCount: result.hiddenCount - (youHidden ? 1 : 0) };
+  }, [appUserName, friends, games, minGames, savedNotes, sort, team]);
   const visibleFriends = useMemo(() => {
     const normalizedSearchText = searchText.trim().toLocaleLowerCase();
     return normalizedSearchText
@@ -120,7 +140,12 @@ export default function FriendsRoute() {
               )
             ) : (
               visibleFriends.map((friend) => (
-                <FriendRow friend={friend} key={friend.id} team={team} />
+                <FriendRow
+                  friend={friend}
+                  isYou={friend.id === APP_USER_ID}
+                  key={friend.id}
+                  team={team}
+                />
               ))
             )}
             {sortedFriends.hiddenCount > 0 && sortedFriends.friends.length > 0 ? (
