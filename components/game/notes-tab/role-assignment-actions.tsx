@@ -1,6 +1,6 @@
-import { CircleHelp, Megaphone, ShieldCheck, Skull, Tag } from 'lucide-react-native';
+import { CircleHelp, Megaphone, ShieldCheck, Skull, Tag, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { ClaimSlots } from '@/components/game/notes-tab/claim-slots';
@@ -170,59 +170,62 @@ export function RoleAssignmentActions() {
     : null;
   return (
     <View style={styles.container}>
-      <View style={innerActionRow}>
-        {roleAssignmentKind ? (
+      {roleAssignmentKind ? null : (
+        <View style={innerActionRow}>
           <RoleAssignmentButton
-            label={`Cancel ${getRoleAssignmentLabel(roleAssignmentKind)}`}
-            onPress={handleCancelRoleAssignment}
+            icon={Tag}
+            label="Claim"
+            onPress={() => handleStartRoleAssignment('claim')}
             selected={false}
           />
-        ) : (
-          <>
-            <RoleAssignmentButton
-              icon={Tag}
-              label="Claim"
-              onPress={() => handleStartRoleAssignment('claim')}
-              selected={false}
-            />
-            <RoleAssignmentButton
-              icon={ShieldCheck}
-              label="Confirm"
-              onPress={() => handleStartRoleAssignment('confirm')}
-              selected={false}
-            />
-            <RoleAssignmentButton
-              icon={Megaphone}
-              label="Rumor"
-              onPress={() => handleStartRoleAssignment('rumor')}
-              selected={false}
-            />
-            <RoleAssignmentButton
-              icon={CircleHelp}
-              label="Guess"
-              onPress={() => handleStartRoleAssignment('guess')}
-              selected={false}
-            />
-          </>
-        )}
-      </View>
+          <RoleAssignmentButton
+            icon={ShieldCheck}
+            label="Confirm"
+            onPress={() => handleStartRoleAssignment('confirm')}
+            selected={false}
+          />
+          <RoleAssignmentButton
+            icon={Megaphone}
+            label="Rumor"
+            onPress={() => handleStartRoleAssignment('rumor')}
+            selected={false}
+          />
+          <RoleAssignmentButton
+            icon={CircleHelp}
+            label="Guess"
+            onPress={() => handleStartRoleAssignment('guess')}
+            selected={false}
+          />
+        </View>
+      )}
       {roleAssignmentKind ? (
         <View style={styles.panel}>
-          {roleAssignmentKind === 'rumor' ? (
-            <RumorHeader source={rumorSource} subject={rumorSubject} />
-          ) : (
-            <View style={styles.header}>
-              <View style={styles.titleRow}>
-                <Text selectable style={styles.title}>
-                  {getRoleAssignmentLabel(roleAssignmentKind)} roles for
+          <View style={styles.headerRow}>
+            {roleAssignmentKind === 'rumor' ? (
+              <RumorHeader source={rumorSource} subject={rumorSubject} />
+            ) : (
+              <View style={styles.header}>
+                <View style={styles.titleRow}>
+                  <Text selectable style={styles.title}>
+                    {getRoleAssignmentLabel(roleAssignmentKind)} roles for
+                  </Text>
+                  <PlayerNameWithRole player={focusedPlayer} textStyle={styles.title} />
+                </View>
+                <Text selectable style={styles.phase}>
+                  {getPhaseLabel({ activeDay, activePhase }, startingNight)}
                 </Text>
-                <PlayerNameWithRole player={focusedPlayer} textStyle={styles.title} />
               </View>
-              <Text selectable style={styles.phase}>
-                {getPhaseLabel({ activeDay, activePhase }, startingNight)}
-              </Text>
-            </View>
-          )}
+            )}
+            <Pressable
+              accessibilityLabel={`Cancel ${getRoleAssignmentLabel(roleAssignmentKind)}`}
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={handleCancelRoleAssignment}
+              style={({ pressed }) => [styles.closeButton, pressed && styles.closeButtonPressed]}
+            >
+              <X color={colors.textMuted} size={20} strokeWidth={2.5} />
+            </Pressable>
+          </View>
           {isSushiBuffetScript(game.script) ? (
             <SushiBuffetRoleAssignmentDialog />
           ) : (
@@ -321,8 +324,26 @@ const styles = StyleSheet.create({
   container: {
     gap: 10,
   },
+  closeButton: {
+    alignItems: 'center',
+    borderRadius: 8,
+    height: 36,
+    justifyContent: 'center',
+    marginRight: -6,
+    marginTop: -6,
+    width: 36,
+  },
+  closeButtonPressed: {
+    backgroundColor: colors.surfacePressed,
+  },
   header: {
+    flex: 1,
     gap: 3,
+  },
+  headerRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: 8,
   },
   panel: {
     backgroundColor: colors.surface,
@@ -337,6 +358,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   rumorHeader: {
+    flex: 1,
     gap: 8,
   },
   rumorHint: {
