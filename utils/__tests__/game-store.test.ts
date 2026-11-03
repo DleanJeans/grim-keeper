@@ -239,6 +239,31 @@ describe('setPlayerTokenLabel', () => {
   });
 });
 
+describe('dismissGameNote', () => {
+  afterEach(() => {
+    useGameStore.setState({ games: [] });
+  });
+
+  it('remembers a dismissed note once per game', () => {
+    useGameStore.setState({
+      games: [
+        {
+          activeDay: 1,
+          conversations: [],
+          createdAt: '2026-07-07T00:00:00.000Z',
+          id: 'game-1',
+          players: [],
+          updatedAt: '2026-07-07T00:00:00.000Z',
+        },
+      ],
+    });
+
+    useGameStore.getState().dismissGameNote('game-1', 'note-1');
+    useGameStore.getState().dismissGameNote('game-1', 'note-1');
+    expect(useGameStore.getState().games[0].dismissedNoteIds).toEqual(['note-1']);
+  });
+});
+
 describe('theories', () => {
   afterEach(() => {
     useGameStore.setState({ games: [] });

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { ClaimedRoleSavedNotes } from '@/components/game/notes-tab/role-info/claimed-role-saved-notes';
 import { RoleInfoPickerDialog } from '@/components/game/notes-tab/role-info/role-info-picker-dialog';
 import {
   type RoleInfoLine,
@@ -51,6 +52,8 @@ import {
   type RoleInfoClaimer,
   type RoleInfoSlot,
 } from '@/utils/role-info-utils';
+import { getRoleAssignmentForDayOrPrevious, getRolesByIds } from '@/utils/role-utils';
+import { getSavedNotesForRole } from '@/utils/saved-note-utils';
 import { getGameScriptRoles, isSushiBuffetScript } from '@/utils/script-service';
 
 const TEAM_SECTIONS = [
@@ -90,6 +93,7 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
   } = useGameRouteContext();
   const setRoleInfoValue = useGameStore((state) => state.setRoleInfoValue);
   const setDailyRoleInfoValues = useGameStore((state) => state.setDailyRoleInfoValues);
+  const savedNotes = useGameStore((state) => state.savedNotes);
   const [activeSlot, setActiveSlot] = useState<ActiveSlot | null>(null);
 
   const scriptRoles = useMemo(
@@ -198,7 +202,32 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
     [scriptRoles],
   );
 
-  if (!showRoles || sections.length === 0) return null;
+  const claimedRoles = useMemo(
+    () =>
+      player
+        ? getRolesByIds(
+            getRoleAssignmentForDayOrPrevious(
+              player.roleAssignments,
+              activeDay,
+              'claim',
+              activePhase,
+            )?.roleIds ?? [],
+            scriptRoles,
+          )
+        : [],
+    [activeDay, activePhase, player, scriptRoles],
+  );
+  const dismissedNoteIds = new Set(game.dismissedNoteIds ?? []);
+  const claimedRoleNotes = claimedRoles
+    .map((role) => ({
+      notes: getSavedNotesForRole(savedNotes, role.id).filter(
+        (note) => !dismissedNoteIds.has(note.id),
+      ),
+      role,
+    }))
+    .filter(({ notes }) => notes.length > 0);
+
+  if (!showRoles || (sections.length === 0 && claimedRoleNotes.length === 0)) return null;
 
   const latestPhase = getLatestPhaseWithData(game);
   // Daily characters can be filled in for every day reached so far.
@@ -284,6 +313,13 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
           startingNight={startingNight}
         />
       ))}
+      <ClaimedRoleSavedNotes
+        gameId={game.id}
+        roleNotes={claimedRoleNotes}
+        players={players}
+        roles={scriptRoles}
+        scriptId={game.script?.id}
+      />
       <RoleInfoPickerDialog
         day={activeSlot?.day ?? activeDay}
         key={

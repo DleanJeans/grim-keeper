@@ -173,6 +173,8 @@ export type Game = {
   suspicions?: Record<string, string>;
   /** Player id → short word shown under their map token, such as "drunk?". */
   tokenLabels?: Record<string, string>;
+  /** Saved notes dismissed from this game's Character info. */
+  dismissedNoteIds?: string[];
   /** "Worlds" the app user is weighing: who is evil in each. */
   theories?: GameTheory[];
   /** Theory shown on the map; unset shows none. */

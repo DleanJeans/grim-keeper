@@ -260,6 +260,7 @@ function isGame(value: unknown): value is SerializedGame {
     isOptionalStringRecord(value.bluffs) &&
     isOptionalStringRecord(value.suspicions) &&
     isOptionalStringRecord(value.tokenLabels) &&
+    isOptionalStringArray(value.dismissedNoteIds) &&
     isOptionalTheories(value.theories) &&
     isOptionalString(value.activeTheoryId) &&
     (value.script === undefined || isSerializedStoredScript(value.script))

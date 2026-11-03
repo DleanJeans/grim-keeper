@@ -221,6 +221,7 @@ type GameState = GameData & {
   ) => void;
   /** Sets the short word under a player's map token; an empty label removes it. */
   setPlayerTokenLabel: (gameId: string, playerId: string, label: string) => void;
+  dismissGameNote: (gameId: string, noteId: string) => void;
   /** Adds an empty theory, makes it the active one and returns its id. */
   addTheory: (gameId: string) => string;
   deleteTheory: (gameId: string, theoryId: string) => void;
@@ -1414,6 +1415,19 @@ export const useGameStore = create<GameState>()(
               updatedAt: new Date().toISOString(),
             };
           }),
+        }));
+      },
+      dismissGameNote: (gameId, noteId) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id !== gameId || game.dismissedNoteIds?.includes(noteId)
+              ? game
+              : {
+                  ...game,
+                  dismissedNoteIds: [...(game.dismissedNoteIds ?? []), noteId],
+                  updatedAt: new Date().toISOString(),
+                },
+          ),
         }));
       },
       addTheory: (gameId) => {
