@@ -2,19 +2,18 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { RoleIcon } from '@/components/role-icon';
 import { RoleReference } from '@/components/role-reference';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { Game, GameResult, Player, Role, StoredScript } from '@/types/game';
+import type { Game, GameResult, Role, StoredScript } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
+import { type FriendGameRoles, getFriendGameRoles } from '@/utils/friend-game-roles-utils';
 import { getGameResultForPlayer } from '@/utils/game-utils';
 import { APP_USER_ID } from '@/utils/object-id';
-import {
-  getRoleAssignmentForDay,
-  getRoleAssignmentForDayOrPrevious,
-  getRolesByIds,
-  isTravelerRole,
-} from '@/utils/role-utils';
+
+const TOKEN_SIZE = 44;
+const TOKEN_ICON_SIZE = 34;
 
 type FriendGamesListProps = {
   games: Game[];
@@ -26,8 +25,9 @@ type FriendGamesListProps = {
 type GameEntry = {
   game: Game;
   playerId: string;
-  claimedRoleIds: string[];
-  playedRoleIds: string[];
+  characters: Role[][];
+  claims: Role[];
+  claimLabel: FriendGameRoles['claimLabel'];
   storyteller: boolean;
 };
 
@@ -55,18 +55,19 @@ export function FriendGamesList({ games, friendName, roleCatalog, scripts }: Fri
 }
 
 function FriendGameRow({ entry }: { entry: GameEntry }) {
-  const { game, playerId, claimedRoleIds, playedRoleIds, storyteller } = entry;
+  const { game, playerId, characters, claims, claimLabel, storyteller } = entry;
   const scriptName = game.script?.name ?? 'Untitled game';
   const formattedDate = formatGameDate(game.createdAt);
   const result = getGameResultForPlayer(game, playerId);
-  const roles = game.script?.roles ?? [];
-  const claimedRoles = getRolesByIds(claimedRoleIds, roles);
-  const playedRoles = getRolesByIds(playedRoleIds, roles);
+  const finalRole = characters[characters.length - 1]?.[0];
+  const characterText = characters.map((stage) => stage.map((role) => role.name).join(' / '));
 
   return (
     <Pressable
       accessibilityHint="Opens this game with this player focused"
-      accessibilityLabel={`${scriptName}, ${formattedDate}${storyteller ? ', Storyteller' : ''}`}
+      accessibilityLabel={`${scriptName}, ${formattedDate}, ${
+        storyteller ? 'Storyteller' : characterText.join(' then ') || 'no character noted'
+      }`}
       accessibilityRole="button"
       onPress={() => router.push({ pathname: '/game/[id]', params: { id: game.id, playerId } })}
       style={({ pressed }) => [
@@ -75,55 +76,61 @@ function FriendGameRow({ entry }: { entry: GameEntry }) {
         pressed && styles.pressed,
       ]}
     >
-      <View style={styles.titleBlock}>
-        <Text selectable style={styles.scriptName}>
-          {scriptName}
-        </Text>
-        <Text selectable style={styles.date}>
-          {formattedDate}
-        </Text>
+      <View style={styles.token}>
+        {finalRole && !storyteller ? (
+          <RoleIcon role={finalRole} scale={1.3} size={TOKEN_ICON_SIZE} />
+        ) : (
+          <Text style={styles.tokenPlaceholder}>{storyteller ? 'ST' : '?'}</Text>
+        )}
       </View>
 
-      {storyteller ? (
-        <Text selectable style={styles.storyteller}>
-          Storyteller
-        </Text>
-      ) : (
-        <>
-          {sameRoles(claimedRoles, playedRoles) || isAllTraveler(playedRoles) ? null : (
-            <RoleLine label="Claimed" roles={claimedRoles} />
-          )}
-          <RoleLine label="Started as" roles={playedRoles} />
-        </>
-      )}
-    </Pressable>
-  );
-}
+      <View style={styles.body}>
+        {storyteller ? (
+          <Text selectable style={styles.character}>
+            Storyteller
+          </Text>
+        ) : characterText.length === 0 ? (
+          <Text selectable style={styles.noCharacter}>
+            No character noted
+          </Text>
+        ) : (
+          <Text selectable style={styles.character}>
+            {characterText.map((text, index) => (
+              <Text
+                key={text}
+                style={index < characterText.length - 1 ? styles.earlierCharacter : undefined}
+              >
+                {index > 0 ? ' → ' : ''}
+                {text}
+              </Text>
+            ))}
+          </Text>
+        )}
 
-function RoleLine({ label, roles }: { label: string; roles: Role[] }) {
-  return (
-    <View style={styles.roleLine}>
-      <Text selectable style={styles.roleLineLabel}>
-        {label}
-      </Text>
-      {roles.length === 0 ? (
-        <Text selectable style={styles.noRoles}>
-          —
+        <Text selectable numberOfLines={2} style={styles.meta}>
+          {scriptName} · {formattedDate}
         </Text>
-      ) : (
-        <View style={styles.roles}>
-          {roles.map((role) => (
-            <RoleReference
-              disablePress
-              iconSize={18}
-              key={role.id}
-              role={role}
-              textStyle={styles.roleName}
-            />
-          ))}
-        </View>
-      )}
-    </View>
+
+        {!storyteller && claims.length > 0 ? (
+          <View style={styles.claimLine}>
+            <Text selectable style={styles.claimLabel}>
+              {claimLabel}
+            </Text>
+            <View style={styles.claims}>
+              {claims.map((role) => (
+                <RoleReference
+                  disablePress
+                  iconSize={16}
+                  key={role.id}
+                  role={role}
+                  textStyle={styles.claimName}
+                />
+              ))}
+            </View>
+          </View>
+        ) : null}
+      </View>
+    </Pressable>
   );
 }
 
@@ -147,12 +154,10 @@ function collectEntries(
       continue;
     }
 
-    const roles = resolveGameRoles(game, roleCatalog, scripts);
     entries.push({
+      ...getFriendGameRoles(player, resolveGameRoles(game, roleCatalog, scripts)),
       game,
       playerId: player.id,
-      claimedRoleIds: collectClaimedRoleIds(player, roles),
-      playedRoleIds: collectPlayedRoleIds(player),
       storyteller: !!player.isStoryteller,
     });
   }
@@ -177,69 +182,6 @@ function resolveGameRoles(game: Game, roleCatalog: Role[], scripts: StoredScript
   }
 
   return roleCatalog;
-}
-
-function collectClaimedRoleIds(player: Player, roles: Role[]): string[] {
-  const ids = new Set<string>();
-  const claims = (player.roleAssignments ?? []).filter((assignment) => assignment.kind === 'claim');
-
-  for (const assignment of claims) {
-    for (const roleId of assignment.roleIds) {
-      if (getRolesByIds([roleId], roles).length > 0) {
-        ids.add(roleId);
-      }
-    }
-  }
-
-  return [...ids];
-}
-
-function collectPlayedRoleIds(player: Player): string[] {
-  const confirms = (player.roleAssignments ?? [])
-    .filter((assignment) => assignment.kind === 'confirm')
-    .sort((first, second) => first.day - second.day);
-
-  if (confirms.length === 0) {
-    return [];
-  }
-
-  const lastDay = confirms[confirms.length - 1].day;
-  const finalConfirm = getRoleAssignmentForDay(player.roleAssignments, lastDay, 'confirm');
-  if (finalConfirm) {
-    return dedupe(finalConfirm.roleIds);
-  }
-
-  const fallback = getRoleAssignmentForDayOrPrevious(player.roleAssignments, lastDay, 'confirm');
-  return fallback ? dedupe(fallback.roleIds) : [];
-}
-
-function dedupe(roleIds: string[]): string[] {
-  const seen = new Set<string>();
-  const output: string[] = [];
-
-  for (const roleId of roleIds) {
-    if (seen.has(roleId)) {
-      continue;
-    }
-
-    seen.add(roleId);
-    output.push(roleId);
-  }
-
-  return output;
-}
-
-function sameRoles(first: Role[], second: Role[]) {
-  if (first.length !== second.length) {
-    return false;
-  }
-
-  const ids = new Set(first.map((role) => role.id));
-  return second.every((role) => ids.has(role.id));
-}
-
-function isAllTraveler(roles: Role[]) {
-  return roles.length > 0 && roles.every(isTravelerRole);
 }
 
 function formatGameDate(createdAt: string) {
@@ -272,20 +214,57 @@ function getResultStyle(result?: GameResult) {
 }
 
 const styles = StyleSheet.create({
-  date: {
+  body: {
+    flex: 1,
+    gap: 3,
+    minWidth: 0,
+  },
+  character: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  claimLabel: {
     color: colors.textMuted,
-    fontSize: 12,
+    flexShrink: 0,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  claimLine: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 3,
+  },
+  claimName: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  claims: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  earlierCharacter: {
+    color: colors.textMuted,
+    fontWeight: '700',
   },
   empty: {
     color: colors.textMuted,
     fontSize: 15,
   },
   gameButton: {
+    alignItems: 'center',
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderRadius: 8,
     borderWidth: 1,
-    gap: 8,
+    flexDirection: 'row',
+    gap: 12,
     padding: 12,
   },
   list: {
@@ -295,53 +274,33 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dangerSurface,
     borderColor: colors.danger,
   },
-  noRoles: {
+  meta: {
     color: colors.textMuted,
-    fontSize: 13,
+    fontSize: 12,
+  },
+  noCharacter: {
+    color: colors.textMuted,
+    fontSize: 15,
     fontStyle: 'italic',
   },
   pressed: {
     backgroundColor: colors.surfacePressed,
   },
-  roleLine: {
+  token: {
     alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.border,
+    borderRadius: TOKEN_SIZE / 2,
+    borderWidth: 1,
+    height: TOKEN_SIZE,
+    justifyContent: 'center',
+    width: TOKEN_SIZE,
   },
-  roleLineLabel: {
+  tokenPlaceholder: {
     color: colors.textMuted,
-    flexShrink: 0,
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '900',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-    width: 78,
-  },
-  roleName: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  roles: {
-    flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  scriptName: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  storyteller: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  },
-  titleBlock: {
-    gap: 2,
   },
   won: {
     backgroundColor: colors.successSurface,
