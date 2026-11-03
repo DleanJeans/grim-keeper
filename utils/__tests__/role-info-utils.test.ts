@@ -24,6 +24,7 @@ import {
   isPlayerChoosableForSlot,
   isRoleInfoOver,
   isRoleInfoShownInPhase,
+  isRoleInfoTriggered,
   mapRoleInfoPlayerIds,
   ROLE_INFO_TRUE_KEY,
   seedRoleInfos,
@@ -991,5 +992,30 @@ describe('double claims', () => {
       ['ann', 'cat'],
       ['ben', 'dan'],
     ]);
+  });
+});
+
+describe('isRoleInfoTriggered', () => {
+  const ravenkeeper = { id: 'ravenkeeper' };
+
+  it('shows the Ravenkeeper only from the night its claimer was killed', () => {
+    const killed = makePlayer('a', 1, { death: { day: 2, kind: 'night', updatedAt: NOW } });
+    expect(isRoleInfoTriggered(ravenkeeper, [killed], 1, 'day')).toBe(false);
+    expect(isRoleInfoTriggered(ravenkeeper, [killed], 2, 'night')).toBe(true);
+    expect(isRoleInfoTriggered(ravenkeeper, [killed], 3, 'day')).toBe(true);
+  });
+
+  it('hides the Ravenkeeper when its claimer is alive, executed or killed by day', () => {
+    const executed = makePlayer('a', 1, { death: { day: 2, kind: 'execution', updatedAt: NOW } });
+    const dayKill = makePlayer('b', 2, {
+      death: { day: 2, kind: 'night', phase: 'day', updatedAt: NOW },
+    });
+    expect(isRoleInfoTriggered(ravenkeeper, [], 3, 'day')).toBe(false);
+    expect(isRoleInfoTriggered(ravenkeeper, [makePlayer('c', 3)], 3, 'day')).toBe(false);
+    expect(isRoleInfoTriggered(ravenkeeper, [executed, dayKill], 3, 'day')).toBe(false);
+  });
+
+  it('shows other characters without a death', () => {
+    expect(isRoleInfoTriggered({ id: 'empath' }, [], 1, 'night')).toBe(true);
   });
 });

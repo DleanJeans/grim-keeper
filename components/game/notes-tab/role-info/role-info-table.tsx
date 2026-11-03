@@ -48,6 +48,7 @@ import {
   isClaimerRoleInfo,
   isRoleInfoOver,
   isRoleInfoShownInPhase,
+  isRoleInfoTriggered,
   ROLE_INFO_TRUE_KEY,
   type RoleInfoClaimer,
   type RoleInfoSlot,
@@ -153,11 +154,19 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
           (role) =>
             role.team?.toLocaleLowerCase() === team &&
             (playerRoleIds
-              ? hasRoleInfo(role) && playerRoleIds.has(role.id)
+              ? hasRoleInfo(role) &&
+                playerRoleIds.has(role.id) &&
+                isRoleInfoTriggered(role, getRoleClaimers(players, role.id), activeDay, activePhase)
               : isSushiBuffet
                 ? team !== 'traveller'
                 : hasRoleInfo(role) &&
                   isRoleInfoShownInPhase(role, activeDay, activePhase) &&
+                  isRoleInfoTriggered(
+                    role,
+                    getRoleClaimers(players, role.id),
+                    activeDay,
+                    activePhase,
+                  ) &&
                   isUnusedOrUsedIn(
                     role,
                     roleInfos,
@@ -533,15 +542,16 @@ function RoleInfoSection({
             ? claimers
                 .filter(
                   (claimer) =>
-                    !hideFinishedClaimers ||
-                    (isClaimerUnusedOrUsedIn(
-                      role,
-                      roleInfos,
-                      getRoleInfoClaimer(claimers, claimer),
-                      activeDay,
-                      activePhase,
-                    ) &&
-                      !isRoleInfoOver(role, [claimer], activeDay, activePhase)),
+                    isRoleInfoTriggered(role, [claimer], activeDay, activePhase) &&
+                    (!hideFinishedClaimers ||
+                      (isClaimerUnusedOrUsedIn(
+                        role,
+                        roleInfos,
+                        getRoleInfoClaimer(claimers, claimer),
+                        activeDay,
+                        activePhase,
+                      ) &&
+                        !isRoleInfoOver(role, [claimer], activeDay, activePhase))),
                 )
                 .sort(
                   (first, second) =>

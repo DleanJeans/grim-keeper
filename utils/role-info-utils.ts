@@ -392,6 +392,9 @@ const ONCE_ROLE_IDS = new Set([
   'wizard',
 ]);
 
+/** Characters that only get info on the night they die (the Ravenkeeper). */
+const NIGHT_DEATH_ROLE_IDS = new Set(['ravenkeeper']);
+
 /** Characters that act each night except the first (night* on the night sheet). */
 const OTHER_NIGHTS_ROLE_IDS = new Set([
   'acrobat',
@@ -593,6 +596,27 @@ export function isRoleInfoOver(
   const hasRows =
     getRoleInfoNights(role, day) !== undefined || getRoleInfoDays(role, day) !== undefined;
   return hasRows && areAllDead(owners, day, phase);
+}
+
+/**
+ * Whether a character that only gets info when killed at night (the Ravenkeeper) has a claimer who
+ * died at night by the given phase; true for every other character.
+ */
+export function isRoleInfoTriggered(
+  role: Pick<Role, 'id'>,
+  claimers: Player[],
+  day: number,
+  phase: GamePhase,
+) {
+  if (!NIGHT_DEATH_ROLE_IDS.has(normalizeRoleInfoId(role.id))) return true;
+
+  const phaseIndex = getEventPhaseIndex(day, phase);
+  return claimers.some(
+    (claimer) =>
+      claimer.death !== undefined &&
+      getDeathPhase(claimer.death) === 'night' &&
+      getEventPhaseIndex(claimer.death.day, 'night') <= phaseIndex,
+  );
 }
 
 /** Players who ever claimed or were confirmed as the role, by seat. */
