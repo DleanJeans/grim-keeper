@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
+import { RateBar } from '@/components/rate-bar';
 import { StatsCard } from '@/components/stats-card';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
@@ -22,52 +23,32 @@ export function HeadToHeadStatsCard({ friendId, friendName, games }: HeadToHeadS
 
   return (
     <StatsCard label={`You and ${friendName}`}>
-      <View style={styles.columns}>
-        <HeadToHeadColumn label="Same team" side={same} />
-        <View style={styles.divider} />
-        <HeadToHeadColumn label="Opposite teams" side={opposite} />
+      <View style={styles.bars}>
+        <HeadToHeadBar label="Same team" side={same} />
+        <HeadToHeadBar label="Opposite teams" side={opposite} />
       </View>
+      <Text selectable style={styles.hint}>
+        Your win rate when you and {friendName} were on the same side or on opposite sides.
+      </Text>
     </StatsCard>
   );
 }
 
 const styles = StyleSheet.create({
-  column: { alignItems: 'center', flex: 1, gap: 2, minWidth: 0 },
-  columnLabel: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  columns: { flexDirection: 'row', gap: 12 },
-  detail: { color: colors.textMuted, fontSize: 12, textAlign: 'center' },
-  divider: { alignSelf: 'stretch', backgroundColor: colors.border, width: 1 },
-  value: {
-    color: colors.text,
-    fontSize: 22,
-    fontVariant: ['tabular-nums'],
-    fontWeight: '900',
-    textAlign: 'center',
-  },
+  bars: { gap: 12, marginTop: 4 },
+  hint: { color: colors.textMuted, fontSize: 12 },
 });
 
-function HeadToHeadColumn({ label, side }: { label: string; side: HeadToHeadSide }) {
+function HeadToHeadBar({ label, side }: { label: string; side: HeadToHeadSide }) {
   const rate =
-    side.completedGames === 0 ? '—' : `${Math.round((side.wins / side.completedGames) * 100)}%`;
+    side.completedGames === 0 ? undefined : Math.round((side.wins / side.completedGames) * 100);
   return (
-    <View style={styles.column}>
-      <Text selectable style={styles.columnLabel}>
-        {label}
-      </Text>
-      <Text selectable style={styles.value}>
-        {rate}
-      </Text>
-      <Text selectable style={styles.detail}>
-        {`You won ${side.wins} of ${side.completedGames}`}
-      </Text>
-      <Text selectable style={styles.detail}>
-        {`${side.games} ${side.games === 1 ? 'game' : 'games'}`}
-      </Text>
-    </View>
+    <RateBar
+      color={colors.winBarOverall}
+      detail={`${side.wins}/${side.completedGames}`}
+      label={`${label} · ${side.games} ${side.games === 1 ? 'game' : 'games'}`}
+      rate={rate}
+      stacked
+    />
   );
 }

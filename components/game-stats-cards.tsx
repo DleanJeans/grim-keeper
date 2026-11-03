@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import type { StyleProp, TextStyle } from 'react-native';
 import { StyleSheet, View } from 'react-native';
 
+import { RateBar } from '@/components/rate-bar';
 import { StatsCard } from '@/components/stats-card';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
@@ -14,7 +14,6 @@ type GameStatsCardsProps = {
 };
 
 export function GameStatsCards({ games, playerId }: GameStatsCardsProps) {
-  const [showWinRateDetails, setShowWinRateDetails] = useState(false);
   const [showAllGames, setShowAllGames] = useState(false);
   const {
     completedGames,
@@ -37,24 +36,29 @@ export function GameStatsCards({ games, playerId }: GameStatsCardsProps) {
 
   return (
     <View style={styles.stats}>
-      <StatsCard
-        accessibilityHint={
-          showWinRateDetails
-            ? 'Press to show only the total win rate.'
-            : 'Press to show total wins and games with results.'
-        }
-        label="Win Rate"
-        onPress={() => setShowWinRateDetails((value) => !value)}
-      >
+      <StatsCard label="Win Rate">
         <Text selectable style={styles.value}>
-          {showWinRateDetails ? `${wins} / ${completedGames}` : formatRate(winRate)}
+          {formatRate(winRate)}
         </Text>
-        <AlignmentLabels />
-        <AlignmentWinRates evil={formatRate(evilWinRate)} good={formatRate(goodWinRate)} />
-        <AlignmentGameValues
-          evil={showWinRateDetails ? `${evilWins} / ${evilCompletedGames}` : String(evilWins)}
-          good={showWinRateDetails ? `${goodWins} / ${goodCompletedGames}` : String(goodWins)}
-        />
+        <Text selectable style={styles.detail}>
+          {`${wins} of ${completedGames}`}
+        </Text>
+        <View style={styles.bars}>
+          <RateBar
+            color={colors.winBarGood}
+            detail={`${goodWins}/${goodCompletedGames}`}
+            label="Good"
+            rate={goodWinRate}
+            stacked
+          />
+          <RateBar
+            color={colors.winBarEvil}
+            detail={`${evilWins}/${evilCompletedGames}`}
+            label="Evil"
+            rate={evilWinRate}
+            stacked
+          />
+        </View>
       </StatsCard>
       <StatsCard
         accessibilityHint={
@@ -68,15 +72,27 @@ export function GameStatsCards({ games, playerId }: GameStatsCardsProps) {
         <Text selectable style={styles.value}>
           {showAllGames ? totalGames : completedGames}
         </Text>
-        <AlignmentLabels />
-        <AlignmentWinRates
-          evil={formatRate(showAllGames ? evilSideRate : evilCompletedSideRate)}
-          good={formatRate(showAllGames ? goodSideRate : goodCompletedSideRate)}
-        />
-        <AlignmentGameValues
-          evil={String(showAllGames ? evilGames : evilCompletedGames)}
-          good={String(showAllGames ? goodGames : goodCompletedGames)}
-        />
+        <Text selectable style={styles.detail}>
+          {showAllGames ? 'including games without a result' : 'games with a result'}
+        </Text>
+        <View style={styles.bars}>
+          <RateBar
+            color={colors.winBarGood}
+            detail={String(showAllGames ? goodGames : goodCompletedGames)}
+            label="Good"
+            rate={showAllGames ? goodSideRate : goodCompletedSideRate}
+            stacked
+            tick={false}
+          />
+          <RateBar
+            color={colors.winBarEvil}
+            detail={String(showAllGames ? evilGames : evilCompletedGames)}
+            label="Evil"
+            rate={showAllGames ? evilSideRate : evilCompletedSideRate}
+            stacked
+            tick={false}
+          />
+        </View>
       </StatsCard>
     </View>
   );
@@ -86,72 +102,16 @@ function formatRate(rate: number | undefined) {
   return rate === undefined ? '—' : `${rate}%`;
 }
 
-function AlignmentLabels() {
-  return (
-    <View style={styles.alignmentRow}>
-      <Text selectable style={[styles.alignmentLabel, styles.goodValue]}>
-        Good
-      </Text>
-      <Text selectable style={[styles.alignmentLabel, styles.evilValue]}>
-        Evil
-      </Text>
-    </View>
-  );
-}
-
-type AlignmentRowProps = {
-  evil: string;
-  good: string;
-  valueStyle: StyleProp<TextStyle>;
-};
-
-function AlignmentRow({ evil, good, valueStyle }: AlignmentRowProps) {
-  return (
-    <View style={styles.alignmentRow}>
-      <Text selectable style={[valueStyle, styles.goodValue]}>
-        {good}
-      </Text>
-      <Text selectable style={[valueStyle, styles.evilValue]}>
-        {evil}
-      </Text>
-    </View>
-  );
-}
-
-function AlignmentWinRates({ evil, good }: { evil: string; good: string }) {
-  return <AlignmentRow evil={evil} good={good} valueStyle={styles.rateValue} />;
-}
-
-function AlignmentGameValues({ evil, good }: { evil: string; good: string }) {
-  return <AlignmentRow evil={evil} good={good} valueStyle={styles.countValue} />;
-}
-
 const styles = StyleSheet.create({
-  alignmentLabel: {
-    fontSize: 11,
-    fontWeight: '800',
+  bars: {
+    alignSelf: 'stretch',
+    gap: 10,
+    marginTop: 6,
   },
-  alignmentRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  countValue: {
-    fontSize: 22,
-    fontVariant: ['tabular-nums'],
-    fontWeight: '900',
-  },
-  evilValue: {
-    color: colors.danger,
-  },
-  goodValue: {
-    color: colors.roleGuess,
-  },
-  rateValue: {
-    fontSize: 14,
-    fontVariant: ['tabular-nums'],
-    fontWeight: '800',
+  detail: {
+    color: colors.textMuted,
+    fontSize: 12,
+    textAlign: 'center',
   },
   stats: {
     flexDirection: 'row',
