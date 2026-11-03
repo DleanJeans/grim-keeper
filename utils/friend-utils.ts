@@ -102,8 +102,10 @@ export type FriendWinRateSort = Exclude<FriendSort, 'games'>;
 export const DEFAULT_MIN_RATED_GAMES = 10;
 
 /**
- * Friends ranked by a win rate, best first. Only games with a result count (storytold games have
- * none), and friends with fewer than `minGames` such games on that side are left out.
+ * Friends ranked by a win rate, best first. Friends with fewer than `minGames` games in total
+ * (the games-played count, whichever side they were on) are left out and counted in
+ * `hiddenCount`. Only games with a result count towards the rate (storytold games have none), so
+ * friends with no rated game on that side have no rate and are left out without being counted.
  */
 export function rankFriendsByWinRate(
   friends: FriendSummary[],
@@ -111,12 +113,10 @@ export function rankFriendsByWinRate(
   sort: FriendWinRateSort,
   minGames: number,
 ) {
-  const rated = friends.map((friend) => ({
-    friend,
-    ...getFriendWinRecord(games, friend.id, sort),
-  }));
-  const included = rated
-    .filter(({ played }) => played >= Math.max(1, minGames))
+  const eligible = friends.filter((friend) => friend.gamesPlayed >= Math.max(1, minGames));
+  const ranked = eligible
+    .map((friend) => ({ friend, ...getFriendWinRecord(games, friend.id, sort) }))
+    .filter(({ played }) => played > 0)
     .sort(
       (first, second) =>
         second.wins / second.played - first.wins / first.played ||
@@ -125,8 +125,8 @@ export function rankFriendsByWinRate(
     );
 
   return {
-    friends: included.map(({ friend }) => friend),
-    hiddenCount: friends.length - included.length,
+    friends: ranked.map(({ friend }) => friend),
+    hiddenCount: friends.length - eligible.length,
   };
 }
 

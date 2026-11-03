@@ -44,9 +44,7 @@ export function FriendSortControls({
       {sort === 'games' ? null : (
         <View style={styles.minGamesRow}>
           <Text selectable style={styles.minGamesLabel}>
-            {sort === 'winRate'
-              ? 'Min games'
-              : `Min games as ${sort === 'goodWinRate' ? 'good' : 'evil'}`}
+            Min games played
           </Text>
           <Pressable
             accessibilityLabel="Fewer games"

@@ -235,14 +235,14 @@ describe('rankFriendsByWinRate', () => {
       },
     };
   }
-  const friend = (id: string): FriendSummary => ({
+  const friend = (id: string, gamesPlayed: number): FriendSummary => ({
     createdAt: '',
-    gamesPlayed: 0,
+    gamesPlayed,
     gamesStorytold: 0,
     id,
     name: id,
   });
-  const friends = [friend('ann'), friend('bob'), friend('cat')];
+  const friends = [friend('ann', 3), friend('bob', 4), friend('cat', 2)];
   // The app user is good, so a good friend shares the result and an evil friend gets the opposite.
   const games = [
     friendGame('a1', 'ann', 'townsfolk', 'won'),
@@ -256,26 +256,31 @@ describe('rankFriendsByWinRate', () => {
     friendGame('c2', 'cat', 'townsfolk', 'won', true),
   ];
 
-  it('ranks by overall win rate and hides friends under the minimum games', () => {
+  it('ranks by overall win rate and hides friends under the minimum total games', () => {
     expect(rankFriendsByWinRate(friends, games, 'winRate', 3)).toEqual({
       friends: [friends[1], friends[0]],
       hiddenCount: 1,
     });
   });
 
-  it('ranks by good or evil win rate using games on that side only', () => {
-    expect(rankFriendsByWinRate(friends, games, 'goodWinRate', 2).friends).toEqual([
-      friends[1],
-      friends[0],
-    ]);
-    expect(rankFriendsByWinRate(friends, games, 'evilWinRate', 1).friends).toEqual([
+  it('filters on total games, not games on the ranked side', () => {
+    // Ann has only one evil game but three games in total, so she stays at a minimum of 3.
+    expect(rankFriendsByWinRate(friends, games, 'evilWinRate', 3).friends).toEqual([
       friends[0],
       friends[1],
     ]);
-    expect(rankFriendsByWinRate(friends, games, 'evilWinRate', 2).hiddenCount).toBe(3);
+    expect(rankFriendsByWinRate(friends, games, 'goodWinRate', 4).friends).toEqual([friends[1]]);
   });
 
-  it('leaves out storytold games and treats the minimum as at least 1', () => {
-    expect(rankFriendsByWinRate(friends, games, 'winRate', 0)).toMatchObject({ hiddenCount: 1 });
+  it('leaves out friends with no rated game on that side without counting them hidden', () => {
+    // Cat only storytold, so she has no win rate even at a minimum of 1.
+    expect(rankFriendsByWinRate(friends, games, 'winRate', 1)).toEqual({
+      friends: [friends[1], friends[0]],
+      hiddenCount: 0,
+    });
+  });
+
+  it('treats the minimum as at least 1', () => {
+    expect(rankFriendsByWinRate(friends, games, 'winRate', 0).hiddenCount).toBe(0);
   });
 });

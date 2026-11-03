@@ -53,9 +53,7 @@ export default function FriendsRoute() {
   }, [sortedFriends, searchText]);
   const hiddenLabel = `${sortedFriends.hiddenCount} ${
     sortedFriends.hiddenCount === 1 ? 'friend' : 'friends'
-  } with fewer than ${minGames} ${minGames === 1 ? 'game' : 'games'}${
-    sort === 'goodWinRate' ? ' as good' : sort === 'evilWinRate' ? ' as evil' : ''
-  } hidden.`;
+  } with fewer than ${minGames} ${minGames === 1 ? 'game' : 'games'} hidden.`;
 
   return (
     <>
@@ -87,7 +85,7 @@ export default function FriendsRoute() {
               <FriendListEmptyState
                 message={
                   sortedFriends.friends.length === 0
-                    ? `No friends have ${minGames} ${minGames === 1 ? 'game' : 'games'} with a result yet.`
+                    ? 'No friends have a rate for this sort yet.'
                     : 'No friends match your search.'
                 }
               />
