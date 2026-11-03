@@ -33,8 +33,9 @@ describe('getClaimOrbitLayout', () => {
   });
 
   it('uses bigger tokens for fewer claims', () => {
-    expect(getClaimOrbitLayout({ ...TOKEN, count: 1 }).size).toBe(27);
-    expect(getClaimOrbitLayout({ ...TOKEN, count: 3 }).size).toBeLessThan(27);
+    expect(getClaimOrbitLayout({ ...TOKEN, count: 1 }).size).toBeGreaterThan(
+      getClaimOrbitLayout({ ...TOKEN, count: 3 }).size,
+    );
   });
 
   it('puts the rest in a group at the top when the bottom is full', () => {

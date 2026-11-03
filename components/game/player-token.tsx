@@ -130,6 +130,8 @@ export function PlayerToken({
   const hasMultipleClaims = (claimRoles?.length ?? 0) > 1;
   const backgroundRole =
     visibleRoles.find(isTravelerRole) ?? (hasMultipleClaims ? undefined : visibleRoles[0]);
+  // Their names too: the claim tokens stand in for the "A / B / C" line.
+  const nameRoles = hasMultipleClaims ? visibleRoles.filter(isTravelerRole) : visibleRoles;
   const roleIconSource = useRoleIconSource(backgroundRole);
   const reduceMotion = useReducedMotion();
   const hasDeadVote = !!player.death && (deadVoteAvailable ?? player.deadVoteUsed !== true);
@@ -157,7 +159,7 @@ export function PlayerToken({
         obstacles: claimObstacles,
         textHalfHeight:
           (NAME_LINE_HEIGHT +
-            (visibleRoles.length > 0 ? ROLES_LINE_HEIGHT : 0) +
+            (nameRoles.length > 0 ? ROLES_LINE_HEIGHT : 0) +
             (player.isStoryteller ? STORYTELLER_LINE_HEIGHT : 0)) /
             2 +
           CLAIM_TEXT_GAP,
@@ -341,7 +343,7 @@ export function PlayerToken({
             }
             isStoryteller={player.isStoryteller}
             name={displayName ?? player.name}
-            roles={visibleRoles}
+            roles={nameRoles}
           />
         </View>
         {claimRoles && claimLayout

@@ -2,10 +2,10 @@
 const EDGE_GAP = 1;
 const TOKEN_GAP = 1;
 // Claim tokens start at this fraction of the player token and shrink until they all fit.
-const CLAIM_TOKEN_RATIO = 0.3;
-const MAX_CLAIM_TOKEN_SIZE = 30;
+const CLAIM_TOKEN_RATIO = 0.36;
+const MAX_CLAIM_TOKEN_SIZE = 36;
 // Shrink tokens down to this fraction of their full size to keep every claim at the bottom.
-const MIN_BOTTOM_ONLY_RATIO = 2 / 3;
+const MIN_BOTTOM_ONLY_RATIO = 0.6;
 const BOTTOM_DEGREES = 90;
 const TOP_DEGREES = 270;
 // Degrees a group slides to get past an obstacle such as the dead vote badge, nearest first.
