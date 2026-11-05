@@ -1,17 +1,16 @@
 import { ContactRound, MessagesSquare, Skull } from 'lucide-react-native';
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { type GameTab, useGameRouteContext } from '@/components/game/game-route-context';
 import { NomIcon } from '@/components/game/noms-tab/nom-icon';
-import { tabBarButtonStyle, tabBarContainer, tabBarLabelStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 
-const gameTabs: { dayOnly?: boolean; flex: number; label: string; value: GameTab }[] = [
-  { flex: 0.85, label: 'Roles', value: 'notes' },
-  { flex: 0.85, label: 'Deaths', value: 'deaths' },
-  { dayOnly: true, flex: 0.85, label: 'Noms', value: 'nominations' },
-  { dayOnly: true, flex: 0.85, label: 'Links', value: 'interactions' },
+const gameTabs: { dayOnly?: boolean; label: string; value: GameTab }[] = [
+  { label: 'Roles', value: 'notes' },
+  { label: 'Deaths', value: 'deaths' },
+  { dayOnly: true, label: 'Noms', value: 'nominations' },
+  { dayOnly: true, label: 'Links', value: 'interactions' },
 ];
 
 function renderGameTabIcon(tab: GameTab, color: string) {
@@ -31,7 +30,7 @@ export function GameTabs() {
   const { activePhase, activeTab, setActiveTab, exitMapModes } = useGameRouteContext();
   const tabs = activePhase === 'night' ? gameTabs.filter((tab) => !tab.dayOnly) : gameTabs;
   return (
-    <View accessibilityRole="tablist" style={tabBarContainer}>
+    <View accessibilityRole="tablist" style={styles.bar}>
       {tabs.map((tab) => {
         const active = activeTab === tab.value;
         return (
@@ -44,13 +43,40 @@ export function GameTabs() {
               exitMapModes();
               setActiveTab(tab.value);
             }}
-            style={tabBarButtonStyle(active, tab.flex)}
+            style={({ pressed }) => [
+              styles.tab,
+              pressed && styles.pressed,
+              active && styles.activeTab,
+            ]}
           >
-            {renderGameTabIcon(tab.value, active ? colors.gameBackground : colors.gameTextMuted)}
-            <Text style={tabBarLabelStyle(active)}>{tab.label}</Text>
+            {renderGameTabIcon(tab.value, active ? colors.gameText : colors.gameTextMuted)}
+            <Text style={[styles.label, active && styles.activeLabel]}>{tab.label}</Text>
           </Pressable>
         );
       })}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  activeLabel: { color: colors.gameText },
+  activeTab: { borderBottomColor: colors.dayCard.tabUnderline },
+  bar: {
+    borderBottomColor: colors.dayCard.border,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+  },
+  label: { color: colors.gameTextMuted, fontSize: 13, fontWeight: '800' },
+  pressed: { opacity: 0.65 },
+  tab: {
+    alignItems: 'center',
+    borderBottomColor: 'transparent',
+    borderBottomWidth: 3,
+    flex: 1,
+    flexDirection: 'row',
+    gap: 5,
+    justifyContent: 'center',
+    marginBottom: -1,
+    minHeight: 44,
+  },
+});

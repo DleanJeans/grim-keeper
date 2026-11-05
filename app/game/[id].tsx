@@ -11,9 +11,9 @@ import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { ActiveGameTab } from '@/components/game/active-game-tab';
 import { CharacterTypeCountEditor } from '@/components/game/character-type-counts';
 import { ClaimClashWarnings } from '@/components/game/claim-clash-warnings';
+import { DayCard } from '@/components/game/day-card';
 import { DayCount } from '@/components/game/day-count';
 import { DayEditLockButton } from '@/components/game/day-edit-lock-button';
-import { DayJumpButtons } from '@/components/game/day-jump-buttons';
 import { DayRecapSheet } from '@/components/game/day-recap-sheet';
 import { DaysLeftNote } from '@/components/game/days-left-note';
 import { GameMap } from '@/components/game/game-map';
@@ -26,9 +26,10 @@ import {
 } from '@/components/game/game-route-context';
 import { GameTabContent } from '@/components/game/game-tab-content';
 import { GameTabs } from '@/components/game/game-tabs';
+import { GhostVotesNote } from '@/components/game/ghost-votes-note';
 import { INLINE_GAME_HEADER_HEIGHT, InlineGameHeader } from '@/components/game/inline-game-header';
-import { MapModeActions } from '@/components/game/map-mode-actions';
 import { MapToolbar } from '@/components/game/map-toolbar';
+import { PhaseTimeline } from '@/components/game/phase-timeline';
 import { PlayerCountStatus } from '@/components/game/player-count-status';
 import { PlayerDock } from '@/components/game/player-dock';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
@@ -51,6 +52,7 @@ import type {
 import { getClaimClashes } from '@/utils/claim-clash-utils';
 import { getAutomaticCharacterTypeCounts } from '@/utils/evil-in-play-utils';
 import {
+  getAdjacentPhasePosition,
   getDayCutoffForPhase,
   getGameActivePhase,
   getLatestPhaseWithData,
@@ -697,6 +699,12 @@ export default function GameRoute() {
     setGamePhase(activeGame.id, day, phase);
   }
 
+  function handleSwipePhase(direction: -1 | 1) {
+    if (direction === -1 && activePhaseIndex === 0) return;
+    const target = getAdjacentPhasePosition(activePosition, direction);
+    handleChangePhase(target.activeDay, target.activePhase);
+  }
+
   function handleRotateTokens(angleRadians: number) {
     const previousPositions: Record<string, PlayerPosition | undefined> = Object.fromEntries(
       activeGame.players.map((player) => [player.id, player.position]),
@@ -1180,17 +1188,8 @@ export default function GameRoute() {
                 {isRearrangeMode ? <RearrangeActions /> : null}
               </View>
 
-              <View key="day-and-counts" style={styles.dayAndCountsRow}>
-                <View style={styles.leftCounts}>
-                  <CharacterTypeCountEditor
-                    counts={activeGame.characterTypeCounts}
-                    onChange={(counts) =>
-                      runDayEdit(() => setCharacterTypeCounts(activeGame.id, counts))
-                    }
-                    playerCount={nonTravelerPlayers.length}
-                  />
-                </View>
-                <View style={styles.centeredDayCount}>
+              <DayCard key="day-card" onSwipe={handleSwipePhase}>
+                <View style={styles.dayCardHeader}>
                   <DayCount
                     activeDay={activeGame.activeDay}
                     activePhase={activePhase}
@@ -1208,33 +1207,46 @@ export default function GameRoute() {
                     startingNight={startingNight}
                     visible={recapOpen}
                   />
-                  <View style={styles.dayEditLock}>
-                    <DayEditLockButton
-                      phaseLabel={getPhaseLabel(
-                        { activeDay: activeGame.activeDay, activePhase },
-                        startingNight,
-                      )}
-                      locked={dayEditLocked}
-                      onToggle={() => setDayEditLocked((locked) => !locked)}
-                    />
-                  </View>
+                  <View style={styles.spacer} />
+                  {activePhase === 'day' ? (
+                    <DaysLeftNote alivePlayerCount={alivePlayerCount} />
+                  ) : null}
+                  <DayEditLockButton
+                    phaseLabel={getPhaseLabel(
+                      { activeDay: activeGame.activeDay, activePhase },
+                      startingNight,
+                    )}
+                    locked={dayEditLocked}
+                    onToggle={() => setDayEditLocked((locked) => !locked)}
+                  />
                 </View>
-                <View style={styles.rightCounts}>
+                {activePhase === 'day' && alivePlayerCount === 3 ? (
+                  <GhostVotesNote ghostVoterNames={ghostVoterNames} />
+                ) : null}
+                <PhaseTimeline
+                  activeDay={activeGame.activeDay}
+                  activePhase={activePhase}
+                  latestPhase={latestPhase ?? activePosition}
+                  onChangePhase={handleChangePhase}
+                  startingNight={startingNight}
+                />
+                <View style={styles.dayCardCounts}>
+                  <CharacterTypeCountEditor
+                    counts={activeGame.characterTypeCounts}
+                    onChange={(counts) =>
+                      runDayEdit(() => setCharacterTypeCounts(activeGame.id, counts))
+                    }
+                    playerCount={nonTravelerPlayers.length}
+                  />
+                  <View style={styles.spacer} />
                   <PlayerCountStatus
                     alivePlayerCount={alivePlayerCount}
                     deadPlayerCount={deadPlayerCount}
                     travelerPlayerCount={travelerPlayerCount}
                   />
                 </View>
-              </View>
+              </DayCard>
 
-              {activePhase === 'day' ? (
-                <DaysLeftNote
-                  key="days-left"
-                  alivePlayerCount={alivePlayerCount}
-                  ghostVoterNames={ghostVoterNames}
-                />
-              ) : null}
               {claimClashes ? (
                 <ClaimClashWarnings
                   key="claim-clashes"
@@ -1243,26 +1255,6 @@ export default function GameRoute() {
                   roles={[...gameRoles, ...roleCatalog]}
                 />
               ) : null}
-
-              <DayJumpButtons
-                key="day-jump-buttons"
-                activeDay={activeGame.activeDay}
-                activePhase={activePhase}
-                latestPhase={latestPhase ?? activePosition}
-                onChangePhase={handleChangePhase}
-                startingNight={startingNight}
-              />
-
-              {isRearrangeMode ? null : (
-                <View key="map-mode-actions">
-                  <MapModeActions
-                    activeDay={activeGame.activeDay}
-                    activePhase={activePhase}
-                    onChangePhase={handleChangePhase}
-                    startingNight={startingNight}
-                  />
-                </View>
-              )}
 
               <View
                 key="tab-bar"
@@ -1328,15 +1320,10 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
   },
-  dayAndCountsRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  centeredDayCount: { alignItems: 'center', flex: 1, position: 'relative' },
-  dayEditLock: { position: 'absolute', right: 0 },
+  dayCardCounts: { alignItems: 'center', flexDirection: 'row', gap: 8 },
+  dayCardHeader: { alignItems: 'center', flexDirection: 'row', gap: 8 },
   mapWithToolbar: { gap: 8 },
-  leftCounts: { alignItems: 'flex-start', flex: 1 },
-  rightCounts: { alignItems: 'flex-end', flex: 1 },
+  spacer: { flex: 1 },
   gameContent: {
     gap: 20,
   },

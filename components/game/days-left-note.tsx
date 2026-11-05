@@ -7,12 +7,10 @@ import { getDaysLeft } from '@/utils/nomination-utils';
 
 type DaysLeftNoteProps = {
   alivePlayerCount: number;
-  /** Dead players who still have their vote, listed at final 3. */
-  ghostVoterNames?: string[];
 };
 
-/** How many days are left with daily executions, and a warning at final 3. Day phase only. */
-export function DaysLeftNote({ alivePlayerCount, ghostVoterNames = [] }: DaysLeftNoteProps) {
+/** A small badge with how many days are left with daily executions. Day phase only. */
+export function DaysLeftNote({ alivePlayerCount }: DaysLeftNoteProps) {
   const daysLeft = getDaysLeft(alivePlayerCount);
   if (daysLeft === 0) {
     return null;
@@ -25,34 +23,31 @@ export function DaysLeftNote({ alivePlayerCount, ghostVoterNames = [] }: DaysLef
     : daysLeft === 1
       ? 'Last day unless today’s execution ends the game'
       : `${daysLeft} days left with an execution each day`;
+  const shortMessage = finalThree
+    ? 'Final 3'
+    : daysLeft === 1
+      ? 'Last day'
+      : `${daysLeft} days left`;
+  const color = finalThree ? colors.warning : colors.dayCard.badgeText;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.row}>
-        <Icon
-          color={finalThree ? colors.warning : colors.gameTextMuted}
-          size={13}
-          strokeWidth={2.6}
-        />
-        <Text selectable style={[styles.text, finalThree && styles.warningText]}>
-          {message}
-        </Text>
-      </View>
-      {finalThree ? (
-        <Text selectable style={styles.ghostVotes}>
-          {ghostVoterNames.length === 0
-            ? 'No ghost votes left'
-            : `Ghost votes left: ${ghostVoterNames.join(', ')}`}
-        </Text>
-      ) : null}
+    <View accessibilityLabel={message} accessible style={styles.badge}>
+      <Icon color={color} size={12} strokeWidth={2.6} />
+      <Text style={[styles.text, finalThree && styles.warningText]}>{shortMessage}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { alignItems: 'center', gap: 2 },
-  ghostVotes: { color: colors.gameTextMuted, fontSize: 12, fontWeight: '700', textAlign: 'center' },
-  row: { alignItems: 'center', flexDirection: 'row', gap: 5, justifyContent: 'center' },
-  text: { color: colors.gameTextMuted, flexShrink: 1, fontSize: 12, fontWeight: '700' },
+  badge: {
+    alignItems: 'center',
+    backgroundColor: colors.dayCard.badgeBackground,
+    borderRadius: 999,
+    flexDirection: 'row',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  text: { color: colors.dayCard.badgeText, fontSize: 11.5, fontWeight: '800' },
   warningText: { color: colors.warning },
 });

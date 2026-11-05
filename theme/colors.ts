@@ -135,6 +135,23 @@ const baseColors = {
     storytellerRibbon: '#7a5a12',
     topText: '#5b2a17',
   },
+  /** The day card under the map: day title, phase timeline and counts. */
+  dayCard: {
+    background: '#111a2e',
+    badgeBackground: 'rgba(226, 176, 74, 0.12)',
+    badgeText: '#e2b04a',
+    border: '#26324a',
+    currentDot: '#e2b04a',
+    currentHalo: 'rgba(226, 176, 74, 0.22)',
+    dayDot: '#475569',
+    dotBorder: '#475569',
+    line: '#334155',
+    nightDot: '#1e293b',
+    pastDotBorder: '#8a6a3d',
+    pastLine: '#8a6a3d',
+    tabUnderline: '#e2b04a',
+    title: '#f3e6cf',
+  },
 };
 
 export const colors = applyTheme(baseColors, readStoredThemeId());

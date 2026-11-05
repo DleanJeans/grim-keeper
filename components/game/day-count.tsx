@@ -37,7 +37,7 @@ export function DayCount({
     >
       <Text style={styles.label}>{phaseLabel}</Text>
       <View style={styles.progressRow}>
-        <ScrollText color={colors.gameTextMuted} size={10} strokeWidth={2.6} />
+        <ScrollText color={colors.gameTextMuted} size={12} strokeWidth={2.6} />
         <Text style={styles.progress}>
           {dayCutoff < 1 ? 'Before Day 1' : `Day ${dayCutoff}/${lastDayWithData}`}
         </Text>
@@ -48,23 +48,22 @@ export function DayCount({
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
-    paddingHorizontal: 8,
+    alignItems: 'baseline',
+    flexDirection: 'row',
+    flexShrink: 1,
+    gap: 8,
+    minHeight: 32,
   },
   label: {
-    color: colors.gameText,
-    fontSize: 15,
-    fontWeight: '900',
-    textAlign: 'center',
+    color: colors.dayCard.title,
+    fontFamily: 'IMFellEnglishSC',
+    fontSize: 24,
   },
   pressed: { opacity: 0.65 },
   progressRow: { alignItems: 'center', flexDirection: 'row', gap: 3 },
   progress: {
     color: colors.gameTextMuted,
-    fontSize: 10,
+    fontSize: 11.5,
     fontWeight: '700',
-    textAlign: 'center',
   },
 });
