@@ -17,7 +17,7 @@ export function DjGameButton({ gameId }: DjGameButtonProps) {
       onPress={() => router.push({ pathname: '/dj/[id]', params: { id: gameId } })}
       style={({ pressed }) => [styles.button, pressed && styles.pressed]}
     >
-      <Music2 color={colors.text} size={20} strokeWidth={2.5} />
+      <Music2 color={colors.gameText} size={18} strokeWidth={2.5} />
     </Pressable>
   );
 }
@@ -25,15 +25,15 @@ export function DjGameButton({ gameId }: DjGameButtonProps) {
 const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.borderStrong,
-    borderRadius: 28,
+    backgroundColor: colors.gameSurface,
+    borderColor: colors.gameBorder,
+    borderRadius: 18,
     borderWidth: 1,
-    height: 56,
+    height: 36,
     justifyContent: 'center',
-    width: 56,
+    width: 36,
   },
   pressed: {
-    backgroundColor: colors.surfacePressed,
+    backgroundColor: colors.gameSurfacePressed,
   },
 });

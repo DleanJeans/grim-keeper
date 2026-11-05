@@ -150,10 +150,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   full: {
-    borderRadius: 8,
+    borderRadius: 18,
     borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    height: 36,
+    paddingHorizontal: 12,
   },
   icon: {
     alignItems: 'center',
@@ -192,6 +192,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   label: {
-    fontSize: 10,
+    fontSize: 13,
+    fontWeight: '800',
   },
 });

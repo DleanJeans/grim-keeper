@@ -16,7 +16,6 @@ import { DayEditLockButton } from '@/components/game/day-edit-lock-button';
 import { DayJumpButtons } from '@/components/game/day-jump-buttons';
 import { DayRecapSheet } from '@/components/game/day-recap-sheet';
 import { DaysLeftNote } from '@/components/game/days-left-note';
-import { DjGameButton } from '@/components/game/dj-game-button';
 import { GameMap } from '@/components/game/game-map';
 import {
   type GameRouteContextValue,
@@ -29,11 +28,9 @@ import { GameTabContent } from '@/components/game/game-tab-content';
 import { GameTabs } from '@/components/game/game-tabs';
 import { INLINE_GAME_HEADER_HEIGHT, InlineGameHeader } from '@/components/game/inline-game-header';
 import { MapModeActions } from '@/components/game/map-mode-actions';
+import { MapToolbar } from '@/components/game/map-toolbar';
 import { PlayerCountStatus } from '@/components/game/player-count-status';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
-import { RevealRolesButton } from '@/components/game/reveal-roles-button';
-import { RoleDisplayModes } from '@/components/game/role-display-modes';
-import { SuspectFilterButton } from '@/components/game/suspect-filter-button';
 import { UndoBar } from '@/components/game/undo-bar';
 import { NotFoundScreen } from '@/components/not-found-screen';
 import { ResponsiveContent } from '@/components/responsive-content';
@@ -1138,7 +1135,14 @@ export default function GameRoute() {
             contentContainerStyle={scrollContentStyle}
           >
             <ResponsiveContent style={styles.gameContent}>
-              <GameMap />
+              <View key="map" style={styles.mapWithToolbar}>
+                <GameMap />
+                <MapToolbar
+                  djEnabled={djEnabled}
+                  onToggleSuspectFilter={() => setSuspectFilter((value) => !value)}
+                  suspectFilter={suspectFilter}
+                />
+              </View>
 
               <View key="day-and-counts" style={styles.dayAndCountsRow}>
                 <View style={styles.leftCounts}>
@@ -1228,10 +1232,6 @@ export default function GameRoute() {
                 </View>
               )}
 
-              <View key="role-display-modes">
-                <RoleDisplayModes />
-              </View>
-
               <View key="tab-bar">
                 <GameTabs />
               </View>
@@ -1259,21 +1259,6 @@ export default function GameRoute() {
               }}
             />
           ) : null}
-
-          <View style={styles.fabStack}>
-            {djEnabled ? <DjGameButton gameId={activeGame.id} /> : null}
-            {showRoles ? (
-              <SuspectFilterButton
-                active={suspectFilter}
-                onToggle={() => setSuspectFilter((value) => !value)}
-              />
-            ) : null}
-            <RevealRolesButton
-              onRevealRolesChange={setShowRoles}
-              showRoles={showRoles}
-              variant="icon"
-            />
-          </View>
         </View>
       </GameRouteProvider>
     </>
@@ -1304,20 +1289,13 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
   },
-  fabStack: {
-    alignItems: 'center',
-    bottom: 32,
-    gap: 12,
-    pointerEvents: 'box-none',
-    position: 'absolute',
-    right: 16,
-  },
   dayAndCountsRow: {
     alignItems: 'center',
     flexDirection: 'row',
   },
   centeredDayCount: { alignItems: 'center', flex: 1, position: 'relative' },
   dayEditLock: { position: 'absolute', right: 0 },
+  mapWithToolbar: { gap: 8 },
   leftCounts: { alignItems: 'flex-start', flex: 1 },
   rightCounts: { alignItems: 'flex-end', flex: 1 },
   gameContent: {

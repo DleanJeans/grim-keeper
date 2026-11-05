@@ -21,22 +21,22 @@ export function SuspectFilterButton({ active, onToggle }: SuspectFilterButtonPro
       onPress={onToggle}
       style={({ pressed }) => [styles.button, active && styles.active, pressed && styles.pressed]}
     >
-      <Icon color={active ? colors.background : colors.text} size={20} strokeWidth={2.5} />
+      <Icon color={active ? colors.gameBackground : colors.gameText} size={18} strokeWidth={2.5} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  active: { backgroundColor: colors.text, borderColor: colors.text },
+  active: { backgroundColor: colors.gameText, borderColor: colors.gameText },
   button: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.borderStrong,
-    borderRadius: 28,
+    backgroundColor: colors.gameSurface,
+    borderColor: colors.gameBorder,
+    borderRadius: 18,
     borderWidth: 1,
-    height: 56,
+    height: 36,
     justifyContent: 'center',
-    width: 56,
+    width: 36,
   },
   pressed: { opacity: 0.75 },
 });

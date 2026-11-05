@@ -9,7 +9,7 @@ import {
   getRoleAssignmentForDayOrPrevious,
 } from '@/utils/role-utils';
 
-const roleDisplayModes: {
+export const roleDisplayModes: {
   label: string;
   value: RoleDisplayMode;
 }[] = [
