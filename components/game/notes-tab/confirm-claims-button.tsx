@@ -5,15 +5,18 @@ import { useGameRouteContext } from '@/components/game/game-route-context';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import { getClaimsToConfirm } from '@/utils/claim-note-utils';
+import { getClaimsToConfirm } from '@/utils/claim-confirm-utils';
 
-/** Turns every single, unconfirmed claim into a confirm for the phase on screen. */
+/**
+ * Once the game has a result, turns every single, unconfirmed claim into a confirm for the phase
+ * on screen. Hidden while Show roles is off.
+ */
 export function ConfirmClaimsButton() {
-  const { activeDay, activePhase, game, runDayEdit } = useGameRouteContext();
+  const { activeDay, activePhase, game, runDayEdit, showRoles } = useGameRouteContext();
   const setPlayerRoleAssignment = useGameStore((state) => state.setPlayerRoleAssignment);
   const claims = getClaimsToConfirm(game, activeDay, activePhase);
 
-  if (claims.length === 0) {
+  if (game.result === undefined || !showRoles || claims.length === 0) {
     return null;
   }
 
