@@ -49,7 +49,7 @@ export function getFriendGameRoles(player: Player, roles: Role[]): FriendGameRol
  * Role ids of `kind`, oldest first: the latest assignment of each phase, skipping phases that
  * repeat the previous roles and empty assignments.
  */
-function getAssignmentStages(
+export function getAssignmentStages(
   assignments: PlayerRoleAssignment[] | undefined,
   kind: PlayerRoleAssignment['kind'],
 ): string[][] {

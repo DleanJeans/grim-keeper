@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { PastEvilTeamsButton } from '@/components/game/notes-tab/role-info/past-evil-teams-button';
 import { RandomPlayersPicker } from '@/components/game/notes-tab/role-info/random-players-picker';
 import { RoleInfoPickerDialog } from '@/components/game/notes-tab/role-info/role-info-picker-dialog';
 import { RoleInfoToken } from '@/components/game/notes-tab/role-info/role-info-token';
@@ -103,6 +104,7 @@ export function EvilInPlayPicker() {
           <UnclaimedRoles playersWithoutClaims={playersWithoutClaims} roles={unclaimedRoles} />
         </>
       ) : null}
+      <PastEvilTeamsButton game={game} />
       <RoleInfoPickerDialog
         day={activeDay}
         key={activeSlot?.slotId ?? 'closed'}

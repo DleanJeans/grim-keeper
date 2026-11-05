@@ -63,6 +63,9 @@ const baseColors = {
   winBarOverall: '#f4f1ea',
   winBarTrack: '#2a2f37',
   winBarTick: '#a8a29a',
+  // Good and evil team colours in Past evil teams
+  teamGood: '#3b82f6',
+  teamEvil: '#dc2626',
   // Alive, dead and Traveller counts above the map
   statusAlive: '#86efac',
   statusDead: '#fca5a5',

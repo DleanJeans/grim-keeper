@@ -256,6 +256,15 @@ function getGameAlignment(game: Game, playerId: string) {
   return role ? getRoleAlignment(role) : undefined;
 }
 
+/** Which team won, from the app user's alignment and result. Unknown without either. */
+export function getWinningTeam(game: Game): 'good' | 'evil' | undefined {
+  const alignment = getGameAlignment(game, APP_USER_ID);
+  if (game.result === undefined || !alignment) return undefined;
+
+  const userWon = game.result === 'won';
+  return (alignment === 'g') === userWon ? 'good' : 'evil';
+}
+
 /** A friend's result in a game, from their side. Games they storytold have no result. */
 export function getGameResultForPlayer(game: Game, playerId: string): GameResult | undefined {
   if (game.result === undefined || playerId === APP_USER_ID) {
