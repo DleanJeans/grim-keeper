@@ -5,6 +5,8 @@ import { useGameRouteContext } from '@/components/game/game-route-context';
 import { ClaimedRoleNotesLink } from '@/components/game/notes-tab/claimed-role-notes-link';
 import { DayNoteRow } from '@/components/game/notes-tab/day-note-row';
 import { LessonsSection } from '@/components/game/notes-tab/lessons/lessons-section';
+import { PlayerLessons } from '@/components/game/notes-tab/lessons/player-lessons';
+import { TonightLessonsCard } from '@/components/game/notes-tab/lessons/tonight-lessons-card';
 import { NightOrderSection } from '@/components/game/notes-tab/night-order-section';
 import { NotesTabScriptPicker } from '@/components/game/notes-tab/notes-tab-script-picker';
 import { PlayerNoteSection } from '@/components/game/notes-tab/player-note-section';
@@ -21,6 +23,7 @@ import { getNotesForPlayer, useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { getFriendByName, getFriendSummaries } from '@/utils/friend-utils';
 import { getPhaseLabel } from '@/utils/game-phase-utils';
+import { getPlayerLessons } from '@/utils/lesson-utils';
 import { getRoleAssignmentForDayOrPrevious, getRolesByIds } from '@/utils/role-utils';
 
 export function NotesTab() {
@@ -64,6 +67,7 @@ export function NotesTab() {
         {showRoles ? <TokenLabelInput key={focusedPlayer.id} player={focusedPlayer} /> : null}
         <RoleInfoTable player={focusedPlayer} />
         <PlayerNoteSection player={focusedPlayer} />
+        <PlayerLessons lessons={getPlayerLessons(savedNotes, focusedPlayer.name, game.id)} />
         <PlayerTimelineButton player={focusedPlayer} />
         {claimedRoleCounts.map(({ count, role }) => (
           <ClaimedRoleNotesLink
@@ -94,6 +98,7 @@ export function NotesTab() {
       <View style={styles.emptyContainer}>
         <NotesTabScriptPicker />
         <RoleAssignmentActions />
+        <TonightLessonsCard />
         <EvilInPlayPicker />
         <TheoriesSection />
         <RoleInfoTable />
@@ -112,6 +117,7 @@ export function NotesTab() {
     <View style={styles.container}>
       <NotesTabScriptPicker />
       <RoleAssignmentActions />
+      <TonightLessonsCard />
       <EvilInPlayPicker />
       <TheoriesSection />
       <RoleInfoTable />

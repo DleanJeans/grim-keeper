@@ -1,7 +1,9 @@
-import { Check, Plus } from 'lucide-react-native';
+import { Plus } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
+import { FriendNameLink } from '@/components/game/notes-tab/lessons/friend-name-link';
+import { LessonsList } from '@/components/game/notes-tab/lessons/lessons-list';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
@@ -50,9 +52,9 @@ export function LessonPlayerRow({
   return (
     <View style={[styles.row, editing && styles.rowEditing]}>
       <View style={styles.header}>
-        <Text numberOfLines={1} style={styles.name}>
-          {player.playerName}
-        </Text>
+        <View style={styles.nameWrap}>
+          <FriendNameLink name={player.playerName} style={styles.name} />
+        </View>
         {showRoles && player.roleText ? (
           <Text
             numberOfLines={1}
@@ -73,14 +75,7 @@ export function LessonPlayerRow({
           </Pressable>
         )}
       </View>
-      {lessons.map((lesson) => (
-        <View key={lesson.id} style={styles.lesson}>
-          <Check color={colors.success} size={14} strokeWidth={2.6} />
-          <Text selectable style={styles.lessonText}>
-            {lesson.text}
-          </Text>
-        </View>
-      ))}
+      {lessons.length > 0 ? <LessonsList lessons={lessons} /> : null}
       {editing ? (
         <>
           <TextInput
@@ -157,9 +152,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     textAlignVertical: 'top',
   },
-  lesson: { alignItems: 'flex-start', flexDirection: 'row', gap: 6 },
-  lessonText: { color: colors.noteText, flex: 1, fontSize: 14, lineHeight: 19 },
-  name: { color: colors.gameText, flex: 1, fontSize: 15, fontWeight: '800' },
+  name: { color: colors.gameText, fontSize: 15, fontWeight: '800' },
+  nameWrap: { alignItems: 'flex-start', flex: 1, minWidth: 0 },
   roleChip: {
     borderRadius: 999,
     flexShrink: 1,

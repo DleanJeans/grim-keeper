@@ -12,11 +12,13 @@ import { useGameRouteContext } from '@/components/game/game-route-context';
 import type { OtherTokenPosition } from '@/components/game/player-token';
 import { PlayerToken } from '@/components/game/player-token';
 import { RoleInfoMapToken } from '@/components/game/role-info-map-token';
+import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Conversation, Player, PlayerPosition, Role, RoleDisplayMode } from '@/types/game';
 import { buildConversationGroupRepeats, getConversationGroupKey } from '@/utils/conversation-utils';
 import type { GamePhasePosition } from '@/utils/game-phase-utils';
 import { getPlayerMapPosition, getPlayerTokenScale, getTokenSize } from '@/utils/layout-utils';
+import { getLessonsForPlayers } from '@/utils/lesson-utils';
 import {
   getPlayerTokenName,
   hasDeadVoteAvailable,
@@ -233,6 +235,11 @@ export function GameMap() {
   );
   const disabledPlayerIdSet = useMemo(() => new Set(disabledPlayerIds), [disabledPlayerIds]);
   const dimmedPlayerIdSet = useMemo(() => new Set(dimmedPlayerIds), [dimmedPlayerIds]);
+  const savedNotes = useGameStore((state) => state.savedNotes);
+  const lessonPlayerIds = useMemo(
+    () => new Set(getLessonsForPlayers(game, savedNotes).map(({ playerId }) => playerId)),
+    [game, savedNotes],
+  );
   const theoryEvilIdSet = new Set(showRoles ? getActiveTheoryEvilIds(game) : []);
 
   // Filled in as each curve renders, so later curves steer clear of earlier line ends and arrowheads
@@ -496,6 +503,7 @@ export function GameMap() {
               player={stripFutureAndRevivedDeath(player, activePosition)}
               players={players}
               position={ownPosition}
+              hasLessons={lessonPlayerIds.has(player.id)}
               showRoles={showRoles}
               suspicion={
                 showRoles
@@ -524,6 +532,7 @@ function PlayerTokenForMap({
   dimmed,
   disabled,
   gameRoles,
+  hasLessons,
   label,
   theoryEvil,
   conversations,
@@ -549,6 +558,7 @@ function PlayerTokenForMap({
   activeTokenSize: number;
   dimmed: boolean;
   disabled: boolean;
+  hasLessons: boolean;
   label?: string;
   theoryEvil: boolean;
   gameRoles: Role[];
@@ -590,6 +600,7 @@ function PlayerTokenForMap({
       confirmedRoleIds={roleDisplay.kind === 'confirm' ? roleDisplay.roleIds : undefined}
       dimmed={dimmed}
       disabled={disabled}
+      hasLessons={hasLessons}
       label={label}
       theoryEvil={theoryEvil}
       displayName={getPlayerTokenName(player, players)}

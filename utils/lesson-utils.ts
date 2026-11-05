@@ -2,6 +2,7 @@ import type { Game, GamePhase, Role, SavedNote } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
 import { APP_USER_ID } from '@/utils/object-id';
 import { getRoleAlignment, getRoleAssignmentForDayOrPrevious } from '@/utils/role-utils';
+import { getNotesForPlayer } from '@/utils/saved-note-store';
 
 export type LessonPlayer = {
   playerId: string;
@@ -77,4 +78,23 @@ export function getLessonsFromGame(savedNotes: SavedNote[], playerName: string, 
         normalizePlayerName(note.playerName).toLocaleLowerCase() === playerKey,
     )
     .sort((first, second) => first.createdAt.localeCompare(second.createdAt));
+}
+
+/** Notes saved about a player in other games, newest first: what to remember about them now. */
+export function getPlayerLessons(savedNotes: SavedNote[], playerName: string, gameId: string) {
+  return getNotesForPlayer(savedNotes, playerName).filter((note) => note.gameId !== gameId);
+}
+
+export type PlayerLessons = { lessons: SavedNote[]; playerId: string; playerName: string };
+
+/** Every player in the game, in seat order, who has lessons from other games. */
+export function getLessonsForPlayers(
+  game: Pick<Game, 'id' | 'players'>,
+  savedNotes: SavedNote[],
+): PlayerLessons[] {
+  return game.players.flatMap((player) => {
+    if (player.id === APP_USER_ID || player.isStoryteller) return [];
+    const lessons = getPlayerLessons(savedNotes, player.name, game.id);
+    return lessons.length > 0 ? [{ lessons, playerId: player.id, playerName: player.name }] : [];
+  });
 }

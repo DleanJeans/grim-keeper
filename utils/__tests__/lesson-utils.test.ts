@@ -1,5 +1,5 @@
 import type { Player, Role, SavedNote } from '@/types/game';
-import { getLessonPlayers, getLessonsFromGame } from '@/utils/lesson-utils';
+import { getLessonPlayers, getLessonsForPlayers, getLessonsFromGame } from '@/utils/lesson-utils';
 
 const roles = [
   { id: 'chef', name: 'Chef', team: 'townsfolk' },
@@ -61,5 +61,28 @@ describe('getLessonsFromGame', () => {
     ];
 
     expect(getLessonsFromGame(savedNotes, 'ANN', 'g1').map((n) => n.id)).toEqual(['a', 'b']);
+  });
+});
+
+describe('getLessonsForPlayers', () => {
+  it('lists players with notes from other games, newest first, skipping you and the Storyteller', () => {
+    const note = (id: string, playerName: string, gameId: string, createdAt: string) =>
+      ({ createdAt, gameId, id, playerName, roleIds: [], text: id }) as unknown as SavedNote;
+    const savedNotes = [
+      note('old', 'Ann', 'g0', '2026-01-01'),
+      note('new', 'Ann', 'g1', '2026-01-02'),
+      note('this-game', 'Ann', 'g2', '2026-01-03'),
+      note('only-this-game', 'Bob', 'g2', '2026-01-03'),
+      note('st', 'St', 'g1', '2026-01-03'),
+    ];
+    const players = [player('ann', { name: 'Ann' }), player('bob', { name: 'Bob' })];
+    players.push(player('st', { isStoryteller: true, name: 'St' }));
+
+    expect(
+      getLessonsForPlayers({ id: 'g2', players }, savedNotes).map(({ lessons, playerId }) => [
+        playerId,
+        lessons.map((lesson) => lesson.id),
+      ]),
+    ).toEqual([['ann', ['new', 'old']]]);
   });
 });

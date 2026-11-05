@@ -82,6 +82,8 @@ type PlayerTokenProps = {
   rolesConfirmed?: boolean;
   rearrangeMode?: boolean;
   showRoleDetails?: boolean;
+  /** Small gold dot at the top left: you saved notes about this player in other games. */
+  hasLessons?: boolean;
   /** Small dot at the top right: the app user's trust in this player. */
   suspicion?: SuspicionLevel;
   tokenSize: number;
@@ -98,6 +100,7 @@ export function PlayerToken({
   dimmed = false,
   disabled = false,
   displayName,
+  hasLessons = false,
   isInitiator = false,
   isSelected = false,
   label,
@@ -141,6 +144,8 @@ export function PlayerToken({
   const suspicionDotReach = (tokenSize / 2) * Math.SQRT1_2;
   const suspicionDotLeft = tokenSize / 2 + suspicionDotReach - borderWidth - suspicionDotSize / 2;
   const suspicionDotTop = tokenSize / 2 - suspicionDotReach - borderWidth - suspicionDotSize / 2;
+  // The lessons dot mirrors it at the top left.
+  const lessonsDotLeft = tokenSize / 2 - suspicionDotReach - borderWidth - suspicionDotSize / 2;
   const claimObstacles: ClaimOrbitObstacle[] = [];
   if (hasDeadVote) {
     claimObstacles.push({ radius: badgeSize / 2, x: 0, y: tokenSize / 2 - badgeSize / 2 });
@@ -149,6 +154,13 @@ export function PlayerToken({
     claimObstacles.push({
       radius: suspicionDotSize / 2,
       x: suspicionDotReach,
+      y: -suspicionDotReach,
+    });
+  }
+  if (hasLessons) {
+    claimObstacles.push({
+      radius: suspicionDotSize / 2,
+      x: -suspicionDotReach,
       y: -suspicionDotReach,
     });
   }
@@ -373,6 +385,22 @@ export function PlayerToken({
             ]}
           />
         ) : null}
+        {hasLessons ? (
+          <View
+            accessibilityLabel="Has saved notes"
+            style={[
+              styles.suspicionDot,
+              styles.lessonsDot,
+              {
+                borderRadius: suspicionDotSize / 2,
+                height: suspicionDotSize,
+                left: lessonsDotLeft,
+                top: suspicionDotTop,
+                width: suspicionDotSize,
+              },
+            ]}
+          />
+        ) : null}
         {theoryEvil ? (
           <View
             style={[
@@ -550,6 +578,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     position: 'absolute',
   },
+  lessonsDot: { backgroundColor: colors.savedNoteIcon },
   suspectDot: { backgroundColor: colors.suspicionSuspect },
   tokenLabel: {
     backgroundColor: colors.gameSurfaceRaised,
