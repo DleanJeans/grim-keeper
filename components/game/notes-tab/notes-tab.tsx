@@ -3,8 +3,8 @@ import { StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { ClaimedRoleNotesLink } from '@/components/game/notes-tab/claimed-role-notes-link';
-import { ConfirmClaimsButton } from '@/components/game/notes-tab/confirm-claims-button';
 import { DayNoteRow } from '@/components/game/notes-tab/day-note-row';
+import { LessonsSection } from '@/components/game/notes-tab/lessons/lessons-section';
 import { NightOrderSection } from '@/components/game/notes-tab/night-order-section';
 import { NotesTabScriptPicker } from '@/components/game/notes-tab/notes-tab-script-picker';
 import { PlayerNoteSection } from '@/components/game/notes-tab/player-note-section';
@@ -98,7 +98,7 @@ export function NotesTab() {
         <TheoriesSection />
         <RoleInfoTable />
         <NightOrderSection />
-        <ConfirmClaimsButton />
+        <LessonsSection />
         <Text style={styles.phaseHeader}>
           {getPhaseLabel({ activeDay, activePhase }, startingNight)}
         </Text>
@@ -116,7 +116,7 @@ export function NotesTab() {
       <TheoriesSection />
       <RoleInfoTable />
       <NightOrderSection />
-      <ConfirmClaimsButton />
+      <LessonsSection />
       <Text style={styles.phaseHeader}>
         {getPhaseLabel({ activeDay, activePhase }, startingNight)}
       </Text>
