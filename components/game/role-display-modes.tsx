@@ -5,7 +5,7 @@ import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Player, RoleDisplayMode } from '@/types/game';
 import {
-  getLatestRumorMapDisplaysForDayOrPrevious,
+  getLatestRumorAboutPlayerForDayOrPrevious,
   getRoleAssignmentForDayOrPrevious,
 } from '@/utils/role-utils';
 
@@ -40,11 +40,15 @@ export function RoleDisplayModes() {
     claim: countRoleAssignments(game.players, activeDay, 'claim', activePhase),
     confirm: countRoleAssignments(game.players, activeDay, 'confirm', activePhase),
     guess: countRoleAssignments(game.players, activeDay, 'guess', activePhase),
-    rumor: getLatestRumorMapDisplaysForDayOrPrevious(
-      game.players,
-      activeDay,
-      game.script.roles,
-      activePhase,
+    // Every player the map shows a rumor on, including rumors logged without a source.
+    rumor: game.players.filter((player) =>
+      getLatestRumorAboutPlayerForDayOrPrevious(
+        game.players,
+        player.id,
+        activeDay,
+        game.script?.roles ?? [],
+        activePhase,
+      ),
     ).length,
   };
 
