@@ -6,7 +6,7 @@ import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 
 /** One-tap notes about how a player is acting; tapping a used tag again removes it. */
-const QUICK_TAGS = ['Quiet', 'Pushy', 'Confident', 'Nervous', 'Talkative', 'Defensive'];
+export const QUICK_TAGS = ['Quiet', 'Pushy', 'Confident', 'Nervous', 'Talkative', 'Defensive'];
 
 export function QuickNoteTags() {
   const { activeDay, activePhase, focusedPlayer, game, interactionMode, runDayEdit } =

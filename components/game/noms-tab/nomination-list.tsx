@@ -1,12 +1,10 @@
 import { StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
-import { NominateButton } from '@/components/game/noms-tab/action-buttons/nominate-button';
 import { HighlightVotersButton } from '@/components/game/noms-tab/highlight-voters-button';
 import { NominationAvailability } from '@/components/game/noms-tab/nomination-availability';
 import { NominationRow } from '@/components/game/noms-tab/nomination-row';
 import { PlayerNominationHistory } from '@/components/game/noms-tab/player-nomination-history';
-import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
@@ -22,21 +20,16 @@ export function NominationList() {
     activeDayCutoff,
     activePhase,
     conversations,
-    focusedPlayer,
-    focusedPlayerIsDead,
     handleDeleteNomination,
     handleEditNominationVotes,
     handleToggleVoterHighlights,
-    handleStartTracking,
     runDayEdit,
     game,
-    nominationDisabled,
     players,
     trackingMode,
     voterHighlightsActive,
     votingNominationId,
   } = useGameRouteContext();
-  const playerById = new Map(players.map((player) => [player.id, player]));
   const nominations = conversations.filter(
     (conversation) => conversation.day === activeDayCutoff && conversation.kind === 'nomination',
   );
@@ -45,36 +38,9 @@ export function NominationList() {
   const voterIds = [...new Set(nominations.flatMap((nomination) => nomination.voterIds ?? []))];
   const hasFlowerGirl = game.script?.roles.some(isFlowerGirlRole) ?? false;
   const bigWig = getRolesByIds(game.lorics ?? [], roleCatalog).find((role) => role.id === 'bigwig');
-  const focusedPlayerNomination = focusedPlayer
-    ? nominations.find((nomination) => nomination.initiatorId === focusedPlayer.id)
-    : undefined;
-  const focusedPlayerNomineeId = focusedPlayerNomination
-    ? focusedPlayerNomination.participantIds.find(
-        (playerId) => playerId !== focusedPlayerNomination.initiatorId,
-      )
-    : undefined;
-  const focusedPlayerNomineeName = focusedPlayerNomineeId
-    ? (playerById.get(focusedPlayerNomineeId)?.name ?? 'Unknown')
-    : undefined;
-  const focusedPlayerNominee = focusedPlayerNomineeId
-    ? playerById.get(focusedPlayerNomineeId)
-    : undefined;
 
   return (
     <View style={styles.list}>
-      {activePhase === 'day' && focusedPlayer && !trackingMode && !votingNominationId ? (
-        <View style={innerActionRow}>
-          <NominateButton
-            alreadyNominatedName={focusedPlayerNomineeName}
-            alreadyNominatedPlayer={focusedPlayerNominee}
-            dead={focusedPlayerIsDead}
-            disabled={nominationDisabled}
-            onPress={() => handleStartTracking('nomination')}
-            playerName={focusedPlayer.name}
-          />
-        </View>
-      ) : null}
-
       {activePhase === 'day' && activeDayCutoff >= 1 && !trackingMode && !votingNominationId ? (
         <NominationAvailability day={activeDayCutoff} nominations={nominations} players={players} />
       ) : null}

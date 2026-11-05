@@ -2,17 +2,11 @@ import { List, Table2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
-import { InteractionButton } from '@/components/game/interactions-tab/action-buttons/interaction-button';
 import { ConversationTable } from '@/components/game/interactions-tab/conversation-table';
 import { InteractionList } from '@/components/game/interactions-tab/interaction-list';
 import { NotTalkedWith } from '@/components/game/interactions-tab/not-talked-with';
 import { TrackingConfirmActions } from '@/components/game/interactions-tab/tracking-confirm-actions';
-import {
-  innerActionRow,
-  tabBarButtonStyle,
-  tabBarContainer,
-  tabBarLabelStyle,
-} from '@/components/game/styles';
+import { tabBarButtonStyle, tabBarContainer, tabBarLabelStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 
@@ -37,10 +31,8 @@ export function InteractionsTab() {
     activeDayCutoff,
     activePhase,
     conversations,
-    focusedPlayer,
     focusedPlayerId,
     handleDeleteConversation,
-    handleStartTracking,
     players,
     trackingMode,
   } = useGameRouteContext();
@@ -48,16 +40,7 @@ export function InteractionsTab() {
 
   return (
     <View style={styles.container}>
-      {activePhase === 'day' && trackingMode === 'interaction' ? (
-        <TrackingConfirmActions />
-      ) : activePhase === 'day' && focusedPlayer ? (
-        <View style={innerActionRow}>
-          <InteractionButton
-            onPress={() => handleStartTracking('interaction')}
-            playerName={focusedPlayer.name}
-          />
-        </View>
-      ) : null}
+      {activePhase === 'day' && trackingMode === 'interaction' ? <TrackingConfirmActions /> : null}
 
       <View accessibilityRole="tablist" style={tabBarContainer}>
         {interactionSubtabs.map((tab) => {

@@ -51,6 +51,8 @@ export type GameRouteContextValue = {
 
   // Transient state
   activeTab: GameTab;
+  /** The Deaths tab's kill attribution panel is open for the selected player. */
+  killAttributionOpen: boolean;
   trackingMode: TrackingMode | null;
   votingNominationId: string | null;
   votingReturnTab: GameTab | null;
@@ -79,6 +81,7 @@ export type GameRouteContextValue = {
 
   // Handlers
   setActiveTab: (tab: GameTab) => void;
+  setKillAttributionOpen: (open: boolean) => void;
   setNoteDraft: (text: string) => void;
   exitMapModes: () => void;
   exitRearrangeMode: () => void;

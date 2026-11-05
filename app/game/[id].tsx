@@ -30,11 +30,11 @@ import { INLINE_GAME_HEADER_HEIGHT, InlineGameHeader } from '@/components/game/i
 import { MapModeActions } from '@/components/game/map-mode-actions';
 import { MapToolbar } from '@/components/game/map-toolbar';
 import { PlayerCountStatus } from '@/components/game/player-count-status';
+import { PlayerDock } from '@/components/game/player-dock';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
 import { UndoBar } from '@/components/game/undo-bar';
 import { NotFoundScreen } from '@/components/not-found-screen';
 import { ResponsiveContent } from '@/components/responsive-content';
-import { Text } from '@/components/text';
 import { useWebFullscreen } from '@/hooks/use-web-fullscreen';
 import { useDjStore } from '@/store/dj-store';
 import { getGameById, useGameStore } from '@/store/game-store';
@@ -129,6 +129,8 @@ export default function GameRoute() {
   const setGameResult = useGameStore((state) => state.setGameResult);
   const djEnabled = useDjStore((state) => state.enabled);
   const [activeTab, setActiveTab] = useState<GameTab>('notes');
+  // Player the kill attribution panel was opened for; selecting someone else closes it.
+  const [killAttributionPlayerId, setKillAttributionPlayerId] = useState<string | null>(null);
   const [trackingMode, setTrackingMode] = useState<TrackingMode | null>(null);
   const [votingNominationId, setVotingNominationId] = useState<string | null>(null);
   const [votingNominationIsNew, setVotingNominationIsNew] = useState(false);
@@ -208,6 +210,8 @@ export default function GameRoute() {
   const openedGameId = useRef<string | null>(null);
   const appliedDeepLinkKey = useRef<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
+  // Where the tab bar sits inside the scrolled content, for scrolling the role picker into view.
+  const tabBarYRef = useRef(0);
 
   useEffect(() => {
     if (
@@ -824,6 +828,35 @@ export default function GameRoute() {
     }
   }
 
+  /** The dock's note buttons open the picker on the Roles tab and scroll it into view. */
+  function handleDockRoleAssignment(kind: PlayerRoleAssignment['kind']) {
+    setActiveTab('notes');
+    handleStartRoleAssignment(kind);
+    // A rumor's source is picked on the map, so it stays in view.
+    if (kind !== 'rumor') {
+      scrollToTabBar();
+    }
+  }
+
+  /** Kill in the dock opens the kill attribution panel on the Deaths tab. */
+  function handleDockKill() {
+    setActiveTab('deaths');
+    setKillAttributionPlayerId(focusedPlayerId);
+    scrollToTabBar();
+  }
+
+  /** Nominate and Talk in the dock pick the other player on the map, so the map stays in view. */
+  function handleDockTracking(mode: TrackingMode) {
+    setActiveTab(mode === 'nomination' ? 'nominations' : 'interactions');
+    handleStartTracking(mode);
+  }
+
+  function scrollToTabBar() {
+    requestAnimationFrame(() => {
+      scrollViewRef.current?.scrollTo({ animated: true, y: Math.max(0, tabBarYRef.current) });
+    });
+  }
+
   function handleSelectRumorSource(sourcePlayerId: string) {
     if (!focusedPlayer || roleAssignmentKind !== 'rumor') {
       return;
@@ -1048,6 +1081,7 @@ export default function GameRoute() {
     mapScale,
     nominationCurves,
     activeTab: getVisibleGameTab(activeTab, activePhase),
+    killAttributionOpen: !!focusedPlayerId && killAttributionPlayerId === focusedPlayerId,
     trackingMode,
     votingNominationId,
     votingReturnTab,
@@ -1074,6 +1108,7 @@ export default function GameRoute() {
     dayEditLocked,
     canUndoRotation: lastRotationPositions !== null,
     setActiveTab,
+    setKillAttributionOpen: (open) => setKillAttributionPlayerId(open ? focusedPlayerId : null),
     setNoteDraft,
     exitMapModes,
     exitRearrangeMode,
@@ -1232,7 +1267,12 @@ export default function GameRoute() {
                 </View>
               )}
 
-              <View key="tab-bar">
+              <View
+                key="tab-bar"
+                onLayout={(event) => {
+                  tabBarYRef.current = event.nativeEvent.layout.y;
+                }}
+              >
                 <GameTabs />
               </View>
 
@@ -1242,23 +1282,24 @@ export default function GameRoute() {
             </ResponsiveContent>
           </Animated.ScrollView>
 
-          {focusedPlayer ? (
-            <View style={styles.selectingBar}>
-              <Text style={styles.selectingLabel}>Selecting: {focusedPlayer.name}</Text>
-            </View>
-          ) : null}
-
-          {undo ? (
-            <UndoBar
-              key={undo.id}
-              label={undo.label}
-              onDismiss={() => setUndo(null)}
-              onUndo={() => {
-                restoreGame(undo.before);
-                setUndo(null);
-              }}
+          <View style={styles.bottomArea}>
+            <PlayerDock
+              onStartKill={handleDockKill}
+              onStartRoleAssignment={handleDockRoleAssignment}
+              onStartTracking={handleDockTracking}
             />
-          ) : null}
+            {undo ? (
+              <UndoBar
+                key={undo.id}
+                label={undo.label}
+                onDismiss={() => setUndo(null)}
+                onUndo={() => {
+                  restoreGame(undo.before);
+                  setUndo(null);
+                }}
+              />
+            ) : null}
+          </View>
         </View>
       </GameRouteProvider>
     </>
@@ -1269,7 +1310,7 @@ function createScrollContentStyle(topInset: number) {
   return StyleSheet.create({
     scrollContent: {
       gap: 20,
-      paddingBottom: 132,
+      paddingBottom: 96,
       paddingHorizontal: 20,
       paddingTop: INLINE_GAME_HEADER_HEIGHT + topInset,
     },
@@ -1284,6 +1325,7 @@ function withPositions(players: Player[], positions: Record<string, PlayerPositi
 }
 
 const styles = StyleSheet.create({
+  bottomArea: { position: 'relative' },
   body: {
     backgroundColor: colors.gameBackground,
     flex: 1,
@@ -1303,17 +1345,5 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flex: 1,
-  },
-  selectingBar: {
-    backgroundColor: colors.gameSurface,
-    borderTopColor: colors.gameBorder,
-    borderTopWidth: 1,
-    paddingVertical: 12,
-  },
-  selectingLabel: {
-    color: colors.gameText,
-    fontSize: 14,
-    fontWeight: '700',
-    textAlign: 'center',
   },
 });

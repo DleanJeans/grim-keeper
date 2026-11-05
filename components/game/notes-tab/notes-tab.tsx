@@ -9,12 +9,10 @@ import { NightOrderSection } from '@/components/game/notes-tab/night-order-secti
 import { NotesTabScriptPicker } from '@/components/game/notes-tab/notes-tab-script-picker';
 import { PlayerNoteSection } from '@/components/game/notes-tab/player-note-section';
 import { PlayerTimelineButton } from '@/components/game/notes-tab/player-timeline-button';
-import { QuickNoteTags } from '@/components/game/notes-tab/quick-note-tags';
 import { RoleAssignmentActions } from '@/components/game/notes-tab/role-assignment-actions';
 import { EvilInPlayPicker } from '@/components/game/notes-tab/role-info/evil-in-play-picker';
 import { RoleInfoTable } from '@/components/game/notes-tab/role-info/role-info-table';
 import { SavedFriendNotesLink } from '@/components/game/notes-tab/saved-friend-notes-link';
-import { SuspicionPicker } from '@/components/game/notes-tab/suspicion-picker';
 import { TheoriesSection } from '@/components/game/notes-tab/theories-section';
 import { TheoryEvilToggle } from '@/components/game/notes-tab/theory-evil-toggle';
 import { TokenLabelInput } from '@/components/game/notes-tab/token-label-input';
@@ -62,9 +60,7 @@ export function NotesTab() {
       <View style={styles.focusedContainer}>
         <NotesTabScriptPicker />
         <RoleAssignmentActions />
-        <SuspicionPicker />
         <TheoryEvilToggle player={focusedPlayer} />
-        <QuickNoteTags />
         {showRoles ? <TokenLabelInput key={focusedPlayer.id} player={focusedPlayer} /> : null}
         <RoleInfoTable player={focusedPlayer} />
         <PlayerNoteSection player={focusedPlayer} />

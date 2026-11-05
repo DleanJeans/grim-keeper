@@ -1,4 +1,4 @@
-import { CircleHelp, Megaphone, ShieldCheck, Skull, Tag, X } from 'lucide-react-native';
+import { Skull, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -10,7 +10,6 @@ import { TravelerRoleAlignmentButton } from '@/components/game/notes-tab/travele
 import { TravelerRolePicker } from '@/components/game/notes-tab/traveler-role-picker';
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { RoleAssignmentButton } from '@/components/game/role-assignment-button';
-import { innerActionRow } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
@@ -42,7 +41,6 @@ export function RoleAssignmentActions() {
     focusedPlayer,
     game,
     handleCancelRoleAssignment,
-    handleStartRoleAssignment,
     handleToggleRoleAssignment,
     rumorSubjectPlayerId,
     rumorSourcePlayerId,
@@ -170,34 +168,6 @@ export function RoleAssignmentActions() {
     : null;
   return (
     <View style={styles.container}>
-      {roleAssignmentKind ? null : (
-        <View style={innerActionRow}>
-          <RoleAssignmentButton
-            icon={Tag}
-            label="Claim"
-            onPress={() => handleStartRoleAssignment('claim')}
-            selected={false}
-          />
-          <RoleAssignmentButton
-            icon={ShieldCheck}
-            label="Confirm"
-            onPress={() => handleStartRoleAssignment('confirm')}
-            selected={false}
-          />
-          <RoleAssignmentButton
-            icon={Megaphone}
-            label="Rumor"
-            onPress={() => handleStartRoleAssignment('rumor')}
-            selected={false}
-          />
-          <RoleAssignmentButton
-            icon={CircleHelp}
-            label="Guess"
-            onPress={() => handleStartRoleAssignment('guess')}
-            selected={false}
-          />
-        </View>
-      )}
       {roleAssignmentKind ? (
         <View style={styles.panel}>
           <View style={styles.headerRow}>
