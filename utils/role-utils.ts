@@ -7,8 +7,8 @@ import type {
   RoleDisplayMode,
   StoredScript,
 } from '@/types/game';
+import { APP_USER_ID } from '@/utils/app-user';
 import { getEventPhaseIndex } from '@/utils/game-phase-utils';
-import { APP_USER_ID } from '@/utils/object-id';
 
 export const BOTC_ROLE_CATALOG_URL = 'https://release.botc.app/resources/data/roles.json';
 export const BOTC_ROLE_ICON_BASE_URL = 'https://release.botc.app/resources/characters';

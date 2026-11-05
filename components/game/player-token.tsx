@@ -375,7 +375,6 @@ export function PlayerToken({
         ) : null}
         {theoryEvil ? (
           <View
-            pointerEvents="none"
             style={[
               styles.theoryRing,
               {
@@ -390,7 +389,6 @@ export function PlayerToken({
         ) : null}
         {label ? (
           <View
-            pointerEvents="none"
             style={[
               styles.tokenLabelWrap,
               {
@@ -439,7 +437,6 @@ function PlayerTokenClaim({
 }) {
   return (
     <View
-      pointerEvents="none"
       style={[styles.claimToken, { borderRadius: size / 2, height: size, left, top, width: size }]}
     >
       <RoleIcon role={role} scale={1.25} size={size - CLAIM_TOKEN_BORDER_WIDTH * 2} />
@@ -538,6 +535,7 @@ const styles = StyleSheet.create({
     borderWidth: CLAIM_TOKEN_BORDER_WIDTH,
     justifyContent: 'center',
     overflow: 'hidden',
+    pointerEvents: 'none',
     position: 'absolute',
     zIndex: 1,
   },
@@ -565,8 +563,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     paddingVertical: 1,
   },
-  theoryRing: { borderColor: colors.theoryEvil, borderWidth: 3, position: 'absolute' },
-  tokenLabelWrap: { alignItems: 'center', position: 'absolute', zIndex: 3 },
+  theoryRing: {
+    borderColor: colors.theoryEvil,
+    borderWidth: 3,
+    pointerEvents: 'none',
+    position: 'absolute',
+  },
+  tokenLabelWrap: { alignItems: 'center', pointerEvents: 'none', position: 'absolute', zIndex: 3 },
   trustedDot: { backgroundColor: colors.suspicionTrusted },
   unsureDot: { backgroundColor: colors.suspicionUnsure },
   deadVoteBadge: {

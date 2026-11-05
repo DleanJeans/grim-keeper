@@ -1,10 +1,12 @@
 import type { Friend, Game, Player, SavedNote, StoredScript } from '@/types/game';
+import { APP_USER_ID } from '@/utils/app-user';
 import { normalizePlayerName } from '@/utils/conversation-utils';
 import { mapRoleInfoPlayerIds } from '@/utils/role-info-utils';
 import { SUSHI_BUFFET_SCRIPT_ID, SUSHI_BUFFET_SCRIPT_NAME } from '@/utils/script-constants';
 
+export { APP_USER_ID };
+
 const OFFICIAL_SCRIPT_AUTHOR = 'The Pandemonium Institute';
-export const APP_USER_ID = 'app-user';
 
 export function createGameId(scriptName: string | undefined, createdAt: string, usedIds: string[]) {
   return makeUniqueId(`${slugify(scriptName || 'game')}-${formatIdDate(createdAt)}`, usedIds);

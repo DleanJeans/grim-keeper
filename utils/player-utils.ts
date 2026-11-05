@@ -1,7 +1,7 @@
 import type { Conversation, GamePhase, Player } from '@/types/game';
+import { APP_USER_ID } from '@/utils/app-user';
 import { normalizePlayerName } from '@/utils/conversation-utils';
 import { getDeathPhase, getEventPhaseIndex, getPhaseIndex } from '@/utils/game-phase-utils';
-import { APP_USER_ID } from '@/utils/object-id';
 
 export function isPlayerCurrentlyDead(
   player: Player,
