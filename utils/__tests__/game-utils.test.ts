@@ -2,6 +2,8 @@ import type { Game, Player } from '@/types/game';
 import {
   getCharacterStats,
   getFriendClaimStats,
+  getGameMonthKey,
+  getGameMonthKeys,
   getGameResultForPlayer,
   getGameStats,
   getGamesWithRoleInPlay,
@@ -494,5 +496,19 @@ describe('getResumeGame', () => {
     ];
     expect(getResumeGame(games)?.id).toBe('recent');
     expect(getResumeGame([games[1]])).toBeUndefined();
+  });
+});
+
+describe('game months', () => {
+  const march = makeGame({ id: 'march', createdAt: '2026-03-15T12:00:00.000Z' });
+  const marchAgain = makeGame({ id: 'march-2', createdAt: '2026-03-20T12:00:00.000Z' });
+  const november = makeGame({ id: 'november', createdAt: '2026-11-02T12:00:00.000Z' });
+
+  it('keys a game by its month', () => {
+    expect(getGameMonthKey(march)).toBe('2026-03');
+  });
+
+  it('lists the months that have games, newest first', () => {
+    expect(getGameMonthKeys([march, november, marchAgain])).toEqual(['2026-11', '2026-03']);
   });
 });

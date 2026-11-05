@@ -6,11 +6,13 @@ import { FriendWinBars } from '@/components/friends/friend-win-bars';
 import { Text } from '@/components/text';
 import { getNotesForPlayer, useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import type { FriendSummary } from '@/types/game';
+import type { FriendSummary, Game } from '@/types/game';
 import { type GameStats, getFriendStats, type TeamFilter } from '@/utils/game-utils';
 
 type FriendRowProps = {
   friend: FriendSummary;
+  /** The games the stats are counted over. Defaults to every saved game. */
+  games?: Game[];
   /** Marks the app user's own row, which shows where you stand and opens nothing. */
   isYou?: boolean;
   /** Position in the current sort, starting at 1. */
@@ -24,8 +26,15 @@ const TEAM_SUFFIX: Record<TeamFilter, string> = {
   same: ' with you',
 };
 
-export function FriendRow({ friend, isYou = false, rank, team = 'all' }: FriendRowProps) {
-  const games = useGameStore((state) => state.games);
+export function FriendRow({
+  friend,
+  games: gamesOverride,
+  isYou = false,
+  rank,
+  team = 'all',
+}: FriendRowProps) {
+  const storedGames = useGameStore((state) => state.games);
+  const games = gamesOverride ?? storedGames;
   const savedNotes = useGameStore((state) => state.savedNotes);
   const gamesLabel = `${friend.gamesPlayed} ${friend.gamesPlayed === 1 ? 'game' : 'games'}${TEAM_SUFFIX[team]}`;
   const notesCount = isYou ? 0 : getNotesForPlayer(savedNotes, friend.name).length;

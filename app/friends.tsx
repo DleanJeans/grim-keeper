@@ -1,8 +1,8 @@
 import { Stack } from 'expo-router';
 import { Plus } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-
+import { FriendMonthFilter } from '@/components/friends/friend-month-filter';
 import { FriendRow } from '@/components/friends/friend-row';
 import { FriendSortControls } from '@/components/friends/friend-sort-controls';
 import { ResponsiveContent } from '@/components/responsive-content';
@@ -22,7 +22,7 @@ import {
   rankFriendsByWinRate,
   sortFriendSummaries,
 } from '@/utils/friend-utils';
-import type { TeamFilter } from '@/utils/game-utils';
+import { getGameMonthKey, getGameMonthKeys, type TeamFilter } from '@/utils/game-utils';
 import { APP_USER_ID } from '@/utils/object-id';
 
 type FriendListEmptyStateProps = {
@@ -40,20 +40,37 @@ export default function FriendsRoute() {
   const [team, setTeam] = useState<TeamFilter>('all');
   const [minGames, setMinGames] = useState(DEFAULT_MIN_RATED_GAMES);
   const appUserName = useGameStore((state) => state.appUserName);
-  const games = useGameStore((state) => state.games);
+  const allGames = useGameStore((state) => state.games);
   const storedFriends = useGameStore((state) => state.friends);
   const savedNotes = useGameStore((state) => state.savedNotes);
   const addFriend = useGameStore((state) => state.addFriend);
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+  const minGamesBeforeMonth = useRef(DEFAULT_MIN_RATED_GAMES);
+  const months = useMemo(() => getGameMonthKeys(allGames), [allGames]);
+  const games = useMemo(
+    () =>
+      selectedMonths.length > 0
+        ? allGames.filter((game) => selectedMonths.includes(getGameMonthKey(game)))
+        : allGames,
+    [allGames, selectedMonths],
+  );
+  const allFriends = useMemo(
+    () => getFriendSummaries(allGames, storedFriends, appUserName),
+    [allGames, appUserName, storedFriends],
+  );
   const friends = useMemo(
-    () => getFriendSummaries(games, storedFriends, appUserName),
-    [appUserName, games, storedFriends],
+    () =>
+      selectedMonths.length > 0
+        ? getFriendSummaries(games, storedFriends, appUserName)
+        : allFriends,
+    [allFriends, appUserName, games, selectedMonths.length, storedFriends],
   );
   const sortedFriends = useMemo(() => {
     const teamFriends = applyTeamFilter(friends, games, team);
     // Your own row joins the ranking, so you can see where you stand. Team filters compare a
     // friend with you, so they leave your row out.
     const you: FriendSummary | null =
-      team === 'all' && friends.length > 0 && games.length > 0
+      team === 'all' && allFriends.length > 0 && games.length > 0
         ? {
             createdAt: '',
             gamesPlayed: games.length,
@@ -65,13 +82,26 @@ export default function FriendsRoute() {
     const ranked = you ? [...teamFriends, you] : teamFriends;
 
     if (sort === 'games') {
-      return { friends: sortFriendSummaries(ranked, savedNotes), hiddenCount: 0 };
+      // A month leaves out friends you didn't play with in it.
+      const played =
+        selectedMonths.length > 0 ? ranked.filter((friend) => friend.gamesPlayed > 0) : ranked;
+      return { friends: sortFriendSummaries(played, savedNotes), hiddenCount: 0 };
     }
 
     const result = rankFriendsByWinRate(ranked, games, sort, minGames, team);
     const youHidden = !!you && you.gamesPlayed < Math.max(1, minGames);
     return { ...result, hiddenCount: result.hiddenCount - (youHidden ? 1 : 0) };
-  }, [appUserName, friends, games, minGames, savedNotes, sort, team]);
+  }, [
+    allFriends.length,
+    appUserName,
+    friends,
+    games,
+    minGames,
+    savedNotes,
+    selectedMonths.length,
+    sort,
+    team,
+  ]);
   const visibleFriends = useMemo(() => {
     const normalizedSearchText = searchText.trim().toLocaleLowerCase();
     return normalizedSearchText
@@ -85,10 +115,23 @@ export default function FriendsRoute() {
     [sortedFriends],
   );
   const newFriendName = normalizePlayerName(searchText);
-  const canAddFriend = newFriendName.length > 0 && !hasFriendName(friends, newFriendName);
+  const canAddFriend = newFriendName.length > 0 && !hasFriendName(allFriends, newFriendName);
   const hiddenLabel = `${sortedFriends.hiddenCount} ${
     sortedFriends.hiddenCount === 1 ? 'friend' : 'friends'
   } with fewer than ${minGames} ${minGames === 1 ? 'game' : 'games'} hidden.`;
+
+  // Comparing months leaves few games per friend, so picking a month lowers the minimum to 1 and
+  // going back to all time restores the value it had.
+  function handleChangeMonths(next: string[]) {
+    if (next.length > 0 && selectedMonths.length === 0) {
+      minGamesBeforeMonth.current = minGames;
+      setMinGames(1);
+    } else if (next.length === 0 && selectedMonths.length > 0) {
+      setMinGames(minGamesBeforeMonth.current);
+    }
+
+    setSelectedMonths(next);
+  }
 
   function handleAddFriend() {
     if (!canAddFriend) {
@@ -116,7 +159,14 @@ export default function FriendsRoute() {
             value={searchText}
           />
           {canAddFriend ? <AddFriendRow name={newFriendName} onAdd={handleAddFriend} /> : null}
-          {friends.length > 0 ? (
+          {allFriends.length > 0 ? (
+            <FriendMonthFilter
+              months={months}
+              onChangeMonths={handleChangeMonths}
+              selectedMonths={selectedMonths}
+            />
+          ) : null}
+          {allFriends.length > 0 ? (
             <FriendSortControls
               minGames={minGames}
               onChangeMinGames={setMinGames}
@@ -128,7 +178,7 @@ export default function FriendsRoute() {
           ) : null}
 
           <View style={styles.friendList}>
-            {friends.length === 0 ? (
+            {allFriends.length === 0 ? (
               canAddFriend ? null : (
                 <FriendListEmptyState message="No friends yet. Type a name above to add one." />
               )
@@ -146,6 +196,7 @@ export default function FriendsRoute() {
               visibleFriends.map((friend) => (
                 <FriendRow
                   friend={friend}
+                  games={games}
                   isYou={friend.id === APP_USER_ID}
                   key={friend.id}
                   rank={rankById.get(friend.id)}

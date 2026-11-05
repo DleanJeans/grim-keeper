@@ -156,6 +156,25 @@ export function getGameStats(games: Game[], playerId = APP_USER_ID): GameStats {
   };
 }
 
+/** The local month a game was created in, as a YYYY-MM key. */
+export function getGameMonthKey(game: Game) {
+  const date = new Date(game.createdAt);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** Months that have at least one game, newest first. */
+export function getGameMonthKeys(games: Game[]) {
+  return [...new Set(games.map(getGameMonthKey))].sort().reverse();
+}
+
+export function formatMonthKey(key: string) {
+  const [year, month] = key.split('-').map(Number);
+  return new Date(year, month - 1, 1).toLocaleDateString(undefined, {
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
 export type TeamFilter = 'all' | 'same' | 'opposite';
 
 /**
