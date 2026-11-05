@@ -1177,6 +1177,7 @@ export default function GameRoute() {
                   onToggleSuspectFilter={() => setSuspectFilter((value) => !value)}
                   suspectFilter={suspectFilter}
                 />
+                {isRearrangeMode ? <RearrangeActions /> : null}
               </View>
 
               <View key="day-and-counts" style={styles.dayAndCountsRow}>
@@ -1252,11 +1253,7 @@ export default function GameRoute() {
                 startingNight={startingNight}
               />
 
-              {isRearrangeMode ? (
-                <View key="rearrange-actions">
-                  <RearrangeActions />
-                </View>
-              ) : (
+              {isRearrangeMode ? null : (
                 <View key="map-mode-actions">
                   <MapModeActions
                     activeDay={activeGame.activeDay}
