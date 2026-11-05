@@ -111,6 +111,30 @@ const baseColors = {
     nominatedIcon: '#fef3c7',
     nominatorIcon: '#ddd6fe',
   },
+  /** Grimoire-style map tokens: parchment for the living, ash and a shroud for the dead. */
+  grimoireToken: {
+    ashCenter: '#8f877a',
+    ashEdge: '#5e574d',
+    deadInk: '#2b2620',
+    deadInnerRing: '#3f392f',
+    deadRibbon: '#2e2a25',
+    deadRibbonText: '#c9c1b3',
+    deadTopText: '#d9d2c4',
+    dragRing: '#38bdf8',
+    edge: '#3b2412',
+    initiatorRing: '#f59e0b',
+    ink: '#4a2c14',
+    innerRing: '#8a6a3d',
+    parchmentCenter: '#f6ecd2',
+    parchmentEdge: '#c9ad78',
+    parchmentMiddle: '#e6d3a8',
+    ribbon: '#5b2a17',
+    ribbonText: '#f6ecd2',
+    selectedRing: '#e9c46a',
+    shroud: '#0c0c0c',
+    storytellerRibbon: '#7a5a12',
+    topText: '#5b2a17',
+  },
 };
 
 export const colors = applyTheme(baseColors, readStoredThemeId());

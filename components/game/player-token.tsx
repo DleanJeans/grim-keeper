@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ImageBackground, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { DeadVoteIcon } from '@/components/game/dead-vote-icon';
+import { GrimoireTokenFace } from '@/components/game/grimoire-token-face';
 import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
 import { useRoleIconSource } from '@/hooks/use-role-icon-source';
@@ -23,34 +24,15 @@ import type { SuspicionLevel } from '@/utils/suspicion-utils';
 const MAX_BADGE_SIZE = 18;
 const BADGE_SIZE_RATIO = 0.22;
 const DEFAULT_BORDER_WIDTH = 2;
-const SELECTED_BORDER_WIDTH = 3;
-const ROLE_IMAGE_SCALE = 1.4;
 const SUSPICION_DOT_RATIO = 0.75;
-const ROLE_IMAGE_OPACITY = 0.4;
-// Line heights of the name, the role names and the Storyteller label (styles below), for the
-// band claim tokens keep clear of.
-const NAME_LINE_HEIGHT = 13;
-const ROLES_LINE_HEIGHT = 10;
-const STORYTELLER_LINE_HEIGHT = 10;
-const CLAIM_TEXT_GAP = 1;
+// Character icon in the middle of the token, as a share of the token's size.
+const ROLE_ICON_RATIO = 0.56;
+// Claim tokens sit along the top and stay above this share of the token below its center.
+const CLAIM_BAND_RATIO = 0.05;
+const DEAD_OPACITY = 0.85;
 const CLAIM_TOKEN_BORDER_WIDTH = 1;
 const EMPTY_OTHER_TOKEN_POSITIONS: OtherTokenPosition[] = [];
 const badgeColors = colors.playerTokenEdgeBadge;
-const Colors = {
-  backgroundDefault: '#f8fafc',
-  backgroundDeath: '#1f2937',
-  backgroundDragReady: '#38bdf8',
-  backgroundInitiator: '#fde68a',
-  backgroundSelected: '#bbf7d0',
-  borderDefault: '#94a3b8',
-  borderDeath: '#64748b',
-  borderDragReady: '#e0f2fe',
-  borderInitiator: '#f59e0b',
-  borderSelected: '#22c55e',
-  textDefault: '#0b1120',
-  textDeath: '#cbd5e1',
-  textDragReady: '#082f49',
-} as const;
 
 /** Center of another token on the map; `size` defaults to this token's size. */
 export type OtherTokenPosition = { size?: number; x: number; y: number };
@@ -70,6 +52,8 @@ type PlayerTokenProps = {
   theoryEvil?: boolean;
   /** Short word shown under the token, such as "drunk?". */
   label?: string;
+  /** Small gold dot at the top left: you saved notes about this player in other games. */
+  hasLessons?: boolean;
   /** Label shown on the token; defaults to the player's name. */
   displayName?: string;
   interactionMode?: boolean;
@@ -82,8 +66,6 @@ type PlayerTokenProps = {
   rolesConfirmed?: boolean;
   rearrangeMode?: boolean;
   showRoleDetails?: boolean;
-  /** Small gold dot at the top left: you saved notes about this player in other games. */
-  hasLessons?: boolean;
   /** Small dot at the top right: the app user's trust in this player. */
   suspicion?: SuspicionLevel;
   tokenSize: number;
@@ -123,7 +105,7 @@ export function PlayerToken({
 }: PlayerTokenProps) {
   const [isDragReady, setIsDragReady] = useState(false);
   const tokenSize = getTokenSize(tokenSizeProp) * tokenScale;
-  const borderWidth = isSelected ? SELECTED_BORDER_WIDTH : DEFAULT_BORDER_WIDTH;
+  const borderWidth = DEFAULT_BORDER_WIDTH;
   const displayedRoles =
     rolesConfirmed && confirmedRoleIds
       ? roles.filter((role) => confirmedRoleIds.includes(role.id))
@@ -140,44 +122,43 @@ export function PlayerToken({
   const hasDeadVote = !!player.death && (deadVoteAvailable ?? player.deadVoteUsed !== true);
   const badgeSize = Math.min(MAX_BADGE_SIZE, tokenSize * BADGE_SIZE_RATIO);
   const suspicionDotSize = badgeSize * SUSPICION_DOT_RATIO;
-  // On the border at the top right (45°), measured from the token's padding box.
-  const suspicionDotReach = (tokenSize / 2) * Math.SQRT1_2;
-  const suspicionDotLeft = tokenSize / 2 + suspicionDotReach - borderWidth - suspicionDotSize / 2;
-  const suspicionDotTop = tokenSize / 2 - suspicionDotReach - borderWidth - suspicionDotSize / 2;
-  // The lessons dot mirrors it at the top left.
-  const lessonsDotLeft = tokenSize / 2 - suspicionDotReach - borderWidth - suspicionDotSize / 2;
+  // Badges sit on the edge at 45°: the suspicion dot top right, the dead vote bottom right.
+  const edgeReach = (tokenSize / 2) * Math.SQRT1_2;
   const claimObstacles: ClaimOrbitObstacle[] = [];
   if (hasDeadVote) {
-    claimObstacles.push({ radius: badgeSize / 2, x: 0, y: tokenSize / 2 - badgeSize / 2 });
+    claimObstacles.push({ radius: badgeSize / 2, x: edgeReach, y: edgeReach });
   }
   if (suspicion) {
-    claimObstacles.push({
-      radius: suspicionDotSize / 2,
-      x: suspicionDotReach,
-      y: -suspicionDotReach,
-    });
+    claimObstacles.push({ radius: suspicionDotSize / 2, x: edgeReach, y: -edgeReach });
   }
+  // The lessons dot mirrors the suspicion dot at the top left.
   if (hasLessons) {
-    claimObstacles.push({
-      radius: suspicionDotSize / 2,
-      x: -suspicionDotReach,
-      y: -suspicionDotReach,
-    });
+    claimObstacles.push({ radius: suspicionDotSize / 2, x: -edgeReach, y: -edgeReach });
   }
-  const claimLayout = claimRoles?.length
+  // The name runs along the bottom, so claim tokens group along the top: lay them out as if at
+  // the bottom with everything flipped upside down, then flip them back.
+  const flippedClaimLayout = claimRoles?.length
     ? getClaimOrbitLayout({
         borderWidth,
         count: claimRoles.length,
-        obstacles: claimObstacles,
-        textHalfHeight:
-          (NAME_LINE_HEIGHT +
-            (nameRoles.length > 0 ? ROLES_LINE_HEIGHT : 0) +
-            (player.isStoryteller ? STORYTELLER_LINE_HEIGHT : 0)) /
-            2 +
-          CLAIM_TEXT_GAP,
+        obstacles: claimObstacles.map((obstacle) => ({ ...obstacle, y: -obstacle.y })),
+        textHalfHeight: tokenSize * CLAIM_BAND_RATIO,
         tokenSize,
       })
     : undefined;
+  const claimLayout = flippedClaimLayout
+    ? {
+        positions: flippedClaimLayout.positions.map((claim) => ({ x: claim.x, y: -claim.y })),
+        size: flippedClaimLayout.size,
+      }
+    : undefined;
+  const hasClaimTokens = (claimLayout?.positions.length ?? 0) > 0;
+  const topText = player.isStoryteller
+    ? 'Storyteller'
+    : nameRoles.length > 0
+      ? nameRoles.map((role) => role.name).join(' / ')
+      : undefined;
+  const roleIconSize = tokenSize * ROLE_ICON_RATIO;
   const x = useSharedValue(position.x);
   const y = useSharedValue(position.y);
   const startX = useSharedValue(position.x);
@@ -297,76 +278,75 @@ export function PlayerToken({
         accessibilityRole="button"
         accessibilityState={{ disabled, selected: isSelected }}
         style={[
+          styles.token,
           {
-            alignItems: 'center',
-            backgroundColor: isDragReady
-              ? Colors.backgroundDragReady
-              : player.death
-                ? Colors.backgroundDeath
-                : isSelected
-                  ? Colors.backgroundSelected
-                  : isInitiator
-                    ? Colors.backgroundInitiator
-                    : Colors.backgroundDefault,
-            borderColor: isDragReady
-              ? Colors.borderDragReady
-              : isSelected
-                ? Colors.borderSelected
-                : player.death
-                  ? Colors.borderDeath
-                  : isInitiator
-                    ? Colors.borderInitiator
-                    : Colors.borderDefault,
-            borderRadius: tokenSize / 2,
-            borderWidth,
-            opacity: disabled ? 0.42 : dimmed ? 0.28 : player.death && !isDragReady ? 0.72 : 1,
             height: tokenSize,
-            justifyContent: 'center',
-            paddingHorizontal: 6,
-            position: 'absolute',
+            opacity: disabled
+              ? 0.42
+              : dimmed
+                ? 0.28
+                : player.death && !isDragReady
+                  ? DEAD_OPACITY
+                  : 1,
             width: tokenSize,
-            zIndex: 2,
           },
           animatedStyle,
         ]}
       >
+        <GrimoireTokenFace
+          compactInitial={hasClaimTokens}
+          dead={!!player.death}
+          id={player.id}
+          layer="base"
+          name={displayName ?? player.name}
+          ring={
+            isDragReady ? 'drag' : isSelected ? 'selected' : isInitiator ? 'initiator' : undefined
+          }
+          showInitial={!backgroundRole}
+          size={tokenSize}
+          storyteller={!!player.isStoryteller}
+          topText={topText}
+        />
         {backgroundRole ? (
-          <ImageBackground
-            source={roleIconSource}
+          <View
             style={[
-              StyleSheet.absoluteFill,
+              styles.roleIcon,
+              backgroundRole.redTint && styles.redTint,
+              player.death && styles.roleIconDead,
               {
-                borderRadius: tokenSize / 2,
-                filter: backgroundRole.redTint ? [{ hueRotate: '150deg' }] : undefined,
-                overflow: 'hidden',
+                height: roleIconSize,
+                left: (tokenSize - roleIconSize) / 2,
+                top: (tokenSize - roleIconSize) / 2,
+                width: roleIconSize,
               },
             ]}
-            imageStyle={[styles.roleImage, { borderRadius: tokenSize / 2 }]}
-          />
+          >
+            <Image resizeMode="contain" source={roleIconSource} style={styles.roleIconImage} />
+          </View>
         ) : null}
-        <View style={styles.content}>
-          <PlayerTokenContent
-            color={
-              isDragReady
-                ? Colors.textDragReady
-                : player.death
-                  ? Colors.textDeath
-                  : Colors.textDefault
-            }
-            isStoryteller={player.isStoryteller}
-            name={displayName ?? player.name}
-            roles={nameRoles}
-          />
-        </View>
+        <GrimoireTokenFace
+          compactInitial={hasClaimTokens}
+          dead={!!player.death}
+          id={player.id}
+          layer="drape"
+          name={displayName ?? player.name}
+          ring={
+            isDragReady ? 'drag' : isSelected ? 'selected' : isInitiator ? 'initiator' : undefined
+          }
+          showInitial={!backgroundRole}
+          size={tokenSize}
+          storyteller={!!player.isStoryteller}
+          topText={topText}
+        />
         {claimRoles && claimLayout
           ? claimLayout.positions.map((claimPosition, index) => (
               <PlayerTokenClaim
                 // biome-ignore lint/suspicious/noArrayIndexKey: one claim per slot.
                 key={index}
-                left={tokenSize / 2 - borderWidth + claimPosition.x - claimLayout.size / 2}
+                left={tokenSize / 2 + claimPosition.x - claimLayout.size / 2}
                 role={claimRoles[index]}
                 size={claimLayout.size}
-                top={tokenSize / 2 - borderWidth + claimPosition.y - claimLayout.size / 2}
+                top={tokenSize / 2 + claimPosition.y - claimLayout.size / 2}
               />
             ))
           : null}
@@ -378,8 +358,8 @@ export function PlayerToken({
               {
                 borderRadius: suspicionDotSize / 2,
                 height: suspicionDotSize,
-                left: suspicionDotLeft,
-                top: suspicionDotTop,
+                left: tokenSize / 2 + edgeReach - suspicionDotSize / 2,
+                top: tokenSize / 2 - edgeReach - suspicionDotSize / 2,
                 width: suspicionDotSize,
               },
             ]}
@@ -394,8 +374,8 @@ export function PlayerToken({
               {
                 borderRadius: suspicionDotSize / 2,
                 height: suspicionDotSize,
-                left: lessonsDotLeft,
-                top: suspicionDotTop,
+                left: tokenSize / 2 - edgeReach - suspicionDotSize / 2,
+                top: tokenSize / 2 - edgeReach - suspicionDotSize / 2,
                 width: suspicionDotSize,
               },
             ]}
@@ -408,8 +388,8 @@ export function PlayerToken({
               {
                 borderRadius: tokenSize / 2 + 4,
                 height: tokenSize + 8,
-                left: -4 - borderWidth,
-                top: -4 - borderWidth,
+                left: -4,
+                top: -4,
                 width: tokenSize + 8,
               },
             ]}
@@ -421,7 +401,7 @@ export function PlayerToken({
               styles.tokenLabelWrap,
               {
                 left: -tokenSize / 2,
-                top: tokenSize - borderWidth + (hasDeadVote ? badgeSize / 2 : 0) + 2,
+                top: tokenSize + 2,
                 width: tokenSize * 2,
               },
             ]}
@@ -437,9 +417,9 @@ export function PlayerToken({
               styles.deadVoteBadge,
               {
                 borderRadius: badgeSize / 2,
-                bottom: -borderWidth,
                 height: badgeSize,
-                left: tokenSize / 2 - borderWidth - badgeSize / 2,
+                left: tokenSize / 2 + edgeReach - badgeSize / 2,
+                top: tokenSize / 2 + edgeReach - badgeSize / 2,
                 width: badgeSize,
               },
             ]}
@@ -472,89 +452,6 @@ function PlayerTokenClaim({
   );
 }
 
-function PlayerTokenContent({
-  color,
-  isStoryteller,
-  name,
-  roles,
-}: {
-  color: string;
-  isStoryteller?: boolean;
-  name: string;
-  roles: Role[];
-}) {
-  const roleDetails = roles.length > 0 ? <PlayerTokenRoles color={color} roles={roles} /> : null;
-
-  return (
-    <>
-      {roleDetails}
-      {isStoryteller ? <PlayerTokenLabel color={color} /> : null}
-      <PlayerTokenName color={color} name={name} />
-    </>
-  );
-}
-
-function PlayerTokenLabel({ color }: { color: string }) {
-  return (
-    <Text
-      adjustsFontSizeToFit
-      minimumFontScale={0.8}
-      numberOfLines={1}
-      style={[styles.storytellerLabel, getStorytellerLabelColorStyle(color)]}
-    >
-      Storyteller
-    </Text>
-  );
-}
-
-type PlayerTokenNameProps = {
-  color: string;
-  name: string;
-};
-
-function PlayerTokenName({ color, name }: PlayerTokenNameProps) {
-  return (
-    <Text
-      adjustsFontSizeToFit
-      ellipsizeMode="tail"
-      minimumFontScale={0.72}
-      numberOfLines={1}
-      style={[styles.name, { color }]}
-    >
-      {name}
-    </Text>
-  );
-}
-
-function PlayerTokenRoles({ color, roles }: { color: string; roles: Role[] }) {
-  return (
-    <View style={styles.roles}>
-      <Text
-        adjustsFontSizeToFit
-        ellipsizeMode="tail"
-        minimumFontScale={0.6}
-        numberOfLines={1}
-        selectable
-        style={[styles.rolesText, { color }]}
-      >
-        {roles.map((role) => role.name).join(' / ')}
-      </Text>
-    </View>
-  );
-}
-
-function getStorytellerLabelColorStyle(color: string) {
-  if (color === Colors.textDeath) {
-    return styles.storytellerLabelDeath;
-  }
-
-  if (color === Colors.textDragReady) {
-    return styles.storytellerLabelDragReady;
-  }
-
-  return styles.storytellerLabelDefault;
-}
-
 const styles = StyleSheet.create({
   claimToken: {
     alignItems: 'center',
@@ -567,18 +464,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     zIndex: 1,
   },
-  content: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    zIndex: 1,
-  },
   suspicionDot: {
     borderColor: colors.gameBackground,
     borderWidth: 1.5,
     position: 'absolute',
   },
-  lessonsDot: { backgroundColor: colors.savedNoteIcon },
   suspectDot: { backgroundColor: colors.suspicionSuspect },
   tokenLabel: {
     backgroundColor: colors.gameSurfaceRaised,
@@ -607,40 +497,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'absolute',
   },
-  name: {
-    fontSize: 12,
-    fontWeight: '800',
-    lineHeight: NAME_LINE_HEIGHT,
-    textAlign: 'center',
-  },
-  roleImage: {
-    opacity: ROLE_IMAGE_OPACITY,
-    transform: [{ scale: ROLE_IMAGE_SCALE }],
-  },
-  roles: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 1,
-    maxWidth: '100%',
-  },
-  rolesText: {
-    flexShrink: 1,
-    fontSize: 8.5,
-    fontWeight: '900',
-    lineHeight: ROLES_LINE_HEIGHT,
-    textAlign: 'center',
-  },
-  storytellerLabel: {
-    fontSize: 8,
-    fontWeight: '900',
-    lineHeight: 9,
-    maxWidth: '100%',
-    marginBottom: 1,
-    textAlign: 'center',
-  },
-  storytellerLabelDeath: { color: Colors.textDeath },
-  storytellerLabelDefault: { color: Colors.textDefault },
-  storytellerLabelDragReady: { color: Colors.textDragReady },
+  lessonsDot: { backgroundColor: colors.savedNoteIcon },
+  redTint: { filter: [{ hueRotate: '150deg' }] },
+  roleIcon: { pointerEvents: 'none', position: 'absolute' },
+  roleIconDead: { opacity: 0.55 },
+  roleIconImage: { height: '100%', width: '100%' },
+  token: { position: 'absolute', zIndex: 2 },
 });
 
 const suspicionDotStyles = {

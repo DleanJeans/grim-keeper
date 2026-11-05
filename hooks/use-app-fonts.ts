@@ -4,6 +4,7 @@ export function useAppFonts() {
   const [fontsLoaded, fontError] = useFonts({
     GoogleSans: require('@/assets/fonts/GoogleSans.ttf'),
     'GoogleSans-Bold': require('@/assets/fonts/GoogleSans-Bold.ttf'),
+    IMFellEnglishSC: require('@/assets/fonts/IMFellEnglishSC.ttf'),
   });
 
   return fontsLoaded || !!fontError;
