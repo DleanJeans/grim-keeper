@@ -72,7 +72,7 @@ export function PdfScriptReview({
   return (
     <View style={styles.card}>
       <Text selectable style={styles.title}>
-        Review PDF import
+        Review import
       </Text>
       <TextInput
         accessibilityLabel="Script name"
@@ -125,7 +125,7 @@ export function PdfScriptReview({
 
       <View style={styles.actions}>
         <Pressable
-          accessibilityLabel="Cancel PDF import"
+          accessibilityLabel="Cancel script import"
           accessibilityRole="button"
           onPress={onCancel}
           style={({ pressed }) => [styles.cancelButton, pressed && styles.cancelButtonPressed]}
@@ -133,7 +133,7 @@ export function PdfScriptReview({
           <Text style={styles.cancelButtonLabel}>Cancel</Text>
         </Pressable>
         <Pressable
-          accessibilityLabel="Save PDF script"
+          accessibilityLabel="Save imported script"
           accessibilityRole="button"
           disabled={roleCount === 0 || isSaving}
           onPress={() => void save()}

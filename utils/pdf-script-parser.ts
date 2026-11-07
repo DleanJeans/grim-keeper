@@ -6,6 +6,8 @@ const MIN_TEXT_LETTERS = 20;
 /** Longest name prefix, in words, tried when a name and its ability share one text run. */
 const MAX_NAME_WORDS = 5;
 const MAX_SUGGESTIONS = 3;
+/** Stray marks before a name that matching skips, such as a misread character icon. */
+const MAX_LEADING_MARKS = 2;
 /** Words that must follow a name in the same text run for it to count as name plus ability. */
 const MIN_ABILITY_WORDS = 3;
 
@@ -73,7 +75,7 @@ export function parseScriptPdfText(lines: PdfTextLine[], catalog: Role[]): PdfSc
 
   if (letterCount < MIN_TEXT_LETTERS) {
     throw new PdfScriptTextError(
-      'This PDF has no readable text. It may be a scan or a picture of a script. Try a PDF exported from a script tool, or upload the script JSON instead.',
+      'No readable text was found. A scanned PDF or a blurry photo may not be readable. Try a clearer image, a PDF exported from a script tool, or the script JSON.',
     );
   }
 
@@ -242,6 +244,24 @@ function getCatalogRolesByName(catalog: Role[]) {
 }
 
 function matchRoleName(text: string, rolesByName: Map<string, Role>): RoleMatch | undefined {
+  const words = text.split(' ');
+
+  // A photo's character icons can be read as stray marks before the name, such as "Q," or "J |".
+  for (let skipped = 0; skipped <= MAX_LEADING_MARKS && skipped < words.length; skipped += 1) {
+    if (skipped > 0 && /^\p{L}{3,}$/u.test(words[skipped - 1])) {
+      break;
+    }
+
+    const match = matchRoleNameAtStart(words.slice(skipped).join(' '), rolesByName);
+    if (match) {
+      return match;
+    }
+  }
+
+  return undefined;
+}
+
+function matchRoleNameAtStart(text: string, rolesByName: Map<string, Role>): RoleMatch | undefined {
   const exactRole = rolesByName.get(normalizeRoleName(text));
   if (exactRole) {
     return { rest: '', role: exactRole };
@@ -298,14 +318,15 @@ function getHeaderDetails(segments: PdfTextSegment[]): Pick<PdfScriptDraft, 'aut
   for (const segment of segments) {
     const authorMatch = /^(?:by|author:?)\s+(.+)$/i.exec(segment.text);
     const inlineAuthorMatch = /^(.+?)\s+by\s+(.+)$/i.exec(segment.text);
+    const text = getTitleText(segment.text);
 
     if (authorMatch) {
       author ??= authorMatch[1].trim();
     } else if (inlineAuthorMatch && !author) {
       author = inlineAuthorMatch[2].trim();
       nameSegments.push({ ...segment, text: inlineAuthorMatch[1] });
-    } else if (/\p{L}{2}/u.test(segment.text)) {
-      nameSegments.push(segment);
+    } else if (text) {
+      nameSegments.push({ ...segment, text });
     }
   }
 
@@ -317,6 +338,14 @@ function getHeaderDetails(segments: PdfTextSegment[]): Pick<PdfScriptDraft, 'aut
   )?.text;
 
   return { ...(author ? { author } : {}), ...(name ? { name: name.trim() } : {}) };
+}
+
+/** The title in a header line drawn with rules, such as "—No Greater Joy————(TOWNSFOLK)—". */
+function getTitleText(text: string) {
+  return text
+    .split(/[-–—_]{2,}/)
+    .map((part) => part.replace(/^[^\p{L}\d]+|[^\p{L}\d!?)]+$/gu, ''))
+    .find((part) => /\p{L}{2}/u.test(part));
 }
 
 function getLineText(line: PdfTextLine) {

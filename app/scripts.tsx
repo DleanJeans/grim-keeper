@@ -16,6 +16,7 @@ import { TitleHeader } from '@/components/title-header';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { StoredScript } from '@/types/game';
+import { extractImageTextLines } from '@/utils/image-text';
 import { type PdfScriptDraft, parseScriptPdfText } from '@/utils/pdf-script-parser';
 import { extractPdfTextLines } from '@/utils/pdf-text';
 import {
@@ -182,6 +183,7 @@ export default function ScriptsRoute() {
     }
   }
 
+  /** Reads a script from a PDF's text or, for an image, from text recognized in it. */
   async function handleUploadPdf(file: File) {
     try {
       const catalog = await getUsableRoleCatalog().catch(() => roleCatalog);
@@ -191,17 +193,17 @@ export default function ScriptsRoute() {
         );
       }
 
-      const draft = parseScriptPdfText(
-        await extractPdfTextLines(await file.arrayBuffer()),
-        catalog,
-      );
+      const lines = file.type.startsWith('image/')
+        ? await extractImageTextLines(file, catalog)
+        : await extractPdfTextLines(await file.arrayBuffer());
+      const draft = parseScriptPdfText(lines, catalog);
       if (draft.roles.length === 0 && draft.unmatched.length === 0) {
-        throw new Error('No characters were found in this PDF.');
+        throw new Error('No characters were found in this file.');
       }
 
-      setPdfImport({ draft, fallbackName: file.name.replace(/\.pdf$/i, ''), readAt: Date.now() });
+      setPdfImport({ draft, fallbackName: file.name.replace(/\.[^.]+$/, ''), readAt: Date.now() });
     } catch (error) {
-      showDialog('Could not read PDF', getErrorMessage(error));
+      showDialog('Could not read script', getErrorMessage(error));
     }
   }
 
@@ -354,8 +356,8 @@ export default function ScriptsRoute() {
         <ResponsiveContent style={styles.content}>
           <View style={styles.intro}>
             <Text selectable style={styles.introText}>
-              Download scripts from BotC Scripts, upload a script PDF or JSON, or paste JSON, then
-              add or remove roles before using it in a game.
+              Download scripts from BotC Scripts, upload a script PDF, image or JSON, or paste JSON,
+              then add or remove roles before using it in a game.
             </Text>
           </View>
 
@@ -363,10 +365,10 @@ export default function ScriptsRoute() {
             <View style={styles.uploadRow}>
               <UploadScriptButton onFileSelected={handleUploadFile} style={styles.uploadButton} />
               <UploadScriptButton
-                accept="application/pdf,.pdf"
-                accessibilityLabel="Upload script PDF"
-                busyLabel="Reading PDF…"
-                label="Upload PDF"
+                accept="application/pdf,.pdf,image/*"
+                accessibilityLabel="Upload script PDF or image"
+                busyLabel="Reading…"
+                label="PDF or image"
                 onFileSelected={handleUploadPdf}
                 style={styles.uploadButton}
               />
