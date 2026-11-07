@@ -357,7 +357,7 @@ describe('setGameLesson', () => {
   };
 
   afterEach(() => {
-    useGameStore.setState({ games: [] });
+    useGameStore.setState({ games: [], savedNotes: [] });
   });
 
   it('saves a trimmed lesson and removes it when blank', () => {
@@ -376,6 +376,44 @@ describe('setGameLesson', () => {
 
     useGameStore.getState().setGameLesson('game-1', '');
     expect(useGameStore.getState().games[0]).toBe(game);
+  });
+
+  it('saves a lesson naming a character as a note about that character only', () => {
+    const scripted: Game = {
+      ...game,
+      activeDay: 3,
+      script: {
+        id: 'script-1',
+        name: 'Script',
+        updatedAt: '2026-07-07T00:00:00.000Z',
+        version: '1.0.0',
+        roles: [
+          { id: 'witch', name: 'Witch' },
+          { id: 'chef', name: 'Chef' },
+        ],
+      },
+      scriptId: 'script-1',
+    };
+    useGameStore.setState({ games: [scripted], savedNotes: [] });
+
+    useGameStore.getState().setGameLesson('game-1', 'Kill the Witch early');
+    expect(useGameStore.getState().savedNotes).toMatchObject([
+      {
+        day: 3,
+        gameId: 'game-1',
+        playerName: '',
+        roleIds: ['witch'],
+        text: 'Kill the Witch early',
+      },
+    ]);
+
+    useGameStore.getState().setGameLesson('game-1', 'Trust the Chef');
+    expect(useGameStore.getState().savedNotes).toMatchObject([
+      { playerName: '', roleIds: ['chef'], text: 'Trust the Chef' },
+    ]);
+
+    useGameStore.getState().setGameLesson('game-1', 'Talk more');
+    expect(useGameStore.getState().savedNotes).toEqual([]);
   });
 });
 

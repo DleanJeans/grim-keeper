@@ -68,7 +68,7 @@ export function InlineGameHeader({
         </View>
         <View style={styles.slot}>
           <GameResultButton
-            lesson={activeGame.lesson}
+            game={activeGame}
             onChange={onResultChange}
             onLessonChange={onLessonChange}
             onShowWinRates={

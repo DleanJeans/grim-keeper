@@ -1,12 +1,14 @@
-import { useState } from 'react';
-import { KeyboardAvoidingView, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { KeyboardAvoidingView, Modal, Pressable, StyleSheet, View } from 'react-native';
 
+import { NoteAutocompleteInput } from '@/components/game/notes-tab/note-autocomplete-input';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { GameResult } from '@/types/game';
+import type { Game, GameResult } from '@/types/game';
+import { detectRoleIdsInNote } from '@/utils/saved-note-utils';
 
 type GameResultDialogProps = {
-  lesson?: string;
+  game: Game;
   onClose: () => void;
   onLessonChange: (lesson: string) => void;
   onResultChange: (result?: GameResult) => void;
@@ -15,16 +17,24 @@ type GameResultDialogProps = {
   result?: GameResult;
 };
 
-/** Won / Lost / Clear plus a free-text lesson; the lesson saves whenever the dialog closes. */
+/**
+ * Won / Lost / Clear plus a free-text lesson with the Notes tab's player and character suggestions.
+ * The lesson saves whenever the dialog closes.
+ */
 export function GameResultDialog({
-  lesson,
+  game,
   onClose,
   onLessonChange,
   onResultChange,
   onShowWinRates,
   result,
 }: GameResultDialogProps) {
-  const [draft, setDraft] = useState(lesson ?? '');
+  const [draft, setDraft] = useState(game.lesson ?? '');
+  const roles = game.script?.roles;
+  const namedRoles = useMemo(() => {
+    const roleIds = detectRoleIdsInNote(draft, roles ?? []);
+    return (roles ?? []).filter((role) => roleIds.includes(role.id));
+  }, [draft, roles]);
 
   function close(after?: () => void) {
     onLessonChange(draft);
@@ -85,15 +95,24 @@ export function GameResultDialog({
           </View>
           <View style={styles.lesson}>
             <Text style={styles.lessonLabel}>Lesson</Text>
-            <TextInput
-              accessibilityLabel="Lesson from this game"
-              multiline
-              onChangeText={setDraft}
-              placeholder="What will you take away from this game?"
-              placeholderTextColor={colors.inputPlaceholder}
-              style={styles.input}
-              value={draft}
-            />
+            <View style={styles.inputRow}>
+              <NoteAutocompleteInput
+                accessibilityLabel="Lesson from this game"
+                day={game.activeDay}
+                game={game}
+                onChangeText={setDraft}
+                phase={game.activePhase ?? 'day'}
+                placeholder="What will you take away from this game?"
+                placeholderTextColor={colors.inputPlaceholder}
+                style={styles.input}
+                value={draft}
+              />
+            </View>
+            {namedRoles.length > 0 ? (
+              <Text style={styles.savedFor}>
+                {`Also saved as a note about ${namedRoles.map((role) => role.name).join(', ')}`}
+              </Text>
+            ) : null}
           </View>
           <View style={styles.actions}>
             {onShowWinRates ? (
@@ -189,8 +208,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     textAlignVertical: 'top',
   },
+  inputRow: {
+    flexDirection: 'row',
+  },
   lesson: {
     gap: 6,
+    zIndex: 1,
   },
   lessonLabel: {
     color: colors.textMuted,
@@ -201,6 +224,11 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 15,
     lineHeight: 21,
+  },
+  savedFor: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
   },
   successAction: {
     backgroundColor: colors.successSurface,

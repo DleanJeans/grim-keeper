@@ -70,6 +70,7 @@ import {
   migrateV2ToV3,
   resolveScriptName,
 } from '@/utils/saved-note-store';
+import { detectRoleIdsInNote, getSavedNote } from '@/utils/saved-note-utils';
 import { SUSHI_BUFFET_SCRIPT_ID } from '@/utils/script-constants';
 import {
   normalizeRoleImageUrls,
@@ -228,7 +229,10 @@ type GameState = GameData & {
   setActiveTheory: (gameId: string, theoryId?: string) => void;
   toggleTheoryEvil: (gameId: string, theoryId: string, playerId: string) => void;
   setGameResult: (gameId: string, result?: GameResult) => void;
-  /** Saves the app user's lesson from the game; blank text removes it. */
+  /**
+   * Saves the app user's lesson from the game; blank text removes it. Characters named in the
+   * lesson also get it as a saved note about the character only.
+   */
   setGameLesson: (gameId: string, lesson: string) => void;
   setActiveDay: (gameId: string, day: number) => void;
   setGamePhase: (gameId: string, day: number, phase: GamePhase) => void;
@@ -1483,12 +1487,17 @@ export const useGameStore = create<GameState>()(
       },
       setGameLesson: (gameId, lesson) => {
         const trimmed = lesson.trim();
+        const game = get().games.find((candidate) => candidate.id === gameId);
+        const previous = game?.lesson ?? '';
+        if (!game || previous === trimmed) {
+          return;
+        }
         set((state) => ({
-          games: state.games.map((game) => {
-            if (game.id !== gameId || (game.lesson ?? '') === trimmed) {
-              return game;
+          games: state.games.map((candidate) => {
+            if (candidate.id !== gameId) {
+              return candidate;
             }
-            const { lesson: _lesson, ...rest } = game;
+            const { lesson: _lesson, ...rest } = candidate;
             return {
               ...rest,
               ...(trimmed ? { lesson: trimmed } : {}),
@@ -1496,6 +1505,20 @@ export const useGameStore = create<GameState>()(
             };
           }),
         }));
+
+        // A lesson that names characters is also saved as a note about those characters only.
+        const roleIds = trimmed ? detectRoleIdsInNote(trimmed, game.script?.roles ?? []) : [];
+        if (roleIds.length > 0) {
+          get().saveNoteForFutureGames('', roleIds, trimmed, {
+            day: game.activeDay,
+            gameId,
+            scriptId: game.scriptId ?? game.script?.id,
+          });
+        }
+        const previousNote = previous ? getSavedNote(get().savedNotes, '', previous) : undefined;
+        if (previousNote?.gameId === gameId) {
+          get().deleteSavedNote(previousNote);
+        }
       },
       setActiveDay: (gameId, day) => {
         set((state) => ({

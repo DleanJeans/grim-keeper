@@ -5,10 +5,10 @@ import { Pressable, StyleSheet } from 'react-native';
 import { GameResultDialog } from '@/components/game/game-result-dialog';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { GameResult } from '@/types/game';
+import type { Game, GameResult } from '@/types/game';
 
 type GameResultButtonProps = {
-  lesson?: string;
+  game: Game;
   onChange: (result?: GameResult) => void;
   onLessonChange: (lesson: string) => void;
   /** Opens the win rates on the game's script. Leave out when the game has no script. */
@@ -17,7 +17,7 @@ type GameResultButtonProps = {
 };
 
 export function GameResultButton({
-  lesson,
+  game,
   onChange,
   onLessonChange,
   onShowWinRates,
@@ -57,7 +57,7 @@ export function GameResultButton({
         >
           {label}
         </Text>
-        {lesson ? (
+        {game.lesson ? (
           <NotebookPen
             accessibilityLabel="Has a lesson"
             color={colors.textMuted}
@@ -68,7 +68,7 @@ export function GameResultButton({
       </Pressable>
       {open ? (
         <GameResultDialog
-          lesson={lesson}
+          game={game}
           onClose={() => setOpen(false)}
           onLessonChange={onLessonChange}
           onResultChange={onChange}
