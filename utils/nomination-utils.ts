@@ -1,5 +1,5 @@
 import type { Conversation, Player } from '@/types/game';
-import { isDeadVote } from '@/utils/player-utils';
+import { getNominationLimit, getVoteWeight, isDeadBanshee, isDeadVote } from '@/utils/player-utils';
 
 /** Players alive when the day began, not counting Storytellers. Same-day deaths still count. */
 export function getAlivePlayerCount(players: Player[], day: number): number {
@@ -9,6 +9,18 @@ export function getAlivePlayerCount(players: Player[], day: number): number {
 /** Votes needed to put a nominee on the block: half the living players, rounded up. */
 export function getVotesToExecute(players: Player[], day: number): number {
   return Math.ceil(getAlivePlayerCount(players, day) / 2);
+}
+
+/** Votes on a nomination: each voter's hand, with a dead Banshee's counting twice. */
+export function getVoteCount(
+  nomination: Pick<Conversation, 'day' | 'voterIds'>,
+  players: Player[],
+): number {
+  const playerById = new Map(players.map((player) => [player.id, player]));
+  return (nomination.voterIds ?? []).reduce((votes, voterId) => {
+    const voter = playerById.get(voterId);
+    return votes + (voter ? getVoteWeight(voter, nomination.day) : 1);
+  }, 0);
 }
 
 /**
@@ -26,7 +38,7 @@ export function getOnTheBlockNominationId(
   let tied = false;
 
   for (const nomination of nominations) {
-    const votes = nomination.voterIds?.length ?? 0;
+    const votes = getVoteCount(nomination, players);
     if (votes > topVotes) {
       topId = nomination.id;
       topVotes = votes;
@@ -136,7 +148,7 @@ export function getVotingBuddies(
 }
 
 export type NominationAvailability = {
-  /** Living players who haven't nominated today. */
+  /** Living players who haven't nominated today, and a dead Banshee with a nomination left. */
   canNominate: Player[];
   /** Players nobody has nominated today. */
   notNominated: Player[];
@@ -151,7 +163,13 @@ export function getNominationAvailability(
   const todays = nominations.filter(
     (nomination) => nomination.kind === 'nomination' && nomination.day === day,
   );
-  const nominatorIds = new Set(todays.map((nomination) => nomination.initiatorId));
+  const nominationCounts = new Map<string, number>();
+  for (const nomination of todays) {
+    nominationCounts.set(
+      nomination.initiatorId,
+      (nominationCounts.get(nomination.initiatorId) ?? 0) + 1,
+    );
+  }
   const nomineeIds = new Set(
     todays.map(
       (nomination) =>
@@ -162,7 +180,9 @@ export function getNominationAvailability(
   const playing = players.filter((player) => !player.isStoryteller);
   return {
     canNominate: playing.filter(
-      (player) => !isDeadVote(player, day) && !nominatorIds.has(player.id),
+      (player) =>
+        (!isDeadVote(player, day) || isDeadBanshee(player, day)) &&
+        (nominationCounts.get(player.id) ?? 0) < getNominationLimit(player, day),
     ),
     notNominated: playing.filter((player) => !nomineeIds.has(player.id)),
   };

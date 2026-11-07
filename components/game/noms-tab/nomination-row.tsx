@@ -11,6 +11,7 @@ import { VoterList } from '@/components/game/noms-tab/voter-list';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Conversation, GamePhase, Player, Role } from '@/types/game';
+import { getVoteCount } from '@/utils/nomination-utils';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 
 type NominationRowProps = {
@@ -95,7 +96,7 @@ export function NominationRow({
       <View style={styles.actions}>
         <EditVotesButton
           onPress={() => onEditVotes(voterIds)}
-          voteCount={voterIds.length}
+          voteCount={getVoteCount(nomination, players)}
           votesNeeded={votesNeeded}
         />
         <View style={styles.rightActions}>

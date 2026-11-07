@@ -6,7 +6,7 @@ import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Player } from '@/types/game';
-import { isDeadVote } from '@/utils/player-utils';
+import { isDeadBanshee, isDeadVote } from '@/utils/player-utils';
 
 type VoterListProps = {
   day: number;
@@ -29,7 +29,11 @@ export function VoterList({ day, players, voterIds }: VoterListProps) {
               key={player.id}
               bordered
               trailing={
-                isDeadVote(player, day) ? <DeadVoteIcon color={colors.success} size={13} /> : null
+                isDeadBanshee(player, day) ? (
+                  <Text style={styles.double}>×2</Text>
+                ) : isDeadVote(player, day) ? (
+                  <DeadVoteIcon color={colors.success} size={13} />
+                ) : null
               }
               player={player}
               iconSize={14}
@@ -51,6 +55,12 @@ export function VoterList({ day, players, voterIds }: VoterListProps) {
 }
 
 const styles = StyleSheet.create({
+  double: {
+    color: colors.success,
+    fontSize: 13,
+    fontWeight: '800',
+    lineHeight: 18,
+  },
   list: {
     alignItems: 'center',
     flexDirection: 'row',

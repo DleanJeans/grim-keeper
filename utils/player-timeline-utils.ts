@@ -4,6 +4,7 @@ import {
   getEventPhaseIndex,
   getPhasePositionAtIndex,
 } from '@/utils/game-phase-utils';
+import { getVoteCount } from '@/utils/nomination-utils';
 import { SUSPICION_LEVELS } from '@/utils/suspicion-utils';
 
 export type TimelinePhase = {
@@ -86,7 +87,7 @@ export function getPlayerTimeline(
     const index = getEventPhaseIndex(conversation.day, 'day');
     if (conversation.kind === 'nomination') {
       const nomineeId = conversation.participantIds.find((id) => id !== conversation.initiatorId);
-      const votes = conversation.voterIds?.length ?? 0;
+      const votes = getVoteCount(conversation, game.players);
       if (conversation.initiatorId === playerId) {
         add(index, `Nominated ${nameOf(nomineeId)} (${votes} ${votes === 1 ? 'vote' : 'votes'})`);
       }

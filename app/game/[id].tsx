@@ -75,7 +75,12 @@ import {
   rotatePlayerMapPositions,
   scalePlayerMapPositions,
 } from '@/utils/layout-utils';
-import { hasDeadVoteAvailable, isPlayerCurrentlyDead } from '@/utils/player-utils';
+import {
+  getNominationLimit,
+  hasDeadVoteAvailable,
+  isDeadBanshee,
+  isPlayerCurrentlyDead,
+} from '@/utils/player-utils';
 import {
   addRoleToScript,
   getRoleAssignmentForDay,
@@ -352,9 +357,16 @@ export default function GameRoute() {
       nomination.participantIds.filter((playerId) => playerId !== nomination.initiatorId),
     ),
   );
-  const focusedPlayerAlreadyNominatedToday = activeDayNominations.some(
+  const focusedPlayerNominationCount = activeDayNominations.filter(
     (nomination) => nomination.initiatorId === focusedPlayerId,
-  );
+  ).length;
+  // A dead Banshee may still nominate, twice a day.
+  const focusedPlayerIsDeadBanshee = focusedPlayer
+    ? isDeadBanshee(focusedPlayer, activeGame.activeDay, activePhase)
+    : false;
+  const focusedPlayerAlreadyNominatedToday =
+    !!focusedPlayer &&
+    focusedPlayerNominationCount >= getNominationLimit(focusedPlayer, activeGame.activeDay);
   const nominationCurves = activeDayNominations
     .map((nomination) => {
       const nomineeId = nomination.participantIds.find(
@@ -368,7 +380,8 @@ export default function GameRoute() {
       (curve): curve is { conversationId: string; initiatorId: string; nomineeId: string } =>
         !!curve,
     );
-  const nominationDisabled = focusedPlayerIsDead || focusedPlayerAlreadyNominatedToday;
+  const nominationDisabled =
+    (focusedPlayerIsDead && !focusedPlayerIsDeadBanshee) || focusedPlayerAlreadyNominatedToday;
   const deadVoteUnavailablePlayerIds = new Set(
     activeGame.players
       .filter(

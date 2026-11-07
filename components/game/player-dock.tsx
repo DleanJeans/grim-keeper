@@ -23,6 +23,7 @@ import { SuspicionPicker } from '@/components/game/notes-tab/suspicion-picker';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { PlayerRoleAssignment } from '@/types/game';
+import { isDeadBanshee } from '@/utils/player-utils';
 import { getPlayerSuspicion, type SuspicionLevel } from '@/utils/suspicion-utils';
 
 type IconComponent = ComponentType<{ color: string; size: number; strokeWidth?: number }>;
@@ -182,7 +183,12 @@ export function PlayerDock({
               <NoteActionButton
                 disabled={nominationDisabled}
                 icon={NomIcon}
-                label={nominationDisabled && !focusedPlayerIsDead ? 'Nominated' : 'Nominate'}
+                label={
+                  nominationDisabled &&
+                  (!focusedPlayerIsDead || isDeadBanshee(focusedPlayer, activeDay, activePhase))
+                    ? 'Nominated'
+                    : 'Nominate'
+                }
                 onPress={() => onStartTracking('nomination')}
               />
             ) : null}

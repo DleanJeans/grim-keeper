@@ -5,6 +5,7 @@ import {
   getNominationAvailability,
   getOnTheBlockNominationId,
   getPlayerNominationHistory,
+  getVoteCount,
   getVotesToExecute,
   getVotingBuddies,
 } from '@/utils/nomination-utils';
@@ -108,5 +109,31 @@ describe('getNominationAvailability', () => {
     const result = getNominationAvailability(players, noms, 2);
     expect(result.canNominate.map((p) => p.id)).toEqual(['b', 'c', 'e', 'f']);
     expect(result.notNominated.map((p) => p.id)).toEqual(['a', 'c', 'd', 'e', 'f']);
+  });
+});
+
+describe('dead Banshee', () => {
+  const banshee = player('d', {
+    death: { day: 2, kind: 'night', updatedAt: now },
+    roleAssignments: [
+      { day: 2, kind: 'confirm', phase: 'night', roleIds: ['banshee'], updatedAt: now },
+    ],
+  });
+  const withBanshee = players.map((p) => (p.id === 'd' ? banshee : p));
+
+  it('counts their vote twice', () => {
+    expect(getVoteCount(nomination('n1', ['a', 'd']), withBanshee)).toBe(3);
+    expect(getVoteCount(nomination('n1', ['a', 'd']), players)).toBe(2);
+  });
+
+  it('lets them nominate twice a day', () => {
+    const first = { ...nomination('n1', []), initiatorId: 'd' };
+    const second = { ...nomination('n2', []), initiatorId: 'd' };
+    expect(
+      getNominationAvailability(withBanshee, [first], 2).canNominate.map((p) => p.id),
+    ).toContain('d');
+    expect(
+      getNominationAvailability(withBanshee, [first, second], 2).canNominate.map((p) => p.id),
+    ).not.toContain('d');
   });
 });

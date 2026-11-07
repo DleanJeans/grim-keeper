@@ -54,7 +54,7 @@ import {
   mapGamePlayerIdsToFriendIds,
   migrateObjectIds,
 } from '@/utils/object-id';
-import { isDeadVote } from '@/utils/player-utils';
+import { isDeadBanshee, isDeadVote } from '@/utils/player-utils';
 import {
   mapRoleInfoPlayerIds,
   type RoleInfoClaimer,
@@ -1919,7 +1919,7 @@ function synchronizeDeadVoteUsage(game: Game): Game {
     if (conversation.kind !== 'nomination') continue;
     for (const voterId of conversation.voterIds ?? []) {
       const voter = game.players.find((player) => player.id === voterId);
-      if (voter && isDeadVote(voter, conversation.day)) {
+      if (voter && isDeadVote(voter, conversation.day) && !isDeadBanshee(voter, conversation.day)) {
         usedPlayerIds.add(voterId);
       }
     }

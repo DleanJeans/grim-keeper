@@ -2,8 +2,11 @@ import type { Conversation, Player, PlayerDeath, PlayerRevive } from '@/types/ga
 import { APP_USER_ID } from '@/utils/object-id';
 import {
   getBluffTargetPlayers,
+  getNominationLimit,
   getPlayerTokenName,
+  getVoteWeight,
   hasDeadVoteAvailable,
+  isDeadBanshee,
   isDeadVote,
   isPlayerCurrentlyDead,
   pickRandomPlayers,
@@ -71,6 +74,57 @@ describe('hasDeadVoteAvailable', () => {
     expect(
       hasDeadVoteAvailable(makePlayer({ death: makeDeath(2), revive: makeRevive(3) }), 3),
     ).toBe(false);
+  });
+});
+
+describe('isDeadBanshee', () => {
+  const confirmBanshee = [
+    {
+      day: 3,
+      kind: 'confirm' as const,
+      phase: 'night' as const,
+      roleIds: ['banshee'],
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    },
+  ];
+
+  it('is true for a confirmed Banshee killed at night, even if confirmed later', () => {
+    const player = makePlayer({ death: makeDeath(2), roleAssignments: confirmBanshee });
+    expect(isDeadBanshee(player, 2)).toBe(true);
+    expect(getNominationLimit(player, 2)).toBe(2);
+    expect(getVoteWeight(player, 2)).toBe(2);
+  });
+
+  it('is false while alive, when executed or without a Banshee confirm', () => {
+    expect(isDeadBanshee(makePlayer({ roleAssignments: confirmBanshee }), 2)).toBe(false);
+    expect(
+      isDeadBanshee(
+        makePlayer({ death: makeDeath(1, 'execution'), roleAssignments: confirmBanshee }),
+        2,
+      ),
+    ).toBe(false);
+    const player = makePlayer({ death: makeDeath(2) });
+    expect(isDeadBanshee(player, 2)).toBe(false);
+    expect(getNominationLimit(player, 2)).toBe(1);
+    expect(getVoteWeight(player, 2)).toBe(1);
+  });
+
+  it('never spends the dead vote', () => {
+    const player = makePlayer({
+      death: makeDeath(1),
+      deadVoteUsed: true,
+      roleAssignments: confirmBanshee,
+    });
+    const nomination: Conversation = {
+      createdAt: '2026-01-01T00:00:00.000Z',
+      day: 2,
+      id: 'n1',
+      initiatorId: 'p2',
+      kind: 'nomination',
+      participantIds: ['p2', 'p3'],
+      voterIds: ['p1'],
+    };
+    expect(hasDeadVoteAvailable(player, 3, 'day', [nomination])).toBe(true);
   });
 });
 

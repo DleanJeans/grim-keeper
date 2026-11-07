@@ -2,6 +2,9 @@ import type { Conversation, GamePhase, Player } from '@/types/game';
 import { APP_USER_ID } from '@/utils/app-user';
 import { normalizePlayerName } from '@/utils/conversation-utils';
 import { getDeathPhase, getEventPhaseIndex, getPhaseIndex } from '@/utils/game-phase-utils';
+import { getRoleAssignmentForDayOrPrevious } from '@/utils/role-utils';
+
+const BANSHEE_ROLE_ID = 'banshee';
 
 export function isPlayerCurrentlyDead(
   player: Player,
@@ -41,6 +44,10 @@ export function hasDeadVoteAvailable(
     return false;
   }
 
+  if (isDeadBanshee(player, activeDay, activePhase)) {
+    return true;
+  }
+
   if (!conversations) {
     return player.deadVoteUsed !== true;
   }
@@ -52,8 +59,49 @@ export function hasDeadVoteAvailable(
       conversation.kind === 'nomination' &&
       conversation.voterIds?.includes(player.id) &&
       getEventPhaseIndex(conversation.day, 'day') <= activePhaseIndex &&
-      isDeadVote(player, conversation.day),
+      isDeadVote(player, conversation.day) &&
+      !isDeadBanshee(player, conversation.day),
   );
+}
+
+/**
+ * A confirmed Banshee who is dead and wasn't executed (the Demon killed them). They may nominate
+ * twice a day and vote twice on every nomination, without spending their dead vote. Any confirm
+ * counts, even one logged later in the game, since the character doesn't change.
+ */
+export function isDeadBanshee(
+  player: Player,
+  activeDay: number,
+  activePhase: GamePhase = 'day',
+): boolean {
+  if (!player.death || player.death.kind === 'execution') {
+    return false;
+  }
+
+  if (!isPlayerCurrentlyDead(player, activeDay, activePhase)) {
+    return false;
+  }
+
+  const confirmedRoleIds =
+    getRoleAssignmentForDayOrPrevious(
+      player.roleAssignments,
+      Number.MAX_SAFE_INTEGER,
+      'confirm',
+      'night',
+    )?.roleIds ?? [];
+  return confirmedRoleIds.some(
+    (roleId) => roleId === BANSHEE_ROLE_ID || roleId.startsWith(`${BANSHEE_ROLE_ID}_`),
+  );
+}
+
+/** Nominations the player may make that day: two for a dead Banshee, otherwise one. */
+export function getNominationLimit(player: Player, day: number): number {
+  return isDeadBanshee(player, day) ? 2 : 1;
+}
+
+/** Votes the player's raised hand counts for on a nomination that day: two for a dead Banshee. */
+export function getVoteWeight(player: Player, nominationDay: number): number {
+  return isDeadBanshee(player, nominationDay) ? 2 : 1;
 }
 
 /**

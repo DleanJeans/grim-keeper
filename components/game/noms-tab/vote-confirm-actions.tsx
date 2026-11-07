@@ -5,10 +5,24 @@ import { useGameRouteContext } from '@/components/game/game-route-context';
 import { confirmRowStyle, onDarkText, solidActionStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
+import { getVoteCount } from '@/utils/nomination-utils';
 
 export function VoteConfirmActions() {
-  const { selectedPlayerIds, handleCancelVoting, handleConfirmVotes } = useGameRouteContext();
-  const voteCount = selectedPlayerIds.length;
+  const {
+    activeDayCutoff,
+    game,
+    handleCancelVoting,
+    handleConfirmVotes,
+    selectedPlayerIds,
+    votingNominationId,
+  } = useGameRouteContext();
+  const nomination = game.conversations.find(
+    (conversation) => conversation.id === votingNominationId,
+  );
+  const voteCount = getVoteCount(
+    { ...(nomination ?? { day: activeDayCutoff }), voterIds: selectedPlayerIds },
+    game.players,
+  );
   return (
     <View style={confirmRowStyle}>
       <Pressable

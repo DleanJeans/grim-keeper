@@ -1,6 +1,10 @@
 import type { Game, GamePhase, Player, PlayerRoleAssignment, Role } from '@/types/game';
 import { getDeathPhase, getEventPhaseIndex } from '@/utils/game-phase-utils';
-import { getOnTheBlockNominationId, getVotesToExecute } from '@/utils/nomination-utils';
+import {
+  getOnTheBlockNominationId,
+  getVoteCount,
+  getVotesToExecute,
+} from '@/utils/nomination-utils';
 
 export type RecapEventKind = 'claim' | 'death' | 'execution' | 'nomination' | 'revive';
 
@@ -66,7 +70,7 @@ export function getDayRecap(
         const nomineeId = nomination.participantIds.find(
           (playerId) => playerId !== nomination.initiatorId,
         );
-        const votes = nomination.voterIds?.length ?? 0;
+        const votes = getVoteCount(nomination, game.players);
         events.push({
           id: `nomination-${nomination.id}`,
           kind: 'nomination',
