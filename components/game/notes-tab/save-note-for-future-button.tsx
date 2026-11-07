@@ -23,7 +23,8 @@ export function SaveNoteForFutureButton({
   const { game } = useGameRouteContext();
   const savedNotes = useGameStore((state) => state.savedNotes);
   const savedText = text.trim();
-  const savedNote = getSavedNote(savedNotes, playerName, savedText);
+  const savedNote =
+    getSavedNote(savedNotes, playerName, savedText) ?? getSavedNote(savedNotes, '', savedText);
   const savedForRole =
     !!savedText && !!game.script?.roles.some((role) => role.notes?.includes(savedText));
   const saved = !!savedNote || savedForRole;

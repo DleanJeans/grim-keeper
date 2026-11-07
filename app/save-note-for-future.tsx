@@ -1,7 +1,7 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Check, Trash2, X } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 
 import { RolePicker } from '@/components/game/notes-tab/role-picker';
 import { NotFoundScreen } from '@/components/not-found-screen';
@@ -10,6 +10,7 @@ import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Role, SavedNote } from '@/types/game';
+import { normalizePlayerName } from '@/utils/conversation-utils';
 import { getAssignedRoleIdsForDayOrPrevious, getRolesByIds } from '@/utils/role-utils';
 import { detectRoleIdsInNote, getSavedNote } from '@/utils/saved-note-utils';
 
@@ -31,6 +32,8 @@ export default function SaveNoteForFutureScreen() {
   const savedNotes = useGameStore((state) => state.savedNotes);
   const saveNoteForFutureGames = useGameStore((state) => state.saveNoteForFutureGames);
   const removeNoteFromFutureGames = useGameStore((state) => state.removeNoteFromFutureGames);
+  const deleteSavedNote = useGameStore((state) => state.deleteSavedNote);
+  const appUserName = useGameStore((state) => state.appUserName);
   const game = games.find((candidate) => candidate.id === gameId);
   const player = game?.players.find((candidate) => candidate.id === playerId);
   const roles = game?.script?.roles ?? EMPTY_ROLES;
@@ -47,12 +50,16 @@ export default function SaveNoteForFutureScreen() {
     ],
     [assignedRoleIds, roles],
   );
-  const savedNote = player ? getSavedNote(savedNotes, player.name, text) : undefined;
+  const playerNote = player ? getSavedNote(savedNotes, player.name, text) : undefined;
+  // The same note saved about the character only, with the player left out.
+  const characterNote = getSavedNote(savedNotes, '', text);
+  const savedNote = playerNote ?? characterNote;
   const initialRoleIds = useMemo(
     () => getInitialRoleIds(savedNote, text, roles, assignedRoleIds),
     [assignedRoleIds, roles, savedNote, text],
   );
   const [selectedRoleIds, setSelectedRoleIds] = useState(initialRoleIds);
+  const [tagPlayer, setTagPlayer] = useState(!characterNote || !!playerNote);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -67,6 +74,9 @@ export default function SaveNoteForFutureScreen() {
     .filter((role) => role.notes?.includes(text.trim()))
     .map((role) => role.id);
   const playerName = player.name;
+  const isAppUser =
+    normalizePlayerName(playerName).toLocaleLowerCase() ===
+    normalizePlayerName(appUserName).toLocaleLowerCase();
   const canRemove = !!savedNote || legacyRoleIds.length > 0;
   const noteGameId = game.id;
   const noteScriptId = game.scriptId ?? game.script?.id;
@@ -80,21 +90,34 @@ export default function SaveNoteForFutureScreen() {
   }
 
   function handleSave() {
+    const tagged = tagPlayer && !isAppUser;
     if (
-      saveNoteForFutureGames(playerName, selectedRoleIds, text, {
+      saveNoteForFutureGames(tagged ? playerName : '', selectedRoleIds, text, {
         gameId: noteGameId,
         day: noteDay,
         scriptId: noteScriptId,
       })
     ) {
+      // Drop the copy saved the other way, so the note is only tagged the way just chosen.
+      const otherNote = tagged ? characterNote : playerNote;
+      if (otherNote) {
+        deleteSavedNote(otherNote);
+      }
       router.back();
       return;
     }
 
-    setError('Select at least one role before saving a note for yourself.');
+    setError(
+      isAppUser
+        ? 'Select at least one role before saving a note for yourself.'
+        : `Select at least one role before saving a note without ${playerName}.`,
+    );
   }
 
   function handleRemove() {
+    if (playerNote && characterNote) {
+      deleteSavedNote(characterNote);
+    }
     const roleIds = savedNote?.roleIds ?? legacyRoleIds;
     const noteId = savedNote?.id;
     if (removeNoteFromFutureGames(playerName, roleIds, text, noteId)) {
@@ -112,6 +135,10 @@ export default function SaveNoteForFutureScreen() {
       >
         <ResponsiveContent style={styles.content}>
           <NotePreview day={noteDay} playerName={playerName} text={text} />
+
+          {isAppUser ? null : (
+            <TagPlayerSwitch onChange={setTagPlayer} playerName={playerName} value={tagPlayer} />
+          )}
 
           {pickerRoles.length > 0 ? (
             <RolePicker
@@ -158,6 +185,38 @@ function getInitialRoleIds(
       ...assignedRoleIds,
     ]),
   ];
+}
+
+function TagPlayerSwitch({
+  onChange,
+  playerName,
+  value,
+}: {
+  onChange: (value: boolean) => void;
+  playerName: string;
+  value: boolean;
+}) {
+  return (
+    <View style={styles.tagRow}>
+      <View style={styles.tagCopy}>
+        <Text style={styles.tagTitle}>{`Tag ${playerName}`}</Text>
+        <Text style={styles.tagDescription}>
+          {value
+            ? `Saved about ${playerName} and the selected roles.`
+            : `Only about the character: ${playerName} is left out of this note.`}
+        </Text>
+      </View>
+      <Switch
+        accessibilityLabel={`Tag ${playerName} in this note`}
+        accessibilityRole="switch"
+        accessibilityState={{ checked: value }}
+        onValueChange={onChange}
+        thumbColor={value ? colors.primary : colors.onDisabled}
+        trackColor={{ false: colors.disabled, true: colors.borderStrong }}
+        value={value}
+      />
+    </View>
+  );
 }
 
 function NotePreview({ day, playerName, text }: { day: number; playerName: string; text: string }) {
@@ -320,6 +379,30 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 16,
     fontWeight: '900',
+  },
+  tagCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  tagDescription: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  tagRow: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 12,
+    padding: 14,
+  },
+  tagTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '800',
   },
   scroll: {
     backgroundColor: colors.background,
