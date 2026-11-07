@@ -4,6 +4,7 @@ import { KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } 
 
 import { SearchBox } from '@/components/search-box';
 import { Text } from '@/components/text';
+import { useWebKeyboardInset } from '@/hooks/use-web-keyboard-inset';
 import { colors } from '@/theme/colors';
 import type { StoredScript } from '@/types/game';
 import { SUSHI_BUFFET_SCRIPT_ID } from '@/utils/script-constants';
@@ -33,6 +34,7 @@ export function GameScriptPicker({
 }: GameScriptPickerProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const keyboardInset = useWebKeyboardInset(pickerOpen);
   const selectableScripts = scripts.filter((script) => script.id !== SUSHI_BUFFET_SCRIPT_ID);
   const selectedScript = [featuredScript, ...selectableScripts].find(
     (script) => script?.id === selectedScriptId,
@@ -99,7 +101,7 @@ export function GameScriptPicker({
       <Modal animationType="slide" onRequestClose={closePicker} transparent visible={pickerOpen}>
         <KeyboardAvoidingView
           behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
-          style={styles.backdrop}
+          style={[styles.backdrop, keyboardInset ? { paddingBottom: keyboardInset } : null]}
         >
           <Pressable
             accessibilityLabel="Close script picker"
