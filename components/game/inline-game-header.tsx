@@ -23,12 +23,14 @@ export const INLINE_GAME_HEADER_HEIGHT = ROW_HEIGHT + TOP_MARGIN + VISUAL_GAP;
 type InlineGameHeaderProps = {
   activeGame: Game;
   headerTranslateY: SharedValue<number>;
+  onLessonChange: (lesson: string) => void;
   onResultChange: (result?: GameResult) => void;
 };
 
 export function InlineGameHeader({
   activeGame,
   headerTranslateY,
+  onLessonChange,
   onResultChange,
 }: InlineGameHeaderProps) {
   const insets = useSafeAreaInsets();
@@ -66,7 +68,9 @@ export function InlineGameHeader({
         </View>
         <View style={styles.slot}>
           <GameResultButton
+            lesson={activeGame.lesson}
             onChange={onResultChange}
+            onLessonChange={onLessonChange}
             onShowWinRates={
               gameScriptId
                 ? () =>

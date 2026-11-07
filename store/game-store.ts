@@ -228,6 +228,8 @@ type GameState = GameData & {
   setActiveTheory: (gameId: string, theoryId?: string) => void;
   toggleTheoryEvil: (gameId: string, theoryId: string, playerId: string) => void;
   setGameResult: (gameId: string, result?: GameResult) => void;
+  /** Saves the app user's lesson from the game; blank text removes it. */
+  setGameLesson: (gameId: string, lesson: string) => void;
   setActiveDay: (gameId: string, day: number) => void;
   setGamePhase: (gameId: string, day: number, phase: GamePhase) => void;
   setDefaultStartingNight: (night: StartingNight) => void;
@@ -1477,6 +1479,22 @@ export const useGameStore = create<GameState>()(
           games: state.games.map((game) =>
             game.id === gameId ? { ...game, result, updatedAt: new Date().toISOString() } : game,
           ),
+        }));
+      },
+      setGameLesson: (gameId, lesson) => {
+        const trimmed = lesson.trim();
+        set((state) => ({
+          games: state.games.map((game) => {
+            if (game.id !== gameId || (game.lesson ?? '') === trimmed) {
+              return game;
+            }
+            const { lesson: _lesson, ...rest } = game;
+            return {
+              ...rest,
+              ...(trimmed ? { lesson: trimmed } : {}),
+              updatedAt: new Date().toISOString(),
+            };
+          }),
         }));
       },
       setActiveDay: (gameId, day) => {

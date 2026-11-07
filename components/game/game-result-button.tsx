@@ -1,63 +1,82 @@
-import { CircleCheck, CircleX, Trophy } from 'lucide-react-native';
+import { CircleCheck, CircleX, NotebookPen, Trophy } from 'lucide-react-native';
+import { useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 
-import { useAppDialog } from '@/components/dialog/app-dialog-provider';
+import { GameResultDialog } from '@/components/game/game-result-dialog';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { GameResult } from '@/types/game';
 
 type GameResultButtonProps = {
+  lesson?: string;
   onChange: (result?: GameResult) => void;
+  onLessonChange: (lesson: string) => void;
   /** Opens the win rates on the game's script. Leave out when the game has no script. */
   onShowWinRates?: () => void;
   result?: GameResult;
 };
 
-export function GameResultButton({ onChange, onShowWinRates, result }: GameResultButtonProps) {
-  const showDialog = useAppDialog();
+export function GameResultButton({
+  lesson,
+  onChange,
+  onLessonChange,
+  onShowWinRates,
+  result,
+}: GameResultButtonProps) {
+  const [open, setOpen] = useState(false);
   const Icon = result === 'won' ? CircleCheck : result === 'lost' ? CircleX : Trophy;
   const label = result === undefined ? 'Result' : capitalize(result);
 
-  function handlePress() {
-    showDialog('Game result', 'Choose how this game ended.', [
-      { text: 'Won', onPress: () => onChange('won'), style: 'success' },
-      { text: 'Lost', onPress: () => onChange('lost'), style: 'destructive' },
-      { text: 'Clear', onPress: () => onChange(undefined) },
-      ...(onShowWinRates ? [{ text: 'Win rates', onPress: onShowWinRates }] : []),
-      { text: 'Cancel', style: 'cancel' },
-    ]);
-  }
-
   return (
-    <Pressable
-      accessibilityHint="Choose won, lost, or clear the game result"
-      accessibilityLabel={result ? `Game result: ${result}` : 'Set game result'}
-      accessibilityRole="button"
-      hitSlop={8}
-      onPress={handlePress}
-      style={({ pressed }) => [
-        styles.button,
-        result === 'won' ? styles.won : result === 'lost' ? styles.lost : styles.idle,
-        pressed && styles.pressed,
-      ]}
-    >
-      <Icon
-        color={
-          result === 'won' ? colors.successText : result === 'lost' ? colors.danger : colors.text
-        }
-        size={16}
-        strokeWidth={2.3}
-      />
-      <Text
-        style={[
-          styles.label,
-          result === 'won' ? styles.wonLabel : null,
-          result === 'lost' ? styles.lostLabel : null,
+    <>
+      <Pressable
+        accessibilityHint="Choose won, lost, or clear the game result, and note a lesson"
+        accessibilityLabel={result ? `Game result: ${result}` : 'Set game result'}
+        accessibilityRole="button"
+        hitSlop={8}
+        onPress={() => setOpen(true)}
+        style={({ pressed }) => [
+          styles.button,
+          result === 'won' ? styles.won : result === 'lost' ? styles.lost : styles.idle,
+          pressed && styles.pressed,
         ]}
       >
-        {label}
-      </Text>
-    </Pressable>
+        <Icon
+          color={
+            result === 'won' ? colors.successText : result === 'lost' ? colors.danger : colors.text
+          }
+          size={16}
+          strokeWidth={2.3}
+        />
+        <Text
+          style={[
+            styles.label,
+            result === 'won' ? styles.wonLabel : null,
+            result === 'lost' ? styles.lostLabel : null,
+          ]}
+        >
+          {label}
+        </Text>
+        {lesson ? (
+          <NotebookPen
+            accessibilityLabel="Has a lesson"
+            color={colors.textMuted}
+            size={12}
+            strokeWidth={2.3}
+          />
+        ) : null}
+      </Pressable>
+      {open ? (
+        <GameResultDialog
+          lesson={lesson}
+          onClose={() => setOpen(false)}
+          onLessonChange={onLessonChange}
+          onResultChange={onChange}
+          onShowWinRates={onShowWinRates}
+          result={result}
+        />
+      ) : null}
+    </>
   );
 }
 

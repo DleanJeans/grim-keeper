@@ -151,6 +151,8 @@ export type Game = {
   activePhase?: GamePhase;
   startingNight?: StartingNight;
   result?: GameResult;
+  /** The app user's own takeaway from this game, typed in the Game result dialog. */
+  lesson?: string;
   mapWidth?: number;
   mapHeight?: number;
   tokenSize?: number;

@@ -346,6 +346,39 @@ describe('setGameResult', () => {
   });
 });
 
+describe('setGameLesson', () => {
+  const game: Game = {
+    activeDay: 1,
+    conversations: [],
+    createdAt: '2026-07-07T00:00:00.000Z',
+    id: 'game-1',
+    players: [],
+    updatedAt: '2026-07-07T00:00:00.000Z',
+  };
+
+  afterEach(() => {
+    useGameStore.setState({ games: [] });
+  });
+
+  it('saves a trimmed lesson and removes it when blank', () => {
+    useGameStore.setState({ games: [game] });
+
+    useGameStore.getState().setGameLesson('game-1', '  Trust the Chef sooner \n');
+    expect(useGameStore.getState().games[0].lesson).toBe('Trust the Chef sooner');
+    expect(useGameStore.getState().games[0].updatedAt).not.toBe(game.updatedAt);
+
+    useGameStore.getState().setGameLesson('game-1', '   ');
+    expect('lesson' in useGameStore.getState().games[0]).toBe(false);
+  });
+
+  it('leaves the game untouched when the lesson did not change', () => {
+    useGameStore.setState({ games: [game] });
+
+    useGameStore.getState().setGameLesson('game-1', '');
+    expect(useGameStore.getState().games[0]).toBe(game);
+  });
+});
+
 describe('Sushi Buffet role selections', () => {
   const sushiScript: StoredScript = {
     id: 'sushi-buffet',
