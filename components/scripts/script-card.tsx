@@ -1,4 +1,13 @@
-import { Check, ChevronDown, ChevronUp, Copy, Ticket, Trash2 } from 'lucide-react-native';
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Copy,
+  Ticket,
+  Trash2,
+  Trophy,
+} from 'lucide-react-native';
 import { type LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
@@ -24,6 +33,7 @@ type ScriptCardProps = {
   onSelect: () => void;
   onToggleOneTime: () => void;
   onView: () => void;
+  onViewWinRates: () => void;
   onUpdate: (script: StoredScript) => void;
 };
 
@@ -38,6 +48,7 @@ export function ScriptCard({
   onSelect,
   onToggleOneTime,
   onView,
+  onViewWinRates,
   onUpdate,
   roleCatalog,
   script,
@@ -62,7 +73,6 @@ export function ScriptCard({
           <Text selectable style={styles.metadata}>
             {script.author ? `${script.author} · ` : ''}v{script.version} · {script.roles.length}{' '}
             roles · {gamesPlayed} {gamesPlayed === 1 ? 'game' : 'games'}
-            {winRecord ? ` · ${winRecord}` : ''}
           </Text>
           {custom ? (
             <>
@@ -84,6 +94,19 @@ export function ScriptCard({
             </View>
           ) : null}
         </View>
+        {gamesPlayed > 0 ? (
+          <Pressable
+            accessibilityHint="Shows your and your friends' win rates on this script"
+            accessibilityLabel={winRecord ? `Win rates, you ${winRecord}` : 'Win rates'}
+            accessibilityRole="button"
+            onPress={onViewWinRates}
+            style={({ pressed }) => [styles.winRatesPill, pressed && styles.winRatesPillPressed]}
+          >
+            <Trophy color={colors.textMuted} size={13} strokeWidth={2.4} />
+            <Text style={styles.winRatesText}>{winRecord ? `You ${winRecord}` : 'Win rates'}</Text>
+            <ChevronRight color={colors.textSubtle} size={14} strokeWidth={2.4} />
+          </Pressable>
+        ) : null}
         {script.oneTime ? (
           <Text selectable style={styles.metadata}>
             Leaves this list once a game uses it. The game keeps its own copy.
@@ -244,5 +267,26 @@ const styles = StyleSheet.create({
   },
   titleButtonPressed: {
     opacity: 0.65,
+  },
+  winRatesPill: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.borderStrong,
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 5,
+    marginTop: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  winRatesPillPressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  winRatesText: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '800',
   },
 });

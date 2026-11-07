@@ -1,7 +1,9 @@
 import type { Game, Role, SavedNote, StoredScript } from '@/types/game';
 import {
   formatWinRecord,
+  getGamePlayerIds,
   getNightOrderRoleEntries,
+  getScriptGames,
   getScriptPlayCounts,
   getScriptRoleEntries,
   getScriptWinRecords,
@@ -30,6 +32,22 @@ describe('script utils', () => {
       ['script-a', 1],
       ['missing-script', 1],
     ]);
+  });
+
+  it('finds the games on a script and the players of a game without its Storytellers', () => {
+    const onScript = createGame({ scriptId: 'script-z' });
+    const embedded = createGame({ script: scripts[0] });
+    const games = [onScript, createGame({ scriptId: 'script-a' }), embedded];
+    const game = createGame({
+      players: [
+        { id: 'app-user', name: 'Me' },
+        { id: 'friend-a', name: 'Anh' },
+        { id: 'friend-st', isStoryteller: true, name: 'Sam' },
+      ] as Game['players'],
+    });
+
+    expect(getScriptGames(games, 'script-z')).toEqual([onScript, embedded]);
+    expect([...getGamePlayerIds(game)]).toEqual(['app-user', 'friend-a']);
   });
 
   it('counts your wins and losses per script, skipping storytold and unfinished games', () => {

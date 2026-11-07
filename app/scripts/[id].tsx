@@ -1,8 +1,9 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { DjSongSection } from '@/components/dj/dj-song-section';
 import { NotFoundScreen } from '@/components/not-found-screen';
 import { ScriptRoleList } from '@/components/scripts/script-role-list';
+import { ScriptWinRatesButton } from '@/components/scripts/script-win-rates-button';
 import { SushiBuffetScriptRoleList } from '@/components/scripts/sushi-buffet-script-role-list';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
@@ -46,7 +47,21 @@ export default function ScriptDetailRoute() {
     <>
       <Stack.Screen
         options={{
-          header: () => <TitleHeader title={script.name} />,
+          header: () => (
+            <TitleHeader
+              right={
+                <ScriptWinRatesButton
+                  onPress={() =>
+                    router.push({
+                      pathname: '/script-win-rates',
+                      params: { ...(gameId ? { gameId } : {}), scriptId: script.id },
+                    })
+                  }
+                />
+              }
+              title={script.name}
+            />
+          ),
           title: script.name,
         }}
       />

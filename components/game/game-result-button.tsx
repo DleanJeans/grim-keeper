@@ -8,10 +8,12 @@ import type { GameResult } from '@/types/game';
 
 type GameResultButtonProps = {
   onChange: (result?: GameResult) => void;
+  /** Opens the win rates on the game's script. Leave out when the game has no script. */
+  onShowWinRates?: () => void;
   result?: GameResult;
 };
 
-export function GameResultButton({ onChange, result }: GameResultButtonProps) {
+export function GameResultButton({ onChange, onShowWinRates, result }: GameResultButtonProps) {
   const showDialog = useAppDialog();
   const Icon = result === 'won' ? CircleCheck : result === 'lost' ? CircleX : Trophy;
   const label = result === undefined ? 'Result' : capitalize(result);
@@ -21,6 +23,7 @@ export function GameResultButton({ onChange, result }: GameResultButtonProps) {
       { text: 'Won', onPress: () => onChange('won'), style: 'success' },
       { text: 'Lost', onPress: () => onChange('lost'), style: 'destructive' },
       { text: 'Clear', onPress: () => onChange(undefined) },
+      ...(onShowWinRates ? [{ text: 'Win rates', onPress: onShowWinRates }] : []),
       { text: 'Cancel', style: 'cancel' },
     ]);
   }

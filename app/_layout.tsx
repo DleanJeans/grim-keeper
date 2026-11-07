@@ -126,6 +126,7 @@ export default function RootLayout() {
             <Stack.Screen name="stats" options={{ title: 'Stats' }} />
             <Stack.Screen name="scripts" options={{ title: 'Scripts' }} />
             <Stack.Screen name="scripts/[id]" options={{ title: 'Script' }} />
+            <Stack.Screen name="script-win-rates" options={{ title: 'Win rates' }} />
             <Stack.Screen name="role-notes" options={{ title: 'Role Notes' }} />
             <Stack.Screen name="search-notes" options={{ title: 'Search notes' }} />
             <Stack.Screen name="settings" options={{ title: 'Settings' }} />

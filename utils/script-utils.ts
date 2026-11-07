@@ -18,6 +18,19 @@ export type NightSheet = {
   otherNight: string[];
 };
 
+/** Fewer games per friend on one script than overall, so the minimum starts lower than on Friends. */
+export const DEFAULT_SCRIPT_MIN_GAMES = 3;
+
+/** The games played on a script, matched by script id like the script cards' counts. */
+export function getScriptGames(games: Game[], scriptId: string) {
+  return games.filter((game) => (game.scriptId ?? game.script?.id) === scriptId);
+}
+
+/** The ids of everyone who played in a game, leaving out its Storytellers. */
+export function getGamePlayerIds(game: Game) {
+  return new Set(game.players.filter((player) => !player.isStoryteller).map((player) => player.id));
+}
+
 export function getScriptPlayCounts(games: Game[]) {
   const gamesPlayedByScript = new Map<string, number>();
 

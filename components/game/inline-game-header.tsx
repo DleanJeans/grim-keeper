@@ -65,7 +65,19 @@ export function InlineGameHeader({
           />
         </View>
         <View style={styles.slot}>
-          <GameResultButton onChange={onResultChange} result={activeGame.result} />
+          <GameResultButton
+            onChange={onResultChange}
+            onShowWinRates={
+              gameScriptId
+                ? () =>
+                    router.push({
+                      pathname: '/script-win-rates',
+                      params: { gameId: activeGame.id, scriptId: gameScriptId },
+                    })
+                : undefined
+            }
+            result={activeGame.result}
+          />
         </View>
         <View style={styles.slot}>
           {gameScriptId ? (

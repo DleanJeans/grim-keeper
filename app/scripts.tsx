@@ -655,6 +655,9 @@ function SavedScriptsSection({
             onSelect={() => onSelect(script)}
             onToggleOneTime={() => onToggleOneTime(script)}
             onView={() => onView(script.id)}
+            onViewWinRates={() =>
+              router.push({ pathname: '/script-win-rates', params: { scriptId: script.id } })
+            }
             onUpdate={onUpdate}
             roleCatalog={roleCatalog}
             script={script}

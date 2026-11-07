@@ -29,9 +29,10 @@ type FriendSortControlsProps = {
   minGames: number;
   onChangeMinGames: (minGames: number) => void;
   onChangeSort: (sort: FriendSort) => void;
-  onChangeTeam: (team: TeamFilter) => void;
+  /** Leave out to hide the team filter. */
+  onChangeTeam?: (team: TeamFilter) => void;
   sort: FriendSort;
-  team: TeamFilter;
+  team?: TeamFilter;
 };
 
 export function FriendSortControls({
@@ -40,7 +41,7 @@ export function FriendSortControls({
   onChangeSort,
   onChangeTeam,
   sort,
-  team,
+  team = 'all',
 }: FriendSortControlsProps) {
   const changeMinGames = (value: number) => onChangeMinGames(Math.max(1, value));
 
@@ -58,21 +59,29 @@ export function FriendSortControls({
         ))}
       </View>
 
-      <View accessibilityLabel="Filter by team" accessibilityRole="toolbar" style={styles.sortRow}>
-        {TEAM_OPTIONS.map((option) => (
-          <SortButton
-            accessibilityLabel={`Show ${option.description}`}
-            key={option.team}
-            label={option.label}
-            onPress={() => onChangeTeam(option.team)}
-            selected={team === option.team}
-          />
-        ))}
-      </View>
-      {TEAM_HINTS[team] ? (
-        <Text selectable style={styles.teamHint}>
-          {TEAM_HINTS[team]}
-        </Text>
+      {onChangeTeam ? (
+        <>
+          <View
+            accessibilityLabel="Filter by team"
+            accessibilityRole="toolbar"
+            style={styles.sortRow}
+          >
+            {TEAM_OPTIONS.map((option) => (
+              <SortButton
+                accessibilityLabel={`Show ${option.description}`}
+                key={option.team}
+                label={option.label}
+                onPress={() => onChangeTeam(option.team)}
+                selected={team === option.team}
+              />
+            ))}
+          </View>
+          {TEAM_HINTS[team] ? (
+            <Text selectable style={styles.teamHint}>
+              {TEAM_HINTS[team]}
+            </Text>
+          ) : null}
+        </>
       ) : null}
 
       {sort === 'games' ? null : (
