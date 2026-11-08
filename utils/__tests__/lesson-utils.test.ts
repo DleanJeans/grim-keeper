@@ -118,25 +118,31 @@ describe('getLessonsForScriptCharacters', () => {
     },
   };
 
-  it('groups character-only notes from other games under their first script character', () => {
+  it('groups character-only notes from other games under their first character on the script', () => {
     const groups = getLessonsForScriptCharacters(
       game,
       [
-        note('1', '', ['spy', 'mayor']),
+        note('1', '', ['imp', 'mayor', 'spy']),
         note('2', 'You', ['spy']),
         note('3', '', ['spy_evil']),
         note('4', 'Stefan', ['spy']),
         note('5', '', ['spy'], 'game-1'),
         note('6', '', ['imp']),
+        note('7', '', ['spy', 'mayor']),
       ],
       'You',
     );
 
     expect(
-      groups.map((group) => [group.role.id, group.lessons.map((lesson) => lesson.id)]),
+      groups.map((group) => [
+        group.role.id,
+        group.otherRoleIds,
+        group.lessons.map((lesson) => lesson.id),
+      ]),
     ).toEqual([
-      ['mayor', ['1']],
-      ['spy', ['3', '2']],
+      ['mayor', ['imp', 'spy'], ['1']],
+      ['spy', ['mayor'], ['7']],
+      ['spy', [], ['3', '2']],
     ]);
   });
 });

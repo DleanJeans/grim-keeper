@@ -1,25 +1,30 @@
 import { router } from 'expo-router';
 import { Pencil, Trash2 } from 'lucide-react-native';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
 
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
+import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import type { SavedNote } from '@/types/game';
+import type { Role, SavedNote } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
+import { findNoteRole } from '@/utils/lesson-utils';
 import { detectRoleIdsInNote } from '@/utils/saved-note-utils';
 
 type LessonRowProps = {
   lesson: SavedNote;
+  /** The game's script roles, looked up before the catalog. */
+  roles?: Role[];
 };
 
 /**
- * One saved note with its script and date. The pencil edits the text in place and can untag the
- * player, which keeps the note only for its characters; the trash deletes it after a confirm.
+ * One saved note with its script and date. The pencil edits the text in place, can untag the
+ * player, which keeps the note only for its characters, and picks which character comes first
+ * (the one a character-only note is listed under); the trash deletes it after a confirm.
  */
-export function LessonRow({ lesson }: LessonRowProps) {
+export function LessonRow({ lesson, roles }: LessonRowProps) {
   const showDialog = useAppDialog();
   const deleteSavedNote = useGameStore((state) => state.deleteSavedNote);
   const updateSavedNote = useGameStore((state) => state.updateSavedNote);
@@ -31,11 +36,17 @@ export function LessonRow({ lesson }: LessonRowProps) {
   const [text, setText] = useState(lesson.text);
   const [tagPlayer, setTagPlayer] = useState(true);
   const [error, setError] = useState('');
+  const [firstRoleId, setFirstRoleId] = useState(lesson.roleIds[0]);
   const playerName = lesson.playerName;
+  const noteRoles = useMemo(
+    () => getNoteRoles(lesson.roleIds, roles ?? [], roleCatalog),
+    [lesson.roleIds, roleCatalog, roles],
+  );
 
   function handleEdit() {
     setText(lesson.text);
     setTagPlayer(true);
+    setFirstRoleId(lesson.roleIds[0]);
     setError('');
     setEditing(true);
   }
@@ -43,7 +54,7 @@ export function LessonRow({ lesson }: LessonRowProps) {
   function handleSave() {
     const roleIds =
       tagPlayer || lesson.roleIds.length > 0
-        ? lesson.roleIds
+        ? [firstRoleId, ...lesson.roleIds.filter((roleId) => roleId !== firstRoleId)]
         : detectRoleIdsInNote(text, roleCatalog);
     if (updateSavedNote(lesson.id, { playerName: tagPlayer ? playerName : '', roleIds, text })) {
       setEditing(false);
@@ -112,6 +123,22 @@ export function LessonRow({ lesson }: LessonRowProps) {
             />
           </View>
         ) : null}
+        {noteRoles.length > 1 ? (
+          <View style={styles.firstRole}>
+            <Text style={styles.tagText}>Listed under</Text>
+            <View style={styles.roleChips}>
+              {noteRoles.map(({ id, role }) => (
+                <RoleChip
+                  key={id}
+                  name={role?.name ?? id}
+                  onPress={() => setFirstRoleId(id)}
+                  role={role}
+                  selected={id === firstRoleId}
+                />
+              ))}
+            </View>
+          </View>
+        ) : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <View style={styles.actions}>
           <Pressable
@@ -175,6 +202,43 @@ export function LessonRow({ lesson }: LessonRowProps) {
   );
 }
 
+type NoteRole = { id: string; role?: Role };
+
+/** The note's characters in its own order, looked up in the script first, then the catalog. */
+function getNoteRoles(roleIds: string[], scriptRoles: Role[], roleCatalog: Role[]): NoteRole[] {
+  return roleIds.map((id) => ({ id, role: findNoteRole(id, scriptRoles, roleCatalog) }));
+}
+
+function RoleChip({
+  name,
+  onPress,
+  role,
+  selected,
+}: {
+  name: string;
+  onPress: () => void;
+  role?: Role;
+  selected: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityLabel={`List under ${name}`}
+      accessibilityRole="radio"
+      accessibilityState={{ checked: selected }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.roleChip,
+        styles.roleChipButton,
+        selected && styles.roleChipSelected,
+        pressed && styles.iconButtonPressed,
+      ]}
+    >
+      {role ? <RoleIcon role={role} size={16} /> : null}
+      <Text style={[styles.roleChipText, selected && styles.roleChipTextSelected]}>{name}</Text>
+    </Pressable>
+  );
+}
+
 function getLessonSource(lesson: SavedNote) {
   const date = new Date(lesson.createdAt).toLocaleDateString(undefined, {
     day: 'numeric',
@@ -199,6 +263,7 @@ const styles = StyleSheet.create({
   cancelText: { color: colors.gameTextMuted, fontSize: 14, fontWeight: '700' },
   editor: { alignSelf: 'stretch', gap: 8 },
   error: { color: colors.danger, fontSize: 13 },
+  firstRole: { gap: 6 },
   iconButton: { alignItems: 'center', height: 32, justifyContent: 'center', width: 32 },
   iconButtonPressed: { opacity: 0.6 },
   input: {
@@ -216,6 +281,23 @@ const styles = StyleSheet.create({
   lesson: { alignItems: 'flex-start', flexDirection: 'row', gap: 4 },
   meta: { color: colors.gameTextSubtle, fontSize: 12 },
   metaLink: { textDecorationLine: 'underline' },
+  roleChip: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4,
+    paddingVertical: 2,
+  },
+  roleChipButton: {
+    borderColor: colors.gameBorder,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  roleChipSelected: { borderColor: colors.savedNoteIcon },
+  roleChipText: { color: colors.gameTextSoft, fontSize: 12, fontWeight: '700' },
+  roleChipTextSelected: { color: colors.savedNoteIcon },
+  roleChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   saveButton: {
     alignItems: 'center',
     backgroundColor: colors.saveButton,

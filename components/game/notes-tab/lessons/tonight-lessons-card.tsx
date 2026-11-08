@@ -8,12 +8,17 @@ import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import type { SavedNote } from '@/types/game';
-import { getLessonsForPlayers, getLessonsForScriptCharacters } from '@/utils/lesson-utils';
+import type { Role, SavedNote } from '@/types/game';
+import {
+  findNoteRole,
+  getLessonsForPlayers,
+  getLessonsForScriptCharacters,
+} from '@/utils/lesson-utils';
 
 /**
  * Notes you saved in other games about the players in this one, grouped by player, then notes
- * about only the characters on this script, grouped by character, until the game ends. The X hides
+ * about only the characters on this script, grouped by character (with the note's other
+ * characters beside it in the heading), until the game ends. The X hides
  * them for this game only; the gold dots on the map stay.
  */
 export function TonightLessonsCard() {
@@ -21,6 +26,8 @@ export function TonightLessonsCard() {
   const savedNotes = useGameStore((state) => state.savedNotes);
   const dismissGameNote = useGameStore((state) => state.dismissGameNote);
   const appUserName = useGameStore((state) => state.appUserName);
+  const roleCatalog = useGameStore((state) => state.roleCatalog);
+  const scriptRoles = game.script?.roles ?? [];
   const dismissedNoteIds = new Set(game.dismissedNoteIds ?? []);
   const keepShown = <Entry extends { lessons: SavedNote[] }>(entry: Entry) => ({
     ...entry,
@@ -68,12 +75,39 @@ export function TonightLessonsCard() {
         </View>
       ))}
       {characterEntries.map((entry) => (
-        <View key={entry.role.id} style={styles.player}>
-          <View style={styles.character}>
-            <RoleIcon role={entry.role} size={22} />
-            <Text style={styles.name}>{entry.role.name}</Text>
-          </View>
-          <LessonsList lessons={entry.lessons} />
+        <View key={entry.key} style={styles.player}>
+          <CharacterHeading
+            otherRoles={entry.otherRoleIds.map((roleId) => ({
+              id: roleId,
+              role: findNoteRole(roleId, scriptRoles, roleCatalog),
+            }))}
+            role={entry.role}
+          />
+          <LessonsList lessons={entry.lessons} roles={scriptRoles} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** The character the notes are listed under, then the other characters they are about. */
+function CharacterHeading({
+  otherRoles,
+  role,
+}: {
+  otherRoles: { id: string; role?: Role }[];
+  role: Role;
+}) {
+  return (
+    <View style={styles.character}>
+      <View style={styles.mainRole}>
+        <RoleIcon role={role} size={22} />
+        <Text style={styles.name}>{role.name}</Text>
+      </View>
+      {otherRoles.map((other) => (
+        <View key={other.id} style={styles.otherRole}>
+          {other.role ? <RoleIcon role={other.role} size={16} /> : null}
+          <Text style={styles.otherRoleName}>{other.role?.name ?? other.id}</Text>
         </View>
       ))}
     </View>
@@ -81,7 +115,13 @@ export function TonightLessonsCard() {
 }
 
 const styles = StyleSheet.create({
-  character: { alignItems: 'center', flexDirection: 'row', gap: 6 },
+  character: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    columnGap: 10,
+    rowGap: 2,
+  },
   card: {
     backgroundColor: colors.gameSurface,
     borderColor: colors.savedNoteIcon,
@@ -93,7 +133,10 @@ const styles = StyleSheet.create({
   close: { alignItems: 'center', height: 32, justifyContent: 'center', width: 32 },
   closePressed: { opacity: 0.65 },
   header: { alignItems: 'center', flexDirection: 'row', gap: 6 },
+  mainRole: { alignItems: 'center', flexDirection: 'row', gap: 6 },
   name: { color: colors.gameText, fontSize: 14, fontWeight: '800' },
+  otherRole: { alignItems: 'center', flexDirection: 'row', gap: 4 },
+  otherRoleName: { color: colors.gameTextSoft, fontSize: 12, fontWeight: '700' },
   player: { alignItems: 'flex-start', gap: 2 },
   title: {
     color: colors.savedNoteIcon,

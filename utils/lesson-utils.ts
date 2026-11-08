@@ -99,11 +99,21 @@ export function getLessonsForPlayers(
   });
 }
 
-export type CharacterLessons = { lessons: SavedNote[]; role: Role };
+export type CharacterLessons = {
+  /** Stable id of the group: the main character's id plus the note's other character ids. */
+  key: string;
+  lessons: SavedNote[];
+  /** The note's other characters, in its own order. */
+  otherRoleIds: string[];
+  /** The character the notes are listed under. */
+  role: Role;
+};
 
 /**
  * Notes from other games that are only about characters (no friend tagged), grouped under the
- * first character of this game's script each one is about, in script order, newest first.
+ * note's first character (in its own role order) that is on this game's script, together with
+ * the same other characters. Groups follow script order, then the newest note; notes in a group
+ * are newest first.
  */
 export function getLessonsForScriptCharacters(
   game: Pick<Game, 'id' | 'script'>,
@@ -113,21 +123,39 @@ export function getLessonsForScriptCharacters(
   const roles = game.script?.roles ?? [];
   const appUserKey = normalizePlayerName(appUserName).toLocaleLowerCase();
   const indexById = new Map(roles.map((role, index) => [role.id, index]));
-  const groups = new Map<number, SavedNote[]>();
+  const groups = new Map<string, { index: number; lessons: SavedNote[]; otherRoleIds: string[] }>();
   const sorted = [...savedNotes].sort((first, second) =>
     second.createdAt.localeCompare(first.createdAt),
   );
   for (const note of sorted) {
     const playerKey = normalizePlayerName(note.playerName).toLocaleLowerCase();
     if (note.gameId === game.id || (playerKey && playerKey !== appUserKey)) continue;
-    const indexes = note.roleIds
-      .map((roleId) => indexById.get(roleId.replace(/_(?:good|evil)$/, '')))
-      .filter((index): index is number => index !== undefined);
-    if (indexes.length === 0) continue;
-    const index = Math.min(...indexes);
-    groups.set(index, [...(groups.get(index) ?? []), note]);
+    const mainPosition = note.roleIds.findIndex((roleId) => indexById.has(stripTeam(roleId)));
+    if (mainPosition < 0) continue;
+    const index = indexById.get(stripTeam(note.roleIds[mainPosition])) as number;
+    const otherRoleIds = note.roleIds.filter((_, position) => position !== mainPosition);
+    const key = [roles[index].id, ...otherRoleIds].join('|');
+    const group = groups.get(key) ?? { index, lessons: [], otherRoleIds };
+    group.lessons.push(note);
+    groups.set(key, group);
   }
   return [...groups.entries()]
-    .sort(([first], [second]) => first - second)
-    .map(([index, lessons]) => ({ lessons, role: roles[index] }));
+    .sort(([, first], [, second]) => first.index - second.index)
+    .map(([key, { index, lessons, otherRoleIds }]) => ({
+      key,
+      lessons,
+      otherRoleIds,
+      role: roles[index],
+    }));
+}
+
+/** A note's character, looked up on the script first, then the catalog, with or without its team. */
+export function findNoteRole(roleId: string, scriptRoles: Role[], roleCatalog: Role[]) {
+  const find = (id: string) =>
+    scriptRoles.find((role) => role.id === id) ?? roleCatalog.find((role) => role.id === id);
+  return find(roleId) ?? find(stripTeam(roleId));
+}
+
+function stripTeam(roleId: string) {
+  return roleId.replace(/_(?:good|evil)$/, '');
 }
