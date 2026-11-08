@@ -86,6 +86,8 @@ export type GameRouteContextValue = {
   rumorSubjectPlayerId: string | null;
   rumorSourcePlayerId: string | null;
   activeRoleDisplayModes: RoleDisplayMode[];
+  /** The dice drawer under the map is open; Character info rows then show their dice. */
+  randomDrawerOpen: boolean;
   showRoles: boolean;
   dayEditLocked: boolean;
   canUndoRotation: boolean;
@@ -130,6 +132,7 @@ export type GameRouteContextValue = {
   handleSelectRumorSource: (sourcePlayerId: string) => void;
   setActiveRoleDisplayModes: (modes: RoleDisplayMode[]) => void;
   setShowRoles: (show: boolean) => void;
+  setRandomDrawerOpen: (open: boolean) => void;
   handleSetFocusedPlayerDeath: (kind: 'execution' | 'night', attribution?: KillAttribution) => void;
   handleReviveFocusedPlayer: () => void;
   handleUndoFocusedPlayerDeath: () => void;

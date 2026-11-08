@@ -181,6 +181,16 @@ export type Game = {
   theories?: GameTheory[];
   /** Theory shown on the map; unset shows none. */
   activeTheoryId?: string;
+  /** Made-up evil team for rolling bluffed Character info. */
+  fakeEvilTeam?: FakeEvilTeam;
+};
+
+/** Made-up evil team, so bluffed Character info can agree with itself; see fake-info-utils. */
+export type FakeEvilTeam = {
+  demonId?: string;
+  minionIds: string[];
+  /** Good player the fake Fortune Teller info keeps pinging as the Demon. */
+  redHerringId?: string;
 };
 
 export type GameTheory = {

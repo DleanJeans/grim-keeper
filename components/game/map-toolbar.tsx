@@ -1,9 +1,10 @@
-import { ChevronDown, ChevronUp, MoveDiagonal } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, Dices, MoveDiagonal } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { DjGameButton } from '@/components/game/dj-game-button';
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { RandomDrawer } from '@/components/game/random-drawer/random-drawer';
 import { RevealRolesButton } from '@/components/game/reveal-roles-button';
 import { RoleDisplayModes, roleDisplayModes } from '@/components/game/role-display-modes';
 import { SuspectFilterButton } from '@/components/game/suspect-filter-button';
@@ -24,6 +25,8 @@ export function MapToolbar({ djEnabled, onToggleSuspectFilter, suspectFilter }: 
     enterRearrangeMode,
     game,
     isRearrangeMode,
+    randomDrawerOpen,
+    setRandomDrawerOpen,
     setShowRoles,
     showRoles,
   } = useGameRouteContext();
@@ -52,6 +55,25 @@ export function MapToolbar({ djEnabled, onToggleSuspectFilter, suspectFilter }: 
             <MoveDiagonal color={colors.gameText} size={18} strokeWidth={2.6} />
           </Pressable>
         )}
+        <Pressable
+          accessibilityHint="Opens random players, a random character and fake info"
+          accessibilityLabel="Random picker"
+          accessibilityRole="button"
+          accessibilityState={{ expanded: randomDrawerOpen }}
+          hitSlop={6}
+          onPress={() => setRandomDrawerOpen(!randomDrawerOpen)}
+          style={({ pressed }) => [
+            styles.iconButton,
+            randomDrawerOpen && styles.iconButtonOn,
+            pressed && styles.iconButtonPressed,
+          ]}
+        >
+          <Dices
+            color={randomDrawerOpen ? colors.randomOnAccent : colors.gameText}
+            size={18}
+            strokeWidth={2.4}
+          />
+        </Pressable>
         {showRoles ? (
           <SuspectFilterButton active={suspectFilter} onToggle={onToggleSuspectFilter} />
         ) : null}
@@ -59,6 +81,7 @@ export function MapToolbar({ djEnabled, onToggleSuspectFilter, suspectFilter }: 
         <RevealRolesButton onRevealRolesChange={setShowRoles} showRoles={showRoles} />
       </View>
       {canPickModes && modesOpen ? <RoleDisplayModes /> : null}
+      {randomDrawerOpen ? <RandomDrawer /> : null}
     </View>
   );
 }
@@ -134,6 +157,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 36,
   },
+  iconButtonOn: { backgroundColor: colors.randomAccent, borderColor: colors.randomAccent },
   iconButtonPressed: { backgroundColor: colors.gameSurfacePressed },
   root: { gap: 8 },
   row: { alignItems: 'center', flexDirection: 'row', gap: 8 },

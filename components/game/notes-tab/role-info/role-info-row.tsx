@@ -2,6 +2,7 @@ import { MapPin, Plus } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { RoleInfoDiceButton } from '@/components/game/notes-tab/role-info/role-info-dice-button';
 import { RoleInfoToken } from '@/components/game/notes-tab/role-info/role-info-token';
 import { RoleReference } from '@/components/role-reference';
 import { Text } from '@/components/text';
@@ -36,6 +37,8 @@ export type RoleInfoLine = {
   /** Slot of the statement marked as possibly true; the other statements show as false. */
   trueSlotId?: string;
   onPressSlot: (slot: RoleInfoSlot) => void;
+  /** Fills the line with fake info that fits the fake evil team; set while the dice drawer is open. */
+  onRandomize?: () => void;
   values: Record<string, string>;
 };
 
@@ -263,7 +266,17 @@ function RoleInfoLineTokens({
   rolesById: Map<string, Role>;
   template: RoleInfoTemplate;
 }) {
-  const { dayBefore, executed, isDead, label, neighbors, onPressSlot, trueSlotId, values } = line;
+  const {
+    dayBefore,
+    executed,
+    isDead,
+    label,
+    neighbors,
+    onPressSlot,
+    onRandomize,
+    trueSlotId,
+    values,
+  } = line;
 
   if (isDead) {
     return <Text style={styles.dead}>{label}</Text>;
@@ -328,6 +341,7 @@ function RoleInfoLineTokens({
               value={values[slot.id]}
             />
           ))}
+          {onRandomize ? <RoleInfoDiceButton onPress={onRandomize} /> : null}
         </View>
       ) : null}
       {dayBefore ? (

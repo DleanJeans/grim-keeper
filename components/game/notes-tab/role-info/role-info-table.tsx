@@ -2,6 +2,7 @@ import { type ReactNode, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { CharacterInfoCollapsed } from '@/components/game/notes-tab/role-info/character-info-collapsed';
 import { RoleInfoPickerDialog } from '@/components/game/notes-tab/role-info/role-info-picker-dialog';
 import {
   type RoleInfoLine,
@@ -25,6 +26,7 @@ import {
   getEvilInPlayRoleIds,
   getGameEvilInPlaySlots,
 } from '@/utils/evil-in-play-utils';
+import { canFakeRoleInfo, getFakeEvilIds, getFakeRoleInfoValues } from '@/utils/fake-info-utils';
 import {
   type GamePhasePosition,
   getLatestPhaseWithData,
@@ -65,6 +67,17 @@ const TEAM_SECTIONS = [
   { label: 'Travellers', team: 'traveller' },
 ];
 
+/** A Character info line the dice can fill with fake info. */
+type RandomizeRequest = {
+  carryForward: boolean;
+  claimer?: RoleInfoClaimer;
+  day: number;
+  executed?: Player;
+  owners: Player[];
+  phase: GamePhase;
+  role: Role;
+};
+
 type ActiveSlot = {
   carryForward: boolean;
   /** Whose info it is when several players claim the character. */
@@ -88,7 +101,9 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
     game,
     handleHighlightPlayers,
     players,
+    randomDrawerOpen,
     runDayEdit,
+    setShowRoles,
     showRoles,
     startingNight,
   } = useGameRouteContext();
@@ -236,7 +251,65 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
     }))
     .filter(({ notes }) => notes.length > 0);
 
-  if (!showRoles || (sections.length === 0 && claimedRoleNotes.length === 0)) return null;
+  const fakeTeam = game.fakeEvilTeam;
+  const canRollFakeInfo = randomDrawerOpen && getFakeEvilIds(fakeTeam).length > 0;
+  const getFakeInfoContext = ({ day, executed, owners, phase }: RandomizeRequest) =>
+    fakeTeam
+      ? {
+          day,
+          excludedRoleIds: new Set([
+            ...Object.values(game.bluffs ?? {}),
+            ...Object.values(game.evilInPlay ?? {}),
+          ]),
+          executed,
+          inPlayRoleIds: {
+            demon: evilInPlayRoleIds.get('demon'),
+            minion: evilInPlayRoleIds.get('minion'),
+          },
+          ownerId: owners[0]?.id,
+          phase,
+          players,
+          roles: scriptRoles,
+          team: fakeTeam,
+        }
+      : undefined;
+  const getRandomize = (request: RandomizeRequest) => {
+    const context = getFakeInfoContext(request);
+    if (!canRollFakeInfo || !context || !canFakeRoleInfo(request.role)) return undefined;
+    if (!getFakeRoleInfoValues(request.role, context)) return undefined;
+
+    return () => {
+      const values = getFakeRoleInfoValues(request.role, context);
+      if (!values) return;
+      const { carryForward, claimer, day, phase, role } = request;
+      runDayEdit(() => {
+        for (const slot of getRoleInfoTemplate(role).slots) {
+          setRoleInfoValue(
+            game.id,
+            role.id,
+            day,
+            phase,
+            slot.id,
+            values[slot.id],
+            inferredRoleInfos,
+            carryForward,
+            claimer,
+          );
+        }
+      });
+    };
+  };
+
+  if (sections.length === 0 && claimedRoleNotes.length === 0) return null;
+  if (!showRoles) {
+    // The unfocused table folds into one row while roles are hidden, instead of disappearing.
+    return player ? null : (
+      <CharacterInfoCollapsed
+        onPress={() => setShowRoles(true)}
+        rowCount={sections.reduce((total, section) => total + section.roles.length, 0)}
+      />
+    );
+  }
 
   const shownRoleIds = new Set(sections.flatMap((section) => section.roles.map((role) => role.id)));
   const renderRoleNotes = (role: Role, showRole = false) => {
@@ -325,6 +398,7 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
           evilCounts={evilCounts}
           activePhase={activePhase}
           focusedPlayer={player}
+          getRandomize={getRandomize}
           getRoleNotes={renderRoleNotes}
           hideFinishedClaimers={!player && !isSushiBuffet}
           inferredEntries={inferredEntries}
@@ -504,6 +578,7 @@ function RoleInfoSection({
   evilCounts,
   activePhase,
   focusedPlayer,
+  getRandomize,
   getRoleNotes,
   hideFinishedClaimers,
   inferredEntries,
@@ -569,6 +644,7 @@ function RoleInfoSection({
             conversations={conversations}
             evilCounts={evilCounts}
             footer={!claimer || claimer.id === focusedPlayer?.id ? getRoleNotes(role) : null}
+            getRandomize={getRandomize}
             inferredEntries={inferredEntries}
             key={`${role.id}-${claimer?.id ?? ''}`}
             lastDay={lastDay}
@@ -598,6 +674,8 @@ type RoleInfoClaimerRowProps = {
   /** Demons and Minions in play, for characters that guess each of them. */
   evilCounts: { demons: number; minions: number };
   footer?: ReactNode;
+  /** The dice action for a line, when the dice drawer is open and the line can be faked. */
+  getRandomize: (request: RandomizeRequest) => (() => void) | undefined;
   inferredEntries: Set<RoleInfoEntry>;
   /** Give daily characters a line per day through this day. */
   lastDay: number;
@@ -626,6 +704,7 @@ function RoleInfoClaimerRow({
   conversations,
   evilCounts,
   footer,
+  getRandomize,
   inferredEntries,
   lastDay,
   lastNightDay,
@@ -693,6 +772,12 @@ function RoleInfoClaimerRow({
             label: entry && inferredEntries.has(entry) ? `${nightLabel} · from notes` : nightLabel,
             neighbors: getNeighbors(night, 'night'),
             onPressSlot: (slot) => onPressClaimerSlot({ ...position, slot }),
+            onRandomize: getRandomize({
+              ...position,
+              claimer: claimerInfo,
+              executed: getExecuted(night),
+              owners,
+            }),
             values: entry?.values ?? {},
           };
         })
@@ -709,6 +794,15 @@ function RoleInfoClaimerRow({
             getNeighbors(activeDay, activePhase),
             claimerInfo,
             onPressClaimerSlot,
+            getRandomize({
+              carryForward: true,
+              claimer: claimerInfo,
+              day: activeDay,
+              executed: getExecuted(activeDay),
+              owners,
+              phase: activePhase,
+              role,
+            }),
           ),
         ];
 
@@ -781,6 +875,7 @@ function getPhaseLine(
   neighbors: Player[] | undefined,
   claimer: RoleInfoClaimer | undefined,
   onPressSlot: (slot: ActiveSlot) => void,
+  onRandomize: (() => void) | undefined,
 ): RoleInfoLine {
   const entry = getRoleInfoForPhaseOrPrevious(roleInfos, role.id, day, phase, claimer);
   const isCarried = entry && (entry.day !== day || entry.phase !== phase);
@@ -798,6 +893,7 @@ function getPhaseLine(
     label,
     neighbors,
     onPressSlot: (slot) => onPressSlot({ carryForward: true, day, phase, role, slot }),
+    onRandomize,
     values: entry?.values ?? {},
   };
 }

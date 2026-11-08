@@ -7,6 +7,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import type {
   CharacterTypeCounts,
   Conversation,
+  FakeEvilTeam,
   Friend,
   Game,
   GamePhase,
@@ -215,6 +216,8 @@ type GameState = GameData & {
   setCharacterTypeCounts: (gameId: string, counts?: CharacterTypeCounts) => void;
   setEvilInPlayRole: (gameId: string, slotId: string, roleId?: string) => void;
   setBluffRole: (gameId: string, slotId: string, roleId?: string) => void;
+  /** Sets or clears the made-up evil team used to roll bluffed Character info. */
+  setFakeEvilTeam: (gameId: string, team?: FakeEvilTeam) => void;
   /** Puts back an earlier copy of a game, for Undo. */
   restoreGame: (game: Game) => void;
   setPlayerSuspicion: (
@@ -1409,6 +1412,15 @@ export const useGameStore = create<GameState>()(
                   bluffs: setEvilInPlayRole(game.bluffs, slotId, roleId),
                   updatedAt: new Date().toISOString(),
                 }
+              : game,
+          ),
+        }));
+      },
+      setFakeEvilTeam: (gameId, team) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? { ...game, fakeEvilTeam: team, updatedAt: new Date().toISOString() }
               : game,
           ),
         }));

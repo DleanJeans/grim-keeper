@@ -3,7 +3,6 @@ import { StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { PastEvilTeamsButton } from '@/components/game/notes-tab/role-info/past-evil-teams-button';
-import { RandomPlayersPicker } from '@/components/game/notes-tab/role-info/random-players-picker';
 import { RoleInfoPickerDialog } from '@/components/game/notes-tab/role-info/role-info-picker-dialog';
 import { RoleInfoToken } from '@/components/game/notes-tab/role-info/role-info-token';
 import { Text } from '@/components/text';
@@ -100,7 +99,6 @@ export function EvilInPlayPicker() {
         <>
           <Text style={styles.rowLabel}>Bluffs</Text>
           <SlotTokens onPressSlot={setActiveSlot} rolesById={rolesById} slots={bluffSlots} />
-          <RandomPlayersPicker players={players} />
           <UnclaimedRoles playersWithoutClaims={playersWithoutClaims} roles={unclaimedRoles} />
         </>
       ) : null}

@@ -172,6 +172,7 @@ export default function GameRoute() {
   const [showRoles, setShowRoles] = useState(false);
   const [recapOpen, setRecapOpen] = useState(false);
   const [suspectFilter, setSuspectFilter] = useState(false);
+  const [randomDrawerOpen, setRandomDrawerOpen] = useState(false);
   const [undo, setUndo] = useState<{ before: Game; id: number; label: string } | null>(null);
   // Game before a new nomination, kept until its votes are saved so one Undo covers both.
   const pendingUndoBase = useRef<Game | null>(null);
@@ -1187,6 +1188,7 @@ export default function GameRoute() {
     rumorSubjectPlayerId,
     rumorSourcePlayerId,
     activeRoleDisplayModes,
+    randomDrawerOpen,
     showRoles,
     dayEditLocked,
     canUndoRotation: lastRotationPositions !== null,
@@ -1223,6 +1225,7 @@ export default function GameRoute() {
     handleSelectRumorSource,
     setActiveRoleDisplayModes,
     setShowRoles,
+    setRandomDrawerOpen,
     handleSetFocusedPlayerDeath,
     handleReviveFocusedPlayer,
     handleUndoFocusedPlayerDeath,

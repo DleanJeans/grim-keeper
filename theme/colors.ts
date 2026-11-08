@@ -46,6 +46,13 @@ const baseColors = {
   gameTextMuted: '#94a3b8',
   gameTextSoft: '#cbd5e1',
   gameTextSubtle: '#64748b',
+  // Dice drawer and fake evil team
+  randomAccent: '#e2b04a',
+  randomAccentSurface: 'rgba(226, 176, 74, 0.16)',
+  randomOnAccent: '#0b1120',
+  fakeDemon: '#f87171',
+  fakeMinion: '#fb923c',
+  fakeRedHerring: '#60a5fa',
   // Deaths tab: execution, night death and revive accents
   deathExecution: '#fca5a5',
   deathNight: '#93c5fd',
