@@ -22,6 +22,16 @@ export function getVisibleGameTab(tab: GameTab, phase: GamePhase): GameTab {
 }
 export type TrackingMode = 'interaction' | 'nomination';
 
+/** A nomination set aside with Pause, so other tabs and days can be checked before voting. */
+export type PausedNomination = {
+  day: number;
+  phase: GamePhase;
+  /** Set once the nominee is confirmed and votes are being picked. */
+  nominationId: string | null;
+  /** The nominator and nominee before confirming, or the voters picked so far. */
+  selectedPlayerIds: string[];
+};
+
 export type GameRouteContextValue = {
   // Persisted game data
   game: Game;
@@ -56,6 +66,7 @@ export type GameRouteContextValue = {
   trackingMode: TrackingMode | null;
   votingNominationId: string | null;
   votingReturnTab: GameTab | null;
+  pausedNomination: PausedNomination | null;
   focusedPlayerId: string | null;
   focusedPlayer: Player | undefined;
   focusedPlayerIsDead: boolean;
@@ -92,6 +103,9 @@ export type GameRouteContextValue = {
   handleConfirmTracking: () => void;
   handleConfirmVotes: () => void;
   handleCancelVoting: () => void;
+  handlePauseNomination: () => void;
+  handleResumeNomination: () => void;
+  handleCancelPausedNomination: () => void;
   handleEditNominationVotes: (nominationId: string, voterIds: string[]) => void;
   handleToggleVoterHighlights: () => void;
   /** Scrolls up to the map and highlights the players until another player is tapped. */

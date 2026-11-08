@@ -17,6 +17,7 @@ import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
 
 import { canKillDuringDay } from '@/components/game/deaths-tab/death-actions';
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { DockNomination } from '@/components/game/noms-tab/dock-nomination';
 import { NomIcon } from '@/components/game/noms-tab/nom-icon';
 import { QUICK_TAGS, QuickNoteTags } from '@/components/game/notes-tab/quick-note-tags';
 import { SuspicionPicker } from '@/components/game/notes-tab/suspicion-picker';
@@ -80,7 +81,10 @@ export function PlayerDock({
     handleUndoFocusedPlayerDeath,
     interactionMode,
     nominationDisabled,
+    pausedNomination,
     roleAssignmentKind,
+    trackingMode,
+    votingNominationId,
   } = useGameRouteContext();
   const [expanded, setExpanded] = useState(false);
   const [keyboardShown, setKeyboardShown] = useState(false);
@@ -94,8 +98,25 @@ export function PlayerDock({
     };
   }, []);
 
-  if (!focusedPlayer || keyboardShown) {
+  if (keyboardShown) {
     return null;
+  }
+
+  // The nomination's Cancel / Confirm and Pause take over the dock while it runs.
+  if (trackingMode === 'nomination' || votingNominationId) {
+    return (
+      <View style={styles.dock}>
+        <DockNomination />
+      </View>
+    );
+  }
+
+  if (!focusedPlayer) {
+    return pausedNomination ? (
+      <View style={styles.dock}>
+        <DockNomination />
+      </View>
+    ) : null;
   }
 
   const canMark = !interactionMode && !focusedPlayer.isStoryteller;
@@ -116,6 +137,12 @@ export function PlayerDock({
 
   return (
     <View style={styles.dock}>
+      {pausedNomination ? (
+        <>
+          <DockNomination />
+          <View style={styles.divider} />
+        </>
+      ) : null}
       <View style={styles.headerRow}>
         <Text numberOfLines={1} style={styles.name}>
           {focusedPlayer.name}
@@ -181,7 +208,8 @@ export function PlayerDock({
           <View style={styles.actions}>
             {isDay ? (
               <NoteActionButton
-                disabled={nominationDisabled}
+                // One nomination at a time: resume or cancel the paused one first.
+                disabled={nominationDisabled || !!pausedNomination}
                 icon={NomIcon}
                 label={
                   nominationDisabled &&

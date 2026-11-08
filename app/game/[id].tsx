@@ -22,6 +22,7 @@ import {
   GameRouteProvider,
   type GameTab,
   getVisibleGameTab,
+  type PausedNomination,
   type TrackingMode,
 } from '@/components/game/game-route-context';
 import { GameTabContent } from '@/components/game/game-tab-content';
@@ -143,6 +144,7 @@ export default function GameRoute() {
   const [votingNominationId, setVotingNominationId] = useState<string | null>(null);
   const [votingNominationIsNew, setVotingNominationIsNew] = useState(false);
   const [votingReturnTab, setVotingReturnTab] = useState<GameTab | null>(null);
+  const [pausedNomination, setPausedNomination] = useState<PausedNominationState | null>(null);
   const [focusedPlayerId, setFocusedPlayerId] = useState<string | null>(null);
   const [highlightedVoterIds, setHighlightedVoterIds] = useState<string[] | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
@@ -597,7 +599,7 @@ export default function GameRoute() {
       return;
     }
 
-    if (mode === 'nomination' && nominationDisabled) {
+    if (mode === 'nomination' && (nominationDisabled || pausedNomination)) {
       return;
     }
 
@@ -678,6 +680,62 @@ export default function GameRoute() {
     }
   }
 
+  /** Sets the ongoing nomination aside so the map, tabs and other days work as usual. */
+  function handlePauseNomination() {
+    if (pausedNomination || (trackingMode !== 'nomination' && !votingNominationId)) {
+      return;
+    }
+
+    setPausedNomination({
+      day: activeGame.activeDay,
+      isNew: votingNominationIsNew,
+      nominationId: votingNominationId,
+      phase: activePhase,
+      returnTab: votingReturnTab,
+      selectedPlayerIds,
+      undoBase: pendingUndoBase.current,
+    });
+    pendingUndoBase.current = null;
+    handleCancelTracking();
+  }
+
+  function handleResumeNomination() {
+    const paused = pausedNomination;
+    if (!paused) {
+      return;
+    }
+
+    setPausedNomination(null);
+    if (
+      paused.nominationId &&
+      !activeGame.conversations.some((conversation) => conversation.id === paused.nominationId)
+    ) {
+      // The nomination was deleted or undone while paused.
+      return;
+    }
+
+    handleCancelTracking();
+    if (paused.day !== activeGame.activeDay || paused.phase !== activePhase) {
+      setGamePhase(activeGame.id, paused.day, paused.phase);
+    }
+    pendingUndoBase.current = paused.undoBase;
+    if (paused.nominationId) {
+      setVotingNominationId(paused.nominationId);
+      setVotingNominationIsNew(paused.isNew);
+      setVotingReturnTab(paused.returnTab);
+    } else {
+      setTrackingMode('nomination');
+    }
+    setSelectedPlayerIds(paused.selectedPlayerIds);
+  }
+
+  function handleCancelPausedNomination() {
+    if (pausedNomination?.nominationId && pausedNomination.isNew) {
+      deleteConversation(activeGame.id, pausedNomination.nominationId);
+    }
+    setPausedNomination(null);
+  }
+
   function handleEditNominationVotes(nominationId: string, voterIds: string[]) {
     handleCancelTracking();
     setVotingNominationId(nominationId);
@@ -706,6 +764,8 @@ export default function GameRoute() {
 
   function handleChangePhase(day: number, phase: 'day' | 'night') {
     const selectedPlayerId = focusedPlayerId;
+    // Checking another day keeps the nomination going instead of dropping it.
+    handlePauseNomination();
     handleCancelTracking();
     setHighlightedVoterIds(null);
     setFocusedPlayerId(selectedPlayerId);
@@ -1107,6 +1167,7 @@ export default function GameRoute() {
     trackingMode,
     votingNominationId,
     votingReturnTab,
+    pausedNomination,
     focusedPlayerId,
     focusedPlayer,
     focusedPlayerIsDead,
@@ -1141,6 +1202,9 @@ export default function GameRoute() {
     handleConfirmTracking,
     handleConfirmVotes,
     handleCancelVoting,
+    handlePauseNomination,
+    handleResumeNomination,
+    handleCancelPausedNomination,
     handleEditNominationVotes,
     handleToggleVoterHighlights,
     handleHighlightPlayers,
@@ -1309,6 +1373,13 @@ export default function GameRoute() {
     </>
   );
 }
+
+/** Also keeps what the nomination needs to pick up where it left off. */
+type PausedNominationState = PausedNomination & {
+  isNew: boolean;
+  returnTab: GameTab | null;
+  undoBase: Game | null;
+};
 
 function createScrollContentStyle(topInset: number) {
   return StyleSheet.create({
