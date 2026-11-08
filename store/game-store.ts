@@ -190,6 +190,14 @@ type GameState = GameData & {
     noteId?: string,
   ) => boolean;
   deleteSavedNote: (note: SavedNote, roleId?: string) => void;
+  /**
+   * Rewrites a saved note's text, player and roles. An empty playerName makes it a note about the
+   * characters only, which needs at least one role. Returns false when nothing was saved.
+   */
+  updateSavedNote: (
+    noteId: string,
+    changes: Pick<SavedNote, 'playerName' | 'roleIds' | 'text'>,
+  ) => boolean;
   setRoleInfoValue: (
     gameId: string,
     roleId: string,
@@ -1245,6 +1253,25 @@ export const useGameStore = create<GameState>()(
         }
         get().deleteSavedNote(buildLegacyNote(trimmedText, playerName, roleIds));
         return true;
+      },
+      updateSavedNote: (noteId, changes) => {
+        const text = changes.text.trim();
+        const playerName = normalizePlayerName(changes.playerName);
+        const roleIds = [...new Set(changes.roleIds)];
+        if (!text || (!playerName && roleIds.length === 0)) {
+          return false;
+        }
+        let saved = false;
+        set((state) => ({
+          savedNotes: state.savedNotes.map((note) => {
+            if (note.id !== noteId) {
+              return note;
+            }
+            saved = true;
+            return { ...note, playerName, roleIds, text, updatedAt: new Date().toISOString() };
+          }),
+        }));
+        return saved;
       },
       deleteSavedNote: (note, roleId) => {
         const trimmedText = note.text.trim();

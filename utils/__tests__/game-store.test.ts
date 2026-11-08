@@ -417,6 +417,52 @@ describe('setGameLesson', () => {
   });
 });
 
+describe('updateSavedNote', () => {
+  const note: SavedNote = {
+    createdAt: '2026-07-07T00:00:00.000Z',
+    day: 1,
+    gameId: 'game-1',
+    id: 'note-1',
+    playerName: 'Stefan',
+    roleIds: [],
+    scriptName: 'Trouble Brewing',
+    text: 'got shown the Spy as Mayor',
+    updatedAt: '2026-07-07T00:00:00.000Z',
+  };
+
+  afterEach(() => {
+    useGameStore.setState({ savedNotes: [] });
+  });
+
+  it('edits the text and untags the player', () => {
+    useGameStore.setState({ savedNotes: [note] });
+
+    expect(
+      useGameStore.getState().updateSavedNote('note-1', {
+        playerName: '',
+        roleIds: ['spy', 'mayor'],
+        text: ' The Spy can register as Mayor ',
+      }),
+    ).toBe(true);
+    expect(useGameStore.getState().savedNotes[0]).toMatchObject({
+      id: 'note-1',
+      playerName: '',
+      roleIds: ['spy', 'mayor'],
+      text: 'The Spy can register as Mayor',
+    });
+  });
+
+  it('refuses a blank note or an untagged note with no characters', () => {
+    useGameStore.setState({ savedNotes: [note] });
+
+    expect(useGameStore.getState().updateSavedNote('note-1', { ...note, text: '  ' })).toBe(false);
+    expect(useGameStore.getState().updateSavedNote('note-1', { ...note, playerName: '' })).toBe(
+      false,
+    );
+    expect(useGameStore.getState().savedNotes[0]).toBe(note);
+  });
+});
+
 describe('Sushi Buffet role selections', () => {
   const sushiScript: StoredScript = {
     id: 'sushi-buffet',
