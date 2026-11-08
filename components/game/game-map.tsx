@@ -16,6 +16,7 @@ import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Conversation, Player, PlayerPosition, Role, RoleDisplayMode } from '@/types/game';
 import { buildConversationGroupRepeats, getConversationGroupKey } from '@/utils/conversation-utils';
+import { getFriendPictureLookup } from '@/utils/friend-picture-utils';
 import type { GamePhasePosition } from '@/utils/game-phase-utils';
 import { getPlayerMapPosition, getPlayerTokenScale, getTokenSize } from '@/utils/layout-utils';
 import { getLessonsForPlayers } from '@/utils/lesson-utils';
@@ -236,6 +237,8 @@ export function GameMap() {
   const disabledPlayerIdSet = useMemo(() => new Set(disabledPlayerIds), [disabledPlayerIds]);
   const dimmedPlayerIdSet = useMemo(() => new Set(dimmedPlayerIds), [dimmedPlayerIds]);
   const savedNotes = useGameStore((state) => state.savedNotes);
+  const friends = useGameStore((state) => state.friends);
+  const getPlayerPicture = useMemo(() => getFriendPictureLookup(friends), [friends]);
   const lessonPlayerIds = useMemo(
     () => new Set(getLessonsForPlayers(game, savedNotes).map(({ playerId }) => playerId)),
     [game, savedNotes],
@@ -504,6 +507,7 @@ export function GameMap() {
               players={players}
               position={ownPosition}
               hasLessons={lessonPlayerIds.has(player.id)}
+              picture={getPlayerPicture(player)}
               showRoles={showRoles}
               suspicion={
                 showRoles
@@ -545,6 +549,7 @@ function PlayerTokenForMap({
   mapScale,
   mapWidth,
   otherTokenPositions,
+  picture,
   player,
   players,
   position,
@@ -572,6 +577,7 @@ function PlayerTokenForMap({
   mapScale: number;
   mapWidth: number;
   otherTokenPositions: OtherTokenPosition[];
+  picture?: string;
   player: Player;
   players: Player[];
   position: PlayerPosition;
@@ -614,6 +620,7 @@ function PlayerTokenForMap({
       onMove={handleMovePlayer}
       onSelect={handleSelectPlayer}
       otherTokenPositions={otherTokenPositions}
+      picture={picture}
       player={player}
       position={position}
       rearrangeMode={isRearrangeMode}

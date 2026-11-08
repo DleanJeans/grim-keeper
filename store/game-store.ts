@@ -116,6 +116,10 @@ type GameState = GameData & {
   defaultStartingNight: StartingNight;
   addFriend: (name: string) => void;
   renameFriend: (friendId: string, currentName: string, nextName: string) => string | undefined;
+  updateFriendPicture: (
+    friend: Pick<Friend, 'createdAt' | 'id' | 'name'>,
+    patch: Partial<Pick<Friend, 'picture' | 'socialLink' | 'socialPicture'>>,
+  ) => void;
   createGame: (input: CreateGameInput) => Game;
   saveScript: (script: StoredScript) => void;
   updateScript: (script: StoredScript) => void;
@@ -329,6 +333,27 @@ export const useGameStore = create<GameState>()(
               },
             ],
           };
+        });
+      },
+      updateFriendPicture: (target, patch) => {
+        set((state) => {
+          const index = state.friends.findIndex((friend) => friend.id === target.id);
+          // Friends only seen in games are not stored yet; store them to keep the picture.
+          const current: Friend =
+            index >= 0
+              ? state.friends[index]
+              : { createdAt: target.createdAt, id: target.id, name: target.name };
+          const next: Friend = { ...current, ...patch };
+          for (const key of ['picture', 'socialLink', 'socialPicture'] as const) {
+            if (!next[key]) {
+              delete next[key];
+            }
+          }
+          const friends =
+            index >= 0
+              ? state.friends.map((friend, friendIndex) => (friendIndex === index ? next : friend))
+              : [...state.friends, next];
+          return { friends };
         });
       },
       renameFriend: (friendId, currentName, nextName) => {

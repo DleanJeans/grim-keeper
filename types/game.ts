@@ -199,6 +199,12 @@ export type Friend = {
   id: string;
   name: string;
   createdAt: string;
+  /** Profile link, handle, phone number or email typed in to fetch a picture from. */
+  socialLink?: string;
+  /** Picture fetched from `socialLink`, saved as a small data URI (or the remote URL). */
+  socialPicture?: string;
+  /** Picture chosen by hand (data URI or URL); wins over `socialPicture`. */
+  picture?: string;
 };
 
 export type FriendSummary = Friend & {

@@ -7,6 +7,7 @@ import { FriendGamesList } from '@/components/friends/friend-games-list';
 import { FriendNameEditToggle } from '@/components/friends/friend-name-edit-toggle';
 import { FriendNameInputRow } from '@/components/friends/friend-name-input-row';
 import { FriendNameSaveButton } from '@/components/friends/friend-name-save-button';
+import { FriendPictureCard } from '@/components/friends/friend-picture-card';
 import { GameStatsCards } from '@/components/game-stats-cards';
 import { HeadToHeadStatsCard } from '@/components/head-to-head-stats-card';
 import { NotFoundScreen } from '@/components/not-found-screen';
@@ -127,6 +128,7 @@ export default function FriendDetailRoute() {
             </Text>
           ) : null}
 
+          <FriendPictureCard friend={friend} />
           <GameStatsCards games={games} playerId={friend.id} />
           <HeadToHeadStatsCard friendId={friend.id} friendName={friend.name} games={games} />
           <FriendClaimsCard friendId={friend.id} games={games} roles={roleCatalog} />

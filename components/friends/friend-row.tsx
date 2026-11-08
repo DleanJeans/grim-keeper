@@ -2,11 +2,13 @@ import { router } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { FriendAvatar } from '@/components/friends/friend-avatar';
 import { FriendWinBars } from '@/components/friends/friend-win-bars';
 import { Text } from '@/components/text';
 import { getNotesForPlayer, useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { FriendSummary, Game } from '@/types/game';
+import { getFriendPicture } from '@/utils/friend-picture-utils';
 import { type GameStats, getFriendStats, type TeamFilter } from '@/utils/game-utils';
 
 type FriendRowProps = {
@@ -19,6 +21,8 @@ type FriendRowProps = {
   rank?: number;
   team?: TeamFilter;
 };
+
+const AVATAR_SIZE = 36;
 
 const TEAM_SUFFIX: Record<TeamFilter, string> = {
   all: '',
@@ -55,6 +59,13 @@ export function FriendRow({
       <View style={styles.content}>
         <View style={styles.nameRow}>
           {rank ? <Text style={styles.rank}>{`#${rank}`}</Text> : null}
+          {isYou ? null : (
+            <FriendAvatar
+              name={friend.name}
+              picture={getFriendPicture(friend)}
+              size={AVATAR_SIZE}
+            />
+          )}
           <Text selectable style={styles.name}>
             {friend.name}
           </Text>

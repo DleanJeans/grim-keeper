@@ -30,6 +30,10 @@ const ROLE_ICON_RATIO = 0.56;
 // Claim tokens sit along the top and stay above this share of the token below its center.
 const CLAIM_BAND_RATIO = 0.05;
 const DEAD_OPACITY = 0.85;
+// Profile picture in the middle of the token, as a share of the token's size; it sits a little
+// high to clear the name ribbon.
+const PICTURE_RATIO = 0.5;
+const PICTURE_LIFT_RATIO = 0.06;
 const CLAIM_TOKEN_BORDER_WIDTH = 1;
 const EMPTY_OTHER_TOKEN_POSITIONS: OtherTokenPosition[] = [];
 const badgeColors = colors.playerTokenEdgeBadge;
@@ -60,6 +64,8 @@ type PlayerTokenProps = {
   isInitiator?: boolean;
   isSelected?: boolean;
   otherTokenPositions?: OtherTokenPosition[];
+  /** Friend's profile picture, shown in the middle when no character is on the token. */
+  picture?: string;
   player: Player;
   position: PlayerPosition;
   roles?: Role[];
@@ -92,6 +98,7 @@ export function PlayerToken({
   onMove,
   onSelect,
   otherTokenPositions = EMPTY_OTHER_TOKEN_POSITIONS,
+  picture,
   player,
   position,
   rearrangeMode = false,
@@ -159,6 +166,9 @@ export function PlayerToken({
       ? nameRoles.map((role) => role.name).join(' / ')
       : undefined;
   const roleIconSize = tokenSize * ROLE_ICON_RATIO;
+  // The picture stands in for the initial, so it only shows on a token without characters.
+  const showPicture = !!picture && !backgroundRole && !hasClaimTokens;
+  const pictureSize = tokenSize * PICTURE_RATIO;
   const x = useSharedValue(position.x);
   const y = useSharedValue(position.y);
   const startX = useSharedValue(position.x);
@@ -302,7 +312,7 @@ export function PlayerToken({
           ring={
             isDragReady ? 'drag' : isSelected ? 'selected' : isInitiator ? 'initiator' : undefined
           }
-          showInitial={!backgroundRole}
+          showInitial={!backgroundRole && !showPicture}
           size={tokenSize}
           storyteller={!!player.isStoryteller}
           topText={topText}
@@ -324,6 +334,23 @@ export function PlayerToken({
             <Image resizeMode="contain" source={roleIconSource} style={styles.roleIconImage} />
           </View>
         ) : null}
+        {showPicture ? (
+          <Image
+            resizeMode="cover"
+            source={{ uri: picture }}
+            style={[
+              styles.picture,
+              player.death && styles.pictureDead,
+              {
+                borderRadius: pictureSize / 2,
+                height: pictureSize,
+                left: (tokenSize - pictureSize) / 2,
+                top: (tokenSize - pictureSize) / 2 - tokenSize * PICTURE_LIFT_RATIO,
+                width: pictureSize,
+              },
+            ]}
+          />
+        ) : null}
         <GrimoireTokenFace
           compactInitial={hasClaimTokens}
           dead={!!player.death}
@@ -333,7 +360,7 @@ export function PlayerToken({
           ring={
             isDragReady ? 'drag' : isSelected ? 'selected' : isInitiator ? 'initiator' : undefined
           }
-          showInitial={!backgroundRole}
+          showInitial={!backgroundRole && !showPicture}
           size={tokenSize}
           storyteller={!!player.isStoryteller}
           topText={topText}
@@ -498,6 +525,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   lessonsDot: { backgroundColor: colors.savedNoteIcon },
+  picture: {
+    borderColor: colors.grimoireToken.innerRing,
+    borderWidth: 1,
+    pointerEvents: 'none',
+    position: 'absolute',
+  },
+  pictureDead: { filter: [{ grayscale: 1 }], opacity: 0.6 },
   redTint: { filter: [{ hueRotate: '150deg' }] },
   roleIcon: { pointerEvents: 'none', position: 'absolute' },
   roleIconDead: { opacity: 0.55 },
