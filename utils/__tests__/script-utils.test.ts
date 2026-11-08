@@ -139,9 +139,9 @@ describe('script utils', () => {
         description: 'Learn neighbors.',
         noteCount: 3,
         notes: [
-          { playerNames: [], text: 'Watch timing.' },
-          { playerNames: ['Alice'], text: 'Check claims.' },
-          { playerNames: ['Ben'], text: 'Review timing.' },
+          { playerNames: [], savedNoteIds: [], text: 'Watch timing.' },
+          { playerNames: ['Alice'], savedNoteIds: ['note-1'], text: 'Check claims.' },
+          { playerNames: ['Ben'], savedNoteIds: ['note-2'], text: 'Review timing.' },
         ],
         role: {
           ability: undefined,

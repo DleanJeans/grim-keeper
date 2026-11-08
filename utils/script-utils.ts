@@ -10,6 +10,8 @@ export type ScriptRoleEntry = {
 
 export type ScriptRoleNote = {
   playerNames: string[];
+  /** The saved notes with this text about the role; empty for script and catalog notes. */
+  savedNoteIds: string[];
   text: string;
 };
 
@@ -96,6 +98,7 @@ export function getScriptRoleEntries(
   return roles.map((role) => {
     const catalogRole = catalogById.get(role.id);
     const notesByText = new Map<string, string[]>();
+    const savedNoteIdsByText = new Map<string, string[]>();
 
     for (const text of [...(role.notes ?? []), ...(catalogRole?.notes ?? [])]) {
       if (!notesByText.has(text)) {
@@ -112,6 +115,7 @@ export function getScriptRoleEntries(
       if (!notesByText.has(note.text)) {
         notesByText.set(note.text, playerNames);
       }
+      savedNoteIdsByText.set(note.text, [...(savedNoteIdsByText.get(note.text) ?? []), note.id]);
 
       const playerName = note.playerName.trim();
       if (
@@ -122,7 +126,11 @@ export function getScriptRoleEntries(
       }
     }
 
-    const notes = [...notesByText].map(([text, playerNames]) => ({ playerNames, text }));
+    const notes = [...notesByText].map(([text, playerNames]) => ({
+      playerNames,
+      savedNoteIds: savedNoteIdsByText.get(text) ?? [],
+      text,
+    }));
 
     return {
       description: role.ability ?? catalogRole?.ability,

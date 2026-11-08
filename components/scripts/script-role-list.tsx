@@ -4,8 +4,8 @@ import { type ReactElement, useEffect, useMemo, useState } from 'react';
 import { Pressable, SectionList, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { RoleIcon } from '@/components/role-icon';
-import { RoleReferencedNoteText } from '@/components/role-referenced-note-text';
 import { AnimatedScriptRoleRow } from '@/components/scripts/animated-script-role-row';
+import { ScriptRoleInlineNote } from '@/components/scripts/script-role-inline-note';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
@@ -282,19 +282,6 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     gap: 14,
-  },
-  inlineNote: {
-    gap: 2,
-  },
-  inlineNotePlayer: {
-    color: colors.text,
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  inlineNoteText: {
-    color: colors.noteText,
-    fontSize: 13,
-    lineHeight: 18,
   },
   inlineNotes: {
     borderColor: colors.border,
@@ -699,19 +686,7 @@ function ScriptRoleDetail({
             Notes
           </Text>
           {notes.map((note) => (
-            <View key={note.text} style={styles.inlineNote}>
-              {note.playerNames.length > 0 ? (
-                <Text selectable style={styles.inlineNotePlayer}>
-                  {note.playerNames.join(', ')}:
-                </Text>
-              ) : null}
-              <RoleReferencedNoteText
-                roles={roles}
-                scriptId={scriptId}
-                style={styles.inlineNoteText}
-                text={note.text}
-              />
-            </View>
+            <ScriptRoleInlineNote key={note.text} note={note} roles={roles} scriptId={scriptId} />
           ))}
         </View>
       ) : null}
