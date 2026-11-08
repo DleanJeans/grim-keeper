@@ -100,7 +100,7 @@ export function GrimoireTokenFace({
           : undefined;
 
   return (
-    <Svg height={size} pointerEvents="none" style={styles.svg} width={size}>
+    <Svg height={size} style={styles.svg} width={size}>
       <Defs>
         <RadialGradient cx="45%" cy="40%" id={ids.parchment} r="65%">
           <Stop offset="0" stopColor={tokenColors.parchmentCenter} />
@@ -231,5 +231,5 @@ function getInitial(name: string) {
 }
 
 const styles = StyleSheet.create({
-  svg: { left: 0, position: 'absolute', top: 0 },
+  svg: { left: 0, pointerEvents: 'none', position: 'absolute', top: 0 },
 });
