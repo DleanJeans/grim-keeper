@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { Pencil, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
@@ -7,6 +8,7 @@ import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { SavedNote } from '@/types/game';
+import { normalizePlayerName } from '@/utils/conversation-utils';
 import { detectRoleIdsInNote } from '@/utils/saved-note-utils';
 
 type LessonRowProps = {
@@ -22,6 +24,9 @@ export function LessonRow({ lesson }: LessonRowProps) {
   const deleteSavedNote = useGameStore((state) => state.deleteSavedNote);
   const updateSavedNote = useGameStore((state) => state.updateSavedNote);
   const roleCatalog = useGameStore((state) => state.roleCatalog);
+  const sourceGame = useGameStore((state) =>
+    lesson.gameId ? state.games.find((game) => game.id === lesson.gameId) : undefined,
+  );
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(lesson.text);
   const [tagPlayer, setTagPlayer] = useState(true);
@@ -49,6 +54,25 @@ export function LessonRow({ lesson }: LessonRowProps) {
         ? `Name a character in the note to keep it without ${playerName}.`
         : 'Write something before saving.',
     );
+  }
+
+  function handleOpenGame() {
+    if (!sourceGame) return;
+    const playerKey = normalizePlayerName(lesson.playerName).toLocaleLowerCase();
+    const player = playerKey
+      ? sourceGame.players.find(
+          (candidate) => normalizePlayerName(candidate.name).toLocaleLowerCase() === playerKey,
+        )
+      : undefined;
+    router.push({
+      params: {
+        day: lesson.day ? String(lesson.day) : undefined,
+        id: sourceGame.id,
+        playerId: player?.id,
+        tab: 'notes',
+      },
+      pathname: '/game/[id]',
+    });
   }
 
   function handleDelete() {
@@ -115,7 +139,19 @@ export function LessonRow({ lesson }: LessonRowProps) {
         <Text selectable style={styles.text}>
           {lesson.text}
         </Text>
-        <Text style={styles.meta}>{getLessonSource(lesson)}</Text>
+        {sourceGame ? (
+          <Pressable
+            accessibilityHint="Opens the game this note came from"
+            accessibilityRole="link"
+            hitSlop={4}
+            onPress={handleOpenGame}
+            style={({ pressed }) => [styles.source, pressed && styles.iconButtonPressed]}
+          >
+            <Text style={[styles.meta, styles.metaLink]}>{getLessonSource(lesson)}</Text>
+          </Pressable>
+        ) : (
+          <Text style={styles.meta}>{getLessonSource(lesson)}</Text>
+        )}
       </View>
       <Pressable
         accessibilityLabel={`Edit note: ${lesson.text}`}
@@ -179,6 +215,7 @@ const styles = StyleSheet.create({
   },
   lesson: { alignItems: 'flex-start', flexDirection: 'row', gap: 4 },
   meta: { color: colors.gameTextSubtle, fontSize: 12 },
+  metaLink: { textDecorationLine: 'underline' },
   saveButton: {
     alignItems: 'center',
     backgroundColor: colors.saveButton,
@@ -189,6 +226,7 @@ const styles = StyleSheet.create({
   },
   saveButtonPressed: { backgroundColor: colors.saveButtonPressed },
   saveText: { color: colors.gameText, fontSize: 14, fontWeight: '800' },
+  source: { alignSelf: 'flex-start' },
   tagRow: { alignItems: 'center', flexDirection: 'row', gap: 10 },
   tagText: { color: colors.gameTextSoft, flex: 1, fontSize: 13 },
   text: { color: colors.noteText, fontSize: 14, lineHeight: 19 },
