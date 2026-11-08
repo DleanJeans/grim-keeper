@@ -98,3 +98,36 @@ export function getLessonsForPlayers(
     return lessons.length > 0 ? [{ lessons, playerId: player.id, playerName: player.name }] : [];
   });
 }
+
+export type CharacterLessons = { lessons: SavedNote[]; role: Role };
+
+/**
+ * Notes from other games that are only about characters (no friend tagged), grouped under the
+ * first character of this game's script each one is about, in script order, newest first.
+ */
+export function getLessonsForScriptCharacters(
+  game: Pick<Game, 'id' | 'script'>,
+  savedNotes: SavedNote[],
+  appUserName: string,
+): CharacterLessons[] {
+  const roles = game.script?.roles ?? [];
+  const appUserKey = normalizePlayerName(appUserName).toLocaleLowerCase();
+  const indexById = new Map(roles.map((role, index) => [role.id, index]));
+  const groups = new Map<number, SavedNote[]>();
+  const sorted = [...savedNotes].sort((first, second) =>
+    second.createdAt.localeCompare(first.createdAt),
+  );
+  for (const note of sorted) {
+    const playerKey = normalizePlayerName(note.playerName).toLocaleLowerCase();
+    if (note.gameId === game.id || (playerKey && playerKey !== appUserKey)) continue;
+    const indexes = note.roleIds
+      .map((roleId) => indexById.get(roleId.replace(/_(?:good|evil)$/, '')))
+      .filter((index): index is number => index !== undefined);
+    if (indexes.length === 0) continue;
+    const index = Math.min(...indexes);
+    groups.set(index, [...(groups.get(index) ?? []), note]);
+  }
+  return [...groups.entries()]
+    .sort(([first], [second]) => first - second)
+    .map(([index, lessons]) => ({ lessons, role: roles[index] }));
+}

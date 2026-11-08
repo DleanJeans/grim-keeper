@@ -1,5 +1,10 @@
 import type { Player, Role, SavedNote } from '@/types/game';
-import { getLessonPlayers, getLessonsForPlayers, getLessonsFromGame } from '@/utils/lesson-utils';
+import {
+  getLessonPlayers,
+  getLessonsForPlayers,
+  getLessonsForScriptCharacters,
+  getLessonsFromGame,
+} from '@/utils/lesson-utils';
 
 const roles = [
   { id: 'chef', name: 'Chef', team: 'townsfolk' },
@@ -84,5 +89,54 @@ describe('getLessonsForPlayers', () => {
         lessons.map((lesson) => lesson.id),
       ]),
     ).toEqual([['ann', ['new', 'old']]]);
+  });
+});
+
+describe('getLessonsForScriptCharacters', () => {
+  const note = (id: string, playerName: string, roleIds: string[], gameId = 'old'): SavedNote => ({
+    createdAt: `2026-07-0${id}T00:00:00.000Z`,
+    day: 1,
+    gameId,
+    id,
+    playerName,
+    roleIds,
+    scriptName: 'Trouble Brewing',
+    text: `note ${id}`,
+    updatedAt: `2026-07-0${id}T00:00:00.000Z`,
+  });
+  const game = {
+    id: 'game-1',
+    script: {
+      id: 'tb',
+      name: 'Trouble Brewing',
+      roles: [
+        { id: 'mayor', name: 'Mayor' },
+        { id: 'spy', name: 'Spy' },
+      ],
+      updatedAt: '2026-07-07T00:00:00.000Z',
+      version: '1.0.0',
+    },
+  };
+
+  it('groups character-only notes from other games under their first script character', () => {
+    const groups = getLessonsForScriptCharacters(
+      game,
+      [
+        note('1', '', ['spy', 'mayor']),
+        note('2', 'You', ['spy']),
+        note('3', '', ['spy_evil']),
+        note('4', 'Stefan', ['spy']),
+        note('5', '', ['spy'], 'game-1'),
+        note('6', '', ['imp']),
+      ],
+      'You',
+    );
+
+    expect(
+      groups.map((group) => [group.role.id, group.lessons.map((lesson) => lesson.id)]),
+    ).toEqual([
+      ['mayor', ['1']],
+      ['spy', ['3', '2']],
+    ]);
   });
 });

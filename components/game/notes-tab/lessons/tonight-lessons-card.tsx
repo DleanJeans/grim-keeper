@@ -4,33 +4,41 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { FriendNameLink } from '@/components/game/notes-tab/lessons/friend-name-link';
 import { LessonsList } from '@/components/game/notes-tab/lessons/lessons-list';
+import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
-import { getLessonsForPlayers } from '@/utils/lesson-utils';
+import type { SavedNote } from '@/types/game';
+import { getLessonsForPlayers, getLessonsForScriptCharacters } from '@/utils/lesson-utils';
 
 /**
- * Notes you saved in other games about the players in this one, grouped by player, until the game
- * ends. The X hides them for this game only; the gold dots on the map stay.
+ * Notes you saved in other games about the players in this one, grouped by player, then notes
+ * about only the characters on this script, grouped by character, until the game ends. The X hides
+ * them for this game only; the gold dots on the map stay.
  */
 export function TonightLessonsCard() {
   const { game } = useGameRouteContext();
   const savedNotes = useGameStore((state) => state.savedNotes);
   const dismissGameNote = useGameStore((state) => state.dismissGameNote);
+  const appUserName = useGameStore((state) => state.appUserName);
   const dismissedNoteIds = new Set(game.dismissedNoteIds ?? []);
+  const keepShown = <Entry extends { lessons: SavedNote[] }>(entry: Entry) => ({
+    ...entry,
+    lessons: entry.lessons.filter((lesson) => !dismissedNoteIds.has(lesson.id)),
+  });
   const entries = getLessonsForPlayers(game, savedNotes)
-    .map((entry) => ({
-      ...entry,
-      lessons: entry.lessons.filter((lesson) => !dismissedNoteIds.has(lesson.id)),
-    }))
+    .map(keepShown)
+    .filter((entry) => entry.lessons.length > 0);
+  const characterEntries = getLessonsForScriptCharacters(game, savedNotes, appUserName)
+    .map(keepShown)
     .filter((entry) => entry.lessons.length > 0);
 
-  if (game.result !== undefined || entries.length === 0) {
+  if (game.result !== undefined || entries.length + characterEntries.length === 0) {
     return null;
   }
 
   function handleHide() {
-    for (const entry of entries) {
+    for (const entry of [...entries, ...characterEntries]) {
       for (const lesson of entry.lessons) {
         dismissGameNote(game.id, lesson.id);
       }
@@ -41,7 +49,7 @@ export function TonightLessonsCard() {
     <View style={styles.card}>
       <View style={styles.header}>
         <BookMarked color={colors.savedNoteIcon} size={16} strokeWidth={2.4} />
-        <Text style={styles.title}>Lessons about tonight&apos;s players</Text>
+        <Text style={styles.title}>Lessons for tonight</Text>
         <Pressable
           accessibilityHint="Hides these notes for this game. The dots on the map stay."
           accessibilityLabel="Hide lessons"
@@ -59,11 +67,21 @@ export function TonightLessonsCard() {
           <LessonsList lessons={entry.lessons} />
         </View>
       ))}
+      {characterEntries.map((entry) => (
+        <View key={entry.role.id} style={styles.player}>
+          <View style={styles.character}>
+            <RoleIcon role={entry.role} size={22} />
+            <Text style={styles.name}>{entry.role.name}</Text>
+          </View>
+          <LessonsList lessons={entry.lessons} />
+        </View>
+      ))}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  character: { alignItems: 'center', flexDirection: 'row', gap: 6 },
   card: {
     backgroundColor: colors.gameSurface,
     borderColor: colors.savedNoteIcon,
