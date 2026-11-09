@@ -1,6 +1,7 @@
 import type { Game, Player } from '@/types/game';
 import {
   getCharacterStats,
+  getCombinedGameStats,
   getFriendClaimStats,
   getGameMonthKey,
   getGameMonthKeys,
@@ -144,6 +145,33 @@ describe('getLastDayWithData', () => {
   it('falls back to 1 when playerDayNotes is missing', () => {
     const game = makeGame({ playerDayNotes: undefined });
     expect(getLastDayWithData(game)).toBe(1);
+  });
+});
+
+describe('getCombinedGameStats', () => {
+  it('counts each game once for every listed player in it', () => {
+    const games = [
+      makeGame({
+        id: 'won',
+        players: [makePlayer({ id: 'p1' }), makePlayer({ id: 'p2', seat: 1 })],
+        result: 'won',
+      }),
+      makeGame({ id: 'lost', players: [makePlayer({ id: 'p1' })], result: 'lost' }),
+      makeGame({ id: 'active', players: [makePlayer({ id: 'p2' })] }),
+    ];
+
+    expect(getCombinedGameStats(games, ['p1', 'p2'])).toMatchObject({
+      completedGames: 3,
+      totalGames: 4,
+      winRate: 67,
+      wins: 2,
+    });
+    expect(getCombinedGameStats(games, [APP_USER_ID, 'p1'])).toMatchObject({
+      completedGames: 4,
+      totalGames: 5,
+      winRate: 50,
+      wins: 2,
+    });
   });
 });
 
