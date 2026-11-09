@@ -1,8 +1,8 @@
 import { Minus, Plus, RotateCcw, RotateCw, Undo2 } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { DimensionSlider } from '@/components/game/dimension-slider';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { MapModeButton } from '@/components/game/map-mode-button';
-import { onDarkTextStrong, outlinedActionRow, outlinedActionStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import {
@@ -17,175 +17,147 @@ import {
   tokenSizeStep,
 } from '@/utils/layout-utils';
 
-const dimensionDisplayWidth = 58;
+const rotationStepRadians = Math.PI / 8;
 
+/** Rearrange mode's controls: sliders for the map size and one bar for everything else. */
 export function RearrangeActions() {
   const {
     activeTokenSize,
     canUndoRotation,
     exitRearrangeMode,
-    handleResizeMapWidth,
-    handleResizeMapHeight,
+    handleSetMapHeight,
+    handleSetMapWidth,
     handleResizeTokens,
     handleRotateTokens,
     handleUndoRotation,
     mapHeight,
     mapWidth,
   } = useGameRouteContext();
-  const canShrinkTokens = activeTokenSize > minTokenSize;
-  const canEnlargeTokens = activeTokenSize < maxTokenSize;
-  const canShrinkMap = mapHeight > minMapHeight;
-  const canEnlargeMap = mapHeight < maxMapHeight;
-  const canShrinkMapWidth = mapWidth > minMapWidth;
-  const canEnlargeMapWidth = mapWidth < maxMapWidth;
 
   return (
     <View style={styles.root}>
-      <DimensionAdjustRow
-        canDecrease={canShrinkTokens}
-        canIncrease={canEnlargeTokens}
-        decreaseAccessibilityLabel="Shrink player tokens"
-        increaseAccessibilityLabel="Enlarge player tokens"
-        onDecrease={() => handleResizeTokens(-tokenSizeStep)}
-        onIncrease={() => handleResizeTokens(tokenSizeStep)}
-        title="Token"
-        value={activeTokenSize}
-      />
-      <DimensionAdjustRow
-        canDecrease={canShrinkMapWidth}
-        canIncrease={canEnlargeMapWidth}
-        decreaseAccessibilityLabel="Decrease game map width"
-        increaseAccessibilityLabel="Increase game map width"
-        onDecrease={() => handleResizeMapWidth(-mapWidthStep)}
-        onIncrease={() => handleResizeMapWidth(mapWidthStep)}
-        title="Width"
-        value={mapWidth}
-      />
-      <DimensionAdjustRow
-        canDecrease={canShrinkMap}
-        canIncrease={canEnlargeMap}
-        decreaseAccessibilityLabel="Decrease game map height"
-        increaseAccessibilityLabel="Increase game map height"
-        onDecrease={() => handleResizeMapHeight(-mapHeightStep)}
-        onIncrease={() => handleResizeMapHeight(mapHeightStep)}
-        title="Height"
-        value={mapHeight}
-      />
-      <View style={outlinedActionRow}>
-        <Pressable
+      <View style={styles.sliders}>
+        <DimensionSlider
+          accessibilityLabel="Game map width"
+          label="Width"
+          max={maxMapWidth}
+          min={minMapWidth}
+          onChange={handleSetMapWidth}
+          step={mapWidthStep}
+          value={mapWidth}
+        />
+        <DimensionSlider
+          accessibilityLabel="Game map height"
+          label="Height"
+          max={maxMapHeight}
+          min={minMapHeight}
+          onChange={handleSetMapHeight}
+          step={mapHeightStep}
+          value={mapHeight}
+        />
+      </View>
+      <View style={styles.bar}>
+        <BarButton
           accessibilityLabel="Rotate tokens left"
-          accessibilityRole="button"
+          icon={RotateCcw}
           onPress={() => handleRotateTokens(-rotationStepRadians)}
-          style={({ pressed }) => outlinedActionStyle({ pressed, flex: 1 })}
-        >
-          <RotateCcw color={colors.gameText} size={17} strokeWidth={2.7} />
-          <Text style={onDarkTextStrong}>Left</Text>
-        </Pressable>
+        />
+        <BarButton
+          accessibilityLabel="Rotate tokens right"
+          icon={RotateCw}
+          onPress={() => handleRotateTokens(rotationStepRadians)}
+        />
+        <View style={styles.divider} />
+        <BarButton
+          accessibilityLabel="Shrink player tokens"
+          disabled={activeTokenSize <= minTokenSize}
+          icon={Minus}
+          onPress={() => handleResizeTokens(-tokenSizeStep)}
+        />
+        <View style={styles.tokenSize}>
+          <Text style={styles.tokenSizeTitle}>Token</Text>
+          <Text selectable style={styles.tokenSizeValue}>
+            {activeTokenSize}
+          </Text>
+        </View>
+        <BarButton
+          accessibilityLabel="Enlarge player tokens"
+          disabled={activeTokenSize >= maxTokenSize}
+          icon={Plus}
+          onPress={() => handleResizeTokens(tokenSizeStep)}
+        />
+        <View style={styles.spacer} />
+        <BarButton
+          accessibilityLabel="Undo last token rotation"
+          disabled={!canUndoRotation}
+          icon={Undo2}
+          onPress={handleUndoRotation}
+        />
         <MapModeButton
           accessibilityLabel="Done rearranging tokens"
           onPress={exitRearrangeMode}
           variant="confirm"
-          width={dimensionDisplayWidth}
+          width={52}
         />
-        <Pressable
-          accessibilityLabel="Rotate tokens right"
-          accessibilityRole="button"
-          onPress={() => handleRotateTokens(rotationStepRadians)}
-          style={({ pressed }) => outlinedActionStyle({ pressed, flex: 1 })}
-        >
-          <RotateCw color={colors.gameText} size={17} strokeWidth={2.7} />
-          <Text style={onDarkTextStrong}>Right</Text>
-        </Pressable>
-      </View>
-      <View style={outlinedActionRow}>
-        <Pressable
-          accessibilityLabel="Undo last token rotation"
-          accessibilityRole="button"
-          disabled={!canUndoRotation}
-          onPress={handleUndoRotation}
-          style={({ pressed }) =>
-            outlinedActionStyle({ pressed, disabled: !canUndoRotation, flex: 1 })
-          }
-        >
-          <Undo2 color={colors.gameText} size={17} strokeWidth={2.7} />
-          <Text style={onDarkTextStrong}>Undo</Text>
-        </Pressable>
       </View>
     </View>
   );
 }
 
-function DimensionAdjustRow({
-  canDecrease,
-  canIncrease,
-  decreaseAccessibilityLabel,
-  increaseAccessibilityLabel,
-  onDecrease,
-  onIncrease,
-  title,
-  value,
+function BarButton({
+  accessibilityLabel,
+  disabled = false,
+  icon: Icon,
+  onPress,
 }: {
-  canDecrease: boolean;
-  canIncrease: boolean;
-  decreaseAccessibilityLabel: string;
-  increaseAccessibilityLabel: string;
-  onDecrease: () => void;
-  onIncrease: () => void;
-  title: string;
-  value: number;
+  accessibilityLabel: string;
+  disabled?: boolean;
+  icon: typeof Minus;
+  onPress: () => void;
 }) {
   return (
-    <View style={outlinedActionRow}>
-      <Pressable
-        accessibilityLabel={decreaseAccessibilityLabel}
-        accessibilityRole="button"
-        disabled={!canDecrease}
-        onPress={onDecrease}
-        style={({ pressed }) => outlinedActionStyle({ pressed, disabled: !canDecrease, flex: 1 })}
-      >
-        <Minus color={colors.gameText} size={17} strokeWidth={2.7} />
-      </Pressable>
-      <View style={styles.dimensionDisplay}>
-        <Text style={styles.dimensionTitle}>{title}</Text>
-        <Text selectable style={onDarkTextStrong}>
-          {value}
-        </Text>
-      </View>
-      <Pressable
-        accessibilityLabel={increaseAccessibilityLabel}
-        accessibilityRole="button"
-        disabled={!canIncrease}
-        onPress={onIncrease}
-        style={({ pressed }) => outlinedActionStyle({ pressed, disabled: !canIncrease, flex: 1 })}
-      >
-        <Plus color={colors.gameText} size={17} strokeWidth={2.7} />
-      </Pressable>
-    </View>
+    <Pressable
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="button"
+      disabled={disabled}
+      hitSlop={4}
+      onPress={onPress}
+      style={({ pressed }) => [styles.barButton, pressed && styles.barButtonPressed]}
+    >
+      <Icon color={disabled ? colors.gameBorder : colors.gameText} size={17} strokeWidth={2.7} />
+    </Pressable>
   );
 }
 
-const rotationStepRadians = Math.PI / 8;
-
 const styles = StyleSheet.create({
-  dimensionDisplay: {
+  bar: {
     alignItems: 'center',
     backgroundColor: colors.gameSurface,
     borderColor: colors.gameBorder,
-    borderRadius: 8,
+    borderRadius: 14,
     borderWidth: 1,
+    flexDirection: 'row',
+    gap: 4,
+    padding: 6,
+  },
+  barButton: {
+    alignItems: 'center',
+    borderRadius: 10,
+    height: 38,
     justifyContent: 'center',
-    paddingHorizontal: 12,
-    gap: 2,
-    paddingVertical: 10,
-    width: dimensionDisplayWidth,
+    width: 38,
   },
-  dimensionTitle: {
-    color: colors.gameTextMuted,
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  root: {
+  barButtonPressed: { backgroundColor: colors.gameSurfacePressed },
+  divider: {
     alignSelf: 'stretch',
-    gap: 10,
+    backgroundColor: colors.gameBorder,
+    marginHorizontal: 2,
+    width: 1,
   },
+  root: { alignSelf: 'stretch', gap: 8 },
+  sliders: { paddingHorizontal: 4 },
+  spacer: { flex: 1 },
+  tokenSize: { alignItems: 'center', minWidth: 40 },
+  tokenSizeTitle: { color: colors.gameTextMuted, fontSize: 10, fontWeight: '800' },
+  tokenSizeValue: { color: colors.gameText, fontSize: 13, fontWeight: '900' },
 });

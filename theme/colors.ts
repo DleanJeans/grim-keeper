@@ -142,6 +142,13 @@ const baseColors = {
     storytellerRibbon: '#7a5a12',
     topText: '#5b2a17',
   },
+  /** The sliders in rearrange mode. */
+  slider: {
+    fill: '#e2b04a',
+    thumb: '#f8fafc',
+    thumbHalo: 'rgba(226, 176, 74, 0.35)',
+    track: '#1e293b',
+  },
   /** The day card under the map: day title, phase timeline and counts. */
   dayCard: {
     background: '#111a2e',

@@ -114,8 +114,8 @@ export type GameRouteContextValue = {
   handleHighlightPlayers: (playerIds: string[]) => void;
   handleChangePhase: (position: GamePhasePosition) => void;
   runDayEdit: (edit: () => void, day?: number, phase?: GamePhase) => void;
-  handleResizeMapWidth: (sizeDelta: number) => void;
-  handleResizeMapHeight: (sizeDelta: number) => void;
+  handleSetMapWidth: (width: number) => void;
+  handleSetMapHeight: (height: number) => void;
   handleRotateTokens: (angleRadians: number) => void;
   handleUndoRotation: () => void;
   handleResizeTokens: (sizeDelta: number) => void;

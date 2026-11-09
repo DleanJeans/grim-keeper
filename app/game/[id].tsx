@@ -68,10 +68,7 @@ import {
   getDefaultMapWidth,
   getLegacyMapHeight,
   getMapScale,
-  getNextMapDimension,
   getTokenSize,
-  mapHeightStep,
-  mapWidthStep,
   resolveMapOverlaps,
   rotatePlayerMapPositions,
   scalePlayerMapPositions,
@@ -827,8 +824,8 @@ export default function GameRoute() {
     });
   }
 
-  function handleResizeMapHeight(sizeDelta: number) {
-    const nextHeight = getNextMapDimension(mapHeight, sizeDelta, mapHeightStep, clampMapHeight);
+  function handleSetMapHeight(height: number) {
+    const nextHeight = clampMapHeight(height);
     if (nextHeight === mapHeight) {
       return;
     }
@@ -849,8 +846,8 @@ export default function GameRoute() {
     });
   }
 
-  function handleResizeMapWidth(sizeDelta: number) {
-    const nextWidth = getNextMapDimension(mapWidth, sizeDelta, mapWidthStep, clampMapWidth);
+  function handleSetMapWidth(width: number) {
+    const nextWidth = clampMapWidth(width);
     if (nextWidth === mapWidth) {
       return;
     }
@@ -1212,8 +1209,8 @@ export default function GameRoute() {
     handleHighlightPlayers,
     handleChangePhase: (position) => handleChangePhase(position.activeDay, position.activePhase),
     runDayEdit,
-    handleResizeMapWidth,
-    handleResizeMapHeight,
+    handleSetMapWidth,
+    handleSetMapHeight,
     handleRotateTokens,
     handleUndoRotation,
     handleResizeTokens,
