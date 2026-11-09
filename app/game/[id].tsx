@@ -137,6 +137,7 @@ export default function GameRoute() {
   const [activeTab, setActiveTab] = useState<GameTab>('notes');
   // Player the kill attribution panel was opened for; selecting someone else closes it.
   const [killAttributionPlayerId, setKillAttributionPlayerId] = useState<string | null>(null);
+  const [killerRoleIds, setKillerRoleIds] = useState<string[]>([]);
   const [trackingMode, setTrackingMode] = useState<TrackingMode | null>(null);
   const [votingNominationId, setVotingNominationId] = useState<string | null>(null);
   const [votingNominationIsNew, setVotingNominationIsNew] = useState(false);
@@ -921,7 +922,7 @@ export default function GameRoute() {
   /** Kill in the dock opens the kill attribution panel on the Deaths tab. */
   function handleDockKill() {
     setActiveTab('deaths');
-    setKillAttributionPlayerId(focusedPlayerId);
+    openKillAttribution(focusedPlayerId);
     scrollToTabBar();
   }
 
@@ -1055,6 +1056,24 @@ export default function GameRoute() {
     );
   }
 
+  function openKillAttribution(playerId: string | null) {
+    setKillAttributionPlayerId(playerId);
+    setKillerRoleIds([]);
+  }
+
+  function handleToggleKillerRole(roleId: string) {
+    setKillerRoleIds((roleIds) =>
+      roleIds.includes(roleId) ? roleIds.filter((id) => id !== roleId) : [...roleIds, roleId],
+    );
+  }
+
+  function handleConfirmKill() {
+    handleSetFocusedPlayerDeath('night', {
+      killerRoleIds: killerRoleIds.length > 0 ? killerRoleIds : undefined,
+    });
+    openKillAttribution(null);
+  }
+
   function handleReviveFocusedPlayer() {
     if (!focusedPlayer?.death) {
       return;
@@ -1162,6 +1181,7 @@ export default function GameRoute() {
     nominationCurves,
     activeTab: getVisibleGameTab(activeTab, activePhase),
     killAttributionOpen: !!focusedPlayerId && killAttributionPlayerId === focusedPlayerId,
+    killerRoleIds,
     trackingMode,
     votingNominationId,
     votingReturnTab,
@@ -1190,7 +1210,9 @@ export default function GameRoute() {
     dayEditLocked,
     canUndoRotation: lastRotationPositions !== null,
     setActiveTab,
-    setKillAttributionOpen: (open) => setKillAttributionPlayerId(open ? focusedPlayerId : null),
+    setKillAttributionOpen: (open) => openKillAttribution(open ? focusedPlayerId : null),
+    handleToggleKillerRole,
+    handleConfirmKill,
     setNoteDraft,
     exitMapModes,
     exitRearrangeMode,

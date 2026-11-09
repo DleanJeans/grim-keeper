@@ -63,6 +63,8 @@ export type GameRouteContextValue = {
   activeTab: GameTab;
   /** The Deaths tab's kill attribution panel is open for the selected player. */
   killAttributionOpen: boolean;
+  /** Killer roles picked in the open kill attribution panel. */
+  killerRoleIds: string[];
   trackingMode: TrackingMode | null;
   votingNominationId: string | null;
   votingReturnTab: GameTab | null;
@@ -95,6 +97,9 @@ export type GameRouteContextValue = {
   // Handlers
   setActiveTab: (tab: GameTab) => void;
   setKillAttributionOpen: (open: boolean) => void;
+  handleToggleKillerRole: (roleId: string) => void;
+  /** Marks the selected player killed with the picked killer roles and closes the panel. */
+  handleConfirmKill: () => void;
   setNoteDraft: (text: string) => void;
   exitMapModes: () => void;
   exitRearrangeMode: () => void;

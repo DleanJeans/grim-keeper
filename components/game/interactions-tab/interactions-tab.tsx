@@ -5,7 +5,6 @@ import { useGameRouteContext } from '@/components/game/game-route-context';
 import { ConversationTable } from '@/components/game/interactions-tab/conversation-table';
 import { InteractionList } from '@/components/game/interactions-tab/interaction-list';
 import { NotTalkedWith } from '@/components/game/interactions-tab/not-talked-with';
-import { TrackingConfirmActions } from '@/components/game/interactions-tab/tracking-confirm-actions';
 import { tabBarButtonStyle, tabBarContainer, tabBarLabelStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
@@ -40,8 +39,7 @@ export function InteractionsTab() {
 
   return (
     <View style={styles.container}>
-      {activePhase === 'day' && trackingMode === 'interaction' ? <TrackingConfirmActions /> : null}
-
+      {/* Cancel / Confirm for a talk sit in the player dock. */}
       <View accessibilityRole="tablist" style={tabBarContainer}>
         {interactionSubtabs.map((tab) => {
           const active = subtab === tab.value;

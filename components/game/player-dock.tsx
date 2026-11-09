@@ -16,7 +16,9 @@ import { type ComponentType, useEffect, useState } from 'react';
 import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
 
 import { canKillDuringDay } from '@/components/game/deaths-tab/death-actions';
+import { DockKill } from '@/components/game/deaths-tab/dock-kill';
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { DockTalk } from '@/components/game/interactions-tab/dock-talk';
 import { DockNomination } from '@/components/game/noms-tab/dock-nomination';
 import { NomIcon } from '@/components/game/noms-tab/nom-icon';
 import { QUICK_TAGS, QuickNoteTags } from '@/components/game/notes-tab/quick-note-tags';
@@ -80,6 +82,7 @@ export function PlayerDock({
     handleSetFocusedPlayerDeath,
     handleUndoFocusedPlayerDeath,
     interactionMode,
+    killAttributionOpen,
     nominationDisabled,
     pausedNomination,
     roleAssignmentKind,
@@ -107,6 +110,27 @@ export function PlayerDock({
     return (
       <View style={styles.dock}>
         <DockNomination />
+      </View>
+    );
+  }
+
+  // So do a talk's and a kill's.
+  if (trackingMode === 'interaction') {
+    return (
+      <View style={styles.dock}>
+        <DockTalk />
+      </View>
+    );
+  }
+
+  const killShown =
+    killAttributionOpen &&
+    !focusedPlayerIsDead &&
+    (activePhase !== 'day' || canKillDuringDay(game.script));
+  if (killShown) {
+    return (
+      <View style={styles.dock}>
+        <DockKill />
       </View>
     );
   }

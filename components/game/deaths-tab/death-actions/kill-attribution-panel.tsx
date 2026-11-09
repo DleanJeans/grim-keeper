@@ -1,5 +1,4 @@
 import { Check, X } from 'lucide-react-native';
-import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
@@ -21,27 +20,27 @@ import { isSushiBuffetScript } from '@/utils/script-service';
 
 type KillAttributionPanelProps = {
   confirmLabel?: string;
-  initialAttribution?: KillAttribution;
-  onCancel: () => void;
-  onConfirm: (attribution: KillAttribution) => void;
+  killerRoleIds: string[];
+  /** Cancel / Confirm under the picker. Left out when they sit in the player dock. */
+  onCancel?: () => void;
+  onConfirm?: (attribution: KillAttribution) => void;
+  onToggleRole: (roleId: string) => void;
   player?: Player;
   title?: string;
 };
 
 export function KillAttributionPanel({
   confirmLabel = 'Confirm Kill',
-  initialAttribution,
+  killerRoleIds,
   onCancel,
   onConfirm,
+  onToggleRole,
   player,
   title = 'Kill',
 }: KillAttributionPanelProps) {
   const { activeDay, activePhase, focusedPlayer, game, players, showRoles, startingNight } =
     useGameRouteContext();
   const roleCatalog = useGameStore((state) => state.roleCatalog);
-  const [killerRoleIds, setKillerRoleIds] = useState<string[]>(
-    initialAttribution?.killerRoleIds ?? [],
-  );
   // Sushi Buffet's script holds every character, so only offer the ones players claimed.
   const scriptRoles = isSushiBuffetScript(game.script)
     ? getRolesByIds(getClaimedRoleIdsForDayOrPrevious(players, activeDay, activePhase), [
@@ -60,16 +59,8 @@ export function KillAttributionPanel({
     return null;
   }
 
-  function handleToggleRole(roleId: string) {
-    setKillerRoleIds((currentRoleIds) =>
-      currentRoleIds.includes(roleId)
-        ? currentRoleIds.filter((currentRoleId) => currentRoleId !== roleId)
-        : [...currentRoleIds, roleId],
-    );
-  }
-
   function handleConfirm() {
-    onConfirm({
+    onConfirm?.({
       killerRoleIds: killerRoleIds.length > 0 ? killerRoleIds : undefined,
     });
   }
@@ -90,7 +81,7 @@ export function KillAttributionPanel({
       </View>
       <RolePicker
         description="Choose the suspected killer role or alignment."
-        onToggleRole={handleToggleRole}
+        onToggleRole={onToggleRole}
         roles={killerRoles}
         roleOwnerNames={
           showRoles
@@ -101,10 +92,12 @@ export function KillAttributionPanel({
         selectedRoleIds={killerRoleIds}
         scriptId={game.script?.id}
       />
-      <View style={innerActionRow}>
-        <KillFormButton icon={X} label="Cancel" onPress={onCancel} />
-        <KillFormButton icon={Check} label={confirmLabel} onPress={handleConfirm} primary />
-      </View>
+      {onCancel && onConfirm ? (
+        <View style={innerActionRow}>
+          <KillFormButton icon={X} label="Cancel" onPress={onCancel} />
+          <KillFormButton icon={Check} label={confirmLabel} onPress={handleConfirm} primary />
+        </View>
+      ) : null}
     </View>
   );
 }

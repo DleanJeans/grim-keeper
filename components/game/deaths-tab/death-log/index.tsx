@@ -27,7 +27,9 @@ export function DeathLog({
   script,
   startingNight,
 }: DeathLogProps) {
-  const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<{ killerRoleIds: string[]; playerId: string } | null>(
+    null,
+  );
   const { game, runDayEdit } = useGameRouteContext();
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const setPlayerDeath = useGameStore((state) => state.setPlayerDeath);
@@ -54,7 +56,7 @@ export function DeathLog({
             ...(script?.roles ?? []),
             ...getRolesByIds(game.lorics ?? [], roleCatalog),
           ]);
-          const isEditing = 'death' in entry && editingPlayerId === entry.player.id;
+          const isEditing = 'death' in entry && editing?.playerId === entry.player.id;
 
           return (
             <View key={getLogEntryKey(entry)} style={styles.entry}>
@@ -66,15 +68,23 @@ export function DeathLog({
                 startingNight={startingNight}
                 onEdit={
                   'death' in entry && entry.death.kind === 'night'
-                    ? () => setEditingPlayerId(isEditing ? null : entry.player.id)
+                    ? () =>
+                        setEditing(
+                          isEditing
+                            ? null
+                            : {
+                                killerRoleIds: entry.death.killerRoleIds ?? [],
+                                playerId: entry.player.id,
+                              },
+                        )
                     : undefined
                 }
               />
-              {isEditing && 'death' in entry ? (
+              {isEditing && editing && 'death' in entry ? (
                 <KillAttributionPanel
                   confirmLabel="Save Killer"
-                  initialAttribution={entry.death}
-                  onCancel={() => setEditingPlayerId(null)}
+                  killerRoleIds={editing.killerRoleIds}
+                  onCancel={() => setEditing(null)}
                   onConfirm={(attribution) => {
                     runDayEdit(() => {
                       setPlayerDeath(game.id, entry.player.id, {
@@ -84,9 +94,17 @@ export function DeathLog({
                         ...attribution,
                         updatedAt: new Date().toISOString(),
                       });
-                      setEditingPlayerId(null);
+                      setEditing(null);
                     });
                   }}
+                  onToggleRole={(roleId) =>
+                    setEditing({
+                      ...editing,
+                      killerRoleIds: editing.killerRoleIds.includes(roleId)
+                        ? editing.killerRoleIds.filter((id) => id !== roleId)
+                        : [...editing.killerRoleIds, roleId],
+                    })
+                  }
                   player={entry.player}
                   title="Change killer for"
                 />

@@ -28,7 +28,7 @@ export function canKillDuringDay(script: StoredScript | undefined) {
 
 /**
  * Kill attribution panel for the Deaths tab, opened by Kill in the player dock. Operates on
- * the player currently focused in the route context.
+ * the player currently focused in the route context; its Cancel / Confirm are in the dock.
  */
 export function FocusedDeathActionPanel() {
   const {
@@ -36,9 +36,9 @@ export function FocusedDeathActionPanel() {
     focusedPlayer,
     focusedPlayerIsDead,
     game,
-    handleSetFocusedPlayerDeath: onSetDeath,
+    handleToggleKillerRole,
     killAttributionOpen,
-    setKillAttributionOpen,
+    killerRoleIds,
   } = useGameRouteContext();
 
   if (
@@ -52,13 +52,8 @@ export function FocusedDeathActionPanel() {
 
   return (
     <View style={styles.container}>
-      <KillAttributionPanel
-        onCancel={() => setKillAttributionOpen(false)}
-        onConfirm={(attribution) => {
-          onSetDeath('night', attribution);
-          setKillAttributionOpen(false);
-        }}
-      />
+      {/* Cancel / Confirm Kill sit in the player dock. */}
+      <KillAttributionPanel killerRoleIds={killerRoleIds} onToggleRole={handleToggleKillerRole} />
     </View>
   );
 }
