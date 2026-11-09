@@ -119,7 +119,7 @@ type GameState = GameData & {
   renameFriend: (friendId: string, currentName: string, nextName: string) => string | undefined;
   updateFriendPicture: (
     friend: Pick<Friend, 'createdAt' | 'id' | 'name'>,
-    patch: Partial<Pick<Friend, 'picture' | 'socialLink' | 'socialPicture'>>,
+    patch: Partial<Pick<Friend, 'picture'>>,
   ) => void;
   createGame: (input: CreateGameInput) => Game;
   saveScript: (script: StoredScript) => void;
@@ -355,7 +355,7 @@ export const useGameStore = create<GameState>()(
               ? state.friends[index]
               : { createdAt: target.createdAt, id: target.id, name: target.name };
           const next: Friend = { ...current, ...patch };
-          for (const key of ['picture', 'socialLink', 'socialPicture'] as const) {
+          for (const key of ['picture'] as const) {
             if (!next[key]) {
               delete next[key];
             }

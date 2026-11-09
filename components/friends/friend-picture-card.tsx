@@ -1,19 +1,13 @@
-import { ImagePlus, Link2, Trash2 } from 'lucide-react-native';
+import { ImagePlus, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
-import { Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { FriendAvatar } from '@/components/friends/friend-avatar';
 import { Text, TextInput } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Friend } from '@/types/game';
-import {
-  fetchSocialPicture,
-  getFriendPicture,
-  getSocialPictureSource,
-  parsePictureUrl,
-  pickPictureFile,
-} from '@/utils/friend-picture-utils';
+import { getFriendPicture, parsePictureUrl, pickPictureFile } from '@/utils/friend-picture-utils';
 
 const AVATAR_SIZE = 72;
 
@@ -21,39 +15,15 @@ type FriendPictureCardProps = {
   friend: Friend;
 };
 
-/** Profile picture of a friend: fetched from a social link, or chosen by hand to override it. */
+/** Profile picture of a friend, chosen from an image file or an image link. */
 export function FriendPictureCard({ friend }: FriendPictureCardProps) {
   const updateFriendPicture = useGameStore((state) => state.updateFriendPicture);
   const [editing, setEditing] = useState(false);
-  const [link, setLink] = useState(friend.socialLink ?? '');
   const [pictureUrl, setPictureUrl] = useState('');
   const [status, setStatus] = useState<string>();
   const [busy, setBusy] = useState(false);
   const picture = getFriendPicture(friend);
-  const source = getSocialPictureSource(link);
   const typedPictureUrl = parsePictureUrl(pictureUrl);
-
-  async function handleFetch() {
-    if (!source) {
-      return;
-    }
-    setBusy(true);
-    setStatus(`Fetching from ${source.label}…`);
-    try {
-      const socialPicture = await fetchSocialPicture(source);
-      updateFriendPicture(friend, { socialLink: link.trim(), socialPicture });
-      setStatus(
-        friend.picture
-          ? `Fetched from ${source.label}. Your own picture still shows; remove it to use this one.`
-          : `Fetched from ${source.label}.`,
-      );
-    } catch (error) {
-      updateFriendPicture(friend, { socialLink: link.trim(), socialPicture: undefined });
-      setStatus(error instanceof Error ? error.message : 'Could not fetch a picture.');
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function handleChooseImage() {
     setBusy(true);
@@ -80,12 +50,7 @@ export function FriendPictureCard({ friend }: FriendPictureCardProps) {
   }
 
   function handleRemove() {
-    if (friend.picture) {
-      updateFriendPicture(friend, { picture: undefined });
-      setStatus(friend.socialPicture ? 'Back to the fetched picture.' : 'Picture removed.');
-      return;
-    }
-    updateFriendPicture(friend, { socialPicture: undefined });
+    updateFriendPicture(friend, { picture: undefined });
     setStatus('Picture removed.');
   }
 
@@ -98,11 +63,7 @@ export function FriendPictureCard({ friend }: FriendPictureCardProps) {
             Profile picture
           </Text>
           <Text selectable style={styles.subtitle}>
-            {friend.picture
-              ? 'Chosen by you'
-              : friend.socialPicture
-                ? `From ${getSocialPictureSource(friend.socialLink ?? '')?.label ?? 'a social link'}`
-                : 'None yet'}
+            {picture ? 'Shows on the Friends list and map' : 'None yet'}
           </Text>
         </View>
         <Pressable
@@ -117,52 +78,7 @@ export function FriendPictureCard({ friend }: FriendPictureCardProps) {
 
       {editing ? (
         <View style={styles.form}>
-          <Text style={styles.label}>Social link</Text>
-          <View style={styles.row}>
-            <TextInput
-              accessibilityLabel="Social link"
-              autoCapitalize="none"
-              autoCorrect={false}
-              enterKeyHint="go"
-              onChangeText={setLink}
-              onSubmitEditing={handleFetch}
-              placeholder="facebook.com/name, WhatsApp number, email…"
-              placeholderTextColor={colors.textSubtle}
-              returnKeyType="go"
-              submitBehavior="submit"
-              style={styles.input}
-              value={link}
-            />
-            <Pressable
-              accessibilityLabel="Fetch picture from social link"
-              accessibilityRole="button"
-              accessibilityState={{ disabled: !source || busy }}
-              disabled={!source || busy}
-              onPress={handleFetch}
-              style={({ pressed }) => [
-                styles.actionButton,
-                !source || busy ? styles.actionButtonDisabled : pressed && styles.buttonPressed,
-              ]}
-            >
-              <Link2
-                color={source && !busy ? colors.onPrimary : colors.onDisabled}
-                size={18}
-                strokeWidth={2.6}
-              />
-              <Text style={[styles.actionText, (!source || busy) && styles.actionTextDisabled]}>
-                Fetch
-              </Text>
-            </Pressable>
-          </View>
-          <Text style={styles.hint}>
-            {link.trim() && !source
-              ? 'Not a link this app can read. Try Facebook, Instagram, X, Telegram, TikTok, WhatsApp number or email.'
-              : source
-                ? `Looks like ${source.label}.`
-                : 'Works with Facebook, Instagram, X, Telegram, TikTok, YouTube, GitHub, a WhatsApp number or an email (Gravatar).'}
-          </Text>
-
-          <Text style={styles.label}>Or use your own picture</Text>
+          <Text style={styles.label}>Image link</Text>
           <View style={styles.row}>
             <TextInput
               accessibilityLabel="Image link"
@@ -207,7 +123,7 @@ export function FriendPictureCard({ friend }: FriendPictureCardProps) {
             </Pressable>
             {picture ? (
               <Pressable
-                accessibilityLabel={friend.picture ? 'Remove your picture' : 'Remove picture'}
+                accessibilityLabel="Remove picture"
                 accessibilityRole="button"
                 onPress={handleRemove}
                 style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
@@ -223,13 +139,6 @@ export function FriendPictureCard({ friend }: FriendPictureCardProps) {
               {status}
             </Text>
           ) : null}
-          <Text
-            accessibilityRole="link"
-            onPress={() => Linking.openURL('https://unavatar.io')}
-            style={styles.credit}
-          >
-            Social pictures by unavatar.io
-          </Text>
         </View>
       ) : null}
     </View>
@@ -269,11 +178,6 @@ const styles = StyleSheet.create({
     gap: 14,
     padding: 16,
   },
-  credit: {
-    color: colors.textSubtle,
-    fontSize: 12,
-    textDecorationLine: 'underline',
-  },
   dangerText: {
     color: colors.danger,
     fontSize: 15,
@@ -290,11 +194,6 @@ const styles = StyleSheet.create({
   headerText: {
     flex: 1,
     gap: 2,
-  },
-  hint: {
-    color: colors.textMuted,
-    fontSize: 13,
-    marginBottom: 6,
   },
   input: {
     backgroundColor: colors.surfaceRaised,
