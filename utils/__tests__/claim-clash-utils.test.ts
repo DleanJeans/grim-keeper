@@ -1,4 +1,5 @@
 import type { CharacterTypeCounts, Player, PlayerRoleAssignment, Role } from '@/types/game';
+import { APP_USER_ID } from '@/utils/app-user';
 import { getClaimClashes } from '@/utils/claim-clash-utils';
 
 const now = '2026-10-31T00:00:00.000Z';
@@ -90,6 +91,17 @@ describe('getClaimClashes', () => {
     });
     expect(clashes.bluffClaims).toEqual([{ playerId: 'a', roleId: 'chef' }]);
     expect(clashes.offScriptClaims).toEqual([{ playerId: 'b', roleId: 'clockmaker' }]);
+  });
+
+  it('does not flag your own claim of one of your bluffs', () => {
+    const players = [
+      player(APP_USER_ID, [assignment('claim', ['chef'])]),
+      player('b', [assignment('claim', ['empath'])]),
+    ];
+    const clashes = getClaimClashes(players, roles, counts, 1, 'day', {
+      bluffRoleIds: ['chef', 'empath'],
+    });
+    expect(clashes.bluffClaims).toEqual([{ playerId: 'b', roleId: 'empath' }]);
   });
 
   it('does not count a multi-character claim as a double claim', () => {

@@ -1,4 +1,5 @@
 import type { CharacterTypeCounts, GamePhase, Player, Role } from '@/types/game';
+import { APP_USER_ID } from '@/utils/app-user';
 import {
   GENERIC_CHARACTER_TYPE_ROLES,
   getRoleAssignmentForDayOrPrevious,
@@ -36,7 +37,7 @@ export type PlayerRoleClaim = {
 };
 
 export type ClaimClashes = {
-  /** Claims of a character in the Bluffs row. */
+  /** Claims of a character in the Bluffs row, leaving out your own claims. */
   bluffClaims: PlayerRoleClaim[];
   doubleClaims: DoubleClaim[];
   /** Claims of a character that isn't on the script (Travellers are fine). */
@@ -83,7 +84,10 @@ export function getClaimClashes(
     for (const roleId of roleIds) {
       // "Outsider" and the like say what type someone is, not which character.
       if (roleId.startsWith('generic_')) continue;
-      if (bluffs.has(roleId)) bluffClaims.push({ playerId: player.id, roleId });
+      // Your own claim of a bluff is you using it, not a clash.
+      if (bluffs.has(roleId) && player.id !== APP_USER_ID) {
+        bluffClaims.push({ playerId: player.id, roleId });
+      }
       if (scriptRoleIds.size > 0 && !scriptRoleIds.has(roleId) && !travellerIds.has(roleId)) {
         offScriptClaims.push({ playerId: player.id, roleId });
       }
