@@ -5,6 +5,7 @@ import { FriendRow } from '@/components/friends/friend-row';
 import { FriendSortControls } from '@/components/friends/friend-sort-controls';
 import { NotFoundScreen } from '@/components/not-found-screen';
 import { ResponsiveContent } from '@/components/responsive-content';
+import { GamePlayersWinRates } from '@/components/scripts/game-players-win-rates';
 import { ScriptWinRateScope, type WinRateScope } from '@/components/scripts/script-win-rate-scope';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
@@ -104,6 +105,13 @@ export default function ScriptWinRatesRoute() {
             Win rates · {ratedGames} {ratedGames === 1 ? 'game' : 'games'} with a result
           </Text>
           {game ? <ScriptWinRateScope onChange={setScope} scope={scope} /> : null}
+          {scope === 'game' && gamePlayerIds ? (
+            <GamePlayersWinRates
+              allGames={allGames}
+              playerIds={gamePlayerIds}
+              scriptGames={games}
+            />
+          ) : null}
           <FriendSortControls
             minGames={minGames}
             onChangeMinGames={setMinGames}

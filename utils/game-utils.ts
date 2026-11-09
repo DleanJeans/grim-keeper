@@ -108,11 +108,29 @@ export function getGamesWithRoleInPlay(games: Game[], roleId: string): Game[] {
   });
 }
 
+function getPlayerGames(games: Game[], playerId: string) {
+  return playerId === APP_USER_ID
+    ? games
+    : games.filter((game) => game.players.some((player) => player.id === playerId));
+}
+
 export function getGameStats(games: Game[], playerId = APP_USER_ID): GameStats {
-  const playerGames =
-    playerId === APP_USER_ID
-      ? games
-      : games.filter((game) => game.players.some((player) => player.id === playerId));
+  return getStatsForSeats(getPlayerGames(games, playerId).map((game) => ({ game, playerId })));
+}
+
+/**
+ * Win rates of several players counted together: every game each of them played counts once
+ * for each of them, so two players in the same game count as two games.
+ */
+export function getCombinedGameStats(games: Game[], playerIds: Iterable<string>): GameStats {
+  return getStatsForSeats(
+    [...playerIds].flatMap((playerId) =>
+      getPlayerGames(games, playerId).map((game) => ({ game, playerId })),
+    ),
+  );
+}
+
+function getStatsForSeats(seats: Array<{ game: Game; playerId: string }>): GameStats {
   let completedGames = 0;
   let evilGames = 0;
   let evilWins = 0;
@@ -125,7 +143,7 @@ export function getGameStats(games: Game[], playerId = APP_USER_ID): GameStats {
     CHARACTER_TYPES.map((type) => [type, { completedGames: 0, games: 0, wins: 0 }]),
   ) as Record<CharacterType, { completedGames: number; games: number; wins: number }>;
 
-  for (const game of playerGames) {
+  for (const { game, playerId } of seats) {
     const result = getGameResultForPlayer(game, playerId);
     const hasResult = result !== undefined;
 
@@ -204,7 +222,7 @@ export function getGameStats(games: Game[], playerId = APP_USER_ID): GameStats {
     goodSideRate: getPercentage(goodGames, goodGames + evilGames),
     goodWins,
     goodWinRate: getPercentage(goodWins, goodCompletedGames),
-    totalGames: playerGames.length,
+    totalGames: seats.length,
     winRate: completedGames === 0 ? undefined : Math.round((wins / completedGames) * 100),
     wins,
   };
