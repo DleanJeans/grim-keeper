@@ -399,6 +399,10 @@ const ONCE_ROLE_IDS = new Set([
   'wizard',
 ]);
 
+/** Characters that gain another character's ability, picked in their first slot (the Cannibal). */
+const GAINED_ABILITY_ROLE_IDS = new Set(['cannibal']);
+const GAINED_ABILITY_SLOT_ID = '0';
+
 /** Characters that only get info on the night they die (the Ravenkeeper). */
 const NIGHT_DEATH_ROLE_IDS = new Set(['ravenkeeper']);
 
@@ -445,12 +449,17 @@ export function normalizeRoleInfoId(roleId: string) {
 /**
  * Known characters get their own template; homebrew characters fall back to Player + Info.
  * `evilCounts` sizes the slots of characters that guess every Demon and Minion (the Alsaahir).
+ * `values` are the entry's values, so a character that gains another's ability (the Cannibal)
+ * also gets that character's slots.
  */
 export function getRoleInfoTemplate(
   role: Pick<Role, 'id'>,
   evilCounts?: { demons: number; minions: number },
+  values?: Record<string, string>,
 ): RoleInfoTemplate {
   const template = ROLE_INFO_TEMPLATES[normalizeRoleInfoId(role.id)] ?? FALLBACK_TEMPLATE;
+  const gainedRoleId = getGainedAbilityRoleId(role, values);
+  if (gainedRoleId) return withGainedAbility(template, gainedRoleId, evilCounts);
   if (!template.evilInPlay || !evilCounts) return template;
 
   return {
@@ -459,6 +468,53 @@ export function getRoleInfoTemplate(
       ...Array.from({ length: evilCounts.demons }, () => player('Demon')),
       ...Array.from({ length: evilCounts.minions }, () => player('Minion')),
     ]),
+  };
+}
+
+/**
+ * The character whose ability a Cannibal-like character has gained, from its Ability slot;
+ * undefined for other characters or before one is picked.
+ */
+export function getGainedAbilityRoleId(
+  role: Pick<Role, 'id'>,
+  values: Record<string, string> | undefined,
+) {
+  if (!GAINED_ABILITY_ROLE_IDS.has(normalizeRoleInfoId(role.id))) return undefined;
+
+  const gainedRoleId = values?.[GAINED_ABILITY_SLOT_ID];
+  return gainedRoleId && !GAINED_ABILITY_ROLE_IDS.has(normalizeRoleInfoId(gainedRoleId))
+    ? gainedRoleId
+    : undefined;
+}
+
+/**
+ * The Ability slot followed by the gained character's own slots, keyed by that character so info
+ * from an earlier ability stays apart. Per-day lines and the Savant's true statement stay with
+ * those characters' own rows.
+ */
+function withGainedAbility(
+  template: RoleInfoTemplate,
+  gainedRoleId: string,
+  evilCounts: { demons: number; minions: number } | undefined,
+): RoleInfoTemplate {
+  const gained = getRoleInfoTemplate({ id: gainedRoleId }, evilCounts);
+  return {
+    autoDayBefore: gained.autoDayBefore,
+    autoExecuted: gained.autoExecuted,
+    autoNeighbors: gained.autoNeighbors,
+    rectangles: gained.rectangles || gained.markTrue,
+    slots: [
+      ...template.slots,
+      ...gained.slots.map(
+        (slot) =>
+          ({
+            ...slot,
+            // The Alsaahir's guesses are player slots, so they still map to players.
+            ...(gained.evilInPlay ? { kind: 'player' } : {}),
+            id: `${gainedRoleId}:${slot.id}`,
+          }) as RoleInfoSlot,
+      ),
+    ],
   };
 }
 
@@ -790,7 +846,7 @@ export function mapRoleInfoPlayerIds(
     const playerId = entry.playerId === undefined ? undefined : mapPlayerId(entry.playerId);
     if (entry.playerId !== undefined && playerId === undefined) return [];
 
-    const template = getRoleInfoTemplate({ id: entry.roleId });
+    const template = getRoleInfoTemplate({ id: entry.roleId }, undefined, entry.values);
     const playerSlotIds = new Set(
       template.slots.filter((slot) => slot.kind === 'player').map((slot) => slot.id),
     );
@@ -873,9 +929,9 @@ export function getRoleInfoTargetPlayers(
   const targetIds = new Set<string>();
 
   for (const role of roles.filter((candidate) => roleIds.includes(candidate.id))) {
-    const template = getRoleInfoTemplate(role);
     const claimer = getRoleInfoClaimer(getRoleClaimers(players, role.id), owner);
     const entry = getMapRoleInfoEntry(roleInfos, role, day, phase, claimer);
+    const template = getRoleInfoTemplate(role, undefined, entry?.values);
     for (const slot of template.slots) {
       const value = entry?.values[slot.id];
       if ((slot.kind === 'player' || template.evilInPlay) && value) targetIds.add(value);
@@ -918,17 +974,20 @@ export function getRoleInfoMapRoles(
   const targetRoles: RoleInfoMapRoles['targetRoles'] = new Map();
 
   for (const role of roles.filter((candidate) => roleIds.includes(candidate.id))) {
-    const template = getRoleInfoTemplate(role);
-    if (template.evilInPlay) continue;
     const claimer = getRoleInfoClaimer(getRoleClaimers(players, role.id), owner);
     const entry = getMapRoleInfoEntry(roleInfos, role, day, phase, claimer);
     if (!entry) continue;
+    const template = getRoleInfoTemplate(role, undefined, entry.values);
+    if (template.evilInPlay) continue;
 
     const leadingRoles: Role[] = [];
     const slotPlayerIds: string[] = [];
     let seenPlayerSlot = false;
     let lastPlayerId: string | undefined;
+    // The Cannibal's Ability names whose ability it has, not something about its targets.
+    const gainedRoleId = getGainedAbilityRoleId(role, entry.values);
     for (const slot of template.slots) {
+      if (gainedRoleId && slot.id === GAINED_ABILITY_SLOT_ID) continue;
       const value = entry.values[slot.id];
       if (slot.kind === 'player') {
         seenPlayerSlot = true;

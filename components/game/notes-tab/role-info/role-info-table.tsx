@@ -802,9 +802,14 @@ function RoleInfoClaimerRow({
   rolesById,
   startingNight,
 }: RoleInfoClaimerRowProps) {
-  const template = getRoleInfoTemplate(role, evilCounts);
   const owners = claimer ? [claimer] : claimers;
   const claimerInfo = getRoleInfoClaimer(claimers, claimer);
+  // The Cannibal's line also gets the slots of the character whose ability it has.
+  const template = getRoleInfoTemplate(
+    role,
+    evilCounts,
+    getRoleInfoForPhaseOrPrevious(roleInfos, role.id, activeDay, activePhase, claimerInfo)?.values,
+  );
   const onPressClaimerSlot = (slot: ActiveSlot) => onPressSlot({ ...slot, claimer: claimerInfo });
   const nights =
     lastNightDay === undefined ? undefined : getRoleInfoNights(role, lastNightDay, owners);

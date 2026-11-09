@@ -1019,3 +1019,75 @@ describe('isRoleInfoTriggered', () => {
     expect(isRoleInfoTriggered({ id: 'empath' }, [], 1, 'night')).toBe(true);
   });
 });
+
+describe('Cannibal', () => {
+  const claim = (roleId: string) => ({
+    roleAssignments: [{ day: 1, kind: 'claim' as const, roleIds: [roleId], updatedAt: NOW }],
+  });
+  const cannibalRoles: Role[] = [
+    ...roles,
+    { id: 'cannibal', name: 'Cannibal', team: 'townsfolk' },
+    { id: 'fortuneteller', name: 'Fortune Teller', team: 'townsfolk' },
+  ];
+
+  it('has only the Ability slot until an ability is picked', () => {
+    expect(getRoleInfoTemplate({ id: 'cannibal' }).slots).toEqual([
+      { filter: 'any', id: '0', kind: 'role', label: 'Ability' },
+    ]);
+  });
+
+  it("adds the eaten character's slots after the Ability slot", () => {
+    const template = getRoleInfoTemplate({ id: 'cannibal' }, undefined, { '0': 'fisherman' });
+
+    expect(template.rectangles).toBe(true);
+    expect(template.slots).toEqual([
+      { filter: 'any', id: '0', kind: 'role', label: 'Ability' },
+      { id: 'fisherman:0', kind: 'text', label: 'Advice' },
+    ]);
+  });
+
+  it("brings the eaten character's neighbors", () => {
+    expect(
+      getRoleInfoTemplate({ id: 'cannibal' }, undefined, { '0': 'empath' }).autoNeighbors,
+    ).toBe(true);
+  });
+
+  it("points at the players in the eaten character's info, without its token on the map", () => {
+    const owner = makePlayer('ann', 0, claim('cannibal'));
+    const players = [owner, makePlayer('ben', 1), makePlayer('cat', 2)];
+    const roleInfos: RoleInfoEntry[] = [
+      {
+        day: 2,
+        phase: 'night',
+        roleId: 'cannibal',
+        updatedAt: NOW,
+        values: { '0': 'fortuneteller', 'fortuneteller:0': 'ben', 'fortuneteller:1': 'cat' },
+      },
+    ];
+
+    expect(
+      getRoleInfoTargetPlayers(owner, players, roleInfos, cannibalRoles, 2, 'day').map((p) => p.id),
+    ).toEqual(['ben', 'cat']);
+    expect(
+      getRoleInfoMapRoles(owner, players, roleInfos, cannibalRoles, 2, 'day').sourceRoles,
+    ).toEqual([]);
+  });
+
+  it("maps the eaten character's player values", () => {
+    const entries: RoleInfoEntry[] = [
+      {
+        day: 2,
+        phase: 'night',
+        roleId: 'cannibal',
+        updatedAt: NOW,
+        values: { '0': 'fortuneteller', 'fortuneteller:0': 'ben', 'fortuneteller:2': 'Yes' },
+      },
+    ];
+
+    expect(mapRoleInfoPlayerIds(entries, (id) => `${id}!`)?.[0].values).toEqual({
+      '0': 'fortuneteller',
+      'fortuneteller:0': 'ben!',
+      'fortuneteller:2': 'Yes',
+    });
+  });
+});
