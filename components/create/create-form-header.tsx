@@ -13,6 +13,7 @@ import { GameScriptPicker } from '@/components/scripts/game-script-picker';
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { FriendSummary, Role, StoredScript } from '@/types/game';
+import { hasKnaves } from '@/utils/knaves-utils';
 
 type CreateFormHeaderProps = {
   allFriends: FriendSummary[];
@@ -146,6 +147,11 @@ export function CreateFormHeader({
         onChange={onSelectStorytellers}
         selectedFriendIds={selectedStorytellerIds}
       />
+      {hasKnaves(selectedLoricIds) && selectedStorytellerIds.length < 2 ? (
+        <Text selectable style={styles.knavesHint}>
+          The Knaves need 2 Storytellers: pick both to note which one gave each info.
+        </Text>
+      ) : null}
 
       <View style={styles.nameSection}>
         <Text selectable style={styles.instructions}>
@@ -242,6 +248,11 @@ export function CreateFormHeader({
 }
 
 const styles = StyleSheet.create({
+  knavesHint: {
+    color: colors.warning,
+    fontSize: 12,
+    fontWeight: '700',
+  },
   addButton: {
     alignItems: 'center',
     backgroundColor: colors.surfaceRaised,

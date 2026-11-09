@@ -18,6 +18,7 @@ import type { Conversation, Player, PlayerPosition, Role, RoleDisplayMode } from
 import { buildConversationGroupRepeats, getConversationGroupKey } from '@/utils/conversation-utils';
 import { getFriendPictureLookup } from '@/utils/friend-picture-utils';
 import type { GamePhasePosition } from '@/utils/game-phase-utils';
+import { getKnavesStorytellers } from '@/utils/knaves-utils';
 import { getPlayerMapPosition, getPlayerTokenScale, getTokenSize } from '@/utils/layout-utils';
 import { getLessonsForPlayers } from '@/utils/lesson-utils';
 import {
@@ -244,6 +245,10 @@ export function GameMap() {
     [game, savedNotes],
   );
   const theoryEvilIdSet = new Set(showRoles ? getActiveTheoryEvilIds(game) : []);
+  // Knaves: each Storyteller's token gets the colour of their Character info badges.
+  const knavesIndexById = new Map(
+    getKnavesStorytellers(game).map((storyteller, index) => [storyteller.id, index]),
+  );
 
   // Filled in as each curve renders, so later curves steer clear of earlier line ends and arrowheads
   // and avoid crossing earlier lines.
@@ -507,6 +512,7 @@ export function GameMap() {
               players={players}
               position={ownPosition}
               hasLessons={lessonPlayerIds.has(player.id)}
+              knavesIndex={knavesIndexById.get(player.id)}
               picture={getPlayerPicture(player)}
               showRoles={showRoles}
               suspicion={
@@ -537,6 +543,7 @@ function PlayerTokenForMap({
   disabled,
   gameRoles,
   hasLessons,
+  knavesIndex,
   label,
   theoryEvil,
   conversations,
@@ -564,6 +571,7 @@ function PlayerTokenForMap({
   dimmed: boolean;
   disabled: boolean;
   hasLessons: boolean;
+  knavesIndex?: number;
   label?: string;
   theoryEvil: boolean;
   gameRoles: Role[];
@@ -607,6 +615,7 @@ function PlayerTokenForMap({
       dimmed={dimmed}
       disabled={disabled}
       hasLessons={hasLessons}
+      knavesIndex={knavesIndex}
       label={label}
       theoryEvil={theoryEvil}
       displayName={getPlayerTokenName(player, players)}

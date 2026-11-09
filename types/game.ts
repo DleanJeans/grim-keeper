@@ -183,6 +183,10 @@ export type Game = {
   activeTheoryId?: string;
   /** Made-up evil team for rolling bluffed Character info. */
   fakeEvilTeam?: FakeEvilTeam;
+  /** Knaves: the Storyteller (player id) the app user thinks lies; unset is not sure. */
+  knavesLiarId?: string;
+  /** Knaves: the day at whose dusk the Storytellers switched; unset is never. */
+  knavesSwitchDay?: number;
 };
 
 /** Made-up evil team, so bluffed Character info can agree with itself; see fake-info-utils. */

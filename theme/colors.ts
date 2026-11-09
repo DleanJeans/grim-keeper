@@ -64,6 +64,11 @@ const baseColors = {
   suspicionSuspect: '#f87171',
   /** Ring around players who are evil in the selected theory. */
   theoryEvil: '#ef4444',
+  // Knaves: each of the two Storytellers' colour, on their map token and Character info badges
+  knavesFirst: '#2dd4bf',
+  knavesFirstSurface: 'rgba(45, 212, 191, 0.14)',
+  knavesSecond: '#c084fc',
+  knavesSecondSurface: 'rgba(192, 132, 252, 0.14)',
   // Win rate bars on the Friends screen
   winBarGood: '#52b88a',
   winBarEvil: '#e0645d',

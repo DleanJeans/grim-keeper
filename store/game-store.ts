@@ -35,6 +35,7 @@ import {
 } from '@/utils/friend-utils';
 import { getGameStartingNight } from '@/utils/game-phase-utils';
 import { type GameTransfer, mergeGameTransfer } from '@/utils/game-transfer';
+import type { KnavesGuess } from '@/utils/knaves-utils';
 import {
   clampMapHeight,
   findFreeTokenPosition,
@@ -226,6 +227,8 @@ type GameState = GameData & {
   setBluffRole: (gameId: string, slotId: string, roleId?: string) => void;
   /** Sets or clears the made-up evil team used to roll bluffed Character info. */
   setFakeEvilTeam: (gameId: string, team?: FakeEvilTeam) => void;
+  /** Knaves: which Storyteller the app user thinks lies, and the day they switched at dusk. */
+  setKnavesGuess: (gameId: string, guess: KnavesGuess) => void;
   /** Puts back an earlier copy of a game, for Undo. */
   restoreGame: (game: Game) => void;
   setPlayerSuspicion: (
@@ -1451,6 +1454,17 @@ export const useGameStore = create<GameState>()(
               : game,
           ),
         }));
+      },
+      setKnavesGuess: (gameId, { knavesLiarId, knavesSwitchDay }) => {
+        updateGameIn(
+          set,
+          gameId,
+          ({ knavesLiarId: _liar, knavesSwitchDay: _switch, ...current }) => ({
+            ...current,
+            ...(knavesLiarId ? { knavesLiarId } : {}),
+            ...(knavesSwitchDay === undefined ? {} : { knavesSwitchDay }),
+          }),
+        );
       },
       restoreGame: (restored) => {
         set((state) => ({

@@ -64,6 +64,13 @@ type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : n
 
 /** Entry value key holding the slot id of the statement marked as possibly true. */
 export const ROLE_INFO_TRUE_KEY = 'true';
+/** Entry value key holding the Storyteller (player id) who gave the info, with the Knaves. */
+export const ROLE_INFO_STORYTELLER_KEY = 'storyteller';
+
+/** Whether an entry holds any info, leaving out which Storyteller gave it. */
+export function hasRoleInfoSlotValues(values: Record<string, string>) {
+  return Object.keys(values).some((key) => key !== ROLE_INFO_STORYTELLER_KEY);
+}
 
 const YES_NO = ['Yes', 'No'];
 const GOOD_EVIL = ['Good', 'Evil'];
@@ -515,7 +522,7 @@ export function getRoleInfoUsedPhase(
       (entry) =>
         entry.roleId === role.id &&
         isClaimerRoleInfo(entry, claimer) &&
-        Object.keys(entry.values).length > 0,
+        hasRoleInfoSlotValues(entry.values),
     )
     .sort(
       (first, second) =>
@@ -794,7 +801,11 @@ export function mapRoleInfoPlayerIds(
       values: Object.fromEntries(
         Object.entries(entry.values).flatMap(([slotId, value]) => {
           // Every slot of an in-play guess is a player, however many the game had.
-          if (!template.evilInPlay && !playerSlotIds.has(slotId)) return [[slotId, value]];
+          const isPlayerValue =
+            template.evilInPlay ||
+            playerSlotIds.has(slotId) ||
+            slotId === ROLE_INFO_STORYTELLER_KEY;
+          if (!isPlayerValue) return [[slotId, value]];
           const mappedValue = mapPlayerId(value);
           return mappedValue === undefined ? [] : [[slotId, mappedValue]];
         }),
@@ -1121,7 +1132,7 @@ export function inferVirginNominations(
         entry.roleId === role.id &&
         entry.day === nomination.day &&
         entry.phase === 'day' &&
-        Object.keys(entry.values).length > 0,
+        hasRoleInfoSlotValues(entry.values),
     );
     if (isStored) continue;
 

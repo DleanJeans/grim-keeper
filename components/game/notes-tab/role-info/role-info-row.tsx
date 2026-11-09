@@ -2,6 +2,10 @@ import { MapPin, Plus } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import {
+  type KnavesLineStoryteller,
+  KnavesStorytellerBadge,
+} from '@/components/game/notes-tab/role-info/knaves-storyteller-badge';
 import { RoleInfoDiceButton } from '@/components/game/notes-tab/role-info/role-info-dice-button';
 import { RoleInfoToken } from '@/components/game/notes-tab/role-info/role-info-token';
 import { RoleReference } from '@/components/role-reference';
@@ -34,6 +38,8 @@ export type RoleInfoLine = {
   /** Marks the end of the character's info: its players are dead. */
   isDead?: boolean;
   neighbors?: Player[];
+  /** Knaves: the Storyteller who gave this line's info; unset without the Knaves. */
+  storyteller?: KnavesLineStoryteller;
   /** Slot of the statement marked as possibly true; the other statements show as false. */
   trueSlotId?: string;
   onPressSlot: (slot: RoleInfoSlot) => void;
@@ -129,6 +135,10 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 8,
     minWidth: 0,
+  },
+  // Info from the Storyteller thought to lie fades back.
+  lie: {
+    opacity: 0.5,
   },
   line: {
     gap: 4,
@@ -248,6 +258,14 @@ const styles = StyleSheet.create({
   statementPlaceholder: {
     color: colors.textSubtle,
   },
+  storytellerLabel: {
+    flexShrink: 1,
+  },
+  storytellerRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
   tokens: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -274,6 +292,7 @@ function RoleInfoLineTokens({
     neighbors,
     onPressSlot,
     onRandomize,
+    storyteller,
     trueSlotId,
     values,
   } = line;
@@ -284,29 +303,64 @@ function RoleInfoLineTokens({
 
   return (
     <View style={styles.line}>
-      {label ? (
+      {storyteller ? (
+        <View style={styles.storytellerRow}>
+          <KnavesStorytellerBadge storyteller={storyteller} />
+          {label ? (
+            <Text numberOfLines={1} style={[styles.carried, styles.storytellerLabel]}>
+              {label}
+            </Text>
+          ) : null}
+        </View>
+      ) : label ? (
         <Text numberOfLines={1} style={styles.carried}>
           {label}
         </Text>
       ) : null}
-      {template.markTrue ? (
-        <StatementsBox
-          onPressSlot={onPressSlot}
-          slots={template.slots}
-          trueSlotId={trueSlotId}
-          values={values}
-        />
-      ) : template.rectangles ? (
-        <View style={styles.rects}>
-          {template.slots.map((slot) =>
-            slot.kind === 'text' || slot.kind === 'choice' ? (
-              <SlotRect
-                key={slot.id}
-                onPress={() => onPressSlot(slot)}
-                slot={slot}
-                value={values[slot.id]}
+      <View style={[styles.line, storyteller?.verdict === 'lie' && styles.lie]}>
+        {template.markTrue ? (
+          <StatementsBox
+            onPressSlot={onPressSlot}
+            slots={template.slots}
+            trueSlotId={trueSlotId}
+            values={values}
+          />
+        ) : template.rectangles ? (
+          <View style={styles.rects}>
+            {template.slots.map((slot) =>
+              slot.kind === 'text' || slot.kind === 'choice' ? (
+                <SlotRect
+                  key={slot.id}
+                  onPress={() => onPressSlot(slot)}
+                  slot={slot}
+                  value={values[slot.id]}
+                />
+              ) : (
+                <RoleInfoToken
+                  key={slot.id}
+                  onPress={() => onPressSlot(slot)}
+                  player={getSlotPlayer(slot, values[slot.id], playersById)}
+                  role={getSlotRole(slot, values[slot.id], rolesById)}
+                  slot={slot}
+                  value={values[slot.id]}
+                />
+              ),
+            )}
+          </View>
+        ) : template.slots.length > 0 || neighbors?.length ? (
+          <View style={styles.tokens}>
+            {executed ? (
+              <RoleInfoToken player={executed} slot={EXECUTED_SLOT} value={executed.id} />
+            ) : null}
+            {neighbors?.map((neighbor) => (
+              <RoleInfoToken
+                key={`neighbor-${neighbor.id}`}
+                player={neighbor}
+                slot={NEIGHBOR_SLOT}
+                value={neighbor.id}
               />
-            ) : (
+            ))}
+            {template.slots.map((slot) => (
               <RoleInfoToken
                 key={slot.id}
                 onPress={() => onPressSlot(slot)}
@@ -315,35 +369,11 @@ function RoleInfoLineTokens({
                 slot={slot}
                 value={values[slot.id]}
               />
-            ),
-          )}
-        </View>
-      ) : template.slots.length > 0 || neighbors?.length ? (
-        <View style={styles.tokens}>
-          {executed ? (
-            <RoleInfoToken player={executed} slot={EXECUTED_SLOT} value={executed.id} />
-          ) : null}
-          {neighbors?.map((neighbor) => (
-            <RoleInfoToken
-              key={`neighbor-${neighbor.id}`}
-              player={neighbor}
-              slot={NEIGHBOR_SLOT}
-              value={neighbor.id}
-            />
-          ))}
-          {template.slots.map((slot) => (
-            <RoleInfoToken
-              key={slot.id}
-              onPress={() => onPressSlot(slot)}
-              player={getSlotPlayer(slot, values[slot.id], playersById)}
-              role={getSlotRole(slot, values[slot.id], rolesById)}
-              slot={slot}
-              value={values[slot.id]}
-            />
-          ))}
-          {onRandomize ? <RoleInfoDiceButton onPress={onRandomize} /> : null}
-        </View>
-      ) : null}
+            ))}
+            {onRandomize ? <RoleInfoDiceButton onPress={onRandomize} /> : null}
+          </View>
+        ) : null}
+      </View>
       {dayBefore ? (
         <Pressable
           accessibilityHint="Scrolls up to the map and highlights them"

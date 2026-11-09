@@ -264,6 +264,8 @@ function isGame(value: unknown): value is SerializedGame {
     isOptionalStringArray(value.dismissedNoteIds) &&
     isOptionalTheories(value.theories) &&
     isOptionalString(value.activeTheoryId) &&
+    isOptionalString(value.knavesLiarId) &&
+    isOptionalFiniteNumber(value.knavesSwitchDay) &&
     (value.script === undefined || isSerializedStoredScript(value.script))
   );
 }

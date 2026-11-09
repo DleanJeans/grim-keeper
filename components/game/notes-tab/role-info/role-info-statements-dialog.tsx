@@ -15,7 +15,11 @@ import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Role, StartingNight } from '@/types/game';
 import { getPhaseLabel } from '@/utils/game-phase-utils';
-import { ROLE_INFO_TRUE_KEY, type RoleInfoSlot } from '@/utils/role-info-utils';
+import {
+  ROLE_INFO_STORYTELLER_KEY,
+  ROLE_INFO_TRUE_KEY,
+  type RoleInfoSlot,
+} from '@/utils/role-info-utils';
 
 export type RoleInfoStatementsDialogProps = {
   /** Days that can be filled in, in order. */
@@ -76,6 +80,9 @@ export function RoleInfoStatementsDialog({
           }
           const trueSlotId = draft[ROLE_INFO_TRUE_KEY];
           if (trueSlotId && values[trueSlotId]) values[ROLE_INFO_TRUE_KEY] = trueSlotId;
+          // Keep which Storyteller gave the day's info, which this dialog doesn't edit.
+          const storytellerId = draft[ROLE_INFO_STORYTELLER_KEY];
+          if (storytellerId) values[ROLE_INFO_STORYTELLER_KEY] = storytellerId;
           return [day, values];
         }),
       ),

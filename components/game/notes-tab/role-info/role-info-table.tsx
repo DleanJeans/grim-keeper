@@ -3,6 +3,8 @@ import { StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { CharacterInfoCollapsed } from '@/components/game/notes-tab/role-info/character-info-collapsed';
+import { KnavesLiarPicker } from '@/components/game/notes-tab/role-info/knaves-liar-picker';
+import type { KnavesLineStoryteller } from '@/components/game/notes-tab/role-info/knaves-storyteller-badge';
 import { RoleInfoPickerDialog } from '@/components/game/notes-tab/role-info/role-info-picker-dialog';
 import {
   type RoleInfoLine,
@@ -33,6 +35,13 @@ import {
   getPhaseLabel,
 } from '@/utils/game-phase-utils';
 import {
+  getKnavesStorytellers,
+  getKnavesVerdict,
+  getLastStorytellerId,
+  getNextStorytellerId,
+  type KnavesGuess,
+} from '@/utils/knaves-utils';
+import {
   getAliveNeighbors,
   getDailyRoleInfo,
   getExecutedPlayer,
@@ -51,6 +60,7 @@ import {
   isRoleInfoOver,
   isRoleInfoShownInPhase,
   isRoleInfoTriggered,
+  ROLE_INFO_STORYTELLER_KEY,
   ROLE_INFO_TRUE_KEY,
   type RoleInfoClaimer,
   type RoleInfoSlot,
@@ -88,6 +98,16 @@ type ActiveSlot = {
   slot: RoleInfoSlot;
 };
 
+/** Where a Character info line's info is stored. */
+type LinePosition = Omit<ActiveSlot, 'slot'>;
+
+/** Knaves: the two Storytellers, the guess at who lies, and tapping a line's Storyteller badge. */
+type KnavesLines = {
+  guess: KnavesGuess;
+  onCycle: (position: LinePosition, currentId: string | undefined) => void;
+  storytellers: Player[];
+};
+
 export type RoleInfoTableProps = {
   /** Show only this player's claimed or confirmed characters. */
   player?: Player;
@@ -109,6 +129,7 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
   } = useGameRouteContext();
   const setRoleInfoValue = useGameStore((state) => state.setRoleInfoValue);
   const setDailyRoleInfoValues = useGameStore((state) => state.setDailyRoleInfoValues);
+  const setKnavesGuess = useGameStore((state) => state.setKnavesGuess);
   const savedNotes = useGameStore((state) => state.savedNotes);
   const [activeSlot, setActiveSlot] = useState<ActiveSlot | null>(null);
 
@@ -161,6 +182,10 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
     [game.roleInfos, inferredRoleInfos],
   );
   const inferredEntries = useMemo(() => new Set(inferredRoleInfos), [inferredRoleInfos]);
+  const knavesStorytellers = useMemo(
+    () => getKnavesStorytellers({ lorics: game.lorics, players }),
+    [game.lorics, players],
+  );
   const sections = useMemo(
     () =>
       TEAM_SECTIONS.map(({ label, team }) => ({
@@ -361,8 +386,15 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
     if (!activeSlot) return;
 
     const { carryForward, claimer, day, phase, role, slot } = activeSlot;
+    // Knaves: new info starts with the Storyteller the claimer got this character's info from last.
+    const lastStorytellerId =
+      knavesStorytellers.length > 0 &&
+      value !== undefined &&
+      getRoleInfoValues(roleInfos, activeSlot)[ROLE_INFO_STORYTELLER_KEY] === undefined
+        ? getLastStorytellerId(roleInfos, role.id, day, phase, claimer)
+        : undefined;
     setActiveSlot(null);
-    runDayEdit(() =>
+    runDayEdit(() => {
       setRoleInfoValue(
         game.id,
         role.id,
@@ -373,9 +405,48 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
         inferredRoleInfos,
         carryForward,
         claimer,
+      );
+      if (lastStorytellerId) {
+        setRoleInfoValue(
+          game.id,
+          role.id,
+          day,
+          phase,
+          ROLE_INFO_STORYTELLER_KEY,
+          lastStorytellerId,
+          inferredRoleInfos,
+          carryForward,
+          claimer,
+        );
+      }
+    });
+  }
+
+  function handleCycleStoryteller(position: LinePosition, currentId: string | undefined) {
+    const { carryForward, claimer, day, phase, role } = position;
+    runDayEdit(() =>
+      setRoleInfoValue(
+        game.id,
+        role.id,
+        day,
+        phase,
+        ROLE_INFO_STORYTELLER_KEY,
+        getNextStorytellerId(knavesStorytellers, currentId),
+        inferredRoleInfos,
+        carryForward,
+        claimer,
       ),
     );
   }
+
+  const knaves: KnavesLines | undefined =
+    knavesStorytellers.length > 0
+      ? {
+          guess: { knavesLiarId: game.knavesLiarId, knavesSwitchDay: game.knavesSwitchDay },
+          onCycle: handleCycleStoryteller,
+          storytellers: knavesStorytellers,
+        }
+      : undefined;
 
   function handleSaveDaily(valuesByDay: Map<number, Record<string, string>>) {
     if (!activeDailyRole) return;
@@ -391,6 +462,15 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
         <Text style={styles.title}>Character info</Text>
         <Text style={styles.phase}>{getPhaseLabel({ activeDay, activePhase }, startingNight)}</Text>
       </View>
+      {knaves ? (
+        <KnavesLiarPicker
+          guess={knaves.guess}
+          lastDay={lastDay}
+          onChange={(guess) => setKnavesGuess(game.id, guess)}
+          startingNight={startingNight}
+          storytellers={knavesStorytellers}
+        />
+      ) : null}
       {sections.map((section) => (
         <RoleInfoSection
           activeDay={activeDay}
@@ -403,6 +483,7 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
           hideFinishedClaimers={!player && !isSushiBuffet}
           inferredEntries={inferredEntries}
           key={section.label}
+          knaves={knaves}
           label={section.label}
           onHighlightPlayers={handleHighlightPlayers}
           onPressSlot={setActiveSlot}
@@ -582,6 +663,7 @@ function RoleInfoSection({
   getRoleNotes,
   hideFinishedClaimers,
   inferredEntries,
+  knaves,
   label,
   lastDay,
   lastNightDay,
@@ -647,6 +729,7 @@ function RoleInfoSection({
             getRandomize={getRandomize}
             inferredEntries={inferredEntries}
             key={`${role.id}-${claimer?.id ?? ''}`}
+            knaves={knaves}
             lastDay={lastDay}
             lastNightDay={lastNightDay}
             onHighlightPlayers={onHighlightPlayers}
@@ -677,6 +760,7 @@ type RoleInfoClaimerRowProps = {
   /** The dice action for a line, when the dice drawer is open and the line can be faked. */
   getRandomize: (request: RandomizeRequest) => (() => void) | undefined;
   inferredEntries: Set<RoleInfoEntry>;
+  knaves?: KnavesLines;
   /** Give daily characters a line per day through this day. */
   lastDay: number;
   /**
@@ -706,6 +790,7 @@ function RoleInfoClaimerRow({
   footer,
   getRandomize,
   inferredEntries,
+  knaves,
   lastDay,
   lastNightDay,
   onHighlightPlayers,
@@ -750,7 +835,7 @@ function RoleInfoClaimerRow({
       : undefined;
 
   const lines: RoleInfoLine[] = days
-    ? getDayLines(role, days, roleInfos, startingNight, claimerInfo, onPressClaimerSlot)
+    ? getDayLines(role, days, roleInfos, startingNight, claimerInfo, onPressClaimerSlot, knaves)
     : nights
       ? nights.map((night) => {
           const position = { carryForward: false, day: night, phase: 'night' as const, role };
@@ -778,6 +863,12 @@ function RoleInfoClaimerRow({
               executed: getExecuted(night),
               owners,
             }),
+            storyteller: getLineStoryteller(
+              knaves,
+              { ...position, claimer: claimerInfo },
+              entry?.values ?? {},
+              night,
+            ),
             values: entry?.values ?? {},
           };
         })
@@ -803,6 +894,7 @@ function RoleInfoClaimerRow({
               phase: activePhase,
               role,
             }),
+            knaves,
           ),
         ];
 
@@ -844,6 +936,7 @@ function getDayLines(
   startingNight: StartingNight,
   claimer: RoleInfoClaimer | undefined,
   onPressSlot: (slot: ActiveSlot) => void,
+  knaves: KnavesLines | undefined,
 ): RoleInfoLine[] {
   const { markTrue } = getRoleInfoTemplate(role);
 
@@ -852,7 +945,9 @@ function getDayLines(
     const values = entry?.values ?? {};
     // Edit the entry shown, even one saved during that day's night before daily rows.
     const phase = entry?.phase ?? 'day';
+    const position = { carryForward: false, claimer, day, phase, role };
     return {
+      storyteller: getLineStoryteller(knaves, position, values, day),
       trueSlotId: markTrue ? values[ROLE_INFO_TRUE_KEY] : undefined,
       key: `day-${day}`,
       label: getPhaseLabel({ activeDay: day, activePhase: 'day' }, startingNight),
@@ -876,6 +971,7 @@ function getPhaseLine(
   claimer: RoleInfoClaimer | undefined,
   onPressSlot: (slot: ActiveSlot) => void,
   onRandomize: (() => void) | undefined,
+  knaves: KnavesLines | undefined,
 ): RoleInfoLine {
   const entry = getRoleInfoForPhaseOrPrevious(roleInfos, role.id, day, phase, claimer);
   const isCarried = entry && (entry.day !== day || entry.phase !== phase);
@@ -894,6 +990,32 @@ function getPhaseLine(
     neighbors,
     onPressSlot: (slot) => onPressSlot({ carryForward: true, day, phase, role, slot }),
     onRandomize,
+    storyteller: getLineStoryteller(
+      knaves,
+      { carryForward: true, claimer, day, phase, role },
+      entry?.values ?? {},
+      entry?.day ?? day,
+    ),
     values: entry?.values ?? {},
+  };
+}
+
+/** Knaves: the line's Storyteller badge, judged against the guess at who lies on that day. */
+function getLineStoryteller(
+  knaves: KnavesLines | undefined,
+  position: LinePosition,
+  values: Record<string, string>,
+  infoDay: number,
+): KnavesLineStoryteller | undefined {
+  if (!knaves) return undefined;
+
+  const storytellerId = values[ROLE_INFO_STORYTELLER_KEY];
+  const index = knaves.storytellers.findIndex((storyteller) => storyteller.id === storytellerId);
+  const pickedId = index < 0 ? undefined : storytellerId;
+  return {
+    index: index < 0 ? undefined : index,
+    name: knaves.storytellers[index]?.name,
+    onPress: () => knaves.onCycle(position, pickedId),
+    verdict: getKnavesVerdict(knaves.guess, knaves.storytellers, pickedId, infoDay),
   };
 }

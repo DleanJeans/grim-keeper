@@ -72,6 +72,8 @@ type PlayerTokenProps = {
   rolesConfirmed?: boolean;
   rearrangeMode?: boolean;
   showRoleDetails?: boolean;
+  /** Knaves: this Storyteller's position, which picks the colour of a ring around the token. */
+  knavesIndex?: number;
   /** Small dot at the top right: the app user's trust in this player. */
   suspicion?: SuspicionLevel;
   tokenSize: number;
@@ -91,6 +93,7 @@ export function PlayerToken({
   hasLessons = false,
   isInitiator = false,
   isSelected = false,
+  knavesIndex,
   label,
   mapHeight,
   mapScale,
@@ -422,6 +425,21 @@ export function PlayerToken({
             ]}
           />
         ) : null}
+        {knavesIndex !== undefined ? (
+          <View
+            style={[
+              styles.knavesRing,
+              knavesIndex % 2 === 1 ? styles.knavesRingSecond : styles.knavesRingFirst,
+              {
+                borderRadius: tokenSize / 2 + 4,
+                height: tokenSize + 8,
+                left: -4,
+                top: -4,
+                width: tokenSize + 8,
+              },
+            ]}
+          />
+        ) : null}
         {label ? (
           <View
             style={[
@@ -509,6 +527,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     paddingVertical: 1,
   },
+  knavesRing: {
+    borderWidth: 3,
+    pointerEvents: 'none',
+    position: 'absolute',
+  },
+  knavesRingFirst: { borderColor: colors.knavesFirst },
+  knavesRingSecond: { borderColor: colors.knavesSecond },
   theoryRing: {
     borderColor: colors.theoryEvil,
     borderWidth: 3,
