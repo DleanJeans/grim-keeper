@@ -18,7 +18,10 @@ type RateBarProps = {
 
 export function RateBar({ color, detail, label, rate, stacked, tick = true }: RateBarProps) {
   const value = (
-    <Text numberOfLines={1} style={[styles.value, stacked && styles.valueStacked]}>
+    <Text
+      numberOfLines={1}
+      style={[styles.value, stacked ? styles.valueStacked : styles.valueInline]}
+    >
       {rate === undefined ? '—' : `${rate}%`}
       {rate === undefined || !detail ? null : <Text style={styles.detail}>{` ${detail}`}</Text>}
     </Text>
@@ -96,6 +99,7 @@ const styles = StyleSheet.create({
   },
   stackedHeader: {
     alignItems: 'baseline',
+    gap: 4,
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
@@ -125,10 +129,11 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
     fontWeight: '700',
     textAlign: 'right',
+  },
+  valueInline: {
     width: 84,
   },
   valueStacked: {
     fontSize: 13,
-    width: undefined,
   },
 });

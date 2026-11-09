@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { CharacterTypeBars } from '@/components/character-type-bars';
 import { RateBar } from '@/components/rate-bar';
 import { StatsCard } from '@/components/stats-card';
 import { Text } from '@/components/text';
@@ -15,6 +16,7 @@ type GameStatsCardsProps = {
 
 export function GameStatsCards({ games, playerId }: GameStatsCardsProps) {
   const [showAllGames, setShowAllGames] = useState(false);
+  const stats = getGameStats(games, playerId);
   const {
     completedGames,
     evilCompletedGames,
@@ -32,7 +34,7 @@ export function GameStatsCards({ games, playerId }: GameStatsCardsProps) {
     totalGames,
     winRate,
     wins,
-  } = getGameStats(games, playerId);
+  } = stats;
 
   return (
     <View style={styles.stats}>
@@ -58,6 +60,7 @@ export function GameStatsCards({ games, playerId }: GameStatsCardsProps) {
             rate={evilWinRate}
             stacked
           />
+          <CharacterTypeBars kind="winRate" stats={stats} />
         </View>
       </StatsCard>
       <StatsCard
@@ -92,6 +95,7 @@ export function GameStatsCards({ games, playerId }: GameStatsCardsProps) {
             stacked
             tick={false}
           />
+          <CharacterTypeBars kind={showAllGames ? 'allGames' : 'completedGames'} stats={stats} />
         </View>
       </StatsCard>
     </View>

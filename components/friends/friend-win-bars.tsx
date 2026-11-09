@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
+import { CharacterTypeBars } from '@/components/character-type-bars';
 import { RateBar } from '@/components/rate-bar';
 import { colors } from '@/theme/colors';
 import type { GameStats } from '@/utils/game-utils';
@@ -29,6 +30,7 @@ export function FriendWinBars({ stats }: FriendWinBarsProps) {
         label="Evil"
         rate={stats.evilWinRate}
       />
+      <CharacterTypeBars grid kind="winRate" stats={stats} />
     </View>
   );
 }

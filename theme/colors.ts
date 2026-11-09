@@ -75,6 +75,10 @@ const baseColors = {
   winBarOverall: '#f4f1ea',
   winBarTrack: '#2a2f37',
   winBarTick: '#a8a29a',
+  winBarTownsfolk: '#4f8fe6',
+  winBarOutsider: '#7cc4f2',
+  winBarMinion: '#f08a4b',
+  winBarDemon: '#c73a3a',
   // Good and evil team colours in Past evil teams
   teamGood: '#3b82f6',
   teamEvil: '#dc2626',

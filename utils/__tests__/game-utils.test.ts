@@ -150,6 +150,12 @@ describe('getLastDayWithData', () => {
 describe('getGameStats', () => {
   it('returns an empty win rate when no games have a result', () => {
     expect(getGameStats([])).toEqual({
+      characterTypes: {
+        demon: EMPTY_TYPE_STATS,
+        minion: EMPTY_TYPE_STATS,
+        outsider: EMPTY_TYPE_STATS,
+        townsfolk: EMPTY_TYPE_STATS,
+      },
       completedGames: 0,
       evilCompletedGames: 0,
       evilGames: 0,
@@ -177,6 +183,12 @@ describe('getGameStats', () => {
         makeGame({ id: 'active' }),
       ]),
     ).toEqual({
+      characterTypes: {
+        demon: EMPTY_TYPE_STATS,
+        minion: EMPTY_TYPE_STATS,
+        outsider: EMPTY_TYPE_STATS,
+        townsfolk: EMPTY_TYPE_STATS,
+      },
       completedGames: 2,
       evilCompletedGames: 0,
       evilGames: 0,
@@ -216,6 +228,65 @@ describe('getGameStats', () => {
       goodWins: 1,
       goodWinRate: 100,
     });
+  });
+
+  it('calculates win rates for each character type', () => {
+    const games = [
+      makeAlignedGame('townsfolk', 'won'),
+      makeAlignedGame('townsfolk', 'lost'),
+      makeAlignedGame('outsider', 'won'),
+      makeAlignedGame('minion', 'lost'),
+      makeAlignedGame('demon'),
+      makeAlignedGame('traveller', 'won'),
+    ];
+
+    expect(getGameStats(games).characterTypes).toEqual({
+      demon: {
+        completedGames: 0,
+        completedSideRate: 0,
+        games: 1,
+        sideRate: 20,
+        winRate: undefined,
+        wins: 0,
+      },
+      minion: {
+        completedGames: 1,
+        completedSideRate: 25,
+        games: 1,
+        sideRate: 20,
+        winRate: 0,
+        wins: 0,
+      },
+      outsider: {
+        completedGames: 1,
+        completedSideRate: 25,
+        games: 1,
+        sideRate: 20,
+        winRate: 100,
+        wins: 1,
+      },
+      townsfolk: {
+        completedGames: 2,
+        completedSideRate: 50,
+        games: 2,
+        sideRate: 40,
+        winRate: 50,
+        wins: 1,
+      },
+    });
+  });
+
+  it('calculates friend character type results from the friend side', () => {
+    const stats = getGameStats(
+      [
+        makeAlignedGame('demon', 'lost', 'friend-1'),
+        makeAlignedGame('townsfolk', 'won', 'friend-1'),
+      ],
+      'friend-1',
+    );
+
+    expect(stats.characterTypes.demon).toMatchObject({ completedGames: 1, winRate: 100, wins: 1 });
+    expect(stats.characterTypes.townsfolk).toMatchObject({ completedGames: 1, winRate: 100 });
   });
 
   it('calculates friend results from the friend alignment', () => {
@@ -329,8 +400,17 @@ describe('getCharacterStats', () => {
   });
 });
 
+const EMPTY_TYPE_STATS = {
+  completedGames: 0,
+  completedSideRate: undefined,
+  games: 0,
+  sideRate: undefined,
+  winRate: undefined,
+  wins: 0,
+};
+
 function makeAlignedGame(
-  team: 'demon' | 'townsfolk' | 'traveller',
+  team: 'demon' | 'minion' | 'outsider' | 'townsfolk' | 'traveller',
   result?: 'lost' | 'won',
   playerId = APP_USER_ID,
 ): Game {

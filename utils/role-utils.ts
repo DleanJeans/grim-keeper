@@ -285,6 +285,16 @@ export function getEvilGoodRole(role: Role): Role {
   };
 }
 
+export const CHARACTER_TYPES = ['townsfolk', 'outsider', 'minion', 'demon'] as const;
+
+export type CharacterType = (typeof CHARACTER_TYPES)[number];
+
+/** The role's character type; undefined for Travellers, Fabled and unknown roles. */
+export function getRoleCharacterType(role: Role): CharacterType | undefined {
+  const team = getRoleTeam(role);
+  return CHARACTER_TYPES.find((type) => type === team);
+}
+
 function isEvilGoodRole(role: Role) {
   return role.id.endsWith('_evil') && alignedGoodTeams.has(getRoleTeam(role));
 }

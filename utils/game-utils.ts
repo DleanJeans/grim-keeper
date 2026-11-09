@@ -1,9 +1,28 @@
 import type { Game, GameResult, Player, Role } from '@/types/game';
 import { getEventPhaseIndex } from '@/utils/game-phase-utils';
 import { APP_USER_ID } from '@/utils/object-id';
-import { getEffectiveRoleForPlayer, getRoleAlignment } from '@/utils/role-utils';
+import {
+  CHARACTER_TYPES,
+  type CharacterType,
+  getEffectiveRoleForPlayer,
+  getRoleAlignment,
+  getRoleCharacterType,
+} from '@/utils/role-utils';
+
+/** Games and wins as one character type, such as Townsfolk. */
+export type CharacterTypeStats = {
+  completedGames: number;
+  /** Share of games with a result that were played as this type. */
+  completedSideRate: number | undefined;
+  games: number;
+  /** Share of all games that were played as this type. */
+  sideRate: number | undefined;
+  winRate: number | undefined;
+  wins: number;
+};
 
 export type GameStats = {
+  characterTypes: Record<CharacterType, CharacterTypeStats>;
   completedGames: number;
   evilCompletedGames: number;
   evilGames: number;
@@ -102,6 +121,9 @@ export function getGameStats(games: Game[], playerId = APP_USER_ID): GameStats {
   let goodWins = 0;
   let goodCompletedGames = 0;
   let wins = 0;
+  const typeCounts = Object.fromEntries(
+    CHARACTER_TYPES.map((type) => [type, { completedGames: 0, games: 0, wins: 0 }]),
+  ) as Record<CharacterType, { completedGames: number; games: number; wins: number }>;
 
   for (const game of playerGames) {
     const result = getGameResultForPlayer(game, playerId);
@@ -111,6 +133,18 @@ export function getGameStats(games: Game[], playerId = APP_USER_ID): GameStats {
       completedGames += 1;
       if (result === 'won') {
         wins += 1;
+      }
+    }
+
+    const type = getGameCharacterType(game, playerId);
+    if (type) {
+      const typeCount = typeCounts[type];
+      typeCount.games += 1;
+      if (hasResult) {
+        typeCount.completedGames += 1;
+        if (result === 'won') {
+          typeCount.wins += 1;
+        }
       }
     }
 
@@ -135,8 +169,28 @@ export function getGameStats(games: Game[], playerId = APP_USER_ID): GameStats {
   }
 
   const completedAlignmentGames = goodCompletedGames + evilCompletedGames;
+  const typeCountValues = Object.values(typeCounts);
+  const typedGames = typeCountValues.reduce((sum, count) => sum + count.games, 0);
+  const completedTypedGames = typeCountValues.reduce((sum, count) => sum + count.completedGames, 0);
+  const characterTypes = Object.fromEntries(
+    CHARACTER_TYPES.map((type) => {
+      const { completedGames: typeCompleted, games: typeGames, wins: typeWins } = typeCounts[type];
+      return [
+        type,
+        {
+          completedGames: typeCompleted,
+          completedSideRate: getPercentage(typeCompleted, completedTypedGames),
+          games: typeGames,
+          sideRate: getPercentage(typeGames, typedGames),
+          winRate: getPercentage(typeWins, typeCompleted),
+          wins: typeWins,
+        },
+      ];
+    }),
+  ) as Record<CharacterType, CharacterTypeStats>;
 
   return {
+    characterTypes,
     completedGames,
     evilCompletedGames,
     evilGames,
@@ -246,13 +300,21 @@ export function getCharacterStats(games: Game[], playerId = APP_USER_ID): Charac
     );
 }
 
-function getGameAlignment(game: Game, playerId: string) {
+function getGamePlayerRole(game: Game, playerId: string) {
   const player = game.players.find((candidate) => candidate.id === playerId);
-  const role =
-    player && game.script
-      ? getEffectiveRoleForPlayer(player, game.script.roles, game.activeDay).role
-      : null;
+  return player && game.script
+    ? getEffectiveRoleForPlayer(player, game.script.roles, game.activeDay).role
+    : null;
+}
 
+/** The character type a player ended the game as; undefined for Travellers or no role. */
+function getGameCharacterType(game: Game, playerId: string) {
+  const role = getGamePlayerRole(game, playerId);
+  return role ? getRoleCharacterType(role) : undefined;
+}
+
+function getGameAlignment(game: Game, playerId: string) {
+  const role = getGamePlayerRole(game, playerId);
   return role ? getRoleAlignment(role) : undefined;
 }
 
