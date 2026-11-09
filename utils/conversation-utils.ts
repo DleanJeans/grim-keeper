@@ -225,3 +225,43 @@ export function getPlayersNotTalkedWith(
     (player) => player.id !== playerId && !player.isStoryteller && !talkedWith.has(player.id),
   );
 }
+
+export type NeverTalkedRow = { player: Player; notTalkedWith: Player[] };
+
+/**
+ * For each player who has talked with someone by `day`, the players they have never talked with on
+ * any day up to it, in seat order. Players with no talks at all come back in `silent`, since every
+ * other player would be on their row. Storytellers are left out.
+ */
+export function getNeverTalkedRows(
+  conversations: Conversation[],
+  players: Player[],
+  day: number,
+): { rows: NeverTalkedRow[]; silent: Player[] } {
+  const pairs = new Set<string>();
+  for (const conversation of conversations) {
+    if (conversation.kind !== 'nomination' && conversation.day <= day) {
+      for (const pair of getConversationPairs(conversation)) {
+        pairs.add(pair);
+      }
+    }
+  }
+
+  const seated = players
+    .filter((player) => !player.isStoryteller)
+    .sort((first, second) => first.seat - second.seat);
+  const rows: NeverTalkedRow[] = [];
+  const silent: Player[] = [];
+
+  for (const player of seated) {
+    const others = seated.filter((other) => other.id !== player.id);
+    const notTalkedWith = others.filter((other) => !pairs.has(getPairKey(player.id, other.id)));
+    if (notTalkedWith.length === others.length) {
+      silent.push(player);
+    } else if (notTalkedWith.length > 0) {
+      rows.push({ notTalkedWith, player });
+    }
+  }
+
+  return { rows, silent };
+}

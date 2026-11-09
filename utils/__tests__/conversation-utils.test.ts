@@ -3,6 +3,7 @@ import {
   buildConversationGroupRepeats,
   buildConversationRows,
   getConversationGroupKey,
+  getNeverTalkedRows,
   getPlayersNotTalkedWith,
   hasDuplicatePlayerName,
   normalizePlayerName,
@@ -129,5 +130,38 @@ describe('getPlayersNotTalkedWith', () => {
     expect(
       getPlayersNotTalkedWith(conversations, players, 'alice', 1).map((player) => player.id),
     ).toEqual(['cora']);
+  });
+});
+
+describe('getNeverTalkedRows', () => {
+  it('lists who each player never talked with up to the day, and players with no talks', () => {
+    const roster: Player[] = [
+      ...players,
+      { id: 'dan', name: 'Dan', seat: 3 },
+      { id: 'st', isStoryteller: true, name: 'Ron', seat: 4 },
+    ];
+    const conversations: Conversation[] = [
+      { createdAt: 'x', day: 1, id: 'c1', initiatorId: 'alice', participantIds: ['alice', 'ben'] },
+      { createdAt: 'x', day: 2, id: 'c2', initiatorId: 'ben', participantIds: ['ben', 'cora'] },
+      { createdAt: 'x', day: 3, id: 'c3', initiatorId: 'alice', participantIds: ['alice', 'cora'] },
+      { createdAt: 'x', day: 1, id: 'c4', initiatorId: 'cora', participantIds: ['cora', 'st'] },
+      {
+        createdAt: 'x',
+        day: 1,
+        id: 'n1',
+        initiatorId: 'alice',
+        kind: 'nomination',
+        participantIds: ['alice', 'cora'],
+      },
+    ];
+    const { rows, silent } = getNeverTalkedRows(conversations, roster, 2);
+    expect(
+      rows.map((row) => [row.player.id, row.notTalkedWith.map((player) => player.id)]),
+    ).toEqual([
+      ['alice', ['cora', 'dan']],
+      ['ben', ['dan']],
+      ['cora', ['alice', 'dan']],
+    ]);
+    expect(silent.map((player) => player.id)).toEqual(['dan']);
   });
 });

@@ -15,6 +15,9 @@ const FIT_SLIDE_ANGLES = [...END_SLIDE_ANGLES, 1, -1, 1.2, -1.2, 1.4, -1.4, 1.6,
 // Running under a token is worse than crossing any number of other lines.
 const BLOCKER_WEIGHT = 10;
 const BEND_STEPS = [0, 0.1, 0.18, 0.26, 0.35, 0.45, 0.6, 0.8, 1];
+// Control point slides along the line, as a fraction of the distance, so a curve can bulge near
+// one end to get around a token close to that end. Only tried when a centered bend hits something.
+const LOPSIDED_SHIFTS = [0, -0.2, 0.2, -0.35, 0.35];
 // Control point offsets for touching tokens, in token radii, so the line loops out past the gap.
 const TOUCHING_BEND_RADII = [1.8, 2.3, 2.8];
 // Straight pieces each curve is split into when checking whether two curves cross.
@@ -166,53 +169,56 @@ export function getConnectionCurve(
     startEnd: PlacedLineEnd;
   } | null = null;
 
-  for (const bend of offsets) {
-    for (const side of bend === 0 ? [1] : sides) {
-      const offset = bend * side;
-      const control = { x: midpoint.x + normal.x * offset, y: midpoint.y + normal.y * offset };
-      // Slide each end around its token when another line already ends there, and judge the curve
-      // by where it is really drawn.
-      const startEnd = getClearLineEnd(
-        from,
-        control,
-        startEdgeRadius,
-        headLength,
-        placedLineEnds,
-        endSpacing,
-      );
-      const endEnd = getClearLineEnd(
-        to,
-        control,
-        endEdgeRadius,
-        headLength,
-        placedLineEnds,
-        endSpacing,
-        endFits,
-      );
-      const start = startEnd.tip;
-      const end = endEnd.tip;
-      // Never bend out past the map's edge; a straight line through other tokens reads better.
-      if (leavesMap(start, control, end, mapWidth, mapHeight, strokeWidth / 2)) {
-        continue;
-      }
-      const arrowCorners = [
-        ...getArrowCorners(end, getQuadraticPoint(start, control, end, 0.9), arrowLength),
-        ...(twoWay
-          ? getArrowCorners(start, getQuadraticPoint(start, control, end, 0.1), arrowLength)
-          : []),
-      ];
-      const hits =
-        countBlockersHit(start, control, end, arrowCorners, blockers, blockerRadius, edgeRadius) *
-          BLOCKER_WEIGHT +
-        countLineEndsCrossed(start, control, end, placedLineEnds, endSpacing / 2, headLength) +
-        countPathsCrossed(start, control, end, placedPaths, headLength);
+  const along = { x: (to.x - from.x) / distance, y: (to.y - from.y) / distance };
+  const candidates = LOPSIDED_SHIFTS.flatMap((shift) =>
+    offsets.flatMap((bend) =>
+      (bend === 0 ? (shift === 0 ? [1] : []) : sides).map((side) => ({
+        x: midpoint.x + along.x * shift * distance + normal.x * bend * side,
+        y: midpoint.y + along.y * shift * distance + normal.y * bend * side,
+      })),
+    ),
+  );
 
-      if (!best || hits < best.hits) {
-        best = { control, endEnd, hits, startEnd };
-      }
-      if (hits === 0) {
-        break;
-      }
+  for (const control of candidates) {
+    // Slide each end around its token when another line already ends there, and judge the curve
+    // by where it is really drawn.
+    const startEnd = getClearLineEnd(
+      from,
+      control,
+      startEdgeRadius,
+      headLength,
+      placedLineEnds,
+      endSpacing,
+    );
+    const endEnd = getClearLineEnd(
+      to,
+      control,
+      endEdgeRadius,
+      headLength,
+      placedLineEnds,
+      endSpacing,
+      endFits,
+    );
+    const start = startEnd.tip;
+    const end = endEnd.tip;
+    // Never bend out past the map's edge; a straight line through other tokens reads better.
+    if (leavesMap(start, control, end, mapWidth, mapHeight, strokeWidth / 2)) {
+      continue;
+    }
+    const arrowCorners = [
+      ...getArrowCorners(end, getQuadraticPoint(start, control, end, 0.9), arrowLength),
+      ...(twoWay
+        ? getArrowCorners(start, getQuadraticPoint(start, control, end, 0.1), arrowLength)
+        : []),
+    ];
+    const hits =
+      countBlockersHit(start, control, end, arrowCorners, blockers, blockerRadius, edgeRadius) *
+        BLOCKER_WEIGHT +
+      countLineEndsCrossed(start, control, end, placedLineEnds, endSpacing / 2, headLength) +
+      countPathsCrossed(start, control, end, placedPaths, headLength);
+
+    if (!best || hits < best.hits) {
+      best = { control, endEnd, hits, startEnd };
     }
     if (best?.hits === 0) {
       break;

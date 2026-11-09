@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { ConversationTable } from '@/components/game/interactions-tab/conversation-table';
 import { InteractionList } from '@/components/game/interactions-tab/interaction-list';
+import { NeverTalked } from '@/components/game/interactions-tab/never-talked';
 import { NotTalkedWith } from '@/components/game/interactions-tab/not-talked-with';
 import { tabBarButtonStyle, tabBarContainer, tabBarLabelStyle } from '@/components/game/styles';
 import { Text } from '@/components/text';
@@ -63,6 +64,7 @@ export function InteractionsTab() {
       </View>
 
       {activePhase === 'day' && trackingMode !== 'interaction' ? <NotTalkedWith /> : null}
+      {subtab === 'list' && trackingMode !== 'interaction' ? <NeverTalked /> : null}
 
       {subtab === 'table' ? (
         <ConversationTable
