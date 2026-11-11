@@ -418,11 +418,18 @@ const styles = StyleSheet.create({
   },
 });
 
-function chunkEntries(entries: ScriptRoleEntry[], chunkSize: number) {
+// Fills the columns top to bottom: column 1 gets the first half (rounded up), column 2 the rest.
+function chunkEntries(entries: ScriptRoleEntry[], columnCount: number) {
+  const rowCount = Math.ceil(entries.length / columnCount);
   const rows: ScriptRoleRow[] = [];
 
-  for (let index = 0; index < entries.length; index += chunkSize) {
-    rows.push(entries.slice(index, index + chunkSize));
+  for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
+    const row: ScriptRoleRow = [];
+    for (let column = 0; column < columnCount; column += 1) {
+      const entry = entries[column * rowCount + rowIndex];
+      if (entry) row.push(entry);
+    }
+    rows.push(row);
   }
 
   return rows;
