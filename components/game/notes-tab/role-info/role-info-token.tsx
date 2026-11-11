@@ -1,6 +1,7 @@
 import { Plus } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { FitTokenText } from '@/components/game/notes-tab/role-info/fit-token-text';
 import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
@@ -8,6 +9,8 @@ import type { Player, Role } from '@/types/game';
 import type { RoleInfoSlot } from '@/utils/role-info-utils';
 
 const TOKEN_SIZE = 46;
+/** Room for a name inside the token: its width less the padding and border. */
+const TOKEN_TEXT_WIDTH = TOKEN_SIZE - 9;
 
 export type RoleInfoTokenProps = {
   /** Omit for a read-only token, such as an auto-filled neighbor. */
@@ -95,13 +98,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '900',
   },
-  playerText: {
-    color: colors.text,
-    fontSize: 10,
-    fontWeight: '800',
-    lineHeight: 12,
-    textAlign: 'center',
-  },
   shortText: {
     color: colors.text,
     fontSize: 12,
@@ -125,12 +121,9 @@ function TokenContent({ player, role, slot, value }: Omit<RoleInfoTokenProps, 'o
 
   const label = slot.kind === 'player' ? (player?.name ?? '?') : (role?.name ?? value);
 
-  return (
-    <Text
-      numberOfLines={2}
-      style={slot.kind === 'choice' && value.length <= 4 ? styles.shortText : styles.playerText}
-    >
-      {label}
-    </Text>
-  );
+  if (slot.kind === 'choice' && value.length <= 4) {
+    return <Text style={styles.shortText}>{label}</Text>;
+  }
+
+  return <FitTokenText maxWidth={TOKEN_TEXT_WIDTH}>{label}</FitTokenText>;
 }
