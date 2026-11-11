@@ -289,6 +289,11 @@ export default function GameRoute() {
   useEffect(() => {
     if (!game || openedGameId.current === game.id) return;
     openedGameId.current = game.id;
+    // A finished game opens with roles shown, as confirmed roles plus claims.
+    if (game.result) {
+      setShowRoles(true);
+      setActiveRoleDisplayModes(['confirm', 'claim']);
+    }
     const requestedDay = Number.parseInt(dayParam ?? '', 10);
     if (Number.isFinite(requestedDay) && requestedDay > 0) {
       if (game.activeDay !== requestedDay || getGameActivePhase(game) !== 'day') {
