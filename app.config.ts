@@ -57,6 +57,8 @@ const config: ExpoConfig = {
     },
   },
   plugins: [
+    // Enough Gradle memory for release builds, and no daemon left hanging when one fails.
+    './plugins/with-gradle-memory',
     'expo-router',
     'expo-sqlite',
     [
