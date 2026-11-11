@@ -69,6 +69,8 @@ export function RoleInfoRow({
   rolesById,
   template,
 }: RoleInfoRowProps) {
+  const isCompact = isSingleTokenLines(lines, template);
+
   return (
     <View style={styles.item}>
       <View style={styles.row}>
@@ -86,9 +88,10 @@ export function RoleInfoRow({
             </Text>
           ) : null}
         </RoleReference>
-        <View style={styles.infoCell}>
+        <View style={[styles.infoCell, isCompact && styles.infoCellCompact]}>
           {lines.map((line) => (
             <RoleInfoLineTokens
+              isCompact={isCompact}
               key={line.key}
               line={line}
               playersById={playersById}
@@ -131,10 +134,21 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
   },
+  deadCompact: {
+    alignSelf: 'center',
+  },
   infoCell: {
     flex: 1,
     gap: 8,
     minWidth: 0,
+  },
+  // Several nights of one token each sit side by side, wrapping onto more lines.
+  infoCellCompact: {
+    alignItems: 'flex-start',
+    columnGap: 4,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    rowGap: 8,
   },
   // Info from the Storyteller thought to lie fades back.
   lie: {
@@ -142,6 +156,9 @@ const styles = StyleSheet.create({
   },
   line: {
     gap: 4,
+  },
+  lineCompact: {
+    alignItems: 'center',
   },
   neighbors: {
     color: colors.roleInfoNeighbor,
@@ -274,11 +291,14 @@ const styles = StyleSheet.create({
 });
 
 function RoleInfoLineTokens({
+  isCompact,
   line,
   playersById,
   rolesById,
   template,
 }: {
+  /** One of several single-token lines laid out side by side. */
+  isCompact: boolean;
   line: RoleInfoLine;
   playersById: Map<string, Player>;
   rolesById: Map<string, Role>;
@@ -298,11 +318,11 @@ function RoleInfoLineTokens({
   } = line;
 
   if (isDead) {
-    return <Text style={styles.dead}>{label}</Text>;
+    return <Text style={[styles.dead, isCompact && styles.deadCompact]}>{label}</Text>;
   }
 
   return (
-    <View style={styles.line}>
+    <View style={[styles.line, isCompact && styles.lineCompact]}>
       {storyteller ? (
         <View style={styles.storytellerRow}>
           <KnavesStorytellerBadge storyteller={storyteller} />
@@ -510,6 +530,25 @@ function SlotRect({
         {slot.label}
       </Text>
     </View>
+  );
+}
+
+/**
+ * Whether every line is a lone token (a night of the Poisoner, Monk, ...), so the lines can sit
+ * side by side instead of one under another.
+ */
+function isSingleTokenLines(lines: RoleInfoLine[], template: RoleInfoTemplate) {
+  if (template.markTrue || template.rectangles || template.autoNeighbors) return false;
+
+  const tokenLines = lines.filter((line) => !line.isDead);
+  return (
+    tokenLines.length > 1 &&
+    tokenLines.every(
+      (line) =>
+        !line.dayBefore &&
+        !line.storyteller &&
+        template.slots.length + (line.executed ? 1 : 0) + (line.neighbors?.length ?? 0) === 1,
+    )
   );
 }
 
