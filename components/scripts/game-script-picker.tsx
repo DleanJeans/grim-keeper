@@ -4,7 +4,6 @@ import { KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } 
 
 import { SearchBox } from '@/components/search-box';
 import { Text } from '@/components/text';
-import { useWebKeyboardInset } from '@/hooks/use-web-keyboard-inset';
 import { colors } from '@/theme/colors';
 import type { StoredScript } from '@/types/game';
 import { SUSHI_BUFFET_SCRIPT_ID } from '@/utils/script-constants';
@@ -34,7 +33,6 @@ export function GameScriptPicker({
 }: GameScriptPickerProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const keyboardInset = useWebKeyboardInset(pickerOpen);
   const selectableScripts = scripts.filter((script) => script.id !== SUSHI_BUFFET_SCRIPT_ID);
   const selectedScript = [featuredScript, ...selectableScripts].find(
     (script) => script?.id === selectedScriptId,
@@ -101,14 +99,8 @@ export function GameScriptPicker({
       <Modal animationType="slide" onRequestClose={closePicker} transparent visible={pickerOpen}>
         <KeyboardAvoidingView
           behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
-          style={[styles.backdrop, keyboardInset ? { paddingBottom: keyboardInset } : null]}
+          style={styles.backdrop}
         >
-          <Pressable
-            accessibilityLabel="Close script picker"
-            accessibilityRole="button"
-            onPress={closePicker}
-            style={styles.backdropPressable}
-          />
           <View style={styles.sheet}>
             <View style={styles.sheetHeader}>
               <Text selectable style={styles.sheetTitle}>
@@ -175,6 +167,12 @@ export function GameScriptPicker({
               <ChevronRight color={colors.textMuted} size={16} strokeWidth={2.5} />
             </Pressable>
           </View>
+          <Pressable
+            accessibilityLabel="Close script picker"
+            accessibilityRole="button"
+            onPress={closePicker}
+            style={styles.backdropPressable}
+          />
         </KeyboardAvoidingView>
       </Modal>
     </View>
@@ -211,7 +209,7 @@ const styles = StyleSheet.create({
   backdrop: {
     backgroundColor: colors.backdrop,
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
   },
   backdropPressable: {
     flex: 1,
