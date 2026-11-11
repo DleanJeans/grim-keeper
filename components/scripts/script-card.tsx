@@ -1,13 +1,4 @@
-import {
-  Check,
-  ChevronDown,
-  ChevronRight,
-  ChevronUp,
-  Copy,
-  Ticket,
-  Trash2,
-  Trophy,
-} from 'lucide-react-native';
+import { Check, ChevronDown, ChevronRight, ChevronUp, Trophy } from 'lucide-react-native';
 import { type LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
@@ -16,6 +7,7 @@ import type { Role, StoredScript } from '@/types/game';
 import { formatScriptSize, getScriptSizeBytes, isCustomScript } from '@/utils/script-image-utils';
 
 import { CustomScriptImageControls } from './custom-script-image-controls';
+import { ScriptCardMoreMenu } from './script-card-more-menu';
 import { ScriptRoleEditor } from './script-role-editor';
 
 type ScriptCardProps = {
@@ -129,19 +121,12 @@ export function ScriptCard({
           label={editing ? 'Close' : 'Customize'}
           onPress={onEdit}
         />
-        <ScriptCardButton
-          icon={Ticket}
-          label="One-time"
-          onPress={onToggleOneTime}
-          variant={script.oneTime ? 'primary' : 'neutral'}
-        />
-        <ScriptCardButton icon={Copy} iconOnly label="Duplicate" onPress={onDuplicate} />
-        <ScriptCardButton
-          icon={Trash2}
-          iconOnly
-          label="Delete"
-          onPress={onDelete}
-          variant="danger"
+        <ScriptCardMoreMenu
+          oneTime={Boolean(script.oneTime)}
+          onDelete={onDelete}
+          onDuplicate={onDuplicate}
+          onToggleOneTime={onToggleOneTime}
+          scriptName={script.name}
         />
       </View>
     </View>
@@ -150,37 +135,16 @@ export function ScriptCard({
 
 function ScriptCardButton({
   icon: Icon,
-  iconOnly = false,
   label,
   onPress,
   variant = 'neutral',
 }: {
   icon: typeof Check;
-  iconOnly?: boolean;
   label: string;
   onPress: () => void;
-  variant?: 'danger' | 'neutral' | 'primary';
+  variant?: 'neutral' | 'primary';
 }) {
-  const palette = {
-    danger: {
-      background: colors.dangerSurface,
-      border: colors.dangerBorder,
-      icon: colors.danger,
-      text: colors.danger,
-    },
-    neutral: {
-      background: colors.surfaceRaised,
-      border: colors.borderStrong,
-      icon: colors.textMuted,
-      text: colors.text,
-    },
-    primary: {
-      background: colors.primary,
-      border: colors.primary,
-      icon: colors.onPrimary,
-      text: colors.onPrimary,
-    },
-  }[variant];
+  const primary = variant === 'primary';
 
   return (
     <Pressable
@@ -189,17 +153,12 @@ function ScriptCardButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.actionButton,
-        {
-          backgroundColor: pressed ? colors.surfacePressed : palette.background,
-          borderColor: palette.border,
-          flex: iconOnly ? 0 : 1,
-          minWidth: iconOnly ? 44 : 0,
-          paddingHorizontal: iconOnly ? 12 : 8,
-        },
+        primary && styles.actionButtonPrimary,
+        pressed && styles.actionButtonPressed,
       ]}
     >
-      <Icon color={palette.icon} size={15} strokeWidth={2.6} />
-      {iconOnly ? null : <Text style={[styles.actionLabel, { color: palette.text }]}>{label}</Text>}
+      <Icon color={primary ? colors.onPrimary : colors.textMuted} size={15} strokeWidth={2.6} />
+      <Text style={[styles.actionLabel, primary && styles.actionLabelPrimary]}>{label}</Text>
     </Pressable>
   );
 }
@@ -207,16 +166,31 @@ function ScriptCardButton({
 const styles = StyleSheet.create({
   actionButton: {
     alignItems: 'center',
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.borderStrong,
     borderRadius: 8,
     borderWidth: 1,
+    flex: 1,
     flexDirection: 'row',
     gap: 6,
     justifyContent: 'center',
+    paddingHorizontal: 8,
     paddingVertical: 10,
   },
+  actionButtonPressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  actionButtonPrimary: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
   actionLabel: {
+    color: colors.text,
     fontSize: 13,
     fontWeight: '800',
+  },
+  actionLabelPrimary: {
+    color: colors.onPrimary,
   },
   actions: {
     flexDirection: 'row',
