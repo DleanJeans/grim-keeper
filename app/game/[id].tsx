@@ -1329,6 +1329,7 @@ export default function GameRoute() {
                   activePhase={activePhase}
                   latestPhase={latestPhase ?? activePosition}
                   onChangePhase={handleChangePhase}
+                  players={activeGame.players}
                   startingNight={startingNight}
                 />
                 <View style={styles.dayCardCounts}>

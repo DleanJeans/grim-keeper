@@ -1,12 +1,15 @@
-import { useRef } from 'react';
+import { FlameKindling, Skull } from 'lucide-react-native';
+import { useMemo, useRef } from 'react';
 import { type LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { GamePhase, StartingNight } from '@/types/game';
+import type { GamePhase, Player, StartingNight } from '@/types/game';
 import {
   type GamePhasePosition,
+  getDeathPhase,
+  getEventPhaseIndex,
   getPhaseIndex,
   getPhaseLabel,
   getPhasePositionAtIndex,
@@ -16,15 +19,19 @@ import {
 const MAX_STOPS = 13;
 const DOT_SIZE = 14;
 const CURRENT_DOT_SIZE = 20;
+const DEATH_ICON_SIZE = 12;
 const cardColors = colors.dayCard;
 
 type PhaseTimelineProps = {
   activeDay: number;
   activePhase: GamePhase;
   latestPhase: GamePhasePosition;
+  players: Player[];
   startingNight: StartingNight;
   onChangePhase: (day: number, phase: GamePhase) => void;
 };
+
+type PhaseDeaths = { executions: number; kills: number };
 
 type Stop = {
   /** The phase this stop goes to. */
@@ -40,9 +47,11 @@ export function PhaseTimeline({
   activeDay,
   activePhase,
   latestPhase,
+  players,
   startingNight,
   onChangePhase,
 }: PhaseTimelineProps) {
+  const deathsByPhase = useMemo(() => getDeathsByPhase(players), [players]);
   const activeIndex = getPhaseIndex({ activeDay, activePhase });
   const lastIndex = Math.max(activeIndex, getPhaseIndex(latestPhase));
   const stops = getStops(activeIndex, lastIndex);
@@ -85,6 +94,7 @@ export function PhaseTimeline({
         {stops.map((stop, slot) => (
           <PhaseStop
             active={stop.index === activeIndex}
+            deaths={stop.kind === 'phase' ? deathsByPhase.get(stop.index) : undefined}
             first={slot === 0}
             last={slot === stops.length - 1}
             key={`${stop.kind}-${stop.index}`}
@@ -97,6 +107,23 @@ export function PhaseTimeline({
       </View>
     </GestureDetector>
   );
+}
+
+/** How many players were executed or otherwise killed in each phase, by phase index. */
+function getDeathsByPhase(players: Player[]): Map<number, PhaseDeaths> {
+  const deaths = new Map<number, PhaseDeaths>();
+  for (const { death } of players) {
+    if (!death) continue;
+    const index = getEventPhaseIndex(death.day, getDeathPhase(death));
+    const entry = deaths.get(index) ?? { executions: 0, kills: 0 };
+    if (death.kind === 'execution') {
+      entry.executions += 1;
+    } else {
+      entry.kills += 1;
+    }
+    deaths.set(index, entry);
+  }
+  return deaths;
 }
 
 /** The stops to draw: every phase up to the latest one and the next one, folded when long. */
@@ -126,6 +153,7 @@ function getStops(activeIndex: number, lastIndex: number): Stop[] {
 
 type PhaseStopProps = {
   active: boolean;
+  deaths?: PhaseDeaths;
   first: boolean;
   last: boolean;
   lastIndex: number;
@@ -136,6 +164,7 @@ type PhaseStopProps = {
 
 function PhaseStop({
   active,
+  deaths,
   first,
   last,
   lastIndex,
@@ -160,6 +189,10 @@ function PhaseStop({
       onPress={() => onChangePhase(position.activeDay, position.activePhase)}
       style={({ pressed }) => [styles.stop, pressed && styles.pressed]}
     >
+      <View style={styles.deathRow}>
+        {deaths?.executions ? <DeathMark count={deaths.executions} kind="execution" /> : null}
+        {deaths?.kills ? <DeathMark count={deaths.kills} kind="kill" /> : null}
+      </View>
       <View style={styles.dotRow}>
         {/* Each stop draws its half of the line on both sides, so lines never cover a dot. */}
         {first ? null : (
@@ -194,6 +227,34 @@ function PhaseStop({
   );
 }
 
+type DeathMarkProps = {
+  count: number;
+  kind: 'execution' | 'kill';
+};
+
+/** One icon for the executions or the other deaths in a phase, with a count when several. */
+function DeathMark({ count, kind }: DeathMarkProps) {
+  const execution = kind === 'execution';
+  const Icon = execution ? FlameKindling : Skull;
+  return (
+    <View
+      accessibilityLabel={`${count} ${execution ? 'executed' : 'killed'}`}
+      style={styles.deathMark}
+    >
+      <Icon
+        color={execution ? colors.deathExecution : colors.deathNight}
+        size={DEATH_ICON_SIZE}
+        strokeWidth={2.6}
+      />
+      {count > 1 ? (
+        <Text style={[styles.deathCount, execution ? styles.executionCount : styles.killCount]}>
+          {count}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { alignSelf: 'stretch', flexDirection: 'row' },
   currentDot: {
@@ -206,6 +267,15 @@ const styles = StyleSheet.create({
   },
   currentLabel: { color: cardColors.title },
   dayDot: { backgroundColor: cardColors.dayDot },
+  deathCount: { fontSize: 8.5, fontWeight: '900', lineHeight: DEATH_ICON_SIZE },
+  deathMark: { alignItems: 'center', flexDirection: 'row' },
+  deathRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 1,
+    height: DEATH_ICON_SIZE,
+    justifyContent: 'center',
+  },
   dot: {
     borderColor: cardColors.dotBorder,
     borderRadius: DOT_SIZE / 2,
@@ -219,6 +289,8 @@ const styles = StyleSheet.create({
     height: CURRENT_DOT_SIZE,
     justifyContent: 'center',
   },
+  executionCount: { color: colors.deathExecution },
+  killCount: { color: colors.deathNight },
   earlierDot: { backgroundColor: 'transparent', borderStyle: 'dotted' },
   label: { color: colors.gameTextMuted, fontSize: 9.5, fontWeight: '800' },
   line: {
