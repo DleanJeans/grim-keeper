@@ -1,4 +1,5 @@
 import type { TextItem } from 'pdfjs-dist/types/src/display/api';
+import { loadPdfjs } from '@/utils/load-pdfjs';
 
 /** A run of text in one font and size, such as a character name or its ability. */
 export type PdfTextSegment = {
@@ -115,16 +116,4 @@ function getX(item: PdfTextItem) {
 
 function getY(item: PdfTextItem) {
   return item.transform[5] ?? 0;
-}
-
-async function loadPdfjs() {
-  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
-  const globals = globalThis as typeof globalThis & { pdfjsWorker?: unknown };
-
-  // Runs the parser on the page thread, so the app needs no separate worker file.
-  if (!globals.pdfjsWorker) {
-    globals.pdfjsWorker = await import('pdfjs-dist/legacy/build/pdf.worker.mjs');
-  }
-
-  return pdfjs;
 }
