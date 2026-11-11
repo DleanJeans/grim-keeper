@@ -17,6 +17,7 @@ import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
 
 import { canKillDuringDay } from '@/components/game/deaths-tab/death-actions';
 import { DockKill } from '@/components/game/deaths-tab/dock-kill';
+import { DockPlayerName } from '@/components/game/dock-player-name';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { DockTalk } from '@/components/game/interactions-tab/dock-talk';
 import { DockNomination } from '@/components/game/noms-tab/dock-nomination';
@@ -168,9 +169,7 @@ export function PlayerDock({
         </>
       ) : null}
       <View style={styles.headerRow}>
-        <Text numberOfLines={1} style={styles.name}>
-          {focusedPlayer.name}
-        </Text>
+        <DockPlayerName player={focusedPlayer} />
         {canMark ? (
           <Pressable
             accessibilityHint="Shows trust and tags for this player"
@@ -329,7 +328,6 @@ const styles = StyleSheet.create({
   },
   expanded: { gap: 10 },
   headerRow: { alignItems: 'center', flexDirection: 'row', gap: 10, minHeight: 36 },
-  name: { color: colors.gameText, flexShrink: 1, fontSize: 16, fontWeight: '900' },
   placeholder: { color: colors.gameTextSubtle, fontSize: 13, fontWeight: '700' },
   suspicionChip: {
     alignItems: 'center',
