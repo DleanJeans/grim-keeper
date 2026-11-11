@@ -44,6 +44,7 @@ import {
 import {
   getAliveNeighbors,
   getDailyRoleInfo,
+  getDeadPlayers,
   getExecutedPlayer,
   getMentionedRoleIds,
   getNominationPlayers,
@@ -834,6 +835,9 @@ function RoleInfoClaimerRow({
       players: dayBeforePlayers,
     };
   };
+  // The Oracle's number counts the players dead at that night.
+  const getDead = (day: number, phase: GamePhase) =>
+    template.autoDead ? getDeadPlayers(players, day, phase) : undefined;
   const getNeighbors = (day: number, phase: GamePhase) =>
     template.autoNeighbors && owners[0]
       ? getAliveNeighbors(players, owners[0].id, day, phase)
@@ -857,6 +861,7 @@ function RoleInfoClaimerRow({
           );
           return {
             dayBefore: getDayBefore(night),
+            dead: getDead(night, 'night'),
             executed: getExecuted(night),
             key: `night-${night}`,
             label: entry && inferredEntries.has(entry) ? `${nightLabel} · from notes` : nightLabel,
@@ -886,6 +891,7 @@ function RoleInfoClaimerRow({
             activePhase,
             startingNight,
             getDayBefore(activeDay),
+            getDead(activeDay, activePhase),
             getExecuted(activeDay),
             getNeighbors(activeDay, activePhase),
             claimerInfo,
@@ -971,6 +977,7 @@ function getPhaseLine(
   phase: GamePhase,
   startingNight: StartingNight,
   dayBefore: RoleInfoLine['dayBefore'],
+  dead: RoleInfoLine['dead'],
   executed: Player | undefined,
   neighbors: Player[] | undefined,
   claimer: RoleInfoClaimer | undefined,
@@ -989,6 +996,7 @@ function getPhaseLine(
 
   return {
     dayBefore,
+    dead,
     executed,
     key: 'phase',
     label,

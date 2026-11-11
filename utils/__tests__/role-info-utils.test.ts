@@ -2,6 +2,7 @@ import type { Player, Role, RoleInfoEntry } from '@/types/game';
 import {
   getAliveNeighbors,
   getDailyRoleInfo,
+  getDeadPlayers,
   getExecutedPlayer,
   getMentionedRoleIds,
   getNominationPlayers,
@@ -484,6 +485,32 @@ describe('getExecutedPlayer', () => {
     expect(getExecutedPlayer(players, 1)?.id).toBe('ben');
     expect(getExecutedPlayer(players, 2)).toBeUndefined();
     expect(getRoleInfoTemplate({ id: 'undertaker' }).autoExecuted).toBe(true);
+  });
+});
+
+describe('getDeadPlayers', () => {
+  it('lists the players dead after each night, marking who died since the night before', () => {
+    const players = [
+      makePlayer('ann', 0, { death: { day: 2, kind: 'night', updatedAt: NOW } }),
+      makePlayer('ben', 1, { death: { day: 1, kind: 'execution', updatedAt: NOW } }),
+      makePlayer('cat', 2),
+      makePlayer('dee', 3, { death: { day: 2, kind: 'execution', updatedAt: NOW } }),
+    ];
+    const ids = (dead: ReturnType<typeof getDeadPlayers>) => ({
+      dead: dead.players.map((player) => player.id),
+      newIds: [...dead.newIds],
+    });
+
+    expect(ids(getDeadPlayers(players, 1, 'night'))).toEqual({ dead: [], newIds: [] });
+    expect(ids(getDeadPlayers(players, 2, 'night'))).toEqual({
+      dead: ['ann', 'ben'],
+      newIds: ['ann', 'ben'],
+    });
+    expect(ids(getDeadPlayers(players, 3, 'night'))).toEqual({
+      dead: ['ann', 'ben', 'dee'],
+      newIds: ['dee'],
+    });
+    expect(getRoleInfoTemplate({ id: 'oracle' }).autoDead).toBe(true);
   });
 });
 

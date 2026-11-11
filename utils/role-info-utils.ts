@@ -46,6 +46,8 @@ export type RoleInfoTemplate = {
   autoNeighbors?: boolean;
   /** Show the player executed the day before each night. */
   autoExecuted?: boolean;
+  /** Show which players were dead at each night, after that night's kills (the Oracle). */
+  autoDead?: boolean;
   /** Show who nominated, or who voted, the day before each night. */
   autoDayBefore?: DayBeforePlayers;
   /** One player slot per Demon then Minion in play, sized by `getRoleInfoTemplate`'s counts. */
@@ -105,6 +107,7 @@ type RoleInfoSpec =
   | {
       daily?: true;
       dayBefore?: DayBeforePlayers;
+      dead?: true;
       evilInPlay?: true;
       executed?: true;
       markTrue?: true;
@@ -178,7 +181,7 @@ const ROLE_INFO_SPECS: Record<string, RoleInfoSpec> = {
   mathematician: [num('Abnormal', 10)],
   flowergirl: { dayBefore: 'voters', slots: [yesNo('Demon voted?')] },
   towncrier: { dayBefore: 'nominators', slots: [yesNo('Minion?')] },
-  oracle: [num('Dead evil', 10)],
+  oracle: { dead: true, slots: [num('Dead evil', 10)] },
   savant: { daily: true, markTrue: true, slots: [text('Statement 1'), text('Statement 2')] },
   seamstress: [player('Player 1'), player('Player 2'), yesNo('Same team?')],
   philosopher: [role('Became', 'good')],
@@ -311,6 +314,7 @@ const ROLE_INFO_TEMPLATES: Record<string, RoleInfoTemplate> = Object.fromEntries
       ? { slots: withSlotIds(spec) }
       : {
           autoDayBefore: spec.dayBefore,
+          autoDead: spec.dead,
           autoExecuted: spec.executed,
           autoNeighbors: spec.neighbors,
           daily: spec.daily,
@@ -500,6 +504,7 @@ function withGainedAbility(
   const gained = getRoleInfoTemplate({ id: gainedRoleId }, evilCounts);
   return {
     autoDayBefore: gained.autoDayBefore,
+    autoDead: gained.autoDead,
     autoExecuted: gained.autoExecuted,
     autoNeighbors: gained.autoNeighbors,
     rectangles: gained.rectangles || gained.markTrue,
@@ -892,6 +897,24 @@ export function getExecutedPlayer(players: Player[], day: number) {
   return players.find(
     (candidate) => candidate.death?.kind === 'execution' && candidate.death.day === day,
   );
+}
+
+/**
+ * Players dead at the phase (after that night's kills), by seat, and which of them died since the
+ * night before: a day's execution or day kill, or that night's kills.
+ */
+export function getDeadPlayers(players: Player[], day: number, phase: GamePhase) {
+  const previousNight = phase === 'night' ? day - 1 : day;
+  const dead = players.filter((candidate) => isPlayerCurrentlyDead(candidate, day, phase));
+  const newIds = new Set(
+    dead
+      .filter(
+        (candidate) =>
+          previousNight < 1 || !isPlayerCurrentlyDead(candidate, previousNight, 'night'),
+      )
+      .map((candidate) => candidate.id),
+  );
+  return { newIds, players: dead };
 }
 
 /** Players who nominated, or who voted, in the day's recorded nominations, by seat. */

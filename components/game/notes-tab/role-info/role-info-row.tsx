@@ -35,6 +35,8 @@ export type RoleInfoLine = {
     onHighlight: () => void;
     players: Player[];
   };
+  /** Players dead at that night, for the Oracle; `newIds` died since the night before. */
+  dead?: { newIds: Set<string>; players: Player[] };
   /** Marks the end of the character's info: its players are dead. */
   isDead?: boolean;
   neighbors?: Player[];
@@ -128,6 +130,28 @@ const styles = StyleSheet.create({
   },
   dayBeforeButtonPressed: {
     backgroundColor: colors.surfacePressed,
+  },
+  deadName: {
+    color: colors.roleInfoCarried,
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  deadNameNew: {
+    color: colors.danger,
+    fontWeight: '800',
+  },
+  deadNames: {
+    color: colors.roleInfoCarried,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  deadNamesStacked: {
+    alignItems: 'center',
+  },
+  deadNobody: {
+    color: colors.roleInfoCarried,
+    fontSize: 10,
+    fontStyle: 'italic',
   },
   dead: {
     color: colors.danger,
@@ -306,6 +330,7 @@ function RoleInfoLineTokens({
 }) {
   const {
     dayBefore,
+    dead,
     executed,
     isDead,
     label,
@@ -394,6 +419,7 @@ function RoleInfoLineTokens({
           </View>
         ) : null}
       </View>
+      {dead ? <DeadPlayers dead={dead} isStacked={isCompact} /> : null}
       {dayBefore ? (
         <Pressable
           accessibilityHint="Scrolls up to the map and highlights them"
@@ -421,6 +447,53 @@ function RoleInfoLineTokens({
         <Text style={styles.neighbors}>Neighbors: claim this role to show</Text>
       ) : null}
     </View>
+  );
+}
+
+/**
+ * Who was dead at the line's night, that night's new deaths in red. Side-by-side nights list the
+ * names one under another below the token.
+ */
+function DeadPlayers({
+  dead,
+  isStacked,
+}: {
+  dead: NonNullable<RoleInfoLine['dead']>;
+  isStacked: boolean;
+}) {
+  if (dead.players.length === 0) {
+    return <Text style={styles.deadNobody}>{isStacked ? 'nobody' : 'Dead: nobody'}</Text>;
+  }
+
+  if (isStacked) {
+    return (
+      <View style={styles.deadNamesStacked}>
+        {dead.players.map((player) => (
+          <Text
+            key={player.id}
+            numberOfLines={1}
+            style={[styles.deadName, dead.newIds.has(player.id) && styles.deadNameNew]}
+          >
+            {player.name}
+          </Text>
+        ))}
+      </View>
+    );
+  }
+
+  return (
+    <Text style={styles.deadNames}>
+      Dead:{' '}
+      {dead.players.map((player, index) => (
+        <Text
+          key={player.id}
+          style={[styles.deadNames, dead.newIds.has(player.id) && styles.deadNameNew]}
+        >
+          {index > 0 ? ', ' : ''}
+          {player.name}
+        </Text>
+      ))}
+    </Text>
   );
 }
 
