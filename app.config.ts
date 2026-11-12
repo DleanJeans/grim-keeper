@@ -61,6 +61,8 @@ const config: ExpoConfig = {
     './plugins/with-gradle-memory',
     'expo-router',
     'expo-sqlite',
+    // The system navigation bar starts hidden; a swipe from the bottom edge shows it for a moment.
+    ['expo-navigation-bar', { hidden: true }],
     [
       'expo-font',
       {
