@@ -1,16 +1,15 @@
 import { Check } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   type TextInput as TextInputType,
   View,
 } from 'react-native';
-
+import { KeyboardAvoidingView } from '@/components/keyboard-avoiding-view';
 import { RoleIcon } from '@/components/role-icon';
+import { ScaledModal } from '@/components/scaled-modal';
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Role, StartingNight } from '@/types/game';
@@ -90,7 +89,12 @@ export function RoleInfoStatementsDialog({
   }
 
   return (
-    <Modal animationType="fade" onRequestClose={onClose} transparent visible={role !== undefined}>
+    <ScaledModal
+      animationType="fade"
+      onRequestClose={onClose}
+      transparent
+      visible={role !== undefined}
+    >
       <KeyboardAvoidingView
         behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
         style={styles.backdrop}
@@ -169,7 +173,7 @@ export function RoleInfoStatementsDialog({
           </View>
         </View>
       </KeyboardAvoidingView>
-    </Modal>
+    </ScaledModal>
   );
 }
 

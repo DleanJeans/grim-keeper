@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Pressable, StyleSheet, View } from 'react-native';
-
+import { Pressable, StyleSheet, View } from 'react-native';
 import { NoteAutocompleteInput } from '@/components/game/notes-tab/note-autocomplete-input';
+import { KeyboardAvoidingView } from '@/components/keyboard-avoiding-view';
+import { ScaledModal } from '@/components/scaled-modal';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Game, GameResult } from '@/types/game';
@@ -43,7 +44,7 @@ export function GameResultDialog({
   }
 
   return (
-    <Modal animationType="fade" onRequestClose={() => close()} transparent visible>
+    <ScaledModal animationType="fade" onRequestClose={() => close()} transparent visible>
       <KeyboardAvoidingView
         behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
         style={styles.backdrop}
@@ -134,7 +135,7 @@ export function GameResultDialog({
           </View>
         </View>
       </KeyboardAvoidingView>
-    </Modal>
+    </ScaledModal>
   );
 }
 

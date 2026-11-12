@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { type ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { type ScrollView, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
@@ -37,6 +37,7 @@ import { RearrangeActions } from '@/components/game/rearrange-actions';
 import { UndoBar } from '@/components/game/undo-bar';
 import { NotFoundScreen } from '@/components/not-found-screen';
 import { ResponsiveContent } from '@/components/responsive-content';
+import { useScaledWindowDimensions } from '@/hooks/use-scaled-window-dimensions';
 import { useWebFullscreen } from '@/hooks/use-web-fullscreen';
 import { useDjStore } from '@/store/dj-store';
 import { getGameById, useGameStore } from '@/store/game-store';
@@ -105,7 +106,7 @@ export default function GameRoute() {
     playerId?: string;
     tab?: string;
   }>();
-  const { height, width } = useWindowDimensions();
+  const { height, width } = useScaledWindowDimensions();
   const insets = useSafeAreaInsets();
   const isFullscreen = useWebFullscreen();
   const showDialog = useAppDialog();

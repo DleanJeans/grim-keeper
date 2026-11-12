@@ -1,8 +1,8 @@
 import { ChevronRight, History, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { ScaledModal } from '@/components/scaled-modal';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
@@ -44,7 +44,7 @@ export function PlayerTimelineButton({ player }: PlayerTimelineButtonProps) {
         <Text style={styles.label}>{player.name}'s timeline</Text>
         <ChevronRight color={colors.textMuted} size={18} strokeWidth={2.5} />
       </Pressable>
-      <Modal animationType="slide" onRequestClose={close} transparent visible={open}>
+      <ScaledModal animationType="slide" onRequestClose={close} transparent visible={open}>
         <View style={styles.backdrop}>
           <Pressable
             accessibilityLabel="Close timeline"
@@ -88,7 +88,7 @@ export function PlayerTimelineButton({ player }: PlayerTimelineButtonProps) {
             </ScrollView>
           </View>
         </View>
-      </Modal>
+      </ScaledModal>
     </>
   );
 }

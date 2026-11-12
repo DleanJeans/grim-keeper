@@ -8,7 +8,7 @@ import {
   type TextStyle,
 } from 'react-native';
 
-import { useFontScale } from '@/theme/font-scale';
+import { useFontScale } from '@/theme/display-scale';
 
 const defaultFontSize = 14;
 const boldWeights = ['600', '700', '800', '900', 'bold'];

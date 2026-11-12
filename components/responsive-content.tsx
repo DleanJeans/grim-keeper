@@ -1,12 +1,6 @@
 import type { ReactNode } from 'react';
-import {
-  Platform,
-  type StyleProp,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-  type ViewStyle,
-} from 'react-native';
+import { Platform, type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
+import { useScaledWindowDimensions } from '@/hooks/use-scaled-window-dimensions';
 
 import { DESKTOP_CONTENT_MAX_WIDTH, isDesktopWeb } from '@/utils/responsive-utils';
 
@@ -16,7 +10,7 @@ type ResponsiveContentProps = {
 };
 
 export function ResponsiveContent({ children, style }: ResponsiveContentProps) {
-  const { width } = useWindowDimensions();
+  const { width } = useScaledWindowDimensions();
   const desktop = isDesktopWeb(width, Platform.OS);
 
   return <View style={[styles.content, desktop && styles.desktopContent, style]}>{children}</View>;

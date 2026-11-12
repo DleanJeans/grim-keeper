@@ -1,9 +1,9 @@
 import { Check, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { RoleReference } from '@/components/role-reference';
+import { ScaledModal } from '@/components/scaled-modal';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Player, Role } from '@/types/game';
@@ -43,7 +43,12 @@ export function BigWigPlayerPicker({
           {selectedPlayer?.name ?? 'Select player'}
         </Text>
       </RoleReference>
-      <Modal animationType="slide" onRequestClose={() => setOpen(false)} transparent visible={open}>
+      <ScaledModal
+        animationType="slide"
+        onRequestClose={() => setOpen(false)}
+        transparent
+        visible={open}
+      >
         <View style={styles.backdrop}>
           <Pressable
             accessibilityLabel="Close Big Wig player picker"
@@ -97,7 +102,7 @@ export function BigWigPlayerPicker({
             ) : null}
           </View>
         </View>
-      </Modal>
+      </ScaledModal>
     </>
   );
 }
