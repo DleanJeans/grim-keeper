@@ -6,6 +6,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AppDialogProvider } from '@/components/dialog/app-dialog-provider';
 import { GameHeader } from '@/components/game-header';
+import { HiddenNavigationBar } from '@/components/hidden-navigation-bar';
 import { PwaHead } from '@/components/pwa-head';
 import { OfficialScriptsLoader } from '@/components/scripts/official-scripts-loader';
 import { UiScaleView } from '@/components/ui-scale-view';
@@ -144,6 +145,7 @@ export default function RootLayout() {
         </ThemeProvider>
       </UiScaleView>
       <StatusBar style="light" />
+      <HiddenNavigationBar />
     </GestureHandlerRootView>
   );
 }
