@@ -1,5 +1,11 @@
 import { useRef } from 'react';
-import { type LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
+import {
+  type GestureResponderEvent,
+  type LayoutChangeEvent,
+  Pressable,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { Text } from '@/components/text';
@@ -18,6 +24,8 @@ type DimensionSliderProps = {
   /** Values the slider snaps to, counted from `min`. */
   step: number;
   value: number;
+  /** How the value reads beside the slider, e.g. `90%`. Defaults to the number. */
+  formatValue?: (value: number) => string;
   onChange: (value: number) => void;
 };
 
@@ -29,6 +37,7 @@ export function DimensionSlider({
   min,
   step,
   value,
+  formatValue = String,
   onChange,
 }: DimensionSliderProps) {
   const trackWidth = useRef(0);
@@ -68,7 +77,7 @@ export function DimensionSlider({
           onLayout={(event: LayoutChangeEvent) => {
             trackWidth.current = event.nativeEvent.layout.width;
           }}
-          onPress={(event) => setFromX(event.nativeEvent.locationX)}
+          onPress={(event) => setFromX(getPressX(event))}
           style={styles.hit}
         >
           <View style={styles.track} />
@@ -77,7 +86,7 @@ export function DimensionSlider({
         </Pressable>
       </GestureDetector>
       <Text selectable style={styles.value}>
-        {value}
+        {formatValue(value)}
       </Text>
     </View>
   );
@@ -120,3 +129,9 @@ const styles = StyleSheet.create({
     width: 40,
   },
 });
+
+/** Where a tap landed on the track. On web the press event is a mouse event without `locationX`. */
+function getPressX(event: GestureResponderEvent) {
+  const { locationX, offsetX } = event.nativeEvent as { locationX?: number; offsetX?: number };
+  return locationX ?? offsetX ?? 0;
+}
