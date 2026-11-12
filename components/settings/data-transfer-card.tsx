@@ -356,8 +356,8 @@ function SelectedBackupSummary({ backup }: { backup: SelectedBackup }) {
       <Text selectable style={styles.selectedBackupMeta}>
         {formatFileSize(backup.size)} ·{' '}
         <Text style={styles.selectedBackupStats}>
-          {stats.games} games · {stats.players} players · {stats.friends} friends · {stats.scripts}{' '}
-          scripts · {stats.notes} notes
+          {stats.games} games · {stats.friends} friends · {stats.scripts} scripts · {stats.notes}{' '}
+          notes
         </Text>
       </Text>
     </View>

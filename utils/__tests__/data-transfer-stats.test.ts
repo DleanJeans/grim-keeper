@@ -72,7 +72,6 @@ describe('getBackupStats', () => {
       friends: 2,
       games: 1,
       notes: 3,
-      players: 2,
       scripts: 1,
     });
   });

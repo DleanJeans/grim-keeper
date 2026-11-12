@@ -4,7 +4,6 @@ export type BackupStats = {
   friends: number;
   games: number;
   notes: number;
-  players: number;
   scripts: number;
 };
 
@@ -21,7 +20,6 @@ export function getBackupStats(data: GameData): BackupStats {
             0),
         0,
       ),
-    players: data.games.reduce((total, game) => total + game.players.length, 0),
     scripts: data.scripts.length,
   };
 }
