@@ -178,7 +178,8 @@ export default function GameRoute() {
   const restoreGame = useGameStore((state) => state.restoreGame);
   const [dayEditLocked, setDayEditLocked] = useState(false);
   const scrollContentStyle = useMemo(
-    () => createScrollContentStyle(isFullscreen ? insets.top : 0),
+    // The header is drawn under the status bar on Android, so the content also starts below it.
+    () => createScrollContentStyle(isFullscreen || process.env.EXPO_OS !== 'web' ? insets.top : 0),
     [insets.top, isFullscreen],
   );
   const game = getGameById(games, id);
