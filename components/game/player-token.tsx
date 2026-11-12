@@ -15,6 +15,7 @@ import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
 import { useRoleIconSource } from '@/hooks/use-role-icon-source';
 import { colors } from '@/theme/colors';
+import { useUiScale } from '@/theme/display-scale';
 import type { Player, PlayerPosition, Role } from '@/types/game';
 import { type ClaimOrbitObstacle, getClaimOrbitLayout } from '@/utils/claim-orbit-utils';
 import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
@@ -172,6 +173,8 @@ export function PlayerToken({
   // The picture stands in for the initial, so it only shows on a token without characters.
   const showPicture = !!picture && !backgroundRole && !hasClaimTokens;
   const pictureSize = tokenSize * PICTURE_RATIO;
+  // Drag distances arrive in screen units: undo the map's zoom and the App size from Settings.
+  const dragScale = mapScale * useUiScale();
   const x = useSharedValue(position.x);
   const y = useSharedValue(position.y);
   const startX = useSharedValue(position.x);
@@ -244,8 +247,8 @@ export function PlayerToken({
     .onUpdate((event) => {
       const clamped = clampTokenPosition(
         {
-          x: startX.value + event.translationX / mapScale,
-          y: startY.value + event.translationY / mapScale,
+          x: startX.value + event.translationX / dragScale,
+          y: startY.value + event.translationY / dragScale,
         },
         mapWidth,
         mapHeight,
