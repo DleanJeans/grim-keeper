@@ -1,12 +1,13 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TextInput as RNTextInput } from 'react-native';
-import { FlatList, Keyboard, KeyboardAvoidingView, StyleSheet, View } from 'react-native';
+import { FlatList, Keyboard, StyleSheet, View } from 'react-native';
 import { CreateFormHeader } from '@/components/create/create-form-header';
 import { CreateHeaderDoneButton } from '@/components/create/create-header-done-button';
 import { ExportGameButton } from '@/components/create/export-game-button';
 import { PlayerMoveTarget } from '@/components/create/player-move-target';
 import { type DraftPlayer, PlayerRow } from '@/components/create/player-row';
+import { KeyboardAvoidingView } from '@/components/keyboard-avoiding-view';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
 import { useGameStore } from '@/store/game-store';

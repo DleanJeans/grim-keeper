@@ -1,6 +1,7 @@
 import { Copy, Ellipsis, Ticket, Trash2, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, Switch, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, View } from 'react-native';
+import { ScaledModal } from '@/components/scaled-modal';
 
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
@@ -39,7 +40,7 @@ export function ScriptCardMoreMenu({
       >
         <Ellipsis color={colors.textMuted} size={18} strokeWidth={2.6} />
       </Pressable>
-      <Modal animationType="fade" onRequestClose={close} transparent visible={open}>
+      <ScaledModal animationType="fade" onRequestClose={close} transparent visible={open}>
         <View style={styles.backdrop}>
           <Pressable
             accessibilityLabel="Close menu"
@@ -100,7 +101,7 @@ export function ScriptCardMoreMenu({
             </Pressable>
           </View>
         </View>
-      </Modal>
+      </ScaledModal>
     </>
   );
 }

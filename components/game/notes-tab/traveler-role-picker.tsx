@@ -1,10 +1,11 @@
 import { ChevronDown, Search, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { TravelerRoleAlignmentButton } from '@/components/game/notes-tab/traveler-role-alignment-button';
 import { TravelerRoleOption } from '@/components/game/notes-tab/traveler-role-option';
+import { KeyboardAvoidingView } from '@/components/keyboard-avoiding-view';
 import { RoleIcon } from '@/components/role-icon';
+import { ScaledModal } from '@/components/scaled-modal';
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Role } from '@/types/game';
@@ -98,7 +99,7 @@ export function TravelerRolePicker({
           strokeWidth={2.6}
         />
       </Pressable>
-      <Modal
+      <ScaledModal
         animationType="slide"
         onRequestClose={() => {
           setPickerOpen(false);
@@ -187,7 +188,7 @@ export function TravelerRolePicker({
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
-      </Modal>
+      </ScaledModal>
       {selectedTravelerRole ? (
         <TravelerRoleAlignmentButton
           key={selectedTravelerRole.id}

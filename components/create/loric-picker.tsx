@@ -1,8 +1,8 @@
 import { Check, ChevronDown, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { RoleReference } from '@/components/role-reference';
+import { ScaledModal } from '@/components/scaled-modal';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Role } from '@/types/game';
@@ -77,7 +77,12 @@ export function LoricPicker({
         <ChevronDown color={colors.textMuted} size={18} strokeWidth={2.6} />
       </Pressable>
 
-      <Modal animationType="slide" onRequestClose={() => setOpen(false)} transparent visible={open}>
+      <ScaledModal
+        animationType="slide"
+        onRequestClose={() => setOpen(false)}
+        transparent
+        visible={open}
+      >
         <View style={styles.backdrop}>
           <Pressable
             accessibilityLabel="Close Loric picker"
@@ -140,7 +145,7 @@ export function LoricPicker({
             </ScrollView>
           </View>
         </View>
-      </Modal>
+      </ScaledModal>
     </View>
   );
 }

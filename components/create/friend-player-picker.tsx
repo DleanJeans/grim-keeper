@@ -1,7 +1,9 @@
 import { Check, ChevronDown, Search, UserPlus, Users, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
+import { KeyboardAvoidingView } from '@/components/keyboard-avoiding-view';
+import { ScaledModal } from '@/components/scaled-modal';
 
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
@@ -147,7 +149,7 @@ export function FriendPlayerPicker({
         </View>
       </Pressable>
 
-      <Modal animationType="slide" onRequestClose={closePicker} transparent visible={open}>
+      <ScaledModal animationType="slide" onRequestClose={closePicker} transparent visible={open}>
         <KeyboardAvoidingView
           behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
           style={styles.backdrop}
@@ -331,7 +333,7 @@ export function FriendPlayerPicker({
             </View>
           </View>
         </KeyboardAvoidingView>
-      </Modal>
+      </ScaledModal>
     </>
   );
 }

@@ -6,19 +6,23 @@ import { DjSettingsCard } from '@/components/dj/dj-settings-card';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { AppVersionInfo } from '@/components/settings/app-version-info';
 import { DataTransferCard } from '@/components/settings/data-transfer-card';
-import { FontSizeSettingsCard } from '@/components/settings/font-size-settings-card';
 import { NightStartSettingsCard } from '@/components/settings/night-start-settings-card';
+import { SizeSettingsCard } from '@/components/settings/size-settings-card';
 import { ThemeSettingsCard } from '@/components/settings/theme-settings-card';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
 import { useDjStore } from '@/store/dj-store';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
+import { FONT_SCALE_PERCENT, setFontScalePercent, useFontScale } from '@/theme/font-scale';
+import { setUiScalePercent, UI_SCALE_PERCENT, useUiScale } from '@/theme/ui-scale';
 
 export default function SettingsRoute() {
   const showDialog = useAppDialog();
   const clearData = useGameStore((state) => state.clearData);
   const clearDjData = useDjStore((state) => state.clearData);
+  const uiScalePercent = Math.round(useUiScale() * 100);
+  const fontScalePercent = Math.round(useFontScale() * 100);
 
   function confirmClearData() {
     showDialog(
@@ -51,7 +55,20 @@ export default function SettingsRoute() {
       >
         <ResponsiveContent style={styles.content}>
           <ThemeSettingsCard />
-          <FontSizeSettingsCard />
+          <SizeSettingsCard
+            description="Makes everything in the app smaller or larger: buttons, icons, the map and text."
+            onChange={setUiScalePercent}
+            percent={uiScalePercent}
+            range={UI_SCALE_PERCENT}
+            title="UI size"
+          />
+          <SizeSettingsCard
+            description="Makes text across the app smaller or larger, on top of the UI size."
+            onChange={setFontScalePercent}
+            percent={fontScalePercent}
+            range={FONT_SCALE_PERCENT}
+            title="Font size"
+          />
           <DjSettingsCard />
           <NightStartSettingsCard />
           <DataTransferCard />

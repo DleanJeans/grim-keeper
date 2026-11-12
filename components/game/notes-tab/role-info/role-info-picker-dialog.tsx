@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView } from '@/components/keyboard-avoiding-view';
 import { RoleIcon } from '@/components/role-icon';
+import { ScaledModal } from '@/components/scaled-modal';
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { GamePhase, Player, Role } from '@/types/game';
@@ -46,7 +47,12 @@ export function RoleInfoPickerDialog({
   const [draft, setDraft] = useState(value ?? '');
 
   return (
-    <Modal animationType="fade" onRequestClose={onClose} transparent visible={slot !== undefined}>
+    <ScaledModal
+      animationType="fade"
+      onRequestClose={onClose}
+      transparent
+      visible={slot !== undefined}
+    >
       <KeyboardAvoidingView
         behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
         style={styles.backdrop}
@@ -117,7 +123,7 @@ export function RoleInfoPickerDialog({
           </View>
         </View>
       </KeyboardAvoidingView>
-    </Modal>
+    </ScaledModal>
   );
 }
 

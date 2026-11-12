@@ -1,10 +1,10 @@
 import { router } from 'expo-router';
 import { X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { RoleIcon } from '@/components/role-icon';
 import { RoleReference } from '@/components/role-reference';
+import { ScaledModal } from '@/components/scaled-modal';
 import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
@@ -62,7 +62,7 @@ export function PastEvilTeamsSheet({ game, onClose, visible }: PastEvilTeamsShee
   }
 
   return (
-    <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
+    <ScaledModal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
       <View style={styles.backdrop}>
         <Pressable
           accessibilityLabel="Close past evil teams"
@@ -138,7 +138,7 @@ export function PastEvilTeamsSheet({ game, onClose, visible }: PastEvilTeamsShee
           ) : null}
         </View>
       </View>
-    </Modal>
+    </ScaledModal>
   );
 }
 

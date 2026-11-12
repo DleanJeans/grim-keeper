@@ -10,7 +10,8 @@ import {
   X,
 } from 'lucide-react-native';
 import { type ComponentType, useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScaledModal } from '@/components/scaled-modal';
 
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
@@ -84,7 +85,7 @@ export function DayRecapSheet({
   }
 
   return (
-    <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
+    <ScaledModal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
       <View style={styles.backdrop}>
         <Pressable
           accessibilityLabel="Close recap"
@@ -131,7 +132,7 @@ export function DayRecapSheet({
           </ScrollView>
         </View>
       </View>
-    </Modal>
+    </ScaledModal>
   );
 }
 

@@ -1,8 +1,8 @@
 import { ClipboardPaste, Plus } from 'lucide-react-native';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
-
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SpotifySearchResults } from '@/components/dj/spotify-search-results';
+import { KeyboardAvoidingView } from '@/components/keyboard-avoiding-view';
 import { Text, TextInput } from '@/components/text';
 import { useClipboardSongUrl } from '@/hooks/use-clipboard-song-url';
 import { colors } from '@/theme/colors';

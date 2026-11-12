@@ -1,8 +1,9 @@
 import { Check, ChevronDown, Search, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView } from '@/components/keyboard-avoiding-view';
 import { RoleReference } from '@/components/role-reference';
+import { ScaledModal } from '@/components/scaled-modal';
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Role } from '@/types/game';
@@ -73,7 +74,7 @@ export function SushiBuffetRolePicker({
         <ChevronDown color={colors.textMuted} size={18} strokeWidth={2.6} />
       </Pressable>
 
-      <Modal animationType="slide" onRequestClose={closePicker} transparent visible={open}>
+      <ScaledModal animationType="slide" onRequestClose={closePicker} transparent visible={open}>
         <KeyboardAvoidingView
           behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
           style={styles.backdrop}
@@ -165,7 +166,7 @@ export function SushiBuffetRolePicker({
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
-      </Modal>
+      </ScaledModal>
     </View>
   );
 }

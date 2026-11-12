@@ -1,6 +1,8 @@
 import { BookOpen, Check, ChevronDown, ChevronRight, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView } from '@/components/keyboard-avoiding-view';
+import { ScaledModal } from '@/components/scaled-modal';
 
 import { SearchBox } from '@/components/search-box';
 import { Text } from '@/components/text';
@@ -96,7 +98,12 @@ export function GameScriptPicker({
           <ChevronDown color={colors.textMuted} size={18} strokeWidth={2.6} />
         </Pressable>
       </View>
-      <Modal animationType="slide" onRequestClose={closePicker} transparent visible={pickerOpen}>
+      <ScaledModal
+        animationType="slide"
+        onRequestClose={closePicker}
+        transparent
+        visible={pickerOpen}
+      >
         <KeyboardAvoidingView
           behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
           style={styles.backdrop}
@@ -174,7 +181,7 @@ export function GameScriptPicker({
             style={styles.backdropPressable}
           />
         </KeyboardAvoidingView>
-      </Modal>
+      </ScaledModal>
     </View>
   );
 }

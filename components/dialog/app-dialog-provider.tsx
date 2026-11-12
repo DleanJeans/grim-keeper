@@ -1,5 +1,7 @@
 import { createContext, type ReactNode, use, useCallback, useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView } from '@/components/keyboard-avoiding-view';
+import { ScaledModal } from '@/components/scaled-modal';
 
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
@@ -44,7 +46,7 @@ export function AppDialogProvider({ children }: { children: ReactNode }) {
       {/* Mounted only while shown: on web each Modal portal stacks in mount order, so a
           dialog opened from another Modal (e.g. the Traveler picker) must mount last. */}
       {dialog ? (
-        <Modal animationType="fade" onRequestClose={dismiss} transparent visible>
+        <ScaledModal animationType="fade" onRequestClose={dismiss} transparent visible>
           <KeyboardAvoidingView
             behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
             style={styles.backdrop}
@@ -87,7 +89,7 @@ export function AppDialogProvider({ children }: { children: ReactNode }) {
               </View>
             </View>
           </KeyboardAvoidingView>
-        </Modal>
+        </ScaledModal>
       ) : null}
     </AppDialogContext>
   );

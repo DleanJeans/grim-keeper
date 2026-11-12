@@ -1,8 +1,9 @@
 import { Minus, Plus, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Modal, Pressable, StyleSheet, View } from 'react-native';
-
+import { Pressable, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView } from '@/components/keyboard-avoiding-view';
 import { RoleIcon } from '@/components/role-icon';
+import { ScaledModal } from '@/components/scaled-modal';
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { CharacterTypeCounts } from '@/types/game';
@@ -67,7 +68,12 @@ export function CharacterTypeCountEditor({
         ))}
       </Pressable>
 
-      <Modal animationType="slide" onRequestClose={closeEditor} transparent visible={editorOpen}>
+      <ScaledModal
+        animationType="slide"
+        onRequestClose={closeEditor}
+        transparent
+        visible={editorOpen}
+      >
         <KeyboardAvoidingView
           behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
           style={styles.backdrop}
@@ -146,7 +152,7 @@ export function CharacterTypeCountEditor({
             </View>
           </View>
         </KeyboardAvoidingView>
-      </Modal>
+      </ScaledModal>
     </>
   );
 }
