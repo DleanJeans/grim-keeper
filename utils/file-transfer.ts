@@ -41,7 +41,11 @@ export async function pickJsonFile(): Promise<PickedJsonFile | null> {
     return pickWebJsonFile();
   }
 
-  const result = await File.pickFileAsync({ mimeTypes: 'application/json' });
+  // Android file managers often label .json files as octet-stream or plain text,
+  // which would grey them out; parsing rejects anything that isn't a backup.
+  const result = await File.pickFileAsync({
+    mimeTypes: ['application/json', 'application/octet-stream', 'text/plain'],
+  });
 
   if (result.canceled) {
     return null;

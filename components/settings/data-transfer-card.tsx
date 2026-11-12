@@ -10,7 +10,7 @@ import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { type BackupGameData, createBackup, parseBackup } from '@/utils/data-transfer';
 import { getBackupStats } from '@/utils/data-transfer-stats';
-import { downloadJson, getJsonFilename, shareJsonFile } from '@/utils/file-transfer';
+import { downloadJson, getJsonFilename, pickJsonFile, shareJsonFile } from '@/utils/file-transfer';
 
 type SelectedBackup = {
   data: BackupGameData;
@@ -85,23 +85,15 @@ export function DataTransferCard() {
     showDialog('Import complete', 'Your Grim Keeper data has been restored.');
   }
 
-  function chooseBackupFile() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'application/json,.json';
-    input.addEventListener('change', async () => {
-      const file = input.files?.[0];
-
-      if (file) {
-        void selectBackupFile(file);
-      }
-    });
-    input.click();
-  }
-
-  async function selectBackupFile(file: globalThis.File) {
+  async function chooseBackupFile() {
     try {
-      const data = parseBackup(await file.text());
+      const file = await pickJsonFile();
+
+      if (!file) {
+        return;
+      }
+
+      const data = parseBackup(file.text);
       setBackupText('');
       setSelectedBackup({ data, name: file.name, size: file.size });
     } catch (error) {
@@ -185,9 +177,7 @@ export function DataTransferCard() {
           </>
         ) : (
           <>
-            {process.env.EXPO_OS === 'web' ? (
-              <ActionButton icon="file" label="Choose backup file" onPress={chooseBackupFile} />
-            ) : null}
+            <ActionButton icon="file" label="Choose backup file" onPress={chooseBackupFile} />
             <ActionButton
               icon="paste"
               label="Paste backup"
