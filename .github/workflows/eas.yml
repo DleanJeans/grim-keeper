@@ -1,6 +1,10 @@
 name: EAS
 
 on:
+  # Every push to main publishes an OTA on the preview branch (no APK unless the
+  # commit message says build-preview or build-apk; skip-ota opts out).
+  push:
+    branches: [main]
   pull_request:
     types: labeled
   workflow_dispatch:
