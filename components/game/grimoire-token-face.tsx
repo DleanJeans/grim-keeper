@@ -114,7 +114,11 @@ export function GrimoireTokenFace({
         <ClipPath id={ids.clip}>
           <Circle cx={center} cy={center} r={radius} />
         </ClipPath>
-        {/* Left to right along the bottom, and along the top; text sits upright on both. */}
+        {/*
+          Left to right along the bottom, and along the top; text sits upright on both. The
+          curved text is centered by textAnchor on the outer Text too, because Android ignores it
+          on the TextPath and starts the text at the middle of the arc instead.
+        */}
         <Path
           d={`M ${center - ribbonRadius} ${center} A ${ribbonRadius} ${ribbonRadius} 0 0 0 ${center + ribbonRadius} ${center}`}
           id={ids.bottom}
@@ -184,6 +188,7 @@ export function GrimoireTokenFace({
             fontFamily={FONT_FAMILY}
             fontSize={nameFont}
             letterSpacing={nameFont * 0.06}
+            textAnchor="middle"
           >
             <TextPath href={`#${ids.bottom}`} startOffset="50%" textAnchor="middle">
               {name}
@@ -208,6 +213,7 @@ export function GrimoireTokenFace({
               fontFamily={FONT_FAMILY}
               fontSize={topFont}
               letterSpacing={topFont * 0.1}
+              textAnchor="middle"
             >
               <TextPath href={`#${ids.top}`} startOffset="50%" textAnchor="middle">
                 {topText}
