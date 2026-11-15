@@ -35,6 +35,8 @@ export type StoredScript = {
   author?: string;
   /** Leaves the script list once a game uses it; the game keeps its own copy. */
   oneTime?: boolean;
+  /** Counts this script's win rates together with the base script's (and its other variants). */
+  baseScriptId?: string;
   roles: Role[];
   updatedAt: string;
 };

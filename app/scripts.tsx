@@ -32,8 +32,8 @@ import {
 } from '@/utils/script-service';
 import {
   formatWinRecord,
+  getScriptCardWinRates,
   getScriptPlayCounts,
-  getScriptWinRecords,
   type ScriptWinRecord,
   sortScriptsByMostPlayed,
 } from '@/utils/script-utils';
@@ -74,7 +74,7 @@ export default function ScriptsRoute() {
   /** A just-duplicated script to scroll to once its card has laid out. */
   const scrollToScriptId = useRef<string | null>(null);
   const scriptPlayCounts = getScriptPlayCounts(games);
-  const scriptWinRecords = getScriptWinRecords(games);
+  const { scriptWinRateGames, scriptWinRecords } = getScriptCardWinRates(games, scripts);
   const shouldRefreshRoleCatalog =
     roleCatalog.length === 0 || !roleCatalog.some((role) => role.ability);
 
@@ -295,6 +295,11 @@ export default function ScriptsRoute() {
     router.push({ pathname: '/scripts/[id]', params: { id: scriptId } });
   }
 
+  function handleChangeBase(script: StoredScript, baseScriptId: string | null) {
+    const { baseScriptId: _previousBase, ...withoutBase } = script;
+    updateScript(baseScriptId ? { ...withoutBase, baseScriptId } : withoutBase);
+  }
+
   function handleToggleOneTime(script: StoredScript) {
     const gamesPlayed = scriptPlayCounts.get(script.id) ?? 0;
 
@@ -391,11 +396,13 @@ export default function ScriptsRoute() {
             editingScriptId={editingScriptId}
             roleCatalog={roleCatalog}
             scriptPlayCounts={scriptPlayCounts}
+            scriptWinRateGames={scriptWinRateGames}
             scriptWinRecords={scriptWinRecords}
             scripts={sortScriptsByMostPlayed(
               scripts.filter((script) => !isSushiBuffetScript(script)),
               games,
             )}
+            onChangeBase={handleChangeBase}
             onDelete={confirmDeleteScript}
             onDuplicate={handleDuplicateScript}
             onLayout={(y) => {
@@ -587,6 +594,7 @@ const styles = StyleSheet.create({
 function SavedScriptsSection({
   canSelect,
   editingScriptId,
+  onChangeBase,
   onDelete,
   onDuplicate,
   onEdit,
@@ -599,12 +607,14 @@ function SavedScriptsSection({
   onUpdate,
   roleCatalog,
   scriptPlayCounts,
+  scriptWinRateGames,
   scriptWinRecords,
   scripts,
   searchText,
 }: {
   canSelect: boolean;
   editingScriptId: string | null;
+  onChangeBase: (script: StoredScript, baseScriptId: string | null) => void;
   onDelete: (script: StoredScript) => void;
   onDuplicate: (script: StoredScript) => void;
   onEdit: (scriptId: string) => void;
@@ -617,6 +627,7 @@ function SavedScriptsSection({
   onUpdate: (script: StoredScript) => void;
   roleCatalog: StoredScript['roles'];
   scriptPlayCounts: ReadonlyMap<string, number>;
+  scriptWinRateGames: ReadonlyMap<string, number>;
   scriptWinRecords: ReadonlyMap<string, ScriptWinRecord>;
   scripts: StoredScript[];
   searchText: string;
@@ -648,6 +659,7 @@ function SavedScriptsSection({
             editing={editingScriptId === script.id}
             gamesPlayed={scriptPlayCounts.get(script.id) ?? 0}
             key={script.id}
+            onChangeBase={(baseScriptId) => onChangeBase(script, baseScriptId)}
             onDelete={() => onDelete(script)}
             onDuplicate={() => onDuplicate(script)}
             onEdit={() => onEdit(script.id)}
@@ -661,6 +673,8 @@ function SavedScriptsSection({
             onUpdate={onUpdate}
             roleCatalog={roleCatalog}
             script={script}
+            scripts={scripts}
+            winRateGames={scriptWinRateGames.get(script.id) ?? 0}
             winRecord={formatWinRecord(scriptWinRecords.get(script.id))}
           />
         ))

@@ -1,5 +1,6 @@
 import type { Game, Role, SavedNote, StoredScript } from '@/types/game';
 import { APP_USER_ID } from '@/utils/object-id';
+import { SUSHI_BUFFET_SCRIPT_ID } from '@/utils/script-constants';
 
 export type ScriptRoleEntry = {
   description?: string;
@@ -23,14 +24,101 @@ export type NightSheet = {
 /** Fewer games per friend on one script than overall, so the minimum starts lower than on Friends. */
 export const DEFAULT_SCRIPT_MIN_GAMES = 3;
 
-/** The games played on a script, matched by script id like the script cards' counts. */
-export function getScriptGames(games: Game[], scriptId: string) {
-  return games.filter((game) => (game.scriptId ?? game.script?.id) === scriptId);
+/**
+ * The id that groups a script with its base script and the other scripts based on it: the end of
+ * the base chain. A game's embedded script stands in for a script that left the list.
+ */
+export function getScriptFamilyId(scriptId: string, scripts: StoredScript[], games: Game[] = []) {
+  const findScript = (id: string) =>
+    scripts.find((script) => script.id === id) ??
+    games.find((game) => game.script?.id === id)?.script;
+  const seen = new Set([scriptId]);
+  let currentId = scriptId;
+  let baseId = findScript(currentId)?.baseScriptId;
+
+  while (baseId && !seen.has(baseId)) {
+    seen.add(baseId);
+    currentId = baseId;
+    baseId = findScript(currentId)?.baseScriptId;
+  }
+
+  return currentId;
+}
+
+/** The scripts that can be this script's base: not itself and not a script based on it. */
+export function getBaseScriptCandidates(script: StoredScript, scripts: StoredScript[]) {
+  const basedOnScript = (candidate: StoredScript) => {
+    const seen = new Set([candidate.id]);
+    let baseId = candidate.baseScriptId;
+
+    while (baseId && !seen.has(baseId)) {
+      if (baseId === script.id) return true;
+      seen.add(baseId);
+      baseId = scripts.find((other) => other.id === baseId)?.baseScriptId;
+    }
+
+    return false;
+  };
+
+  return scripts.filter(
+    (candidate) =>
+      candidate.id !== script.id &&
+      candidate.id !== SUSHI_BUFFET_SCRIPT_ID &&
+      !basedOnScript(candidate),
+  );
+}
+
+/** Looks up a game's script family, or undefined for a game without a script. */
+function getGameFamilyId(game: Game, scripts: StoredScript[], games: Game[]) {
+  const scriptId = game.scriptId ?? game.script?.id;
+  return scriptId ? getScriptFamilyId(scriptId, scripts, games) : undefined;
+}
+
+/**
+ * The games played on a script or on any script in its family (its base script and the scripts
+ * based on it). Matched by script id like the script cards' counts.
+ */
+export function getScriptGames(games: Game[], scriptId: string, scripts: StoredScript[] = []) {
+  const familyId = getScriptFamilyId(scriptId, scripts, games);
+  return games.filter((game) => getGameFamilyId(game, scripts, games) === familyId);
+}
+
+/** The names of the other scripts whose games count together with this script's. */
+export function getScriptFamilyNames(scriptId: string, games: Game[], scripts: StoredScript[]) {
+  const familyId = getScriptFamilyId(scriptId, scripts, games);
+  const names = new Map<string, string>();
+
+  for (const script of [
+    ...scripts,
+    ...games.flatMap((game) => (game.script ? [game.script] : [])),
+  ]) {
+    if (
+      script.id !== scriptId &&
+      !names.has(script.id) &&
+      getScriptFamilyId(script.id, scripts, games) === familyId
+    ) {
+      names.set(script.id, script.name);
+    }
+  }
+
+  return [...names.values()];
 }
 
 /** The ids of everyone who played in a game, leaving out its Storytellers. */
 export function getGamePlayerIds(game: Game) {
   return new Set(game.players.filter((player) => !player.isStoryteller).map((player) => player.id));
+}
+
+/** Games per script family, for the script cards' win rate pill. */
+export function getScriptFamilyPlayCounts(games: Game[], scripts: StoredScript[]) {
+  const counts = new Map<string, number>();
+
+  for (const game of games) {
+    const familyId = getGameFamilyId(game, scripts, games);
+    if (familyId) counts.set(familyId, (counts.get(familyId) ?? 0) + 1);
+  }
+
+  return counts;
 }
 
 export function getScriptPlayCounts(games: Game[]) {
@@ -49,12 +137,15 @@ export function getScriptPlayCounts(games: Game[]) {
 
 export type ScriptWinRecord = { losses: number; wins: number };
 
-/** Your wins and losses per script, from games with a result where you played (not storytold). */
-export function getScriptWinRecords(games: Game[]) {
+/**
+ * Your wins and losses per script family (see `getScriptFamilyId`), from games with a result where
+ * you played (not storytold).
+ */
+export function getScriptWinRecords(games: Game[], scripts: StoredScript[] = []) {
   const records = new Map<string, ScriptWinRecord>();
 
   for (const game of games) {
-    const scriptId = game.scriptId ?? game.script?.id;
+    const scriptId = getGameFamilyId(game, scripts, games);
     if (!scriptId || game.result === undefined) continue;
     const appUser = game.players.find((player) => player.id === APP_USER_ID);
     if (appUser?.isStoryteller) continue;
@@ -65,6 +156,23 @@ export function getScriptWinRecords(games: Game[]) {
   }
 
   return records;
+}
+
+/** Each script's win rate games and your record, which both count its whole family. */
+export function getScriptCardWinRates(games: Game[], scripts: StoredScript[]) {
+  const familyRecords = getScriptWinRecords(games, scripts);
+  const familyPlayCounts = getScriptFamilyPlayCounts(games, scripts);
+  const scriptWinRateGames = new Map<string, number>();
+  const scriptWinRecords = new Map<string, ScriptWinRecord>();
+
+  for (const script of scripts) {
+    const familyId = getScriptFamilyId(script.id, scripts, games);
+    const record = familyRecords.get(familyId);
+    scriptWinRateGames.set(script.id, familyPlayCounts.get(familyId) ?? 0);
+    if (record) scriptWinRecords.set(script.id, record);
+  }
+
+  return { scriptWinRateGames, scriptWinRecords };
 }
 
 /** "3W 1L (75%)", or nothing when no game on the script has a result. */

@@ -603,6 +603,11 @@ export const useGameStore = create<GameState>()(
           const scripts = [...state.scripts];
           scripts[existingIndex] = {
             ...normalizedScript,
+            // Downloading or importing a script again keeps the base script it was given.
+            ...(normalizedScript.baseScriptId === undefined &&
+            state.scripts[existingIndex].baseScriptId !== undefined
+              ? { baseScriptId: state.scripts[existingIndex].baseScriptId }
+              : {}),
             id: state.scripts[existingIndex].id,
             roles: mergeRoleNotes(
               mergeRoleCatalogMetadata(normalizedScript.roles, [

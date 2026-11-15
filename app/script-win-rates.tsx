@@ -21,7 +21,12 @@ import {
 } from '@/utils/friend-utils';
 import { getFriendStats } from '@/utils/game-utils';
 import { APP_USER_ID } from '@/utils/object-id';
-import { DEFAULT_SCRIPT_MIN_GAMES, getGamePlayerIds, getScriptGames } from '@/utils/script-utils';
+import {
+  DEFAULT_SCRIPT_MIN_GAMES,
+  getGamePlayerIds,
+  getScriptFamilyNames,
+  getScriptGames,
+} from '@/utils/script-utils';
 
 export default function ScriptWinRatesRoute() {
   const { gameId, scriptId } = useLocalSearchParams<{ gameId?: string; scriptId: string }>();
@@ -39,7 +44,14 @@ export default function ScriptWinRatesRoute() {
     scripts.find((item) => item.id === scriptId)?.name ??
     (game?.script?.id === scriptId ? game.script.name : undefined) ??
     allGames.find((item) => item.script?.id === scriptId)?.script?.name;
-  const games = useMemo(() => getScriptGames(allGames, scriptId), [allGames, scriptId]);
+  const games = useMemo(
+    () => getScriptGames(allGames, scriptId, scripts),
+    [allGames, scriptId, scripts],
+  );
+  const otherScriptNames = useMemo(
+    () => getScriptFamilyNames(scriptId, allGames, scripts),
+    [allGames, scriptId, scripts],
+  );
   const ratedGames = games.filter((item) => item.result !== undefined).length;
   const gamePlayerIds = useMemo(() => (game ? getGamePlayerIds(game) : null), [game]);
   const ranking = useMemo(() => {
@@ -104,6 +116,11 @@ export default function ScriptWinRatesRoute() {
           <Text selectable style={styles.subtitle}>
             Win rates · {ratedGames} {ratedGames === 1 ? 'game' : 'games'} with a result
           </Text>
+          {otherScriptNames.length > 0 ? (
+            <Text selectable style={styles.subtitle}>
+              Also counts games on {otherScriptNames.join(', ')}.
+            </Text>
+          ) : null}
           {game ? <ScriptWinRateScope onChange={setScope} scope={scope} /> : null}
           {scope === 'game' && gamePlayerIds ? (
             <GamePlayersWinRates

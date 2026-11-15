@@ -5,6 +5,7 @@ import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Role, StoredScript } from '@/types/game';
 import { formatScriptSize, getScriptSizeBytes, isCustomScript } from '@/utils/script-image-utils';
+import { getBaseScriptCandidates } from '@/utils/script-utils';
 
 import { CustomScriptImageControls } from './custom-script-image-controls';
 import { ScriptCardMoreMenu } from './script-card-more-menu';
@@ -14,10 +15,15 @@ type ScriptCardProps = {
   canSelect: boolean;
   editing: boolean;
   gamesPlayed: number;
-  /** Your record on this script, e.g. "3W 1L (75%)". */
+  /** Games on this script and its base script family, which the win rates count. */
+  winRateGames: number;
+  /** Your record on this script's family, e.g. "3W 1L (75%)". */
   winRecord?: string | null;
   roleCatalog: Role[];
   script: StoredScript;
+  /** The other downloaded scripts, to choose a base script from. */
+  scripts: StoredScript[];
+  onChangeBase: (baseScriptId: string | null) => void;
   onDelete: () => void;
   onDuplicate: () => void;
   onEdit: () => void;
@@ -33,6 +39,7 @@ export function ScriptCard({
   canSelect,
   editing,
   gamesPlayed,
+  onChangeBase,
   onDelete,
   onDuplicate,
   onEdit,
@@ -44,9 +51,12 @@ export function ScriptCard({
   onUpdate,
   roleCatalog,
   script,
+  scripts,
+  winRateGames,
   winRecord,
 }: ScriptCardProps) {
   const custom = isCustomScript(script);
+  const baseScript = scripts.find((candidate) => candidate.id === script.baseScriptId);
 
   return (
     <View onLayout={onLayout} style={styles.card}>
@@ -86,7 +96,7 @@ export function ScriptCard({
             </View>
           ) : null}
         </View>
-        {gamesPlayed > 0 ? (
+        {winRateGames > 0 ? (
           <Pressable
             accessibilityHint="Shows your and your friends' win rates on this script"
             accessibilityLabel={winRecord ? `Win rates, you ${winRecord}` : 'Win rates'}
@@ -98,6 +108,11 @@ export function ScriptCard({
             <Text style={styles.winRatesText}>{winRecord ? `You ${winRecord}` : 'Win rates'}</Text>
             <ChevronRight color={colors.textSubtle} size={14} strokeWidth={2.4} />
           </Pressable>
+        ) : null}
+        {baseScript ? (
+          <Text selectable style={styles.metadata}>
+            Win rates count together with {baseScript.name}.
+          </Text>
         ) : null}
         {script.oneTime ? (
           <Text selectable style={styles.metadata}>
@@ -122,6 +137,9 @@ export function ScriptCard({
           onPress={onEdit}
         />
         <ScriptCardMoreMenu
+          baseCandidates={getBaseScriptCandidates(script, scripts)}
+          baseScript={baseScript}
+          onChangeBase={onChangeBase}
           oneTime={Boolean(script.oneTime)}
           onDelete={onDelete}
           onDuplicate={onDuplicate}

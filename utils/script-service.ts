@@ -198,7 +198,7 @@ export function createEmptyScript(name: string, usedIds: string[]): StoredScript
   };
 }
 
-/** Copies a script into a new custom script: no remote link, not one-time, editable roles. */
+/** Copies a script into a new custom script: no remote link, not one-time, editable roles. The original becomes its base script. */
 export function createDuplicateScript(script: StoredScript, usedIds: string[]): StoredScript {
   const { author: sourceAuthor, oneTime: _oneTime, remoteId: _remoteId, ...rest } = script;
   const name = `${script.name} (copy)`;
@@ -208,6 +208,7 @@ export function createDuplicateScript(script: StoredScript, usedIds: string[]): 
   return {
     ...rest,
     ...(author ? { author } : {}),
+    baseScriptId: script.id,
     id: createScriptId({ author, name }, usedIds),
     name,
     roles: script.roles.map((role) => ({ ...role })),

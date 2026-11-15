@@ -1,8 +1,13 @@
 import type { Game, Role, SavedNote, StoredScript } from '@/types/game';
 import {
   formatWinRecord,
+  getBaseScriptCandidates,
   getGamePlayerIds,
   getNightOrderRoleEntries,
+  getScriptCardWinRates,
+  getScriptFamilyId,
+  getScriptFamilyNames,
+  getScriptFamilyPlayCounts,
   getScriptGames,
   getScriptPlayCounts,
   getScriptRoleEntries,
@@ -69,6 +74,88 @@ describe('script utils', () => {
     expect(records.get('script-a')).toEqual({ losses: 1, wins: 0 });
     expect(formatWinRecord(records.get('script-z'))).toBe('2W 1L (67%)');
     expect(formatWinRecord(records.get('script-unused'))).toBeNull();
+  });
+
+  describe('base scripts', () => {
+    const family: StoredScript[] = [
+      createScript('base', 'Base'),
+      { ...createScript('variant', 'Variant'), baseScriptId: 'base' },
+      { ...createScript('variant-of-variant', 'Variant of variant'), baseScriptId: 'variant' },
+      createScript('other', 'Other'),
+      { ...createScript('loop-a', 'Loop A'), baseScriptId: 'loop-b' },
+      { ...createScript('loop-b', 'Loop B'), baseScriptId: 'loop-a' },
+    ];
+
+    it('groups a script with the end of its base chain', () => {
+      expect(getScriptFamilyId('base', family)).toBe('base');
+      expect(getScriptFamilyId('variant', family)).toBe('base');
+      expect(getScriptFamilyId('variant-of-variant', family)).toBe('base');
+      expect(getScriptFamilyId('other', family)).toBe('other');
+      expect(getScriptFamilyId('unknown', family)).toBe('unknown');
+      expect(['loop-a', 'loop-b']).toContain(getScriptFamilyId('loop-a', family));
+    });
+
+    it('keeps grouping a deleted script through the copy embedded in its game', () => {
+      const embedded = { ...createScript('gone', 'Gone'), baseScriptId: 'base' };
+      const games = [createGame({ script: embedded, scriptId: 'gone' })];
+
+      expect(getScriptFamilyId('gone', family, games)).toBe('base');
+      expect(getScriptFamilyId('gone', family)).toBe('gone');
+    });
+
+    it('finds the games of every script in the family', () => {
+      const onBase = createGame({ scriptId: 'base' });
+      const onVariant = createGame({ scriptId: 'variant' });
+      const onOther = createGame({ scriptId: 'other' });
+      const games = [onBase, onVariant, onOther];
+
+      expect(getScriptGames(games, 'variant', family)).toEqual([onBase, onVariant]);
+      expect(getScriptGames(games, 'base', family)).toEqual([onBase, onVariant]);
+      expect(getScriptGames(games, 'other', family)).toEqual([onOther]);
+      expect([...getScriptFamilyPlayCounts(games, family)]).toEqual([
+        ['base', 2],
+        ['other', 1],
+      ]);
+    });
+
+    it('adds up your record across the family', () => {
+      const games = [
+        createGame({ result: 'won', scriptId: 'base' }),
+        createGame({ result: 'lost', scriptId: 'variant' }),
+        createGame({ result: 'won', scriptId: 'other' }),
+      ];
+
+      const records = getScriptWinRecords(games, family);
+      expect(records.get('base')).toEqual({ losses: 1, wins: 1 });
+      expect(records.get('other')).toEqual({ losses: 0, wins: 1 });
+      expect(records.has('variant')).toBe(false);
+    });
+
+    it('gives every script card its family record and game count', () => {
+      const games = [
+        createGame({ result: 'won', scriptId: 'base' }),
+        createGame({ result: 'lost', scriptId: 'variant' }),
+      ];
+
+      const { scriptWinRateGames, scriptWinRecords } = getScriptCardWinRates(games, family);
+      expect(scriptWinRecords.get('variant')).toEqual({ losses: 1, wins: 1 });
+      expect(scriptWinRecords.get('base')).toEqual({ losses: 1, wins: 1 });
+      expect(scriptWinRateGames.get('variant-of-variant')).toBe(2);
+      expect(scriptWinRateGames.get('other')).toBe(0);
+    });
+
+    it('only offers scripts that are not based on this one', () => {
+      const candidates = getBaseScriptCandidates(family[1], family).map((script) => script.id);
+      expect(candidates).not.toContain('variant');
+      expect(candidates).not.toContain('variant-of-variant');
+      expect(candidates).toContain('base');
+      expect(candidates).toContain('other');
+    });
+
+    it('names the other scripts counted together', () => {
+      expect(getScriptFamilyNames('variant', [], family)).toEqual(['Base', 'Variant of variant']);
+      expect(getScriptFamilyNames('other', [], family)).toEqual([]);
+    });
   });
 
   it('sorts scripts by all saved games, including legacy embedded script IDs', () => {

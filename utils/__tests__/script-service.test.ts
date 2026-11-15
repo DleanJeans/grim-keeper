@@ -78,6 +78,7 @@ describe('script service', () => {
     );
 
     expect(duplicate).toEqual({
+      baseScriptId: 'trouble-brewing',
       id: 'trouble-brewing-copy-2',
       name: 'Trouble Brewing (copy)',
       version: '1.0.0',
