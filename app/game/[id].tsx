@@ -63,6 +63,7 @@ import {
 } from '@/utils/game-phase-utils';
 import { getLastDayWithData } from '@/utils/game-utils';
 import {
+  arrangePlayerMapPositions,
   clampMapHeight,
   clampMapWidth,
   getDefaultMapHeight,
@@ -73,6 +74,7 @@ import {
   resolveMapOverlaps,
   rotatePlayerMapPositions,
   scalePlayerMapPositions,
+  type TokenArrangement,
 } from '@/utils/layout-utils';
 import {
   getNominationLimit,
@@ -809,6 +811,25 @@ export default function GameRoute() {
     });
   }
 
+  function handleArrangeTokens(arrangement: TokenArrangement) {
+    const previousPositions: Record<string, PlayerPosition | undefined> = Object.fromEntries(
+      activeGame.players.map((player) => [player.id, player.position]),
+    );
+    runDayEdit(() => {
+      setLastRotationPositions(previousPositions);
+      updatePlayerPositions(
+        activeGame.id,
+        arrangePlayerMapPositions(
+          activeGame.players,
+          mapWidth,
+          mapHeight,
+          arrangement,
+          activeTokenSize,
+        ),
+      );
+    });
+  }
+
   function handleUndoRotation() {
     if (!lastRotationPositions) {
       return;
@@ -1247,6 +1268,7 @@ export default function GameRoute() {
     handleSetMapHeight,
     handleRotateTokens,
     handleUndoRotation,
+    handleArrangeTokens,
     handleResizeTokens,
     handleStartRoleAssignment,
     handleCancelRoleAssignment,

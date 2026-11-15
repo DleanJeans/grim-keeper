@@ -1,4 +1,4 @@
-import { Minus, Plus, RotateCcw, RotateCw, Undo2 } from 'lucide-react-native';
+import { Circle, Minus, Plus, RotateCcw, RotateCw, Square, Undo2 } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { DimensionSlider } from '@/components/game/dimension-slider';
 import { useGameRouteContext } from '@/components/game/game-route-context';
@@ -25,6 +25,7 @@ export function RearrangeActions() {
     activeTokenSize,
     canUndoRotation,
     exitRearrangeMode,
+    handleArrangeTokens,
     handleSetMapHeight,
     handleSetMapWidth,
     handleResizeTokens,
@@ -67,6 +68,16 @@ export function RearrangeActions() {
           icon={RotateCw}
           onPress={() => handleRotateTokens(rotationStepRadians)}
         />
+        <BarButton
+          accessibilityLabel="Arrange tokens in a circle"
+          icon={Circle}
+          onPress={() => handleArrangeTokens('circle')}
+        />
+        <BarButton
+          accessibilityLabel="Arrange tokens in a square"
+          icon={Square}
+          onPress={() => handleArrangeTokens('square')}
+        />
         <View style={styles.divider} />
         <BarButton
           accessibilityLabel="Shrink player tokens"
@@ -88,7 +99,7 @@ export function RearrangeActions() {
         />
         <View style={styles.spacer} />
         <BarButton
-          accessibilityLabel="Undo last token rotation"
+          accessibilityLabel="Undo last token rearrangement"
           disabled={!canUndoRotation}
           icon={Undo2}
           onPress={handleUndoRotation}

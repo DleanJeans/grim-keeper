@@ -1,5 +1,6 @@
 import type { Player } from '@/types/game';
 import {
+  arrangePlayerMapPositions,
   clampMapHeight,
   clampMapWidth,
   clampTokenPosition,
@@ -314,5 +315,36 @@ describe('resolveMapOverlaps', () => {
       }
     }
     expect(positions.a).toBeUndefined();
+  });
+});
+
+describe('arrangePlayerMapPositions', () => {
+  it('places every player on a circle around the map center', () => {
+    const positions = arrangePlayerMapPositions(players, 500, 500, 'circle', 90);
+
+    expect(Object.keys(positions)).toHaveLength(players.length);
+    for (const position of Object.values(positions)) {
+      expect(Math.hypot(position.x - 250, position.y - 250)).toBeCloseTo(205);
+    }
+    expect(positions['player-0'].x).toBeCloseTo(250);
+    expect(positions['player-0'].y).toBeCloseTo(455);
+  });
+
+  it('places every player along the map edge in a square', () => {
+    const positions = arrangePlayerMapPositions(players, 500, 500, 'square', 90);
+
+    for (const position of Object.values(positions)) {
+      const onEdge =
+        position.x === 45 || position.x === 455 || position.y === 45 || position.y === 455;
+      expect(onEdge).toBe(true);
+    }
+  });
+
+  it('leaves Storytellers where they are', () => {
+    const withStoryteller = [...players, { id: 'st', name: 'ST', seat: 8, isStoryteller: true }];
+
+    expect(arrangePlayerMapPositions(withStoryteller, 500, 500, 'circle', 90)).not.toHaveProperty(
+      'st',
+    );
   });
 });

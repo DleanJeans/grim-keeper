@@ -12,6 +12,7 @@ import type {
   StartingNight,
 } from '@/types/game';
 import type { GamePhasePosition } from '@/utils/game-phase-utils';
+import type { TokenArrangement } from '@/utils/layout-utils';
 import type { RoleToggleMode } from '@/utils/role-utils';
 
 export type GameTab = 'interactions' | 'nominations' | 'deaths' | 'notes';
@@ -123,6 +124,7 @@ export type GameRouteContextValue = {
   handleSetMapHeight: (height: number) => void;
   handleRotateTokens: (angleRadians: number) => void;
   handleUndoRotation: () => void;
+  handleArrangeTokens: (arrangement: TokenArrangement) => void;
   handleResizeTokens: (sizeDelta: number) => void;
   handleStartRoleAssignment: (kind: PlayerRoleAssignment['kind']) => void;
   handleCancelRoleAssignment: () => void;

@@ -483,3 +483,56 @@ export function rotatePlayerMapPositions(
     }),
   );
 }
+
+export type TokenArrangement = 'circle' | 'square';
+
+/**
+ * Puts every non-Storyteller token on a circle (an ellipse on a non-square map) or along the
+ * map's edge square, in seat order starting at the bottom center. Storytellers stay put.
+ */
+export function arrangePlayerMapPositions(
+  players: Player[],
+  mapWidth: number,
+  mapHeight: number,
+  arrangement: TokenArrangement,
+  tokenSize = defaultTokenSize,
+): Record<string, PlayerPosition> {
+  const seated = players
+    .filter((player) => !player.isStoryteller)
+    .sort((first, second) => first.seat - second.seat);
+  const inset = getTokenSize(tokenSize) / 2;
+  const radiusX = Math.max(0, mapWidth / 2 - inset);
+  const radiusY = Math.max(0, mapHeight / 2 - inset);
+
+  return Object.fromEntries(
+    seated.map((player, index) => {
+      if (arrangement === 'square') {
+        return [
+          player.id,
+          getPlayerMapPosition(
+            { ...player, position: undefined },
+            players,
+            mapWidth,
+            mapHeight,
+            tokenSize,
+          ),
+        ];
+      }
+
+      const angle = Math.PI / 2 + (2 * Math.PI * index) / Math.max(1, seated.length);
+
+      return [
+        player.id,
+        clampTokenPosition(
+          {
+            x: mapWidth / 2 + radiusX * Math.cos(angle),
+            y: mapHeight / 2 + radiusY * Math.sin(angle),
+          },
+          mapWidth,
+          mapHeight,
+          tokenSize,
+        ),
+      ];
+    }),
+  );
+}
