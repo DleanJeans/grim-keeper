@@ -1,4 +1,4 @@
-import { MessagesSquare, Trash2 } from 'lucide-react-native';
+import { MessagesSquare, Timer, Trash2 } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
@@ -6,6 +6,7 @@ import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Conversation, Player } from '@/types/game';
+import { formatDuration } from '@/utils/conversation-utils';
 
 type InteractionCardProps = {
   conversation: Conversation;
@@ -71,6 +72,14 @@ export function InteractionCard({
             </View>
           </View>
         </View>
+        {conversation.durationMs === undefined ? null : (
+          <View style={styles.duration}>
+            <Timer color={colors.textMuted} size={13} />
+            <Text selectable style={styles.durationText}>
+              {formatDuration(conversation.durationMs)}
+            </Text>
+          </View>
+        )}
         <Pressable
           accessibilityLabel="Delete interaction"
           accessibilityRole="button"
@@ -128,6 +137,18 @@ const styles = StyleSheet.create({
   },
   deleteButtonPressed: {
     backgroundColor: colors.surfacePressed,
+  },
+  duration: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 3,
+    marginRight: 8,
+  },
+  durationText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontVariant: ['tabular-nums'],
+    fontWeight: '800',
   },
   initiatorName: {
     color: colors.text,

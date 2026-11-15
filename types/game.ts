@@ -94,6 +94,8 @@ export type Conversation = {
   initiatorId: string;
   voterIds?: string[];
   createdAt: string;
+  /** How long the talk lasted, timed from tapping Talk to Confirm. Absent on older talks. */
+  durationMs?: number;
 };
 
 export type PlayerDayNoteEntry = {

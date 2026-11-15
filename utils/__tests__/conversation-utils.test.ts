@@ -2,6 +2,7 @@ import type { Conversation, Player } from '@/types/game';
 import {
   buildConversationGroupRepeats,
   buildConversationRows,
+  formatDuration,
   getConversationGroupKey,
   getNeverTalkedRows,
   getPlayersNotTalkedWith,
@@ -163,5 +164,13 @@ describe('getNeverTalkedRows', () => {
       ['cora', ['alice', 'dan']],
     ]);
     expect(silent.map((player) => player.id)).toEqual(['dan']);
+  });
+});
+
+describe('formatDuration', () => {
+  it('formats milliseconds as HH:MM:SS', () => {
+    expect(formatDuration(0)).toBe('00:00:00');
+    expect(formatDuration(125_400)).toBe('00:02:05');
+    expect(formatDuration(3_725_000)).toBe('01:02:05');
   });
 });
