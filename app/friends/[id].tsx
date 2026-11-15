@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { DjSongSection } from '@/components/dj/dj-song-section';
 import { FriendClaimsCard } from '@/components/friend-claims-card';
+import { FriendDeleteButton } from '@/components/friends/friend-delete-button';
 import { FriendGamesList } from '@/components/friends/friend-games-list';
 import { FriendNameEditToggle } from '@/components/friends/friend-name-edit-toggle';
 import { FriendNameInputRow } from '@/components/friends/friend-name-input-row';
@@ -170,6 +171,14 @@ export default function FriendDetailRoute() {
               scripts={scripts}
             />
           </View>
+
+          {friend.gamesPlayed === 0 ? (
+            <FriendDeleteButton
+              friendId={friend.id}
+              friendName={friend.name}
+              noteCount={notes.length}
+            />
+          ) : null}
         </ResponsiveContent>
       </ScrollView>
     </>

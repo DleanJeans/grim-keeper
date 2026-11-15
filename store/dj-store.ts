@@ -10,6 +10,7 @@ import {
   recordDjPlayed,
   remapDjFriendTarget,
   remapDjSessionGameId,
+  removeDjFriendTarget,
   removeDjSong,
   restoreDjData,
   serializeDjData,
@@ -25,6 +26,7 @@ type DjState = DjData & {
   importSession: (sessions: DjSessionSong[] | undefined, gameId: string) => void;
   recordPlayed: (gameId: string, songUrl: string) => void;
   remapFriendTarget: (oldId: string, newId: string) => void;
+  removeFriendTarget: (friendId: string) => void;
   removeSong: (target: DjTarget, songUrl: string) => void;
   setEnabled: (enabled: boolean) => void;
   unmarkPlayed: (gameId: string, songUrl: string) => void;
@@ -59,6 +61,8 @@ export const useDjStore = create<DjState>()(
         set((state) => ({ sessions: recordDjPlayed(state.sessions, gameId, songUrl) })),
       remapFriendTarget: (oldId, newId) =>
         set((state) => ({ playlists: remapDjFriendTarget(state.playlists, oldId, newId) })),
+      removeFriendTarget: (friendId) =>
+        set((state) => ({ playlists: removeDjFriendTarget(state.playlists, friendId) })),
       removeSong: (target, songUrl) =>
         set((state) => ({ playlists: removeDjSong(state.playlists, target, songUrl) })),
       setEnabled: (enabled) => set({ enabled }),

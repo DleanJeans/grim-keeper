@@ -32,6 +32,7 @@ import {
   getFriendByName,
   getFriendSummaries,
   hasFriendName,
+  isFriendInGames,
 } from '@/utils/friend-utils';
 import { getGameStartingNight } from '@/utils/game-phase-utils';
 import { type GameTransfer, mergeGameTransfer } from '@/utils/game-transfer';
@@ -118,6 +119,8 @@ type GameState = GameData & {
   defaultStartingNight: StartingNight;
   addFriend: (name: string) => void;
   renameFriend: (friendId: string, currentName: string, nextName: string) => string | undefined;
+  /** Removes a stored friend. Friends that appear in a game stay, so returns whether it deleted. */
+  deleteFriend: (friendId: string) => boolean;
   updateFriendPicture: (
     friend: Pick<Friend, 'createdAt' | 'id' | 'name'>,
     patch: Partial<Pick<Friend, 'picture'>>,
@@ -370,6 +373,18 @@ export const useGameStore = create<GameState>()(
               : [...state.friends, next];
           return { friends };
         });
+      },
+      deleteFriend: (friendId) => {
+        const friend = get().friends.find((candidate) => candidate.id === friendId);
+
+        if (!friend || isFriendInGames(get().games, friend.name)) {
+          return false;
+        }
+
+        set((state) => ({
+          friends: state.friends.filter((candidate) => candidate.id !== friendId),
+        }));
+        return true;
       },
       renameFriend: (friendId, currentName, nextName) => {
         const normalizedCurrentName = normalizePlayerName(currentName);

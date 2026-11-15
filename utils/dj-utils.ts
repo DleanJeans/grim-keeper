@@ -228,6 +228,12 @@ export function remapDjFriendTarget(playlists: DjPlaylist[], oldId: string, newI
   );
 }
 
+export function removeDjFriendTarget(playlists: DjPlaylist[], friendId: string) {
+  return playlists.filter(
+    (playlist) => !(playlist.target.type === 'friend' && playlist.target.id === friendId),
+  );
+}
+
 export function remapDjSessionGameId(
   sessions: DjSessionSong[],
   sourceGameId: string,

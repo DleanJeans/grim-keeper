@@ -79,6 +79,18 @@ export function getFriendSummaries(
   );
 }
 
+/** Whether the friend (by name) is a player or Storyteller in any game. */
+export function isFriendInGames(games: Game[], friendName: string) {
+  const key = normalizePlayerName(friendName).toLocaleLowerCase();
+
+  return games.some((game) =>
+    game.players.some(
+      (player) =>
+        player.id !== APP_USER_ID && normalizePlayerName(player.name).toLocaleLowerCase() === key,
+    ),
+  );
+}
+
 export function sortFriendSummaries(friends: FriendSummary[], savedNotes: SavedNote[]) {
   return [...friends].sort((first, second) => {
     const gamesDifference = second.gamesPlayed - first.gamesPlayed;

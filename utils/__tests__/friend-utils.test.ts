@@ -6,6 +6,7 @@ import {
   getSelectedFriendIds,
   getUnsavedPlayerFriends,
   hasFriendName,
+  isFriendInGames,
   mergeFriendPlayerSelection,
   rankFriendsByWinRate,
   sortFriendSummaries,
@@ -312,5 +313,26 @@ describe('rankFriendsByWinRate', () => {
     expect(
       rankFriendsByWinRate(same, games, 'winRate', 2, 'same').friends.map(({ id }) => id),
     ).toEqual(['bob', 'ann']);
+  });
+});
+
+describe('isFriendInGames', () => {
+  it('finds a friend by name in any game, ignoring case and spacing', () => {
+    expect(isFriendInGames(games, ' ALICE ')).toBe(true);
+    expect(isFriendInGames(games, 'Cora')).toBe(true);
+  });
+
+  it('is false for a friend who has no game', () => {
+    expect(isFriendInGames(games, 'Dana')).toBe(false);
+    expect(isFriendInGames([], 'Alice')).toBe(false);
+  });
+
+  it('does not count the app user', () => {
+    const appUserGame: Game = {
+      ...games[0],
+      players: [{ id: APP_USER_ID, name: 'You', seat: 0 }],
+    };
+
+    expect(isFriendInGames([appUserGame], 'You')).toBe(false);
   });
 });
