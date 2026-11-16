@@ -26,6 +26,9 @@ const TOP_FONT = 8.5 / 32;
 const MIN_TOP_FONT = 5 / 32;
 const INITIAL_FONT = 24 / 32;
 const SMALL_INITIAL_FONT = 14 / 32;
+// Letters whose tail hangs below the baseline; raised so the tail clears the name ribbon.
+const DESCENDER_INITIALS = 'QJ';
+const DESCENDER_INITIAL_LIFT = 0.12;
 // Width of one small-caps glyph as a share of the font size, for fitting text on the arcs.
 const GLYPH_WIDTH = 0.62;
 const NAME_ARC_ROOM = 1.7;
@@ -77,6 +80,9 @@ export function GrimoireTokenFace({
 }: GrimoireTokenFaceProps) {
   const center = size / 2;
   const radius = size / 2 - size * RING_SPACE * 0.5;
+  const initialLetter = getInitial(initialName ?? name);
+  const initialLift =
+    !compactInitial && DESCENDER_INITIALS.includes(initialLetter) ? DESCENDER_INITIAL_LIFT : 0;
   const ribbonRadius = radius * RIBBON_RADIUS;
   const topRadius = radius * TOP_TEXT_RADIUS;
   const ribbonSpread = (RIBBON_HALF_ANGLE_DEGREES * Math.PI) / 180;
@@ -167,9 +173,11 @@ export function GrimoireTokenFace({
               opacity={0.85}
               textAnchor="middle"
               x={center}
-              y={center + radius * (compactInitial ? 0.38 : storyteller ? 0.02 : 0.06)}
+              y={
+                center + radius * (compactInitial ? 0.38 : storyteller ? 0.02 : 0.06 - initialLift)
+              }
             >
-              {storyteller && !compactInitial ? '✦' : getInitial(initialName ?? name)}
+              {storyteller && !compactInitial ? '✦' : initialLetter}
             </SvgText>
           ) : null}
           <Path
