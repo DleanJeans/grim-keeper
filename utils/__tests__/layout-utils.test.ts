@@ -340,6 +340,18 @@ describe('arrangePlayerMapPositions', () => {
     }
   });
 
+  it('starts at the app user, not seat 0, so a shared game keeps them at the bottom', () => {
+    const sharedPlayers = players.map((player, index) =>
+      index === 3 ? { ...player, id: 'app-user' } : player,
+    );
+
+    for (const arrangement of ['circle', 'square'] as const) {
+      const positions = arrangePlayerMapPositions(sharedPlayers, 500, 500, arrangement, 90);
+      expect(positions['app-user'].x).toBeCloseTo(250);
+      expect(positions['app-user'].y).toBeCloseTo(455);
+    }
+  });
+
   it('leaves Storytellers where they are', () => {
     const withStoryteller = [...players, { id: 'st', name: 'ST', seat: 8, isStoryteller: true }];
 

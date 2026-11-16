@@ -1,4 +1,5 @@
 import type { Player, PlayerPosition } from '@/types/game';
+import { APP_USER_ID } from '@/utils/app-user';
 import { DESKTOP_CONTENT_MAX_WIDTH } from '@/utils/responsive-utils';
 
 export const defaultTokenSize = 100;
@@ -162,6 +163,24 @@ export function getPlayerMapPosition(
     .filter((candidate) => !candidate.isStoryteller)
     .sort((first, second) => first.seat - second.seat);
   const index = sortedPlayers.findIndex((candidate) => candidate.id === player.id);
+
+  return getPerimeterPosition(
+    Math.max(0, index),
+    sortedPlayers.length,
+    mapWidth,
+    mapHeight,
+    resolvedTokenSize,
+  );
+}
+
+/** Spot `index` of `count` along the map's edge square, starting at the bottom center. */
+function getPerimeterPosition(
+  index: number,
+  count: number,
+  mapWidth: number,
+  mapHeight: number,
+  resolvedTokenSize: number,
+): PlayerPosition {
   const inset = resolvedTokenSize / 2;
   const left = Math.min(inset, mapWidth / 2);
   const right = Math.max(left, mapWidth - inset);
@@ -176,9 +195,7 @@ export function getPlayerMapPosition(
   }
 
   const bottomCenterOffset = width * 1.5 + height;
-  const offset =
-    (bottomCenterOffset + (perimeter * Math.max(0, index)) / Math.max(1, sortedPlayers.length)) %
-    perimeter;
+  const offset = (bottomCenterOffset + (perimeter * index) / Math.max(1, count)) % perimeter;
 
   if (offset <= width) {
     return { x: left + offset, y: top };
@@ -500,22 +517,24 @@ export function arrangePlayerMapPositions(
   const seated = players
     .filter((player) => !player.isStoryteller)
     .sort((first, second) => first.seat - second.seat);
-  const inset = getTokenSize(tokenSize) / 2;
+  const resolvedTokenSize = getTokenSize(tokenSize);
+  const inset = resolvedTokenSize / 2;
   const radiusX = Math.max(0, mapWidth / 2 - inset);
   const radiusY = Math.max(0, mapHeight / 2 - inset);
+  // The app user goes at the bottom center (seat 0 unless the game came from a share link).
+  const startIndex = Math.max(
+    0,
+    seated.findIndex((player) => player.id === APP_USER_ID),
+  );
 
   return Object.fromEntries(
-    seated.map((player, index) => {
+    seated.map((player, seatIndex) => {
+      const index = (seatIndex - startIndex + seated.length) % seated.length;
+
       if (arrangement === 'square') {
         return [
           player.id,
-          getPlayerMapPosition(
-            { ...player, position: undefined },
-            players,
-            mapWidth,
-            mapHeight,
-            tokenSize,
-          ),
+          getPerimeterPosition(index, seated.length, mapWidth, mapHeight, resolvedTokenSize),
         ];
       }
 
