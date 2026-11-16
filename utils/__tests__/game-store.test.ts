@@ -958,8 +958,8 @@ describe('storyteller players', () => {
 
     expect(storytellers.map((player) => player.id)).toEqual(['knave-1', 'knave-2']);
     expect(storytellers.map((player) => player.position)).toEqual([
-      { x: 266.25, y: 200 },
-      { x: 333.75, y: 200 },
+      { x: 262.5, y: 200 },
+      { x: 337.5, y: 200 },
     ]);
 
     useGameStore.getState().updateGamePlayers(game.id, [{ id: 'alice', name: 'Alice' }], [second]);

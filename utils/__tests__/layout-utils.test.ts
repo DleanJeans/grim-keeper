@@ -57,8 +57,8 @@ describe('layout utils', () => {
   it('uses the requested new-game defaults', () => {
     expect(defaultMapWidth).toBe(500);
     expect(defaultMapHeight).toBe(500);
-    expect(defaultTokenSize).toBe(90);
-    expect(getTokenSize()).toBe(90);
+    expect(defaultTokenSize).toBe(100);
+    expect(getTokenSize()).toBe(100);
   });
 
   it('clamps token sizes to the supported range', () => {
@@ -97,14 +97,14 @@ describe('layout utils', () => {
     const positions = players.map((player) => getPlayerMapPosition(player, players, 268, 200));
 
     expect(positions).toEqual([
-      { x: 134, y: 155 },
-      { x: 62, y: 155 },
-      { x: 45, y: 100 },
-      { x: 62, y: 45 },
-      { x: 134, y: 45 },
-      { x: 206, y: 45 },
-      { x: 223, y: 100 },
-      { x: 206, y: 155 },
+      { x: 134, y: 150 },
+      { x: 67, y: 150 },
+      { x: 50, y: 100 },
+      { x: 67, y: 50 },
+      { x: 134, y: 50 },
+      { x: 201, y: 50 },
+      { x: 218, y: 100 },
+      { x: 201, y: 150 },
     ]);
   });
 

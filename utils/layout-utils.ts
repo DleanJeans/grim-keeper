@@ -1,7 +1,7 @@
 import type { Player, PlayerPosition } from '@/types/game';
 import { DESKTOP_CONTENT_MAX_WIDTH } from '@/utils/responsive-utils';
 
-export const defaultTokenSize = 90;
+export const defaultTokenSize = 100;
 export const defaultMapWidth = 500;
 export const defaultMapHeight = 500;
 export const minTokenSize = 40;
