@@ -2,6 +2,7 @@ import type { CharacterTypeCounts, GamePhase, Player, Role } from '@/types/game'
 import { APP_USER_ID } from '@/utils/app-user';
 import {
   GENERIC_CHARACTER_TYPE_ROLES,
+  getRoleAlignment,
   getRoleAssignmentForDayOrPrevious,
 } from '@/utils/role-utils';
 
@@ -81,11 +82,12 @@ export function getClaimClashes(
   for (const player of players) {
     if (player.isStoryteller) continue;
     const roleIds = getCurrentRoleIds(player, day, phase);
+    const isEvil = isPlayerEvil(player, day, phase, roleById);
     for (const roleId of roleIds) {
       // "Outsider" and the like say what type someone is, not which character.
       if (roleId.startsWith('generic_')) continue;
-      // Your own claim of a bluff is you using it, not a clash.
-      if (bluffs.has(roleId) && player.id !== APP_USER_ID) {
+      // Your own claim, or an evil teammate's, of a bluff is using it, not a clash.
+      if (bluffs.has(roleId) && player.id !== APP_USER_ID && !isEvil) {
         bluffClaims.push({ playerId: player.id, roleId });
       }
       if (scriptRoleIds.size > 0 && !scriptRoleIds.has(roleId) && !travellerIds.has(roleId)) {
@@ -124,6 +126,26 @@ export function getClaimClashes(
         ? { claimed: claimedOutsiders, maxSetup, modifierRoleIds, setup: counts.outsiders }
         : undefined,
   };
+}
+
+/** Confirmed as evil: a good character turned evil (`_evil`) or an evil character. */
+function isPlayerEvil(
+  player: Player,
+  day: number,
+  phase: GamePhase,
+  roleById: Map<string, Role>,
+): boolean {
+  const confirmed = getRoleAssignmentForDayOrPrevious(
+    player.roleAssignments,
+    day,
+    'confirm',
+    phase,
+  );
+  return (confirmed?.roleIds ?? []).some((roleId) => {
+    if (roleId.endsWith('_evil')) return true;
+    const role = roleById.get(roleId);
+    return !!role && getRoleAlignment(role) === 'e';
+  });
 }
 
 function getCurrentRoleIds(player: Player, day: number, phase: GamePhase): string[] {

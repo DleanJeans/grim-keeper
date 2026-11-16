@@ -104,6 +104,17 @@ describe('getClaimClashes', () => {
     expect(clashes.bluffClaims).toEqual([{ playerId: 'b', roleId: 'empath' }]);
   });
 
+  it('does not flag an evil teammate claiming one of your bluffs', () => {
+    const players = [
+      player('a', [assignment('claim', ['chef']), assignment('confirm', ['chef_evil'])]),
+      player('b', [assignment('claim', ['empath'])]),
+    ];
+    const clashes = getClaimClashes(players, roles, counts, 1, 'day', {
+      bluffRoleIds: ['chef', 'empath'],
+    });
+    expect(clashes.bluffClaims).toEqual([{ playerId: 'b', roleId: 'empath' }]);
+  });
+
   it('does not count a multi-character claim as a double claim', () => {
     const players = [
       player('a', [assignment('claim', ['chef', 'empath', 'saint'])]),
