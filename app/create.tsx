@@ -25,6 +25,7 @@ import {
   sortStorytellerSummaries,
 } from '@/utils/friend-utils';
 import { defaultMapHeight, defaultMapWidth } from '@/utils/layout-utils';
+import { clearNewGameDraft, readNewGameDraft, writeNewGameDraft } from '@/utils/new-game-draft';
 import { APP_USER_ID } from '@/utils/object-id';
 import { DESKTOP_CONTENT_MAX_WIDTH } from '@/utils/responsive-utils';
 import { SUSHI_BUFFET_SCRIPT_ID } from '@/utils/script-constants';
@@ -56,16 +57,22 @@ export default function CreateRoute() {
   const storedFriends = useGameStore((state) => state.friends);
   const savedNotes = useGameStore((state) => state.savedNotes);
   const inputRef = useRef<RNTextInput>(null);
+  const initialDraft = useRef(
+    gameIdParam || copyPlayersFromParam ? undefined : readNewGameDraft(),
+  ).current;
   const [name, setName] = useState('');
   const [nameFocused, setNameFocused] = useState(false);
-  const [draftPlayers, setDraftPlayers] = useState<DraftPlayer[]>([]);
+  const [draftPlayers, setDraftPlayers] = useState<DraftPlayer[]>(initialDraft?.players ?? []);
   const [movingPlayerId, setMovingPlayerId] = useState<string | null>(null);
   const [draftSelectedScriptId, setDraftSelectedScriptId] = useState<string | null>(
-    scriptIdParam ?? null,
+    scriptIdParam ?? initialDraft?.scriptId ?? null,
   );
-  const [selectedLoricIds, setSelectedLoricIds] = useState<string[]>([]);
+  const [selectedLoricIds, setSelectedLoricIds] = useState<string[]>(initialDraft?.loricIds ?? []);
   const [selectedSushiRoleIds, setSelectedSushiRoleIds] = useState<string[]>([]);
-  const [draftSelectedStorytellerIds, setDraftSelectedStorytellerIds] = useState<string[]>([]);
+  const [draftSelectedStorytellerIds, setDraftSelectedStorytellerIds] = useState<string[]>(
+    initialDraft?.storytellerIds ?? [],
+  );
+  const gameCreatedRef = useRef(false);
   const draftGameId = useRef<string | null>(null);
   const copiedPlayersGameId = useRef<string | null>(null);
   const sushiSelectionKeyRef = useRef<string | null>(null);
@@ -168,6 +175,26 @@ export default function CreateRoute() {
       )
       .slice(0, 5);
   }, [friends, normalizedName, selectedNames]);
+
+  const isNewGameDraft = !gameIdParam && !copyPlayersFromParam;
+  useEffect(() => {
+    if (!isNewGameDraft || gameCreatedRef.current) {
+      return;
+    }
+
+    writeNewGameDraft({
+      loricIds: selectedLoricIds,
+      players: draftPlayers,
+      scriptId: draftSelectedScriptId,
+      storytellerIds: draftSelectedStorytellerIds,
+    });
+  }, [
+    draftPlayers,
+    draftSelectedScriptId,
+    draftSelectedStorytellerIds,
+    isNewGameDraft,
+    selectedLoricIds,
+  ]);
 
   useEffect(() => {
     if (editingGame && draftGameId.current !== editingGame.id) {
@@ -354,6 +381,8 @@ export default function CreateRoute() {
       storytellers: selectedStorytellers,
       sushiRoleIds: isSushiBuffet ? selectedSushiRoleIds : undefined,
     });
+    gameCreatedRef.current = true;
+    clearNewGameDraft();
     void requestWebFullscreen();
     router.replace({ pathname: '/game/[id]', params: { id: game.id } });
   }
