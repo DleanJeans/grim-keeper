@@ -7,6 +7,7 @@ import type {
   RoleInfoEntry,
 } from '@/types/game';
 import { getDeathPhase, getEventPhaseIndex } from '@/utils/game-phase-utils';
+import nightSheet from '@/utils/botc-nightsheet.json';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 import { getRoleDisplayForDayOrPrevious } from '@/utils/role-utils';
 
@@ -564,7 +565,62 @@ export function getRoleInfoNights(
   return Array.from(
     { length: Math.max(0, day - firstNight + 1) },
     (_, index) => firstNight + index,
-  ).filter((night) => !areAllDead(owners, night, 'night'));
+  ).filter(
+    (night) => !areAllDead(owners, night, 'night') || diedAfterWaking(roleId, owners, night),
+  );
+}
+
+const DEMON_ROLE_IDS = [
+  'imp',
+  'pukka',
+  'nodashii',
+  'vigormortis',
+  'fanggu',
+  'vortox',
+  'zombuul',
+  'shabaloth',
+  'po',
+  'ojo',
+  'lleech',
+  'legion',
+  'lilmonsta',
+  'yaggababble',
+  'kazali',
+  'lordoftyphon',
+  'riot',
+  'alhadikhia',
+  'leviathan',
+  'lordofthetyphon',
+];
+
+function normalizeNightId(id: string) {
+  return id.toLocaleLowerCase().replace(/[^a-z]/g, '');
+}
+
+function getOtherNightIndex(id: string) {
+  const index = nightSheet.otherNight.findIndex((entry) => normalizeNightId(entry) === id);
+  return index < 0 ? undefined : index;
+}
+
+/**
+ * Whether every owner either is alive on the night or was killed that night by a killer who wakes
+ * after the character, so the character still woke and got its info before dying.
+ */
+function diedAfterWaking(roleId: string, owners: Player[], night: number) {
+  const ownIndex = getOtherNightIndex(normalizeNightId(roleId));
+  if (ownIndex === undefined) return false;
+
+  return owners.some((owner) => {
+    const death = owner.death;
+    if (!death || death.kind !== 'night' || death.day !== night) return false;
+    if (getDeathPhase(death) !== 'night') return false;
+
+    const killerIds = (death.killerRoleIds ?? []).map(normalizeNightId);
+    const killerIndexes = (killerIds.length > 0 ? killerIds : DEMON_ROLE_IDS)
+      .map(getOtherNightIndex)
+      .filter((index): index is number => index !== undefined);
+    return killerIndexes.length > 0 && ownIndex < Math.min(...killerIndexes);
+  });
 }
 
 /**

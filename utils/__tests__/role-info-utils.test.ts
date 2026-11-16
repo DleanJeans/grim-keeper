@@ -656,6 +656,17 @@ describe('getRoleInfoNights', () => {
     expect(getRoleInfoNights({ id: 'empath' }, 3)).toEqual([1, 2, 3]);
   });
 
+  it('keeps the night a character woke before its night killer', () => {
+    const snake = makePlayer('ann', 0, {
+      death: { day: 2, kind: 'night', phase: 'night', updatedAt: NOW, killerRoleIds: ['imp'] },
+    });
+    expect(getRoleInfoNights({ id: 'snakecharmer' }, 3, [snake])).toEqual([1, 2]);
+    const late = makePlayer('bob', 0, {
+      death: { day: 2, kind: 'night', phase: 'night', updatedAt: NOW, killerRoleIds: ['imp'] },
+    });
+    expect(getRoleInfoNights({ id: 'empath' }, 3, [late])).toEqual([1]);
+  });
+
   it('starts other-nights characters on the second night', () => {
     expect(getRoleInfoNights({ id: 'imp' }, 3)).toEqual([2, 3]);
     expect(getRoleInfoNights({ id: 'imp' }, 1)).toEqual([]);
