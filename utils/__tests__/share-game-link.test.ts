@@ -9,9 +9,11 @@ import {
   createSharedGameTransfer,
   createShareGameUrl,
   decodeSharedGame,
+  encodeSharedGame,
   findExistingSharedGame,
   findSharedPlayerIndex,
   getQuarterTurnsToBottom,
+  getSharedCharacterCounts,
 } from '@/utils/share-game-link';
 
 const customRole: Role = {
@@ -40,7 +42,7 @@ describe('share game link', () => {
     const value = new URL(url).searchParams.get('g') as string;
     const decoded = decodeSharedGame(value);
 
-    expect(url.startsWith('https://grim-keeper.expo.app/share?g=')).toBe(true);
+    expect(url.startsWith('https://grim-keeper.expo.app/s?g=')).toBe(true);
     expect(decoded.p.map((player) => player[0])).toEqual(['DJ', 'Alice', 'Bob', 'Carol', 'Story']);
     expect(decoded.p[4][4]).toBe(1);
     expect(decoded.s?.name).toBe('Custom Script');
@@ -174,6 +176,35 @@ describe('share game link', () => {
       .replace(/=+$/, '');
 
     expect(decodeSharedGame(value).p.map((player) => player[0])).toEqual(['DJ', 'Alice']);
+  });
+
+  it('carries the starting character counts only when set by hand', () => {
+    const standard = createSharedGame(createBigGame(script), [], [], 'DJ');
+    expect(standard.k).toBeUndefined();
+    expect(getSharedCharacterCounts(standard)).toEqual({
+      demons: 1,
+      minions: 2,
+      outsiders: 2,
+      townsfolk: 7,
+    });
+
+    const custom = createSharedGame(
+      {
+        ...createBigGame(script),
+        characterTypeCounts: { demons: 1, minions: 3, outsiders: 1, townsfolk: 7 },
+      },
+      [],
+      [],
+      'DJ',
+    );
+    const decoded = decodeSharedGame(encodeSharedGame(custom));
+    expect(decoded.k).toEqual([7, 1, 3, 1]);
+    expect(createSharedGameTransfer(decoded, 0, 'DJ').data.game.characterTypeCounts).toEqual({
+      demons: 1,
+      minions: 3,
+      outsiders: 1,
+      townsfolk: 7,
+    });
   });
 
   it('rejects a broken link', () => {
