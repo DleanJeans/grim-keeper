@@ -165,54 +165,61 @@ export function CreateFormHeader({
             selectedFriendIds={selectedFriendIds}
           />
         ) : null}
-        <Text selectable style={styles.label}>
-          Player name
-        </Text>
-        <View style={styles.nameRow}>
-          <View style={styles.inputContainer}>
-            <View
-              accessibilityElementsHidden={!nameFocused}
-              importantForAccessibility={nameFocused ? 'auto' : 'no-hide-descendants'}
-              style={[styles.friendPopover, nameFocused ? undefined : styles.friendPopoverHidden]}
-            >
-              <FriendSuggestions friends={friends} onSelectFriend={onSelectFriend} />
-            </View>
-            <TextInput
-              autoCapitalize="words"
-              autoCorrect={false}
-              accessibilityLabel="Player name"
-              enterKeyHint="done"
-              ref={inputRef}
-              onBlur={onBlurName}
-              onChangeText={onChangeName}
-              onFocus={onFocusName}
-              onSubmitEditing={onSubmitName}
-              returnKeyType="done"
-              submitBehavior="submit"
-              value={name}
-              style={[styles.nameInput, duplicateName ? styles.nameInputDuplicate : null]}
-            />
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            disabled={!canAddPlayer}
-            onPress={onAddPlayer}
-            style={({ pressed }) => [
-              styles.addButton,
-              pressed && styles.buttonPressed,
-              !canAddPlayer && styles.buttonDisabled,
-            ]}
-          >
-            <Plus
-              color={canAddPlayer ? colors.text : colors.onDisabled}
-              size={17}
-              strokeWidth={2.7}
-            />
-            <Text style={[styles.addButtonText, !canAddPlayer && styles.buttonTextDisabled]}>
-              Add
+        {isEditing ? (
+          <>
+            <Text selectable style={styles.label}>
+              Player name
             </Text>
-          </Pressable>
-        </View>
+            <View style={styles.nameRow}>
+              <View style={styles.inputContainer}>
+                <View
+                  accessibilityElementsHidden={!nameFocused}
+                  importantForAccessibility={nameFocused ? 'auto' : 'no-hide-descendants'}
+                  style={[
+                    styles.friendPopover,
+                    nameFocused ? undefined : styles.friendPopoverHidden,
+                  ]}
+                >
+                  <FriendSuggestions friends={friends} onSelectFriend={onSelectFriend} />
+                </View>
+                <TextInput
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  accessibilityLabel="Player name"
+                  enterKeyHint="done"
+                  ref={inputRef}
+                  onBlur={onBlurName}
+                  onChangeText={onChangeName}
+                  onFocus={onFocusName}
+                  onSubmitEditing={onSubmitName}
+                  returnKeyType="done"
+                  submitBehavior="submit"
+                  value={name}
+                  style={[styles.nameInput, duplicateName ? styles.nameInputDuplicate : null]}
+                />
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                disabled={!canAddPlayer}
+                onPress={onAddPlayer}
+                style={({ pressed }) => [
+                  styles.addButton,
+                  pressed && styles.buttonPressed,
+                  !canAddPlayer && styles.buttonDisabled,
+                ]}
+              >
+                <Plus
+                  color={canAddPlayer ? colors.text : colors.onDisabled}
+                  size={17}
+                  strokeWidth={2.7}
+                />
+                <Text style={[styles.addButtonText, !canAddPlayer && styles.buttonTextDisabled]}>
+                  Add
+                </Text>
+              </Pressable>
+            </View>
+          </>
+        ) : null}
       </View>
 
       {!isEditing ? (
