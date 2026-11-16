@@ -42,7 +42,7 @@ describe('share game link', () => {
     const value = new URL(url).searchParams.get('g') as string;
     const decoded = decodeSharedGame(value);
 
-    expect(url.startsWith('https://grim-keeper.expo.app/s?g=')).toBe(true);
+    expect(url.startsWith('https://grim-keeper.expo.app/share?g=')).toBe(true);
     expect(decoded.p.map((player) => player[0])).toEqual(['DJ', 'Alice', 'Bob', 'Carol', 'Story']);
     expect(decoded.p[4][4]).toBe(1);
     expect(decoded.s?.name).toBe('Custom Script');

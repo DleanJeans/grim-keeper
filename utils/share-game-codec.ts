@@ -8,9 +8,9 @@ import type { SerializedStoredScript } from '@/utils/script-storage';
 
 export const SHARE_GAME_PARAM = 'g';
 /** Opens the game in the app. */
-export const SHARE_GAME_PATH = '/share';
+export const SHARE_GAME_PATH = '/join';
 /** The link people send: an API route that answers with preview tags, then opens SHARE_GAME_PATH. */
-export const SHARE_GAME_LINK_PATH = '/s';
+export const SHARE_GAME_LINK_PATH = '/share';
 export const SHARE_GAME_IMAGE_PATH = '/og';
 
 /** v1 links were deflated JSON; v2 links pack the game into bytes (see `packSharedGame`). */
