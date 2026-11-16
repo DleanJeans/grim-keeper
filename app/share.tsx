@@ -13,6 +13,7 @@ import {
   decodeSharedGame,
   findExistingSharedGame,
   findSharedPlayerIndex,
+  getSharedScriptName,
   isDefaultAppUserName,
   type SharedGame,
 } from '@/utils/share-game-link';
@@ -61,7 +62,9 @@ export default function ShareGameRoute() {
       setAppUserName(name);
     }
 
-    const gameId = importGameTransfer(createSharedGameTransfer(game, playerIndex, name));
+    const gameId = importGameTransfer(
+      createSharedGameTransfer(game, playerIndex, name, useGameStore.getState().scripts),
+    );
     if (gameId) {
       openGame(gameId);
     }
@@ -88,7 +91,7 @@ export default function ShareGameRoute() {
   const seatedPlayers = sharedGame
     ? sharedGame.p.flatMap((player, index) => (player[4] ? [] : [{ index, name: player[0] }]))
     : [];
-  const scriptName = sharedGame?.s?.name ?? (sharedGame?.sr ? 'Sushi Buffet' : undefined);
+  const scriptName = sharedGame ? getSharedScriptName(sharedGame) : undefined;
   const isJoining = matchedIndex !== undefined;
 
   return (

@@ -1,3 +1,5 @@
+import { deflateSync, strToU8 } from 'fflate';
+
 import type { GameData } from '@/store/game-store';
 import type { Game, Role, StoredScript } from '@/types/game';
 import { APP_USER_ID } from '@/utils/app-user';
@@ -96,10 +98,156 @@ describe('share game link', () => {
     expect(findExistingSharedGame(shared, result.games)?.id).toBe(game.id);
   });
 
+  it('sends an unchanged downloaded script by id and packs a 12 player game short', () => {
+    const roles = tbRoleIds.map((id) => ({ id, name: id, team: 'townsfolk' }));
+    const tb: StoredScript = {
+      author: 'The Pandemonium Institute',
+      id: 'trouble-brewing',
+      name: 'Trouble Brewing',
+      remoteId: 178,
+      roles,
+      updatedAt: createdAt,
+      version: '1',
+    };
+    const game = createBigGame({ ...tb, roles: [...roles].reverse() });
+    const shared = createSharedGame(game, [tb], roles, 'DJ');
+    const url = createShareGameUrl(shared, 'https://grim-keeper.expo.app');
+    const decoded = decodeSharedGame(new URL(url).searchParams.get('g') as string);
+
+    expect(decoded.r).toEqual({ id: 'trouble-brewing', remoteId: 178 });
+    expect(decoded.s).toBeUndefined();
+    expect(decoded.c).toBe(createdAt);
+    expect(decoded.p).toHaveLength(13);
+    expect(decoded.p[12]).toEqual(['Story', -1, 201, 301, 1]);
+    for (const [index, player] of decoded.p.slice(0, 12).entries()) {
+      const source = game.players[index].position;
+      expect(Math.abs(player[2] - (source?.x ?? 0))).toBeLessThanOrEqual(1);
+      expect(Math.abs(player[3] - (source?.y ?? 0))).toBeLessThanOrEqual(2);
+    }
+    expect(url.length).toBeLessThan(260);
+
+    // A friend without the script gets an empty copy that the app downloads by its id.
+    const placeholder = createSharedGameTransfer(decoded, 3, 'Carol').data.script;
+    expect(placeholder).toMatchObject({ id: 'trouble-brewing', remoteId: 178, roles: [] });
+    expect(placeholder?.name).toBe('Trouble Brewing');
+    // A friend who has it uses their own copy.
+    const local = createSharedGameTransfer(decoded, 3, 'Carol', [tb]).data.game.script;
+    expect(local?.roles).toHaveLength(tbRoleIds.length);
+  });
+
+  it('sends the full script when the game changed its characters', () => {
+    const roles = tbRoleIds.map((id) => ({ id, name: id, team: 'townsfolk' }));
+    const tb: StoredScript = {
+      id: 'trouble-brewing',
+      name: 'Trouble Brewing',
+      remoteId: 178,
+      roles,
+      updatedAt: createdAt,
+      version: '1',
+    };
+    const shared = createSharedGame(
+      createBigGame({ ...tb, roles: roles.slice(1) }),
+      [tb],
+      [],
+      'DJ',
+    );
+
+    expect(shared.r).toBeUndefined();
+    expect(shared.s?.roles).toHaveLength(tbRoleIds.length - 1);
+  });
+
+  it('still opens links made before the packed format', () => {
+    const legacy = {
+      c: createdAt,
+      h: 500,
+      p: [
+        ['DJ', 0, 250, 455],
+        ['Alice', 1, 455, 250],
+      ],
+      s: { id: 'custom-script', name: 'Custom Script', roles: ['chef'], version: '1' },
+      v: 1,
+      w: 500,
+    };
+    const value = btoa(String.fromCharCode(...deflateSync(strToU8(JSON.stringify(legacy)))))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    expect(decodeSharedGame(value).p.map((player) => player[0])).toEqual(['DJ', 'Alice']);
+  });
+
   it('rejects a broken link', () => {
     expect(() => decodeSharedGame('not-a-game')).toThrow('This share link is broken');
   });
 });
+
+const tbRoleIds = [
+  'washerwoman',
+  'librarian',
+  'investigator',
+  'chef',
+  'empath',
+  'fortuneteller',
+  'undertaker',
+  'monk',
+  'ravenkeeper',
+  'virgin',
+  'slayer',
+  'soldier',
+  'mayor',
+  'butler',
+  'drunk',
+  'recluse',
+  'saint',
+  'poisoner',
+  'spy',
+  'scarletwoman',
+  'baron',
+  'imp',
+];
+
+function createBigGame(gameScript: StoredScript): Game {
+  const names = [
+    'DJ',
+    'Alice',
+    'Bobby',
+    'Carol',
+    'Dave',
+    'Eve',
+    'Frank',
+    'Grace',
+    'Heidi',
+    'Ivan',
+    'Judy',
+    'Mallory',
+  ];
+
+  return {
+    activeDay: 1,
+    conversations: [],
+    createdAt,
+    id: 'big',
+    mapHeight: 600,
+    mapWidth: 400,
+    players: [
+      ...names.map((name, seat) => ({
+        id: seat === 0 ? APP_USER_ID : `p${seat}`,
+        name,
+        position: {
+          x: 200 + Math.round(155 * Math.sin(seat)),
+          y: 300 + Math.round(255 * Math.cos(seat)),
+        },
+        seat,
+      })),
+      { id: 'story', isStoryteller: true, name: 'Story', position: { x: 200, y: 300 }, seat: -1 },
+    ],
+    script: gameScript,
+    scriptId: gameScript.id,
+    startingNight: 1,
+    tokenSize: 90,
+    updatedAt: createdAt,
+  };
+}
 
 function createData(appUserName: string): GameData {
   return {
