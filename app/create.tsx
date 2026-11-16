@@ -7,6 +7,7 @@ import { CreateHeaderDoneButton } from '@/components/create/create-header-done-b
 import { ExportGameButton } from '@/components/create/export-game-button';
 import { PlayerMoveTarget } from '@/components/create/player-move-target';
 import { type DraftPlayer, PlayerRow } from '@/components/create/player-row';
+import { ShareGameLinkButton } from '@/components/create/share-game-link-button';
 import { KeyboardAvoidingView } from '@/components/keyboard-avoiding-view';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
@@ -451,7 +452,14 @@ export default function CreateRoute() {
           ListHeaderComponentStyle={styles.listHeader}
           ListFooterComponent={
             isEditing && editingGame ? (
-              <ExportGameButton game={editingGame} roleCatalog={roleCatalog} scripts={scripts} />
+              <View>
+                <ShareGameLinkButton
+                  game={editingGame}
+                  roleCatalog={roleCatalog}
+                  scripts={scripts}
+                />
+                <ExportGameButton game={editingGame} roleCatalog={roleCatalog} scripts={scripts} />
+              </View>
             ) : null
           }
           renderItem={({ index, item }) => (
