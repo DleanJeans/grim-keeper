@@ -593,7 +593,8 @@ export function getRoleInfoUsedPhase(
 
 /**
  * Days to show one row each for, up to the given day, for characters that learn something each
- * day; undefined for other characters. Days after all of the character's players died are left out.
+ * day; undefined for other characters. Days after all of the character's players died are left out;
+ * the day they die during still counts, since they got that day's info while alive.
  */
 export function getRoleInfoDays(
   role: Pick<Role, 'id'>,
@@ -603,7 +604,7 @@ export function getRoleInfoDays(
   if (!getRoleInfoTemplate(role).daily) return undefined;
 
   return Array.from({ length: Math.max(0, day) }, (_, index) => index + 1).filter(
-    (infoDay) => !areAllDead(owners, infoDay, 'day'),
+    (infoDay) => !areAllDead(owners, infoDay, 'night'),
   );
 }
 

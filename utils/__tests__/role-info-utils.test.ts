@@ -677,6 +677,13 @@ describe('getRoleInfoNights', () => {
 });
 
 describe('daily role info', () => {
+  it('keeps the day a Savant was killed during, as they got info before dying', () => {
+    const witched = makePlayer('ann', 0, {
+      death: { day: 1, kind: 'night', phase: 'day', killerRoleIds: ['witch'], updatedAt: NOW },
+    });
+    expect(getRoleInfoDays({ id: 'savant' }, 3, [witched])).toEqual([1]);
+  });
+
   it('gives the Savant a row per day until all of its players died', () => {
     const savant = makePlayer('ann', 0, { death: { day: 3, kind: 'night', updatedAt: NOW } });
     expect(getRoleInfoDays({ id: 'savant' }, 2)).toEqual([1, 2]);
