@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ResponsiveContent } from '@/components/responsive-content';
@@ -29,6 +29,7 @@ export default function ShareGameRoute() {
   const importGameTransfer = useGameStore((state) => state.importGameTransfer);
   const setAppUserName = useGameStore((state) => state.setAppUserName);
   const handledRef = useRef(false);
+  const [declinedMatch, setDeclinedMatch] = useState(false);
   const decoded = useMemo<DecodedShare>(() => {
     if (!g) {
       return { error: 'This link has no game in it. Ask for the link again.' };
@@ -41,7 +42,8 @@ export default function ShareGameRoute() {
     }
   }, [g]);
   const sharedGame = decoded.sharedGame;
-  const matchedIndex = sharedGame ? findSharedPlayerIndex(sharedGame, appUserName) : undefined;
+  const nameMatchIndex = sharedGame ? findSharedPlayerIndex(sharedGame, appUserName) : undefined;
+  const matchedIndex = declinedMatch ? undefined : nameMatchIndex;
 
   function openGame(id: string) {
     router.replace({ pathname: '/game/[id]', params: { id } });
@@ -70,7 +72,7 @@ export default function ShareGameRoute() {
     }
   }
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: runs once per link, joinAs reads the latest store state.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs once per link, openGame only navigates.
   useEffect(() => {
     if (handledRef.current || !sharedGame) {
       return;
@@ -80,19 +82,13 @@ export default function ShareGameRoute() {
     if (existingGame) {
       handledRef.current = true;
       openGame(existingGame.id);
-      return;
     }
-
-    if (matchedIndex !== undefined) {
-      joinAs(sharedGame, matchedIndex);
-    }
-  }, [matchedIndex, sharedGame]);
+  }, [sharedGame]);
 
   const seatedPlayers = sharedGame
     ? sharedGame.p.flatMap((player, index) => (player[4] ? [] : [{ index, name: player[0] }]))
     : [];
   const scriptName = sharedGame ? getSharedScriptName(sharedGame) : undefined;
-  const isJoining = matchedIndex !== undefined;
 
   return (
     <>
@@ -113,10 +109,34 @@ export default function ShareGameRoute() {
                 {decoded.error}
               </Text>
             </>
-          ) : isJoining ? (
-            <Text selectable style={styles.description}>
-              Setting up the game…
-            </Text>
+          ) : sharedGame && matchedIndex !== undefined ? (
+            <>
+              <Text selectable style={styles.description}>
+                {[scriptName, `${seatedPlayers.length} players`].filter(Boolean).join(' · ')}
+              </Text>
+              <Text selectable style={styles.title}>
+                Are you {sharedGame.p[matchedIndex][0]}?
+              </Text>
+              <Text selectable style={styles.description}>
+                The map turns so your token sits at the bottom.
+              </Text>
+              <View style={styles.list}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => joinAs(sharedGame, matchedIndex)}
+                  style={({ pressed }) => [styles.confirm, pressed && styles.confirmPressed]}
+                >
+                  <Text style={styles.confirmText}>Yes, I am {sharedGame.p[matchedIndex][0]}</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setDeclinedMatch(true)}
+                  style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}
+                >
+                  <Text style={styles.optionText}>No, pick someone else</Text>
+                </Pressable>
+              </View>
+            </>
           ) : (
             <>
               <Text selectable style={styles.description}>
@@ -146,6 +166,23 @@ export default function ShareGameRoute() {
 }
 
 const styles = StyleSheet.create({
+  confirm: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderCurve: 'continuous',
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  confirmPressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  confirmText: {
+    color: colors.onPrimary,
+    flexShrink: 1,
+    fontSize: 17,
+    fontWeight: '800',
+  },
   content: {
     gap: 12,
     padding: 20,
