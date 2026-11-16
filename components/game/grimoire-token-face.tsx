@@ -42,6 +42,8 @@ type GrimoireTokenFaceProps = {
   compactInitial: boolean;
   /** Unique per token on the map; used for the SVG ids. */
   id: string;
+  /** Name the initial comes from when the ribbon says something else, such as "You". */
+  initialName?: string;
   /**
    * The face is drawn in two layers so the character icon can sit between them: the base disc,
    * ribbon and name, then the drape (the shroud and the character's name) on top.
@@ -64,6 +66,7 @@ export function GrimoireTokenFace({
   compactInitial,
   dead,
   id,
+  initialName,
   layer,
   name,
   ring,
@@ -166,7 +169,7 @@ export function GrimoireTokenFace({
               x={center}
               y={center + radius * (compactInitial ? 0.38 : storyteller ? 0.02 : 0.06)}
             >
-              {storyteller && !compactInitial ? '✦' : getInitial(name)}
+              {storyteller && !compactInitial ? '✦' : getInitial(initialName ?? name)}
             </SvgText>
           ) : null}
           <Path

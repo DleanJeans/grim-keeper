@@ -17,6 +17,7 @@ import { useRoleIconSource } from '@/hooks/use-role-icon-source';
 import { colors } from '@/theme/colors';
 import { useUiScale } from '@/theme/display-scale';
 import type { Player, PlayerPosition, Role } from '@/types/game';
+import { APP_USER_ID } from '@/utils/app-user';
 import { type ClaimOrbitObstacle, getClaimOrbitLayout } from '@/utils/claim-orbit-utils';
 import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
 import { isTravelerRole } from '@/utils/role-utils';
@@ -31,6 +32,8 @@ const ROLE_ICON_RATIO = 0.56;
 // Claim tokens sit along the top and stay above this share of the token below its center.
 const CLAIM_BAND_RATIO = 0.05;
 const DEAD_OPACITY = 0.85;
+// The app user's own token reads "You" on the ribbon; the initial still comes from their name.
+const APP_USER_TOKEN_LABEL = 'You';
 // Profile picture in the middle of the token, as a share of the token's size; it sits a little
 // high to clear the name ribbon.
 const PICTURE_RATIO = 0.5;
@@ -163,6 +166,7 @@ export function PlayerToken({
         size: flippedClaimLayout.size,
       }
     : undefined;
+  const isAppUser = player.id === APP_USER_ID;
   const hasClaimTokens = (claimLayout?.positions.length ?? 0) > 0;
   const topText = player.isStoryteller
     ? 'Storyteller'
@@ -314,7 +318,8 @@ export function PlayerToken({
           dead={!!player.death}
           id={player.id}
           layer="base"
-          name={displayName ?? player.name}
+          initialName={isAppUser ? (displayName ?? player.name) : undefined}
+          name={isAppUser ? APP_USER_TOKEN_LABEL : (displayName ?? player.name)}
           ring={
             isDragReady ? 'drag' : isSelected ? 'selected' : isInitiator ? 'initiator' : undefined
           }
@@ -362,7 +367,8 @@ export function PlayerToken({
           dead={!!player.death}
           id={player.id}
           layer="drape"
-          name={displayName ?? player.name}
+          initialName={isAppUser ? (displayName ?? player.name) : undefined}
+          name={isAppUser ? APP_USER_TOKEN_LABEL : (displayName ?? player.name)}
           ring={
             isDragReady ? 'drag' : isSelected ? 'selected' : isInitiator ? 'initiator' : undefined
           }
