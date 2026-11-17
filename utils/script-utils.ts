@@ -1,4 +1,5 @@
 import type { Game, Role, SavedNote, StoredScript } from '@/types/game';
+import { isDecidedResult } from '@/utils/game-utils';
 import { APP_USER_ID } from '@/utils/object-id';
 import { SUSHI_BUFFET_SCRIPT_ID } from '@/utils/script-constants';
 
@@ -146,7 +147,7 @@ export function getScriptWinRecords(games: Game[], scripts: StoredScript[] = [])
 
   for (const game of games) {
     const scriptId = getGameFamilyId(game, scripts, games);
-    if (!scriptId || game.result === undefined) continue;
+    if (!scriptId || !isDecidedResult(game.result)) continue;
     const appUser = game.players.find((player) => player.id === APP_USER_ID);
     if (appUser?.isStoryteller) continue;
     const record = records.get(scriptId) ?? { losses: 0, wins: 0 };

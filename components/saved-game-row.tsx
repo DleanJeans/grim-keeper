@@ -115,10 +115,24 @@ function GameResultBadge({ result }: { result: GameResult }) {
   return (
     <View
       accessibilityLabel={`Game result: ${result}`}
-      style={[styles.badge, result === 'won' ? styles.wonBadge : styles.lostBadge]}
+      style={[
+        styles.badge,
+        result === 'won'
+          ? styles.wonBadge
+          : result === 'lost'
+            ? styles.lostBadge
+            : styles.drawBadge,
+      ]}
     >
       <Text
-        style={[styles.badgeLabel, result === 'won' ? styles.wonBadgeLabel : styles.lostBadgeLabel]}
+        style={[
+          styles.badgeLabel,
+          result === 'won'
+            ? styles.wonBadgeLabel
+            : result === 'lost'
+              ? styles.lostBadgeLabel
+              : styles.drawBadgeLabel,
+        ]}
       >
         {formatResult(result)}
       </Text>
@@ -266,6 +280,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
+  },
+  drawBadge: {
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.borderStrong,
+  },
+  drawBadgeLabel: {
+    color: colors.textMuted,
   },
   lostBadge: {
     backgroundColor: colors.dangerSurface,

@@ -164,7 +164,7 @@ describe('game transfer', () => {
 
   it('rejects an invalid game result', () => {
     const transfer = JSON.parse(createGameTransfer(createGame(), [script]));
-    transfer.data.game.result = 'draw';
+    transfer.data.game.result = 'tie';
 
     expect(() => parseGameTransfer(JSON.stringify(transfer))).toThrow(
       'The game transfer is missing required Grim Keeper data.',

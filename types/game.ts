@@ -7,7 +7,8 @@ export type PlayerPosition = {
 
 export type RoleDisplayMode = 'all' | 'claim' | 'confirm' | 'guess' | 'rumor';
 
-export type GameResult = 'lost' | 'won';
+/** 'draw' marks a game that doesn't count for win rates (storyteller mistake, experiment). */
+export type GameResult = 'draw' | 'lost' | 'won';
 
 export type GamePhase = 'day' | 'night';
 

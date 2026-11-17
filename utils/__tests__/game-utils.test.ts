@@ -236,6 +236,15 @@ describe('getGameStats', () => {
     });
   });
 
+  it('counts a draw as a game but leaves it out of the win rate', () => {
+    expect(
+      getGameStats([
+        makeGame({ id: 'won', result: 'won' }),
+        makeGame({ id: 'draw', result: 'draw' }),
+      ]),
+    ).toMatchObject({ completedGames: 1, totalGames: 2, winRate: 100, wins: 1 });
+  });
+
   it('calculates separate win rates from the app user role alignment', () => {
     const goodGame = makeAlignedGame('townsfolk', 'won');
     const evilGame = makeAlignedGame('demon', 'lost');

@@ -145,7 +145,7 @@ function getStatsForSeats(seats: Array<{ game: Game; playerId: string }>): GameS
 
   for (const { game, playerId } of seats) {
     const result = getGameResultForPlayer(game, playerId);
-    const hasResult = result !== undefined;
+    const hasResult = isDecidedResult(result);
 
     if (hasResult) {
       completedGames += 1;
@@ -297,7 +297,7 @@ export function getCharacterStats(games: Game[], playerId = APP_USER_ID): Charac
     character.count += 1;
 
     const result = getGameResultForPlayer(game, playerId);
-    if (result !== undefined) {
+    if (isDecidedResult(result)) {
       character.completedGames += 1;
       if (result === 'won') {
         character.wins += 1;
@@ -339,7 +339,7 @@ function getGameAlignment(game: Game, playerId: string) {
 /** Which team won, from the app user's alignment and result. Unknown without either. */
 export function getWinningTeam(game: Game): 'good' | 'evil' | undefined {
   const alignment = getGameAlignment(game, APP_USER_ID);
-  if (game.result === undefined || !alignment) return undefined;
+  if (!isDecidedResult(game.result) || !alignment) return undefined;
 
   const userWon = game.result === 'won';
   return (alignment === 'g') === userWon ? 'good' : 'evil';
@@ -361,7 +361,7 @@ export function getGameResultForPlayer(game: Game, playerId: string): GameResult
     return game.result;
   }
 
-  return game.result === 'won' ? 'lost' : 'won';
+  return game.result === 'draw' ? 'draw' : game.result === 'won' ? 'lost' : 'won';
 }
 
 function isStorytellerInGame(game: Game, playerId: string) {
@@ -373,7 +373,12 @@ function getPercentage(value: number, total: number) {
 }
 
 export function isGameResult(value: unknown): value is GameResult {
-  return value === 'lost' || value === 'won';
+  return value === 'draw' || value === 'lost' || value === 'won';
+}
+
+/** Won or lost. Draws and unset results don't count towards win rates. */
+export function isDecidedResult(result: GameResult | undefined): result is 'lost' | 'won' {
+  return result === 'lost' || result === 'won';
 }
 
 function getBaseRoleId(roleId: string) {
@@ -414,7 +419,7 @@ export function getHeadToHeadStats(games: Game[], friendId: string): HeadToHeadS
 
     const side = friendAlignment === appUserAlignment ? stats.same : stats.opposite;
     side.games += 1;
-    if (game.result !== undefined) {
+    if (isDecidedResult(game.result)) {
       side.completedGames += 1;
       if (game.result === 'won') side.wins += 1;
     }

@@ -1,4 +1,4 @@
-import { CircleCheck, CircleX, NotebookPen, Trophy } from 'lucide-react-native';
+import { CircleCheck, CircleX, Handshake, NotebookPen, Trophy } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 
@@ -24,13 +24,20 @@ export function GameResultButton({
   result,
 }: GameResultButtonProps) {
   const [open, setOpen] = useState(false);
-  const Icon = result === 'won' ? CircleCheck : result === 'lost' ? CircleX : Trophy;
+  const Icon =
+    result === 'won'
+      ? CircleCheck
+      : result === 'lost'
+        ? CircleX
+        : result === 'draw'
+          ? Handshake
+          : Trophy;
   const label = result === undefined ? 'Result' : capitalize(result);
 
   return (
     <>
       <Pressable
-        accessibilityHint="Choose won, lost, or clear the game result, and note a lesson"
+        accessibilityHint="Choose won, lost, draw, or clear the game result, and note a lesson"
         accessibilityLabel={result ? `Game result: ${result}` : 'Set game result'}
         accessibilityRole="button"
         hitSlop={8}

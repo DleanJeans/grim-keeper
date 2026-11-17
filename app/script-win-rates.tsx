@@ -19,7 +19,7 @@ import {
   rankFriendsByWinRate,
   sortFriendSummaries,
 } from '@/utils/friend-utils';
-import { getFriendStats } from '@/utils/game-utils';
+import { getFriendStats, isDecidedResult } from '@/utils/game-utils';
 import { APP_USER_ID } from '@/utils/object-id';
 import {
   DEFAULT_SCRIPT_MIN_GAMES,
@@ -52,7 +52,7 @@ export default function ScriptWinRatesRoute() {
     () => getScriptFamilyNames(scriptId, allGames, scripts),
     [allGames, scriptId, scripts],
   );
-  const ratedGames = games.filter((item) => item.result !== undefined).length;
+  const ratedGames = games.filter((item) => isDecidedResult(item.result)).length;
   const gamePlayerIds = useMemo(() => (game ? getGamePlayerIds(game) : null), [game]);
   const ranking = useMemo(() => {
     const scriptFriends = getFriendSummaries(games, storedFriends, appUserName).filter(

@@ -57,7 +57,10 @@ export function GameResultDialog({
         <View accessibilityRole="alert" style={styles.dialog}>
           <View style={styles.content}>
             <Text style={styles.title}>Game result</Text>
-            <Text style={styles.message}>Choose how this game ended.</Text>
+            <Text style={styles.message}>
+              Choose how this game ended. A draw (storyteller mistake, experiment) is left out of
+              win rates.
+            </Text>
           </View>
           <View style={styles.actions}>
             <Pressable
@@ -85,6 +88,18 @@ export function GameResultDialog({
               ]}
             >
               <Text style={[styles.actionText, styles.destructiveActionText]}>Lost</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: result === 'draw' }}
+              onPress={() => close(() => onResultChange('draw'))}
+              style={({ pressed }) => [
+                styles.action,
+                result === 'draw' && styles.drawSelected,
+                pressed && styles.actionPressed,
+              ]}
+            >
+              <Text style={styles.actionText}>Draw</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -180,6 +195,10 @@ const styles = StyleSheet.create({
   },
   destructiveActionText: {
     color: colors.danger,
+  },
+  drawSelected: {
+    borderColor: colors.textMuted,
+    borderWidth: 3,
   },
   destructiveSelected: {
     borderWidth: 3,
