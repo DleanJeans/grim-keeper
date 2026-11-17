@@ -39,6 +39,7 @@ export function FriendMonthFilter({
           <MonthChip
             key={key}
             label={formatMonthKey(key)}
+            onLongPress={() => onChangeMonths([key])}
             onPress={() => onChangeMonths(toggleMonth(selectedMonths, key))}
             selected={selectedMonths.includes(key)}
           />
@@ -57,10 +58,13 @@ function toggleMonth(selectedMonths: string[], key: string) {
 
 function MonthChip({
   label,
+  onLongPress,
   onPress,
   selected,
 }: {
   label: string;
+  /** Hold the chip. React Native skips onPress for a press that became a long press. */
+  onLongPress?: () => void;
   onPress: () => void;
   selected: boolean;
 }) {
@@ -69,6 +73,7 @@ function MonthChip({
       accessibilityLabel={label === 'All time' ? 'Show all time' : `Show ${label}`}
       accessibilityRole="button"
       accessibilityState={{ selected }}
+      onLongPress={onLongPress}
       onPress={onPress}
       style={({ pressed }) => [
         styles.chip,
