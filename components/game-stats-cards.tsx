@@ -1,5 +1,6 @@
+import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { CharacterTypeBars } from '@/components/character-type-bars';
 import { RateBar } from '@/components/rate-bar';
@@ -16,6 +17,8 @@ type GameStatsCardsProps = {
 
 export function GameStatsCards({ games, playerId }: GameStatsCardsProps) {
   const [showAllGames, setShowAllGames] = useState(false);
+  const [showTypes, setShowTypes] = useState(false);
+  const toggleTypes = () => setShowTypes((value) => !value);
   const stats = getGameStats(games, playerId);
   const {
     completedGames,
@@ -60,7 +63,8 @@ export function GameStatsCards({ games, playerId }: GameStatsCardsProps) {
             rate={evilWinRate}
             stacked
           />
-          <CharacterTypeBars kind="winRate" stats={stats} />
+          {showTypes && <CharacterTypeBars kind="winRate" stats={stats} />}
+          <TypesToggle expanded={showTypes} onPress={toggleTypes} />
         </View>
       </StatsCard>
       <StatsCard
@@ -95,10 +99,28 @@ export function GameStatsCards({ games, playerId }: GameStatsCardsProps) {
             stacked
             tick={false}
           />
-          <CharacterTypeBars kind={showAllGames ? 'allGames' : 'completedGames'} stats={stats} />
+          {showTypes && (
+            <CharacterTypeBars kind={showAllGames ? 'allGames' : 'completedGames'} stats={stats} />
+          )}
+          <TypesToggle expanded={showTypes} onPress={toggleTypes} />
         </View>
       </StatsCard>
     </View>
+  );
+}
+
+function TypesToggle({ expanded, onPress }: { expanded: boolean; onPress: () => void }) {
+  const Icon = expanded ? ChevronUp : ChevronDown;
+  return (
+    <Pressable
+      accessibilityLabel={expanded ? 'Hide character types' : 'Show character types'}
+      accessibilityRole="button"
+      hitSlop={8}
+      onPress={onPress}
+      style={styles.toggle}
+    >
+      <Icon color={colors.textMuted} size={20} />
+    </Pressable>
   );
 }
 
@@ -120,6 +142,12 @@ const styles = StyleSheet.create({
   stats: {
     flexDirection: 'row',
     gap: 12,
+  },
+  toggle: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 2,
   },
   value: {
     color: colors.text,
