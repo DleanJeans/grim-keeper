@@ -8,7 +8,7 @@ import {
   SHARE_PREVIEW_WIDTH,
   type SharedGame,
 } from '@/utils/share-game-codec';
-import { GOOGLE_SANS_BOLD_BASE64 } from '@/utils/share-preview-fonts';
+import { GOOGLE_SANS_BOLD_BASE64, IM_FELL_ENGLISH_SC_BASE64 } from '@/utils/share-preview-fonts';
 import type { PreviewIcon } from '@/utils/share-preview-icons';
 
 // Draws the link preview picture with no canvas or native modules, so it runs in the hosting
@@ -48,7 +48,7 @@ type Rgb = readonly [number, number, number];
 type Point = { x: number; y: number };
 type Polygon = Point[];
 type Canvas = { data: Uint8Array; height: number; width: number };
-type Fonts = { body: opentype.Font };
+type Fonts = { body: opentype.Font; token: opentype.Font };
 
 let cachedFonts: Fonts | undefined;
 
@@ -109,6 +109,7 @@ export function createSharePreviewPng(
 function getFonts(): Fonts {
   cachedFonts ??= {
     body: parseFont(GOOGLE_SANS_BOLD_BASE64),
+    token: parseFont(IM_FELL_ENGLISH_SC_BASE64),
   };
   return cachedFonts;
 }
@@ -144,6 +145,25 @@ function getTokenRadius(sharedGame: SharedGame, mapScale: number, centers: Point
   return Math.max(MIN_TOKEN_RADIUS, Math.min(trueRadius * MAX_TOKEN_GROWTH, nearest / 2 - 2));
 }
 
+/** The name with accents dropped from letters the font lacks (Đ counts as D), and skips what it cannot draw. */
+function getSpellableName(font: opentype.Font, name: string) {
+  return Array.from(name.trim().replace(/\s+/g, ' '))
+    .map((character) => {
+      if (font.charToGlyphIndex(character) > 0) {
+        return character;
+      }
+
+      const base = character
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'D')
+        .normalize('NFD')
+        .replace(/\p{M}/gu, '');
+      return Array.from(base).every((letter) => font.charToGlyphIndex(letter) > 0) ? base : '';
+    })
+    .join('')
+    .trim();
+}
+
 /** A plain disc with the player's full name in it, as large as it fits. The Storyteller's is gold. */
 function drawToken(
   canvas: Canvas,
@@ -161,11 +181,12 @@ function drawToken(
     hexToRgb(storyteller ? colors.storytellerDisc : colors.tokenDisc),
   );
 
-  const font = fonts.body;
-  const text = name.trim().replace(/\s+/g, ' ');
+  const font = fonts.token;
+  // A name the font cannot draw at all (such as Chinese) shows a question mark, never a blank disc.
+  const text = getSpellableName(font, name) || '?';
   const widthFor = (lineCount: number) => radius * (lineCount >= 3 ? 1.5 : 1.72);
   const maxHeight = radius * 1.5;
-  let size = radius * 0.62;
+  let size = radius * 0.72;
   let lines = wrapText(font, text, widthFor(2), size);
   const fits = () =>
     lines.length <= 3 &&
