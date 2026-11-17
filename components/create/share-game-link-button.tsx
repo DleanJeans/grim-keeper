@@ -1,6 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
-import { Link2 } from 'lucide-react-native';
-import { Pressable, Share, StyleSheet, View } from 'react-native';
+import { Check, Copy, Link2 } from 'lucide-react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Pressable, Share, StyleSheet, TextInput, View } from 'react-native';
 
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { Text } from '@/components/text';
@@ -18,6 +19,29 @@ type ShareGameLinkButtonProps = {
 export function ShareGameLinkButton({ game, roleCatalog, scripts }: ShareGameLinkButtonProps) {
   const showDialog = useAppDialog();
   const appUserName = useGameStore((state) => state.appUserName);
+  const [copied, setCopied] = useState(false);
+  const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const shareUrl = useMemo(() => {
+    try {
+      return createShareGameUrl(createSharedGame(game, scripts, roleCatalog, appUserName));
+    } catch {
+      return '';
+    }
+  }, [appUserName, game, roleCatalog, scripts]);
+
+  useEffect(() => () => clearTimeout(copiedTimeoutRef.current), []);
+
+  async function handleCopy() {
+    try {
+      await Clipboard.setStringAsync(shareUrl);
+    } catch {
+      showDialog('Share link', shareUrl);
+      return;
+    }
+    setCopied(true);
+    clearTimeout(copiedTimeoutRef.current);
+    copiedTimeoutRef.current = setTimeout(() => setCopied(false), 1800);
+  }
 
   async function handleShare() {
     let url: string;
@@ -59,6 +83,29 @@ export function ShareGameLinkButton({ game, roleCatalog, scripts }: ShareGameLin
         Share a link that sets up this game for friends: the players, where they sit on the map, and
         the script. Claims, confirms and notes stay on this device.
       </Text>
+      <View style={styles.urlRow}>
+        <TextInput
+          accessibilityLabel="Share game link address"
+          readOnly
+          selectTextOnFocus
+          style={styles.urlInput}
+          value={shareUrl}
+        />
+        <Pressable
+          accessibilityLabel="Copy share game link"
+          accessibilityRole="button"
+          disabled={!shareUrl}
+          onPress={handleCopy}
+          style={({ pressed }) => [styles.copyButton, pressed && styles.buttonPressed]}
+        >
+          {copied ? (
+            <Check color={colors.text} size={18} strokeWidth={2.6} />
+          ) : (
+            <Copy color={colors.text} size={18} strokeWidth={2.6} />
+          )}
+          <Text style={styles.buttonText}>{copied ? 'Copied' : 'Copy'}</Text>
+        </Pressable>
+      </View>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Share game link"
@@ -94,10 +141,39 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
   },
+  copyButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.borderStrong,
+    borderCurve: 'continuous',
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+  },
   container: {
     gap: 10,
     paddingBottom: 4,
     paddingTop: 14,
+  },
+  urlInput: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderCurve: 'continuous',
+    borderRadius: 8,
+    borderWidth: 1,
+    color: colors.textMuted,
+    flex: 1,
+    fontSize: 14,
+    minWidth: 0,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  urlRow: {
+    flexDirection: 'row',
+    gap: 8,
   },
   description: {
     color: colors.textMuted,
