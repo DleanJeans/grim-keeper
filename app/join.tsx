@@ -1,9 +1,10 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Check, ChevronRight } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ShareScriptTokens } from '@/components/create/share-script-tokens';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
@@ -15,9 +16,13 @@ import {
   findExistingSharedGame,
   findSharedPlayerIndex,
   getSharedScriptName,
+  getSharedScriptRoles,
   isDefaultAppUserName,
   type SharedGame,
 } from '@/utils/share-game-link';
+
+// The page loads before the router has read the link, so a missing link is only believed after this.
+const MISSING_LINK_GRACE_MS = 600;
 
 type DecodedShare =
   | { error: string; sharedGame?: undefined }
@@ -29,10 +34,13 @@ export default function ShareGameRoute() {
   const appUserName = useGameStore((state) => state.appUserName);
   const importGameTransfer = useGameStore((state) => state.importGameTransfer);
   const setAppUserName = useGameStore((state) => state.setAppUserName);
+  const scripts = useGameStore((state) => state.scripts);
+  const roleCatalog = useGameStore((state) => state.roleCatalog);
   const handledRef = useRef(false);
   const insets = useSafeAreaInsets();
   const [declinedMatch, setDeclinedMatch] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number>();
+  const [waitedForLink, setWaitedForLink] = useState(false);
   const decoded = useMemo<DecodedShare>(() => {
     if (!g) {
       return { error: 'This link has no game in it. Ask for the link again.' };
@@ -75,6 +83,11 @@ export default function ShareGameRoute() {
     }
   }
 
+  useEffect(() => {
+    const timeout = setTimeout(() => setWaitedForLink(true), MISSING_LINK_GRACE_MS);
+    return () => clearTimeout(timeout);
+  }, []);
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs once per link, openGame only navigates.
   useEffect(() => {
     if (handledRef.current || !sharedGame) {
@@ -95,6 +108,10 @@ export default function ShareGameRoute() {
   const pickablePlayers = seatedPlayers.filter((player) => player.index !== sharedGame?.o);
   const selectedPlayer = pickablePlayers.find((player) => player.index === selectedIndex);
   const scriptName = sharedGame ? getSharedScriptName(sharedGame) : undefined;
+  const scriptRoles = useMemo(
+    () => (sharedGame ? getSharedScriptRoles(sharedGame, scripts, roleCatalog) : []),
+    [roleCatalog, scripts, sharedGame],
+  );
 
   return (
     <>
@@ -107,7 +124,16 @@ export default function ShareGameRoute() {
       <View style={styles.screen}>
         <ScrollView contentContainerStyle={styles.scrollContent} style={styles.scroll}>
           <ResponsiveContent style={styles.content}>
-            {decoded.error ? (
+            {!g && !waitedForLink ? (
+              <View accessibilityLabel="Loading game" style={styles.loading}>
+                <ActivityIndicator
+                  accessibilityLabel="Loading"
+                  color={colors.primary}
+                  size="large"
+                />
+                <Text style={styles.description}>Loading game…</Text>
+              </View>
+            ) : decoded.error ? (
               <>
                 <Text selectable style={styles.title}>
                   Could not open this game
@@ -121,6 +147,7 @@ export default function ShareGameRoute() {
                 <Text selectable style={styles.description}>
                   {[scriptName, `${seatedPlayers.length} players`].filter(Boolean).join(' · ')}
                 </Text>
+                <ShareScriptTokens roles={scriptRoles} />
                 <Text selectable style={styles.title}>
                   Are you {sharedGame.p[matchedIndex][0]}?
                 </Text>
@@ -151,6 +178,7 @@ export default function ShareGameRoute() {
                 <Text selectable style={styles.description}>
                   {[scriptName, `${seatedPlayers.length} players`].filter(Boolean).join(' · ')}
                 </Text>
+                <ShareScriptTokens roles={scriptRoles} />
                 <Text selectable style={styles.title}>
                   Who are you?
                 </Text>
@@ -215,6 +243,11 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 15,
     lineHeight: 21,
+  },
+  loading: {
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 48,
   },
   list: {
     gap: 8,

@@ -10,7 +10,11 @@ import {
 } from '@/utils/layout-utils';
 import { SUSHI_BUFFET_SCRIPT_ID } from '@/utils/script-constants';
 import { OFFICIAL_CAROUSEL_SCRIPT_ID } from '@/utils/script-service';
-import type { SerializedRole, SerializedStoredScript } from '@/utils/script-storage';
+import {
+  restoreScriptRoles,
+  type SerializedRole,
+  type SerializedStoredScript,
+} from '@/utils/script-storage';
 import {
   encodeSharedGame,
   getNameFromScriptId,
@@ -334,6 +338,38 @@ function getScriptReference(
  * The friend's own copy of a referenced script, or an empty placeholder that the app fills in
  * by downloading it (see OfficialScriptsLoader), like a restored backup.
  */
+/**
+ * The characters of the shared script that this device can show: a script sent in full, or a
+ * BotC Scripts / Carousel script the app already has. Sushi Buffet picks its characters per
+ * game, so it shows none.
+ */
+export function getSharedScriptRoles(
+  sharedGame: SharedGame,
+  scripts: StoredScript[],
+  roleCatalog: Role[],
+): Role[] {
+  if (sharedGame.sr || sharedGame.su) {
+    return [];
+  }
+
+  if (sharedGame.s) {
+    return restoreScriptRoles(sharedGame.s.roles, roleCatalog);
+  }
+
+  const reference = sharedGame.r;
+  if (!reference) {
+    return [];
+  }
+
+  return (
+    scripts.find(
+      (candidate) =>
+        candidate.id === reference.id ||
+        (reference.remoteId !== undefined && candidate.remoteId === reference.remoteId),
+    )?.roles ?? []
+  );
+}
+
 function resolveScriptReference(
   reference: SharedScriptReference,
   scripts: StoredScript[],

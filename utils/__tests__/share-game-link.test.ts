@@ -14,6 +14,7 @@ import {
   findSharedPlayerIndex,
   getQuarterTurnsToBottom,
   getSharedCharacterCounts,
+  getSharedScriptRoles,
 } from '@/utils/share-game-link';
 
 const customRole: Role = {
@@ -156,6 +157,25 @@ describe('share game link', () => {
 
     expect(shared.r).toBeUndefined();
     expect(shared.s?.roles).toHaveLength(tbRoleIds.length - 1);
+    expect(getSharedScriptRoles(shared, [], roles)).toHaveLength(tbRoleIds.length - 1);
+  });
+
+  it('lists the script characters from the full script or the local copy', () => {
+    const roles = tbRoleIds.map((id) => ({ id, name: id, team: 'townsfolk' }));
+    const tb: StoredScript = {
+      id: 'trouble-brewing',
+      name: 'Trouble Brewing',
+      remoteId: 178,
+      roles,
+      updatedAt: createdAt,
+      version: '1',
+    };
+    const shared = createSharedGame(createBigGame(tb), [tb], roles, 'DJ');
+
+    expect(shared.r).toBeDefined();
+    expect(getSharedScriptRoles(shared, [tb], roles)).toHaveLength(tbRoleIds.length);
+    expect(getSharedScriptRoles(shared, [], roles)).toEqual([]);
+    expect(getSharedScriptRoles({ ...shared, su: ['washerwoman'] }, [tb], roles)).toEqual([]);
   });
 
   it('still opens links made before the packed format', () => {
