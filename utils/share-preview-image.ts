@@ -8,7 +8,7 @@ import {
   SHARE_PREVIEW_WIDTH,
   type SharedGame,
 } from '@/utils/share-game-codec';
-import { GOOGLE_SANS_BOLD_BASE64, IM_FELL_ENGLISH_SC_BASE64 } from '@/utils/share-preview-fonts';
+import { GOOGLE_SANS_BOLD_BASE64 } from '@/utils/share-preview-fonts';
 import type { PreviewIcon } from '@/utils/share-preview-icons';
 
 // Draws the link preview picture with no canvas or native modules, so it runs in the hosting
@@ -25,8 +25,7 @@ const ICON_GAP = 8;
 const ICON_BORDER = 2.5;
 const ICON_STRIP_GAP = 26;
 const CURVE_STEPS = 8;
-const RIBBON_HALF_ANGLE = (58 * Math.PI) / 180;
-const CAP_HEIGHT_RATIO = 0.68;
+const MAX_TOKEN_GROWTH = 1.35;
 
 // Copies of the app's map and token colors (theme/colors.ts reads stored settings, which the
 // server has none of).
@@ -39,24 +38,17 @@ const colors = {
   iconBorder: '#d6c7a1',
   gameTextSoft: '#cbd5e1',
   randomAccent: '#e2b04a',
-  ribbon: '#5b2a17',
-  ribbonText: '#f6ecd2',
-  storytellerRibbon: '#7a5a12',
-};
-const tokenColors = {
-  edge: '#3b2412',
-  ink: '#4a2c14',
-  parchmentCenter: '#f6ecd2',
-  parchmentEdge: '#c9ad78',
-  parchmentMiddle: '#e6d3a8',
-  storytellerStar: '#7a5a12',
+  storytellerDisc: '#e2b04a',
+  tokenDisc: '#f1e4c3',
+  tokenEdge: '#3b2412',
+  tokenText: '#1f1308',
 };
 
 type Rgb = readonly [number, number, number];
 type Point = { x: number; y: number };
 type Polygon = Point[];
 type Canvas = { data: Uint8Array; height: number; width: number };
-type Fonts = { body: opentype.Font; token: opentype.Font };
+type Fonts = { body: opentype.Font };
 
 let cachedFonts: Fonts | undefined;
 
@@ -99,21 +91,13 @@ export function createSharePreviewPng(
   );
   fillRect(canvas, mapLeft, mapTop, mapWidth, mapHeight, hexToRgb(colors.gameSurface));
 
-  const radius = Math.max(
-    MIN_TOKEN_RADIUS,
-    (((sharedGame.t ?? DEFAULT_TOKEN_SIZE) * mapScale) / 2) * 0.94,
-  );
-  const tokenNames = getTokenNames(sharedGame.p.map((player) => player[0]));
-  sharedGame.p.forEach(([name, , x, y, storyteller], index) => {
-    drawToken(
-      canvas,
-      fonts,
-      { x: mapLeft + x * mapScale, y: mapTop + y * mapScale },
-      radius,
-      name,
-      tokenNames[index],
-      !!storyteller,
-    );
+  const centers = sharedGame.p.map(([, , x, y]) => ({
+    x: mapLeft + x * mapScale,
+    y: mapTop + y * mapScale,
+  }));
+  const radius = getTokenRadius(sharedGame, mapScale, centers);
+  sharedGame.p.forEach(([name, , , , storyteller], index) => {
+    drawToken(canvas, fonts, centers[index], radius, name, !!storyteller);
   });
 
   drawInfo(canvas, fonts, sharedGame, mapLeft + mapWidth + 50, contentTop, contentHeight);
@@ -125,7 +109,6 @@ export function createSharePreviewPng(
 function getFonts(): Fonts {
   cachedFonts ??= {
     body: parseFont(GOOGLE_SANS_BOLD_BASE64),
-    token: parseFont(IM_FELL_ENGLISH_SC_BASE64),
   };
   return cachedFonts;
 }
@@ -139,167 +122,74 @@ function parseFont(base64: string) {
   return opentype.parse(bytes.buffer);
 }
 
-/** What the app writes on a token: the first name, or the whole name when another shares it. */
-function getTokenNames(names: string[]) {
-  const normalized = names.map((name) => name.trim().replace(/\s+/g, ' '));
-  const firstNames = normalized.map((name) => (name.split(' ')[0] ?? '').toLocaleLowerCase());
-
-  return normalized.map((name, index) =>
-    firstNames.some((other, otherIndex) => otherIndex !== index && other === firstNames[index])
-      ? name
-      : (name.split(' ')[0] ?? name),
-  );
-}
-
 // ---------------------------------------------------------------------------------------------
 // Tokens
 
+/**
+ * Tokens are drawn larger than on the real map so full names stay readable in a small preview,
+ * as large as the closest pair of players leaves room for.
+ */
+function getTokenRadius(sharedGame: SharedGame, mapScale: number, centers: Point[]) {
+  const trueRadius = (((sharedGame.t ?? DEFAULT_TOKEN_SIZE) * mapScale) / 2) * 0.94;
+  let nearest = Number.POSITIVE_INFINITY;
+  for (let first = 0; first < centers.length; first += 1) {
+    for (let second = first + 1; second < centers.length; second += 1) {
+      nearest = Math.min(
+        nearest,
+        Math.hypot(centers[first].x - centers[second].x, centers[first].y - centers[second].y),
+      );
+    }
+  }
+
+  return Math.max(MIN_TOKEN_RADIUS, Math.min(trueRadius * MAX_TOKEN_GROWTH, nearest / 2 - 2));
+}
+
+/** A plain disc with the player's full name in it, as large as it fits. The Storyteller's is gold. */
 function drawToken(
   canvas: Canvas,
   fonts: Fonts,
   center: Point,
   radius: number,
-  fullName: string,
-  tokenName: string,
+  name: string,
   storyteller: boolean,
 ) {
-  drawDisc(canvas, center, radius, hexToRgb(tokenColors.edge));
+  drawDisc(canvas, center, radius, hexToRgb(colors.tokenEdge));
   drawDisc(
     canvas,
     center,
-    radius - Math.max(2, radius * 0.07),
-    hexToRgb(tokenColors.parchmentEdge),
+    radius - Math.max(2, radius * 0.05),
+    hexToRgb(storyteller ? colors.storytellerDisc : colors.tokenDisc),
   );
-  drawDisc(
-    canvas,
-    center,
-    radius - Math.max(3, radius * 0.12),
-    hexToRgb(tokenColors.parchmentMiddle),
-  );
-  drawDisc(canvas, center, radius * 0.66, hexToRgb(tokenColors.parchmentCenter));
 
-  const ribbonCenterRadius = radius * 0.64;
-  const ribbonWidth = radius * 0.46;
-  fillPolygons(
-    canvas,
-    [
-      getRibbonPolygon(
-        center,
-        ribbonCenterRadius - ribbonWidth / 2,
-        ribbonCenterRadius + ribbonWidth / 2,
-      ),
-    ],
-    hexToRgb(storyteller ? colors.storytellerRibbon : colors.ribbon),
-  );
-  drawArcText(canvas, fonts.token, tokenName, center, ribbonCenterRadius, radius);
+  const font = fonts.body;
+  const text = name.trim().replace(/\s+/g, ' ');
+  const widthFor = (lineCount: number) => radius * (lineCount >= 3 ? 1.5 : 1.72);
+  const maxHeight = radius * 1.5;
+  let size = radius * 0.62;
+  let lines = wrapText(font, text, widthFor(2), size);
+  const fits = () =>
+    lines.length <= 3 &&
+    lines.length * size * 1.12 <= maxHeight &&
+    lines.every((line) => font.getAdvanceWidth(line, size) <= widthFor(lines.length));
+  while (!fits() && size > 7) {
+    size -= 1;
+    lines = wrapText(font, text, widthFor(2), size);
+  }
 
-  if (storyteller) {
-    fillPolygons(
+  const lineHeight = size * 1.12;
+  const firstBaseline = center.y - ((lines.length - 1) * lineHeight) / 2 + size * 0.35;
+  lines.forEach((line, index) => {
+    const width = font.getAdvanceWidth(line, size);
+    drawText(
       canvas,
-      [getStarPolygon({ x: center.x, y: center.y - radius * 0.17 }, radius * 0.36)],
-      hexToRgb(tokenColors.storytellerStar),
+      font,
+      line,
+      center.x - width / 2,
+      firstBaseline + index * lineHeight,
+      size,
+      colors.tokenText,
     );
-    return;
-  }
-
-  const initial = getInitial(fullName, fonts.token);
-  if (initial) {
-    const size = radius * 0.8;
-    const width = fonts.token.getAdvanceWidth(initial, size);
-    fillPolygons(
-      canvas,
-      getTextPolygons(fonts.token, initial, center.x - width / 2, center.y + radius * 0.08, size),
-      hexToRgb(tokenColors.ink),
-      0.85,
-    );
-  }
-}
-
-/** The band along the bottom of a token, between two radii. */
-function getRibbonPolygon(center: Point, innerRadius: number, outerRadius: number): Polygon {
-  const steps = 24;
-  const outer: Polygon = [];
-  const inner: Polygon = [];
-  for (let step = 0; step <= steps; step += 1) {
-    const angle = -RIBBON_HALF_ANGLE + (2 * RIBBON_HALF_ANGLE * step) / steps;
-    outer.push(pointOnCircle(center, outerRadius, angle));
-    inner.push(pointOnCircle(center, innerRadius, angle));
-  }
-  return [...outer, ...inner.reverse()];
-}
-
-/** Angle 0 is straight down; it grows toward the right, so text reads left to right. */
-function pointOnCircle(center: Point, radius: number, angle: number): Point {
-  return { x: center.x + radius * Math.sin(angle), y: center.y + radius * Math.cos(angle) };
-}
-
-/** Writes the name along the ribbon, letters upright with their tops toward the center. */
-function drawArcText(
-  canvas: Canvas,
-  font: opentype.Font,
-  text: string,
-  center: Point,
-  ribbonCenterRadius: number,
-  tokenRadius: number,
-) {
-  const glyphs = Array.from(text).filter((character) => font.charToGlyphIndex(character) > 0);
-  if (glyphs.length === 0) {
-    return;
-  }
-
-  // Fit the name between the ribbon's ends, at the app's relative size or smaller.
-  const maxLength = tokenRadius * 1.5;
-  const unitLength = font.getAdvanceWidth(glyphs.join(''), 1);
-  const size = Math.min(tokenRadius * 0.38, maxLength / Math.max(0.01, unitLength));
-  // Baseline on the outer side of the ribbon's middle so the capitals sit centered in the band.
-  const baselineRadius = ribbonCenterRadius + (size * CAP_HEIGHT_RATIO) / 2;
-  const advances = glyphs.map((glyph) => font.getAdvanceWidth(glyph, size));
-  const total = advances.reduce((sum, advance) => sum + advance, 0);
-  const polygons: Polygon[] = [];
-  let offset = 0;
-
-  glyphs.forEach((glyph, index) => {
-    const advance = advances[index];
-    const angle = (offset + advance / 2 - total / 2) / baselineRadius;
-    offset += advance;
-    const anchor = pointOnCircle(center, baselineRadius, angle);
-    for (const polygon of getTextPolygons(font, glyph, -advance / 2, 0, size)) {
-      // Rotating by -angle lays the glyph along the circle's tangent.
-      const cos = Math.cos(-angle);
-      const sin = Math.sin(-angle);
-      polygons.push(
-        polygon.map((point) => ({
-          x: anchor.x + point.x * cos - point.y * sin,
-          y: anchor.y + point.x * sin + point.y * cos,
-        })),
-      );
-    }
   });
-
-  fillPolygons(canvas, polygons, hexToRgb(colors.ribbonText));
-}
-
-function getStarPolygon(center: Point, size: number): Polygon {
-  // A four-pointed star: points at the compass directions, pinched in between.
-  const polygon: Polygon = [];
-  for (let index = 0; index < 8; index += 1) {
-    const angle = (index * Math.PI) / 4;
-    const length = index % 2 === 0 ? size : size * 0.3;
-    polygon.push({
-      x: center.x + length * Math.sin(angle),
-      y: center.y - length * Math.cos(angle),
-    });
-  }
-  return polygon;
-}
-
-/** First letter or digit of a name without accents (Đ counts as D), if the font has it. */
-function getInitial(name: string, font: opentype.Font) {
-  const first = Array.from(
-    name.trim().replace(/đ/gi, 'd').normalize('NFD').replace(/\p{M}/gu, ''),
-  )[0]?.toLocaleUpperCase();
-
-  return first && font.charToGlyphIndex(first) > 0 ? first : undefined;
 }
 
 // ---------------------------------------------------------------------------------------------
