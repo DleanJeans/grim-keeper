@@ -5,6 +5,8 @@ import {
   SHARE_GAME_IMAGE_PATH,
   SHARE_GAME_PARAM,
   SHARE_GAME_PATH,
+  SHARE_PREVIEW_HEIGHT,
+  SHARE_PREVIEW_WIDTH,
 } from '@/utils/share-game-codec';
 
 const MAX_DESCRIPTION_LENGTH = 180;
@@ -18,8 +20,8 @@ export function GET(request: Request) {
   const url = new URL(request.url);
   const value = url.searchParams.get(SHARE_GAME_PARAM) ?? '';
   const openUrl = `${SHARE_GAME_PATH}?${SHARE_GAME_PARAM}=${encodeURIComponent(value)}`;
-  let title = 'Join a Grim Keeper game';
-  let description = 'Open the link to join the game.';
+  let title = 'Track a Grim Keeper game';
+  let description = 'Open the link to follow the game.';
   let imageTag = '';
 
   try {
@@ -27,10 +29,10 @@ export function GET(request: Request) {
     const scriptName = getSharedScriptName(sharedGame);
     const seated = sharedGame.p.filter((player) => !player[4]);
     const storytellers = sharedGame.p.filter((player) => player[4]);
-    title = scriptName ? `Join a game of ${scriptName}` : title;
+    title = scriptName ? `Track a game of ${scriptName}` : title;
     description = truncate(
       [
-        `${seated.length} players (${formatCharacterCounts(getSharedCharacterCounts(sharedGame))}): ${seated.map((player) => player[0]).join(', ')}.`,
+        `${seated.length} players: ${formatCharacterCounts(getSharedCharacterCounts(sharedGame))}.`,
         storytellers.length > 0
           ? `Storyteller: ${storytellers.map((player) => player[0]).join(', ')}.`
           : '',
@@ -42,8 +44,8 @@ export function GET(request: Request) {
     imageTag = [
       `<meta property="og:image" content="${escapeHtml(imageUrl)}">`,
       '<meta property="og:image:type" content="image/png">',
-      '<meta property="og:image:width" content="800">',
-      '<meta property="og:image:height" content="420">',
+      `<meta property="og:image:width" content="${SHARE_PREVIEW_WIDTH}">`,
+      `<meta property="og:image:height" content="${SHARE_PREVIEW_HEIGHT}">`,
       `<meta property="og:image:alt" content="${escapeHtml(`Map of the game: ${seated.length} players`)}">`,
       '<meta name="twitter:card" content="summary_large_image">',
       `<meta name="twitter:image" content="${escapeHtml(imageUrl)}">`,

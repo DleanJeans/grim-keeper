@@ -12,6 +12,8 @@ export const SHARE_GAME_PATH = '/join';
 /** The link people send: an API route that answers with preview tags, then opens SHARE_GAME_PATH. */
 export const SHARE_GAME_LINK_PATH = '/share';
 export const SHARE_GAME_IMAGE_PATH = '/og';
+export const SHARE_PREVIEW_WIDTH = 1200;
+export const SHARE_PREVIEW_HEIGHT = 630;
 
 /** v1 links were deflated JSON; v2 links pack the game into bytes (see `packSharedGame`). */
 export const SHARE_GAME_VERSION = 2;

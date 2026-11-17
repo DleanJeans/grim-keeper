@@ -1,22 +1,28 @@
 import { zlibSync } from 'fflate';
+import * as opentype from 'opentype.js';
 
 import {
   getSharedCharacterCounts,
   getSharedScriptName,
+  SHARE_PREVIEW_HEIGHT,
+  SHARE_PREVIEW_WIDTH,
   type SharedGame,
 } from '@/utils/share-game-codec';
+import { GOOGLE_SANS_BOLD_BASE64, IM_FELL_ENGLISH_SC_BASE64 } from '@/utils/share-preview-fonts';
 
-// A tiny pure-JS PNG drawer for the link preview image (no canvas, fonts or wasm), so it can
-// run in the hosting server. The map is drawn as discs with initials, next to the script name.
+// Draws the link preview picture with no canvas or native modules, so it runs in the hosting
+// server: glyph outlines from the app's own fonts are filled by a small anti-aliased rasterizer
+// and the result is written as a PNG. The map is drawn like the app's Grimoire tokens.
 
-export const PREVIEW_WIDTH = 800;
-export const PREVIEW_HEIGHT = 420;
-
-const MARGIN = 24;
+const MARGIN = 30;
 const DEFAULT_TOKEN_SIZE = 100;
-const RATIO_SCALE = 3;
-const FONT_WIDTH = 5;
-const FONT_HEIGHT = 7;
+const MIN_TOKEN_RADIUS = 16;
+// Four sub-scanlines per pixel; horizontal coverage is exact.
+const SUBSAMPLES = 4;
+const CURVE_STEPS = 8;
+const RIBBON_HALF_ANGLE = (58 * Math.PI) / 180;
+const CAP_HEIGHT_RATIO = 0.68;
+
 // Copies of the app's map and token colors (theme/colors.ts reads stored settings, which the
 // server has none of).
 const colors = {
@@ -26,6 +32,9 @@ const colors = {
   gameText: '#f8fafc',
   gameTextSoft: '#cbd5e1',
   randomAccent: '#e2b04a',
+  ribbon: '#5b2a17',
+  ribbonText: '#f6ecd2',
+  storytellerRibbon: '#7a5a12',
 };
 const tokenColors = {
   edge: '#3b2412',
@@ -33,67 +42,32 @@ const tokenColors = {
   parchmentCenter: '#f6ecd2',
   parchmentEdge: '#c9ad78',
   parchmentMiddle: '#e6d3a8',
-  storytellerRibbon: '#7a5a12',
+  storytellerStar: '#7a5a12',
 };
 
 type Rgb = readonly [number, number, number];
+type Point = { x: number; y: number };
+type Polygon = Point[];
+type Canvas = { data: Uint8Array; height: number; width: number };
+type Fonts = { body: opentype.Font; token: opentype.Font };
 
-// 5x7 glyphs, one string of seven 5-bit rows each.
-const FONT: Record<string, string> = {
-  A: '01110 10001 10001 11111 10001 10001 10001',
-  B: '11110 10001 10001 11110 10001 10001 11110',
-  C: '01110 10001 10000 10000 10000 10001 01110',
-  D: '11110 10001 10001 10001 10001 10001 11110',
-  E: '11111 10000 10000 11110 10000 10000 11111',
-  F: '11111 10000 10000 11110 10000 10000 10000',
-  G: '01110 10001 10000 10111 10001 10001 01111',
-  H: '10001 10001 10001 11111 10001 10001 10001',
-  I: '01110 00100 00100 00100 00100 00100 01110',
-  J: '00111 00010 00010 00010 00010 10010 01100',
-  K: '10001 10010 10100 11000 10100 10010 10001',
-  L: '10000 10000 10000 10000 10000 10000 11111',
-  M: '10001 11011 10101 10101 10001 10001 10001',
-  N: '10001 11001 10101 10011 10001 10001 10001',
-  O: '01110 10001 10001 10001 10001 10001 01110',
-  P: '11110 10001 10001 11110 10000 10000 10000',
-  Q: '01110 10001 10001 10001 10101 10010 01101',
-  R: '11110 10001 10001 11110 10100 10010 10001',
-  S: '01111 10000 10000 01110 00001 00001 11110',
-  T: '11111 00100 00100 00100 00100 00100 00100',
-  U: '10001 10001 10001 10001 10001 10001 01110',
-  V: '10001 10001 10001 10001 10001 01010 00100',
-  W: '10001 10001 10001 10101 10101 11011 10001',
-  X: '10001 10001 01010 00100 01010 10001 10001',
-  Y: '10001 10001 01010 00100 00100 00100 00100',
-  Z: '11111 00001 00010 00100 01000 10000 11111',
-  '0': '01110 10001 10011 10101 11001 10001 01110',
-  '1': '00100 01100 00100 00100 00100 00100 01110',
-  '2': '01110 10001 00001 00010 00100 01000 11111',
-  '3': '11110 00001 00001 01110 00001 00001 11110',
-  '4': '00010 00110 01010 10010 11111 00010 00010',
-  '5': '11111 10000 11110 00001 00001 10001 01110',
-  '6': '00110 01000 10000 11110 10001 10001 01110',
-  '7': '11111 00001 00010 00100 01000 01000 01000',
-  '8': '01110 10001 10001 01110 10001 10001 01110',
-  '9': '01110 10001 10001 01111 00001 00010 01100',
-  '-': '00000 00000 00000 11111 00000 00000 00000',
-  "'": '00100 00100 01000 00000 00000 00000 00000',
-  '.': '00000 00000 00000 00000 00000 01100 01100',
-  '&': '01100 10010 10100 01000 10101 10010 01101',
-};
-
-const glyphCache = new Map<string, number[][]>();
+let cachedFonts: Fonts | undefined;
 
 export function createSharePreviewPng(sharedGame: SharedGame): Uint8Array {
-  const canvas = createCanvas(PREVIEW_WIDTH, PREVIEW_HEIGHT, hexToRgb(colors.gameBackground));
+  const fonts = getFonts();
+  const canvas = createCanvas(
+    SHARE_PREVIEW_WIDTH,
+    SHARE_PREVIEW_HEIGHT,
+    hexToRgb(colors.gameBackground),
+  );
   const mapScale = Math.min(
-    (PREVIEW_HEIGHT - MARGIN * 2) / sharedGame.h,
-    (PREVIEW_WIDTH * 0.5) / sharedGame.w,
+    (SHARE_PREVIEW_HEIGHT - MARGIN * 2) / sharedGame.h,
+    (SHARE_PREVIEW_WIDTH * 0.5) / sharedGame.w,
   );
   const mapWidth = Math.round(sharedGame.w * mapScale);
   const mapHeight = Math.round(sharedGame.h * mapScale);
   const mapLeft = MARGIN;
-  const mapTop = Math.round((PREVIEW_HEIGHT - mapHeight) / 2);
+  const mapTop = Math.round((SHARE_PREVIEW_HEIGHT - mapHeight) / 2);
 
   fillRect(
     canvas,
@@ -105,24 +79,459 @@ export function createSharePreviewPng(sharedGame: SharedGame): Uint8Array {
   );
   fillRect(canvas, mapLeft, mapTop, mapWidth, mapHeight, hexToRgb(colors.gameSurface));
 
-  const tokenRadius = Math.max(12, ((sharedGame.t ?? DEFAULT_TOKEN_SIZE) * mapScale) / 2) * 0.94;
-  for (const [name, , x, y, storyteller] of sharedGame.p) {
+  const radius = Math.max(
+    MIN_TOKEN_RADIUS,
+    (((sharedGame.t ?? DEFAULT_TOKEN_SIZE) * mapScale) / 2) * 0.94,
+  );
+  const tokenNames = getTokenNames(sharedGame.p.map((player) => player[0]));
+  sharedGame.p.forEach(([name, , x, y, storyteller], index) => {
     drawToken(
       canvas,
-      mapLeft + x * mapScale,
-      mapTop + y * mapScale,
-      tokenRadius,
+      fonts,
+      { x: mapLeft + x * mapScale, y: mapTop + y * mapScale },
+      radius,
       name,
+      tokenNames[index],
       !!storyteller,
     );
-  }
+  });
 
-  drawInfo(canvas, sharedGame, mapLeft + mapWidth + 40);
+  drawInfo(canvas, fonts, sharedGame, mapLeft + mapWidth + 50);
 
   return encodePng(canvas);
 }
 
-type Canvas = { data: Uint8Array; height: number; width: number };
+function getFonts(): Fonts {
+  cachedFonts ??= {
+    body: parseFont(GOOGLE_SANS_BOLD_BASE64),
+    token: parseFont(IM_FELL_ENGLISH_SC_BASE64),
+  };
+  return cachedFonts;
+}
+
+function parseFont(base64: string) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return opentype.parse(bytes.buffer);
+}
+
+/** What the app writes on a token: the first name, or the whole name when another shares it. */
+function getTokenNames(names: string[]) {
+  const normalized = names.map((name) => name.trim().replace(/\s+/g, ' '));
+  const firstNames = normalized.map((name) => (name.split(' ')[0] ?? '').toLocaleLowerCase());
+
+  return normalized.map((name, index) =>
+    firstNames.some((other, otherIndex) => otherIndex !== index && other === firstNames[index])
+      ? name
+      : (name.split(' ')[0] ?? name),
+  );
+}
+
+// ---------------------------------------------------------------------------------------------
+// Tokens
+
+function drawToken(
+  canvas: Canvas,
+  fonts: Fonts,
+  center: Point,
+  radius: number,
+  fullName: string,
+  tokenName: string,
+  storyteller: boolean,
+) {
+  drawDisc(canvas, center, radius, hexToRgb(tokenColors.edge));
+  drawDisc(
+    canvas,
+    center,
+    radius - Math.max(2, radius * 0.07),
+    hexToRgb(tokenColors.parchmentEdge),
+  );
+  drawDisc(
+    canvas,
+    center,
+    radius - Math.max(3, radius * 0.12),
+    hexToRgb(tokenColors.parchmentMiddle),
+  );
+  drawDisc(canvas, center, radius * 0.66, hexToRgb(tokenColors.parchmentCenter));
+
+  const ribbonCenterRadius = radius * 0.64;
+  const ribbonWidth = radius * 0.46;
+  fillPolygons(
+    canvas,
+    [
+      getRibbonPolygon(
+        center,
+        ribbonCenterRadius - ribbonWidth / 2,
+        ribbonCenterRadius + ribbonWidth / 2,
+      ),
+    ],
+    hexToRgb(storyteller ? colors.storytellerRibbon : colors.ribbon),
+  );
+  drawArcText(canvas, fonts.token, tokenName, center, ribbonCenterRadius, radius);
+
+  if (storyteller) {
+    fillPolygons(
+      canvas,
+      [getStarPolygon({ x: center.x, y: center.y - radius * 0.17 }, radius * 0.36)],
+      hexToRgb(tokenColors.storytellerStar),
+    );
+    return;
+  }
+
+  const initial = getInitial(fullName, fonts.token);
+  if (initial) {
+    const size = radius * 0.8;
+    const width = fonts.token.getAdvanceWidth(initial, size);
+    fillPolygons(
+      canvas,
+      getTextPolygons(fonts.token, initial, center.x - width / 2, center.y + radius * 0.08, size),
+      hexToRgb(tokenColors.ink),
+      0.85,
+    );
+  }
+}
+
+/** The band along the bottom of a token, between two radii. */
+function getRibbonPolygon(center: Point, innerRadius: number, outerRadius: number): Polygon {
+  const steps = 24;
+  const outer: Polygon = [];
+  const inner: Polygon = [];
+  for (let step = 0; step <= steps; step += 1) {
+    const angle = -RIBBON_HALF_ANGLE + (2 * RIBBON_HALF_ANGLE * step) / steps;
+    outer.push(pointOnCircle(center, outerRadius, angle));
+    inner.push(pointOnCircle(center, innerRadius, angle));
+  }
+  return [...outer, ...inner.reverse()];
+}
+
+/** Angle 0 is straight down; it grows toward the right, so text reads left to right. */
+function pointOnCircle(center: Point, radius: number, angle: number): Point {
+  return { x: center.x + radius * Math.sin(angle), y: center.y + radius * Math.cos(angle) };
+}
+
+/** Writes the name along the ribbon, letters upright with their tops toward the center. */
+function drawArcText(
+  canvas: Canvas,
+  font: opentype.Font,
+  text: string,
+  center: Point,
+  ribbonCenterRadius: number,
+  tokenRadius: number,
+) {
+  const glyphs = Array.from(text).filter((character) => font.charToGlyphIndex(character) > 0);
+  if (glyphs.length === 0) {
+    return;
+  }
+
+  // Fit the name between the ribbon's ends, at the app's relative size or smaller.
+  const maxLength = tokenRadius * 1.5;
+  const unitLength = font.getAdvanceWidth(glyphs.join(''), 1);
+  const size = Math.min(tokenRadius * 0.38, maxLength / Math.max(0.01, unitLength));
+  // Baseline on the outer side of the ribbon's middle so the capitals sit centered in the band.
+  const baselineRadius = ribbonCenterRadius + (size * CAP_HEIGHT_RATIO) / 2;
+  const advances = glyphs.map((glyph) => font.getAdvanceWidth(glyph, size));
+  const total = advances.reduce((sum, advance) => sum + advance, 0);
+  const polygons: Polygon[] = [];
+  let offset = 0;
+
+  glyphs.forEach((glyph, index) => {
+    const advance = advances[index];
+    const angle = (offset + advance / 2 - total / 2) / baselineRadius;
+    offset += advance;
+    const anchor = pointOnCircle(center, baselineRadius, angle);
+    for (const polygon of getTextPolygons(font, glyph, -advance / 2, 0, size)) {
+      // Rotating by -angle lays the glyph along the circle's tangent.
+      const cos = Math.cos(-angle);
+      const sin = Math.sin(-angle);
+      polygons.push(
+        polygon.map((point) => ({
+          x: anchor.x + point.x * cos - point.y * sin,
+          y: anchor.y + point.x * sin + point.y * cos,
+        })),
+      );
+    }
+  });
+
+  fillPolygons(canvas, polygons, hexToRgb(colors.ribbonText));
+}
+
+function getStarPolygon(center: Point, size: number): Polygon {
+  // A four-pointed star: points at the compass directions, pinched in between.
+  const polygon: Polygon = [];
+  for (let index = 0; index < 8; index += 1) {
+    const angle = (index * Math.PI) / 4;
+    const length = index % 2 === 0 ? size : size * 0.3;
+    polygon.push({
+      x: center.x + length * Math.sin(angle),
+      y: center.y - length * Math.cos(angle),
+    });
+  }
+  return polygon;
+}
+
+/** First letter or digit of a name without accents (Đ counts as D), if the font has it. */
+function getInitial(name: string, font: opentype.Font) {
+  const first = Array.from(
+    name.trim().replace(/đ/gi, 'd').normalize('NFD').replace(/\p{M}/gu, ''),
+  )[0]?.toLocaleUpperCase();
+
+  return first && font.charToGlyphIndex(first) > 0 ? first : undefined;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Info column
+
+function drawInfo(canvas: Canvas, fonts: Fonts, sharedGame: SharedGame, left: number) {
+  const font = fonts.body;
+  const maxWidth = canvas.width - left - MARGIN;
+  const scriptName = getSharedScriptName(sharedGame) ?? 'Grim Keeper game';
+  const seated = sharedGame.p.filter((player) => !player[4]).length;
+  let titleSize = 84;
+  let lines = wrapText(font, scriptName, maxWidth, titleSize);
+  while (lines.length > 3 && titleSize > 40) {
+    titleSize -= 4;
+    lines = wrapText(font, scriptName, maxWidth, titleSize);
+  }
+
+  const counts = getSharedCharacterCounts(sharedGame);
+  const ratio: Array<[number, string, string]> = [
+    [counts.townsfolk, 'Townsfolk', '#60a5fa'],
+    [counts.outsiders, counts.outsiders === 1 ? 'Outsider' : 'Outsiders', '#a5b4fc'],
+    [counts.minions, counts.minions === 1 ? 'Minion' : 'Minions', '#fb923c'],
+    [counts.demons, counts.demons === 1 ? 'Demon' : 'Demons', '#f87171'],
+  ];
+  const labelSize = 32;
+  const titleLine = Math.round(titleSize * 1.12);
+  const playersSize = 48;
+  const ratioSize = 36;
+  const ratioLine = Math.round(ratioSize * 1.45);
+  const total =
+    labelSize + 26 + lines.length * titleLine + 22 + playersSize + 22 + ratio.length * ratioLine;
+  let y = Math.max(MARGIN, Math.round((canvas.height - total) / 2));
+
+  drawText(canvas, font, 'GRIM KEEPER', left, y + labelSize, labelSize, colors.randomAccent);
+  y += labelSize + 26;
+  for (const line of lines) {
+    drawText(canvas, font, line, left, y + titleSize, titleSize, colors.gameText);
+    y += titleLine;
+  }
+  y += 22;
+  drawText(
+    canvas,
+    font,
+    `${seated} player${seated === 1 ? '' : 's'}`,
+    left,
+    y + playersSize * 0.9,
+    playersSize,
+    colors.gameText,
+  );
+  y += playersSize + 22;
+  for (const [count, label, color] of ratio) {
+    const baseline = y + ratioSize;
+    drawDisc(canvas, { x: left + 12, y: baseline - ratioSize * 0.34 }, 11, hexToRgb(color));
+    drawText(
+      canvas,
+      font,
+      `${count} ${label}`,
+      left + 38,
+      baseline,
+      ratioSize,
+      colors.gameTextSoft,
+    );
+    y += ratioLine;
+  }
+}
+
+function wrapText(font: opentype.Font, text: string, maxWidth: number, size: number) {
+  const lines: string[] = [];
+  let line = '';
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const next = line ? `${line} ${word}` : word;
+    if (line && font.getAdvanceWidth(next, size) > maxWidth) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = next;
+    }
+  }
+  if (line) {
+    lines.push(line);
+  }
+  return lines;
+}
+
+function drawText(
+  canvas: Canvas,
+  font: opentype.Font,
+  text: string,
+  x: number,
+  baseline: number,
+  size: number,
+  color: string,
+) {
+  fillPolygons(canvas, getTextPolygons(font, text, x, baseline, size), hexToRgb(color));
+}
+
+// ---------------------------------------------------------------------------------------------
+// Rasterizer
+
+/** Outlines of `text` with its baseline starting at (x, baseline), as closed polygons. */
+function getTextPolygons(
+  font: opentype.Font,
+  text: string,
+  x: number,
+  baseline: number,
+  size: number,
+): Polygon[] {
+  const supported = Array.from(text)
+    .filter((character) => font.charToGlyphIndex(character) > 0 || character === ' ')
+    .join('');
+  const polygons: Polygon[] = [];
+  let current: Polygon = [];
+  let last: Point = { x: 0, y: 0 };
+  const close = () => {
+    if (current.length > 2) polygons.push(current);
+    current = [];
+  };
+
+  for (const command of font.getPath(supported, x, baseline, size).commands) {
+    if (command.type === 'M') {
+      close();
+      last = { x: command.x, y: command.y };
+      current = [last];
+    } else if (command.type === 'L') {
+      last = { x: command.x, y: command.y };
+      current.push(last);
+    } else if (command.type === 'Q') {
+      for (let step = 1; step <= CURVE_STEPS; step += 1) {
+        const t = step / CURVE_STEPS;
+        const u = 1 - t;
+        current.push({
+          x: u * u * last.x + 2 * u * t * command.x1 + t * t * command.x,
+          y: u * u * last.y + 2 * u * t * command.y1 + t * t * command.y,
+        });
+      }
+      last = { x: command.x, y: command.y };
+    } else if (command.type === 'C') {
+      for (let step = 1; step <= CURVE_STEPS; step += 1) {
+        const t = step / CURVE_STEPS;
+        const u = 1 - t;
+        current.push({
+          x:
+            u ** 3 * last.x +
+            3 * u * u * t * command.x1 +
+            3 * u * t * t * command.x2 +
+            t ** 3 * command.x,
+          y:
+            u ** 3 * last.y +
+            3 * u * u * t * command.y1 +
+            3 * u * t * t * command.y2 +
+            t ** 3 * command.y,
+        });
+      }
+      last = { x: command.x, y: command.y };
+    } else if (command.type === 'Z') {
+      close();
+    }
+  }
+  close();
+
+  return polygons;
+}
+
+type Edge = { dir: 1 | -1; slope: number; x0: number; y0: number; y1: number };
+
+/** Fills polygons with the non-zero winding rule, blending `color` over the canvas. */
+function fillPolygons(canvas: Canvas, polygons: Polygon[], color: Rgb, opacity = 1) {
+  const edges: Edge[] = [];
+  let minY = Number.POSITIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+  let minX = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+
+  for (const polygon of polygons) {
+    for (let index = 0; index < polygon.length; index += 1) {
+      const a = polygon[index];
+      const b = polygon[(index + 1) % polygon.length];
+      minX = Math.min(minX, a.x);
+      maxX = Math.max(maxX, a.x);
+      minY = Math.min(minY, a.y);
+      maxY = Math.max(maxY, a.y);
+      if (a.y === b.y) continue;
+      const aIsLower = a.y < b.y;
+      edges.push({
+        dir: b.y > a.y ? 1 : -1,
+        slope: (b.x - a.x) / (b.y - a.y),
+        x0: aIsLower ? a.x : b.x,
+        y0: aIsLower ? a.y : b.y,
+        y1: aIsLower ? b.y : a.y,
+      });
+    }
+  }
+  if (edges.length === 0) return;
+
+  const rowStart = Math.max(0, Math.floor(minY));
+  const rowEnd = Math.min(canvas.height - 1, Math.ceil(maxY));
+  const columnStart = Math.max(0, Math.floor(minX));
+  const columnEnd = Math.min(canvas.width - 1, Math.ceil(maxX));
+  const coverage = new Float32Array(columnEnd - columnStart + 2);
+  // Edges crossing each pixel row, so a row only looks at its own.
+  const rowEdges: Edge[][] = Array.from({ length: rowEnd - rowStart + 1 }, () => []);
+  for (const edge of edges) {
+    const first = Math.max(rowStart, Math.floor(edge.y0));
+    const last = Math.min(rowEnd, Math.floor(edge.y1));
+    for (let row = first; row <= last; row += 1) {
+      rowEdges[row - rowStart].push(edge);
+    }
+  }
+
+  for (let row = rowStart; row <= rowEnd; row += 1) {
+    coverage.fill(0);
+    let touched = false;
+    const candidates = rowEdges[row - rowStart];
+    for (let sample = 0; sample < SUBSAMPLES; sample += 1) {
+      const y = row + (sample + 0.5) / SUBSAMPLES;
+      const crossings: Array<[number, number]> = [];
+      for (const edge of candidates) {
+        if (y >= edge.y0 && y < edge.y1) {
+          crossings.push([edge.x0 + (y - edge.y0) * edge.slope, edge.dir]);
+        }
+      }
+      crossings.sort((first, second) => first[0] - second[0]);
+      let winding = 0;
+      for (let index = 0; index < crossings.length - 1; index += 1) {
+        winding += crossings[index][1];
+        if (winding === 0) continue;
+        addSpan(coverage, crossings[index][0], crossings[index + 1][0], columnStart, columnEnd);
+        touched = true;
+      }
+    }
+    if (!touched) continue;
+    for (let column = columnStart; column <= columnEnd; column += 1) {
+      const alpha = Math.min(1, coverage[column - columnStart] / SUBSAMPLES) * opacity;
+      blend(canvas, column, row, color, alpha);
+    }
+  }
+}
+
+function addSpan(
+  coverage: Float32Array,
+  from: number,
+  to: number,
+  columnStart: number,
+  columnEnd: number,
+) {
+  const start = Math.max(from, columnStart);
+  const end = Math.min(to, columnEnd + 1);
+  if (end <= start) return;
+  for (let column = Math.floor(start); column <= Math.floor(end - 1e-9); column += 1) {
+    const overlap = Math.min(end, column + 1) - Math.max(start, column);
+    if (overlap > 0) coverage[column - columnStart] += overlap;
+  }
+}
 
 function createCanvas(width: number, height: number, color: Rgb): Canvas {
   const data = new Uint8Array(width * height * 3);
@@ -161,252 +570,22 @@ function blend(canvas: Canvas, x: number, y: number, color: Rgb, alpha: number) 
   }
 }
 
-function drawDisc(canvas: Canvas, cx: number, cy: number, radius: number, color: Rgb) {
-  for (let y = Math.floor(cy - radius - 1); y <= Math.ceil(cy + radius + 1); y += 1) {
-    for (let x = Math.floor(cx - radius - 1); x <= Math.ceil(cx + radius + 1); x += 1) {
-      const distance = Math.hypot(x + 0.5 - cx, y + 0.5 - cy);
+function drawDisc(canvas: Canvas, center: Point, radius: number, color: Rgb) {
+  for (let y = Math.floor(center.y - radius - 1); y <= Math.ceil(center.y + radius + 1); y += 1) {
+    for (let x = Math.floor(center.x - radius - 1); x <= Math.ceil(center.x + radius + 1); x += 1) {
+      const distance = Math.hypot(x + 0.5 - center.x, y + 0.5 - center.y);
       blend(canvas, x, y, color, Math.min(1, Math.max(0, radius - distance + 0.5)));
     }
   }
-}
-
-function drawToken(
-  canvas: Canvas,
-  cx: number,
-  cy: number,
-  radius: number,
-  name: string,
-  storyteller: boolean,
-) {
-  drawDisc(canvas, cx, cy, radius, hexToRgb(tokenColors.edge));
-  drawDisc(
-    canvas,
-    cx,
-    cy,
-    radius - Math.max(2, radius * 0.07),
-    hexToRgb(tokenColors.parchmentEdge),
-  );
-  drawDisc(
-    canvas,
-    cx,
-    cy,
-    radius - Math.max(3, radius * 0.12),
-    hexToRgb(tokenColors.parchmentMiddle),
-  );
-  drawDisc(canvas, cx, cy, radius * 0.66, hexToRgb(tokenColors.parchmentCenter));
-
-  if (storyteller) {
-    drawStar(canvas, cx, cy, radius * 0.5, hexToRgb(tokenColors.storytellerRibbon));
-    return;
-  }
-
-  const initial = getInitial(name);
-  const glyphHeight = radius * 0.95;
-  drawGlyph(canvas, initial, cx, cy, glyphHeight / FONT_HEIGHT, hexToRgb(tokenColors.ink), true);
-}
-
-/** Four-pointed star, the Storyteller's mark. */
-function drawStar(canvas: Canvas, cx: number, cy: number, size: number, color: Rgb) {
-  for (let y = Math.floor(cy - size); y <= Math.ceil(cy + size); y += 1) {
-    for (let x = Math.floor(cx - size); x <= Math.ceil(cx + size); x += 1) {
-      const dx = Math.abs(x + 0.5 - cx) / size;
-      const dy = Math.abs(y + 0.5 - cy) / size;
-      // Astroid: |x|^(2/3) + |y|^(2/3) <= 1, softened over one pixel.
-      const value = dx ** (2 / 3) + dy ** (2 / 3);
-      blend(canvas, x, y, color, Math.min(1, Math.max(0, (1 - value) * size * 0.35 + 0.5)));
-    }
-  }
-}
-
-function drawInfo(canvas: Canvas, sharedGame: SharedGame, left: number) {
-  const maxWidth = canvas.width - left - MARGIN;
-  const scriptName = (getSharedScriptName(sharedGame) ?? 'Grim Keeper game').toLocaleUpperCase();
-  const seated = sharedGame.p.filter((player) => !player[4]).length;
-  let scale = 7;
-  let lines = wrapText(scriptName, maxWidth, scale);
-  while (
-    (lines.length > 3 || lines.some((line) => measureText(line, scale) > maxWidth)) &&
-    scale > 4
-  ) {
-    scale -= 1;
-    lines = wrapText(scriptName, maxWidth, scale);
-  }
-
-  const counts = getSharedCharacterCounts(sharedGame);
-  const ratio: Array<[number, string, string]> = [
-    [counts.townsfolk, 'TOWNSFOLK', '#60a5fa'],
-    [counts.outsiders, counts.outsiders === 1 ? 'OUTSIDER' : 'OUTSIDERS', '#a5b4fc'],
-    [counts.minions, counts.minions === 1 ? 'MINION' : 'MINIONS', '#fb923c'],
-    [counts.demons, counts.demons === 1 ? 'DEMON' : 'DEMONS', '#f87171'],
-  ];
-  const titleLine = (FONT_HEIGHT + 2) * scale;
-  const ratioLine = (FONT_HEIGHT + 1) * RATIO_SCALE;
-  const total =
-    FONT_HEIGHT * 3 +
-    18 +
-    lines.length * titleLine +
-    12 +
-    FONT_HEIGHT * 4 +
-    16 +
-    ratio.length * ratioLine;
-  let y = Math.max(MARGIN, Math.round((canvas.height - total) / 2));
-
-  drawText(canvas, 'GRIM KEEPER', left, y, 3, hexToRgb(colors.randomAccent));
-  y += FONT_HEIGHT * 3 + 18;
-  for (const line of lines) {
-    drawText(canvas, line, left, y, scale, hexToRgb(colors.gameText));
-    y += titleLine;
-  }
-  y += 12;
-  drawText(
-    canvas,
-    `${seated} PLAYER${seated === 1 ? '' : 'S'}`,
-    left,
-    y,
-    4,
-    hexToRgb(colors.gameText),
-  );
-  y += FONT_HEIGHT * 4 + 16;
-  for (const [count, label, color] of ratio) {
-    drawDisc(
-      canvas,
-      left + RATIO_SCALE * 3,
-      y + (FONT_HEIGHT * RATIO_SCALE) / 2,
-      RATIO_SCALE * 2.2,
-      hexToRgb(color),
-    );
-    drawText(
-      canvas,
-      `${count} ${label}`,
-      left + RATIO_SCALE * 9,
-      y,
-      RATIO_SCALE,
-      hexToRgb(colors.gameTextSoft),
-    );
-    y += ratioLine;
-  }
-}
-
-function wrapText(text: string, maxWidth: number, scale: number) {
-  const lines: string[] = [];
-  let line = '';
-  for (const word of text.split(/\s+/).filter(Boolean)) {
-    const next = line ? `${line} ${word}` : word;
-    if (line && measureText(next, scale) > maxWidth) {
-      lines.push(line);
-      line = word;
-    } else {
-      line = next;
-    }
-  }
-  if (line) {
-    lines.push(line);
-  }
-  return lines;
-}
-
-function measureText(text: string, scale: number) {
-  return Array.from(text).length * (FONT_WIDTH + 1) * scale;
-}
-
-function drawText(
-  canvas: Canvas,
-  text: string,
-  left: number,
-  top: number,
-  scale: number,
-  color: Rgb,
-) {
-  Array.from(text).forEach((character, index) => {
-    drawGlyph(
-      canvas,
-      character,
-      left + index * (FONT_WIDTH + 1) * scale + (FONT_WIDTH * scale) / 2,
-      top + (FONT_HEIGHT * scale) / 2,
-      scale,
-      color,
-      false,
-    );
-  });
-}
-
-/** Draws a glyph centered on (cx, cy), smoothing the bitmap so letters look rounded, not blocky. */
-function drawGlyph(
-  canvas: Canvas,
-  character: string,
-  cx: number,
-  cy: number,
-  scale: number,
-  color: Rgb,
-  fallbackDot: boolean,
-) {
-  const rows = getGlyph(character);
-  if (!rows) {
-    if (fallbackDot) {
-      drawDisc(canvas, cx, cy, scale * 1.2, color);
-    }
-    return;
-  }
-
-  const left = cx - (FONT_WIDTH * scale) / 2;
-  const top = cy - (FONT_HEIGHT * scale) / 2;
-  for (let y = Math.floor(top); y < Math.ceil(top + FONT_HEIGHT * scale); y += 1) {
-    for (let x = Math.floor(left); x < Math.ceil(left + FONT_WIDTH * scale); x += 1) {
-      const column = (x + 0.5 - left) / scale - 0.5;
-      const row = (y + 0.5 - top) / scale - 0.5;
-      const value = sampleBilinear(rows, column, row);
-      blend(canvas, x, y, color, smoothstep(0.3, 0.7, value));
-    }
-  }
-}
-
-function sampleBilinear(rows: number[][], column: number, row: number) {
-  const x0 = Math.floor(column);
-  const y0 = Math.floor(row);
-  const fx = column - x0;
-  const fy = row - y0;
-  const at = (x: number, y: number) => rows[y]?.[x] ?? 0;
-
-  return (
-    at(x0, y0) * (1 - fx) * (1 - fy) +
-    at(x0 + 1, y0) * fx * (1 - fy) +
-    at(x0, y0 + 1) * (1 - fx) * fy +
-    at(x0 + 1, y0 + 1) * fx * fy
-  );
-}
-
-function smoothstep(edge0: number, edge1: number, value: number) {
-  const t = Math.min(1, Math.max(0, (value - edge0) / (edge1 - edge0)));
-  return t * t * (3 - 2 * t);
-}
-
-function getGlyph(character: string) {
-  const key = character.toLocaleUpperCase();
-  const cached = glyphCache.get(key);
-  if (cached) {
-    return cached;
-  }
-  const source = FONT[key];
-  if (!source) {
-    return undefined;
-  }
-  const rows = source.split(' ').map((row) => Array.from(row, (cell) => (cell === '1' ? 1 : 0)));
-  glyphCache.set(key, rows);
-  return rows;
-}
-
-/** First letter or digit of a name, without accents (Đ counts as D); other scripts get a dot. */
-function getInitial(name: string) {
-  const first = Array.from(
-    name.trim().replace(/đ/gi, 'd').normalize('NFD').replace(/\p{M}/gu, ''),
-  )[0];
-  return first ?? '';
 }
 
 function hexToRgb(hex: string): Rgb {
   const value = Number.parseInt(hex.replace('#', ''), 16);
   return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
 }
+
+// ---------------------------------------------------------------------------------------------
+// PNG
 
 const crcTable = (() => {
   const table = new Uint32Array(256);
@@ -446,7 +625,7 @@ function encodePng(canvas: Canvas) {
   return concat([
     Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10]),
     chunk('IHDR', header),
-    chunk('IDAT', zlibSync(raw, { level: 3 })),
+    chunk('IDAT', zlibSync(raw, { level: 1 })),
     chunk('IEND', new Uint8Array(0)),
   ]);
 }
