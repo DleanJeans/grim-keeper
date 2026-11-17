@@ -627,6 +627,7 @@ function PlayerTokenForMap({
       theoryEvil={theoryEvil}
       displayName={getPlayerTokenName(player, players)}
       deadVoteAvailable={deadVoteAvailable}
+      deathKind={player.death?.kind}
       deathLabel={deathLabel}
       interactionMode={interactionMode}
       isInitiator={highlightedPlayerIds[0] === player.id}

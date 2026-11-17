@@ -55,6 +55,8 @@ type PlayerTokenProps = {
   deadVoteAvailable?: boolean;
   /** When they died, e.g. N2 or D4; shown as a badge at the bottom left. */
   deathLabel?: string;
+  /** Colors the death label: red for an execution, blue for a night kill. */
+  deathKind?: 'execution' | 'night';
   disabled?: boolean;
   /** Faded but still tappable, e.g. cleared players under the suspect filter. */
   dimmed?: boolean;
@@ -94,6 +96,7 @@ export function PlayerToken({
   confirmedRoleIds,
   deadVoteAvailable,
   deathLabel,
+  deathKind,
   dimmed = false,
   disabled = false,
   displayName,
@@ -484,7 +487,15 @@ export function PlayerToken({
               },
             ]}
           >
-            <Text style={[styles.deathBadgeText, { fontSize: badgeSize * 0.5 }]}>{deathLabel}</Text>
+            <Text
+              style={[
+                styles.deathBadgeText,
+                deathKind === 'execution' ? styles.deathBadgeExecution : styles.deathBadgeNight,
+                { fontSize: badgeSize * 0.5 },
+              ]}
+            >
+              {deathLabel}
+            </Text>
           </View>
         ) : null}
         {hasDeadVote ? (
@@ -587,7 +598,9 @@ const styles = StyleSheet.create({
     pointerEvents: 'none',
     position: 'absolute',
   },
-  deathBadgeText: { color: badgeColors.deathText, fontWeight: '700' },
+  deathBadgeExecution: { color: badgeColors.deathExecutionIcon },
+  deathBadgeNight: { color: badgeColors.deathNightIcon },
+  deathBadgeText: { fontWeight: '700' },
   lessonsDot: { backgroundColor: colors.savedNoteIcon },
   picture: {
     borderColor: colors.grimoireToken.innerRing,
