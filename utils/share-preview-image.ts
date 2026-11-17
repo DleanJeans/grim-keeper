@@ -9,6 +9,7 @@ import {
   type SharedGame,
 } from '@/utils/share-game-codec';
 import { GOOGLE_SANS_BOLD_BASE64, IM_FELL_ENGLISH_SC_BASE64 } from '@/utils/share-preview-fonts';
+import type { PreviewIcon } from '@/utils/share-preview-icons';
 
 // Draws the link preview picture with no canvas or native modules, so it runs in the hosting
 // server: glyph outlines from the app's own fonts are filled by a small anti-aliased rasterizer
@@ -19,6 +20,10 @@ const DEFAULT_TOKEN_SIZE = 100;
 const MIN_TOKEN_RADIUS = 16;
 // Four sub-scanlines per pixel; horizontal coverage is exact.
 const SUBSAMPLES = 4;
+const ICON_SIZE = 54;
+const ICON_GAP = 8;
+const ICON_BORDER = 2.5;
+const ICON_STRIP_GAP = 26;
 const CURVE_STEPS = 8;
 const RIBBON_HALF_ANGLE = (58 * Math.PI) / 180;
 const CAP_HEIGHT_RATIO = 0.68;
@@ -30,6 +35,8 @@ const colors = {
   gameBorder: '#334155',
   gameSurface: '#111827',
   gameText: '#f8fafc',
+  iconBackground: '#1c1f25',
+  iconBorder: '#d6c7a1',
   gameTextSoft: '#cbd5e1',
   randomAccent: '#e2b04a',
   ribbon: '#5b2a17',
@@ -53,21 +60,34 @@ type Fonts = { body: opentype.Font; token: opentype.Font };
 
 let cachedFonts: Fonts | undefined;
 
-export function createSharePreviewPng(sharedGame: SharedGame): Uint8Array {
+export function createSharePreviewPng(
+  sharedGame: SharedGame,
+  scriptIcons: PreviewIcon[] = [],
+): Uint8Array {
   const fonts = getFonts();
   const canvas = createCanvas(
     SHARE_PREVIEW_WIDTH,
     SHARE_PREVIEW_HEIGHT,
     hexToRgb(colors.gameBackground),
   );
+  // The script's characters sit in a strip along the bottom; the map and text share the rest.
+  const iconsPerRow = Math.floor(
+    (SHARE_PREVIEW_WIDTH - MARGIN * 2 + ICON_GAP) / (ICON_SIZE + ICON_GAP),
+  );
+  const iconRows = Math.ceil(scriptIcons.length / iconsPerRow);
+  const stripHeight = iconRows > 0 ? iconRows * (ICON_SIZE + ICON_GAP) - ICON_GAP : 0;
+  const contentTop = MARGIN;
+  const contentBottom =
+    SHARE_PREVIEW_HEIGHT - MARGIN - (stripHeight > 0 ? stripHeight + ICON_STRIP_GAP : 0);
+  const contentHeight = contentBottom - contentTop;
   const mapScale = Math.min(
-    (SHARE_PREVIEW_HEIGHT - MARGIN * 2) / sharedGame.h,
+    contentHeight / sharedGame.h,
     (SHARE_PREVIEW_WIDTH * 0.5) / sharedGame.w,
   );
   const mapWidth = Math.round(sharedGame.w * mapScale);
   const mapHeight = Math.round(sharedGame.h * mapScale);
   const mapLeft = MARGIN;
-  const mapTop = Math.round((SHARE_PREVIEW_HEIGHT - mapHeight) / 2);
+  const mapTop = contentTop + Math.round((contentHeight - mapHeight) / 2);
 
   fillRect(
     canvas,
@@ -96,7 +116,8 @@ export function createSharePreviewPng(sharedGame: SharedGame): Uint8Array {
     );
   });
 
-  drawInfo(canvas, fonts, sharedGame, mapLeft + mapWidth + 50);
+  drawInfo(canvas, fonts, sharedGame, mapLeft + mapWidth + 50, contentTop, contentHeight);
+  drawScriptIcons(canvas, scriptIcons, iconsPerRow, SHARE_PREVIEW_HEIGHT - MARGIN - stripHeight);
 
   return encodePng(canvas);
 }
@@ -284,18 +305,18 @@ function getInitial(name: string, font: opentype.Font) {
 // ---------------------------------------------------------------------------------------------
 // Info column
 
-function drawInfo(canvas: Canvas, fonts: Fonts, sharedGame: SharedGame, left: number) {
+function drawInfo(
+  canvas: Canvas,
+  fonts: Fonts,
+  sharedGame: SharedGame,
+  left: number,
+  top: number,
+  height: number,
+) {
   const font = fonts.body;
   const maxWidth = canvas.width - left - MARGIN;
   const scriptName = getSharedScriptName(sharedGame) ?? 'Grim Keeper game';
   const seated = sharedGame.p.filter((player) => !player[4]).length;
-  let titleSize = 84;
-  let lines = wrapText(font, scriptName, maxWidth, titleSize);
-  while (lines.length > 3 && titleSize > 40) {
-    titleSize -= 4;
-    lines = wrapText(font, scriptName, maxWidth, titleSize);
-  }
-
   const counts = getSharedCharacterCounts(sharedGame);
   const ratio: Array<[number, string, string]> = [
     [counts.townsfolk, 'Townsfolk', '#60a5fa'],
@@ -303,22 +324,24 @@ function drawInfo(canvas: Canvas, fonts: Fonts, sharedGame: SharedGame, left: nu
     [counts.minions, counts.minions === 1 ? 'Minion' : 'Minions', '#fb923c'],
     [counts.demons, counts.demons === 1 ? 'Demon' : 'Demons', '#f87171'],
   ];
-  const labelSize = 32;
-  const titleLine = Math.round(titleSize * 1.12);
-  const playersSize = 48;
-  const ratioSize = 36;
-  const ratioLine = Math.round(ratioSize * 1.45);
-  const total =
-    labelSize + 26 + lines.length * titleLine + 22 + playersSize + 22 + ratio.length * ratioLine;
-  let y = Math.max(MARGIN, Math.round((canvas.height - total) / 2));
+  // Everything shrinks together when the strip of characters leaves less room for the text.
+  let scale = Math.min(1, height / (canvas.height - MARGIN * 2));
+  let layout = getInfoLayout(font, scriptName, maxWidth, scale, ratio.length);
+  while (layout.total > height && scale > 0.4) {
+    scale -= 0.05;
+    layout = getInfoLayout(font, scriptName, maxWidth, scale, ratio.length);
+  }
+
+  const { labelSize, lines, playersSize, ratioLine, ratioSize, titleLine, titleSize } = layout;
+  let y = top + Math.max(0, Math.round((height - layout.total) / 2));
 
   drawText(canvas, font, 'GRIM KEEPER', left, y + labelSize, labelSize, colors.randomAccent);
-  y += labelSize + 26;
+  y += labelSize + Math.round(26 * scale);
   for (const line of lines) {
     drawText(canvas, font, line, left, y + titleSize, titleSize, colors.gameText);
     y += titleLine;
   }
-  y += 22;
+  y += Math.round(22 * scale);
   drawText(
     canvas,
     font,
@@ -328,20 +351,112 @@ function drawInfo(canvas: Canvas, fonts: Fonts, sharedGame: SharedGame, left: nu
     playersSize,
     colors.gameText,
   );
-  y += playersSize + 22;
+  y += playersSize + Math.round(22 * scale);
   for (const [count, label, color] of ratio) {
     const baseline = y + ratioSize;
-    drawDisc(canvas, { x: left + 12, y: baseline - ratioSize * 0.34 }, 11, hexToRgb(color));
+    drawDisc(canvas, { x: left + 12, y: baseline - ratioSize * 0.34 }, 11 * scale, hexToRgb(color));
     drawText(
       canvas,
       font,
       `${count} ${label}`,
-      left + 38,
+      left + 38 * scale + 6,
       baseline,
       ratioSize,
       colors.gameTextSoft,
     );
     y += ratioLine;
+  }
+}
+
+function getInfoLayout(
+  font: opentype.Font,
+  scriptName: string,
+  maxWidth: number,
+  scale: number,
+  ratioCount: number,
+) {
+  let titleSize = Math.round(84 * scale);
+  let lines = wrapText(font, scriptName, maxWidth, titleSize);
+  while (lines.length > 3 && titleSize > 28) {
+    titleSize -= 4;
+    lines = wrapText(font, scriptName, maxWidth, titleSize);
+  }
+
+  const labelSize = Math.round(32 * scale);
+  const titleLine = Math.round(titleSize * 1.12);
+  const playersSize = Math.round(48 * scale);
+  const ratioSize = Math.round(36 * scale);
+  const ratioLine = Math.round(ratioSize * 1.45);
+  const total =
+    labelSize +
+    Math.round(26 * scale) +
+    lines.length * titleLine +
+    Math.round(22 * scale) +
+    playersSize +
+    Math.round(22 * scale) +
+    ratioCount * ratioLine;
+
+  return { labelSize, lines, playersSize, ratioLine, ratioSize, titleLine, titleSize, total };
+}
+
+/** The script's characters as round tokens in rows, like the character icons in the app. */
+function drawScriptIcons(canvas: Canvas, icons: PreviewIcon[], perRow: number, top: number) {
+  const rowCount = Math.ceil(icons.length / perRow);
+  icons.forEach((icon, index) => {
+    const row = Math.floor(index / perRow);
+    const inRow = row === rowCount - 1 ? icons.length - row * perRow : perRow;
+    const rowWidth = inRow * (ICON_SIZE + ICON_GAP) - ICON_GAP;
+    const left = MARGIN + Math.round((canvas.width - MARGIN * 2 - rowWidth) / 2);
+    const center = {
+      x: left + (index % perRow) * (ICON_SIZE + ICON_GAP) + ICON_SIZE / 2,
+      y: top + row * (ICON_SIZE + ICON_GAP) + ICON_SIZE / 2,
+    };
+    drawDisc(canvas, center, ICON_SIZE / 2, hexToRgb(colors.iconBorder));
+    drawDisc(canvas, center, ICON_SIZE / 2 - ICON_BORDER, hexToRgb(colors.iconBackground));
+    drawIconImage(canvas, icon, center, ICON_SIZE / 2 - ICON_BORDER);
+  });
+}
+
+/**
+ * Paints the icon inside the disc. Like the app, near-white pixels turn transparent: alpha is
+ * 2.7 * alpha - red - green - blue.
+ */
+function drawIconImage(canvas: Canvas, icon: PreviewIcon, center: Point, radius: number) {
+  const size = radius * 2 * 1.25;
+  for (let y = Math.floor(center.y - radius); y <= Math.ceil(center.y + radius); y += 1) {
+    for (let x = Math.floor(center.x - radius); x <= Math.ceil(center.x + radius); x += 1) {
+      const edge = Math.min(
+        1,
+        Math.max(0, radius - Math.hypot(x + 0.5 - center.x, y + 0.5 - center.y) + 0.5),
+      );
+      if (edge <= 0) {
+        continue;
+      }
+
+      const sourceX = Math.min(
+        icon.width - 1,
+        Math.max(0, Math.floor(((x + 0.5 - center.x) / size + 0.5) * icon.width)),
+      );
+      const sourceY = Math.min(
+        icon.height - 1,
+        Math.max(0, Math.floor(((y + 0.5 - center.y) / size + 0.5) * icon.height)),
+      );
+      const index = (sourceY * icon.width + sourceX) * 4;
+      const red = icon.rgba[index] / 255;
+      const green = icon.rgba[index + 1] / 255;
+      const blue = icon.rgba[index + 2] / 255;
+      const alpha = Math.min(
+        1,
+        Math.max(0, 2.7 * (icon.rgba[index + 3] / 255) - red - green - blue),
+      );
+      blend(
+        canvas,
+        x,
+        y,
+        [icon.rgba[index], icon.rgba[index + 1], icon.rgba[index + 2]],
+        alpha * edge,
+      );
+    }
   }
 }
 
