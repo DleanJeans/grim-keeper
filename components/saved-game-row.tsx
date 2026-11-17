@@ -57,6 +57,11 @@ export function SavedGameRow({ game, onDelete }: SavedGameRowProps) {
               {playerCountLabel} · {dayCountLabel}
             </Text>
             {game.script && !isExpanded ? <SavedGameRolesRow game={game} /> : null}
+            {game.lesson ? (
+              <Text numberOfLines={3} style={styles.lesson}>
+                {game.lesson}
+              </Text>
+            ) : null}
           </View>
         </Pressable>
       </View>
@@ -219,6 +224,11 @@ const styles = StyleSheet.create({
     gap: 8,
     justifyContent: 'space-between',
     padding: 16,
+  },
+  lesson: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontStyle: 'italic',
   },
   lostContainer: {
     backgroundColor: colors.dangerSurface,
