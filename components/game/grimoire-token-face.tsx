@@ -26,9 +26,13 @@ const TOP_FONT = 8.5 / 32;
 const MIN_TOP_FONT = 5 / 32;
 const INITIAL_FONT = 24 / 32;
 const SMALL_INITIAL_FONT = 14 / 32;
-// Letters whose tail hangs below the baseline; raised so the tail clears the name ribbon.
-const DESCENDER_INITIALS = 'QJ';
-const DESCENDER_INITIAL_LIFT = 0.12;
+// IM Fell's Q has a long tail that sweeps right of its advance width and under the baseline, so
+// with plain centering it runs into the name ribbon. Shrink it, shift it left by its share of
+// the font size so the drawn shape is centered, and lift it by a share of the radius.
+const INITIAL_ADJUSTMENTS: Record<string, { lift: number; scale: number; shift: number }> = {
+  Q: { lift: 0.18, scale: 0.84, shift: 0.365 },
+};
+const NO_INITIAL_ADJUSTMENT = { lift: 0, scale: 1, shift: 0 };
 // Width of one small-caps glyph as a share of the font size, for fitting text on the arcs.
 const GLYPH_WIDTH = 0.62;
 const NAME_ARC_ROOM = 1.7;
@@ -81,8 +85,13 @@ export function GrimoireTokenFace({
   const center = size / 2;
   const radius = size / 2 - size * RING_SPACE * 0.5;
   const initialLetter = getInitial(initialName ?? name);
-  const initialLift =
-    !compactInitial && DESCENDER_INITIALS.includes(initialLetter) ? DESCENDER_INITIAL_LIFT : 0;
+  const initialAdjustment =
+    storyteller && !compactInitial
+      ? NO_INITIAL_ADJUSTMENT
+      : (INITIAL_ADJUSTMENTS[initialLetter] ?? NO_INITIAL_ADJUSTMENT);
+  const initialFont =
+    radius * (compactInitial ? SMALL_INITIAL_FONT : INITIAL_FONT) * initialAdjustment.scale;
+  const initialLift = compactInitial ? 0 : initialAdjustment.lift;
   const ribbonRadius = radius * RIBBON_RADIUS;
   const topRadius = radius * TOP_TEXT_RADIUS;
   const ribbonSpread = (RIBBON_HALF_ANGLE_DEGREES * Math.PI) / 180;
@@ -169,10 +178,10 @@ export function GrimoireTokenFace({
             <SvgText
               fill={ink}
               fontFamily={FONT_FAMILY}
-              fontSize={radius * (compactInitial ? SMALL_INITIAL_FONT : INITIAL_FONT)}
+              fontSize={initialFont}
               opacity={0.85}
               textAnchor="middle"
-              x={center}
+              x={center - initialFont * initialAdjustment.shift}
               y={
                 center + radius * (compactInitial ? 0.38 : storyteller ? 0.02 : 0.06 - initialLift)
               }
