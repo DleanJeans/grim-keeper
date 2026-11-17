@@ -52,6 +52,8 @@ export type SharedGame = {
   l?: string[];
   /** Townsfolk, Outsiders, Minions and Demons when the game sets them by hand. */
   k?: [number, number, number, number];
+  /** Index in `p` of the player who shared the game, who is not offered as "you". */
+  o?: number;
 };
 
 export function encodeSharedGame(sharedGame: SharedGame) {
@@ -130,6 +132,11 @@ function isSharedGame(value: unknown): value is SharedGame {
     (game.su === undefined || isStringArray(game.su)) &&
     (game.r === undefined || isScriptReference(game.r)) &&
     (game.l === undefined || isStringArray(game.l)) &&
+    (game.o === undefined ||
+      (typeof game.o === 'number' &&
+        Number.isInteger(game.o) &&
+        game.o >= 0 &&
+        game.o < game.p.length)) &&
     (game.k === undefined ||
       (Array.isArray(game.k) && game.k.length === 4 && game.k.every(isPositiveOrZero)))
   );
@@ -232,6 +239,11 @@ function packSharedGame(sharedGame: SharedGame) {
   }
   if (sharedGame.l?.length) writer.textList(sharedGame.l);
   if (sharedGame.k) for (const count of sharedGame.k) writer.varint(count);
+  if (sharedGame.o !== undefined) {
+    // The packed order lists seated players before Storytellers.
+    const packedIndex = players.indexOf(sharedGame.p[sharedGame.o]);
+    if (packedIndex >= 0) writer.varint(packedIndex);
+  }
 
   return writer.bytes();
 }
@@ -272,6 +284,8 @@ function unpackSharedGame(bytes: Uint8Array): SharedGame {
       ? ([reader.varint(), reader.varint(), reader.varint(), reader.varint()] as SharedGame['k'])
       : undefined;
 
+  const sharer = reader.done() ? undefined : reader.varint();
+
   return {
     v: SHARE_GAME_VERSION,
     c: createdAt,
@@ -283,6 +297,7 @@ function unpackSharedGame(bytes: Uint8Array): SharedGame {
     ...script,
     ...(lorics ? { l: lorics } : {}),
     ...(counts ? { k: counts } : {}),
+    ...(sharer !== undefined ? { o: sharer } : {}),
   };
 }
 
@@ -352,6 +367,7 @@ function createByteReader(bytes: Uint8Array) {
     textList() {
       return Array.from({ length: reader.varint() }, () => reader.text());
     },
+    done: () => offset >= bytes.length,
   };
   return reader;
 }

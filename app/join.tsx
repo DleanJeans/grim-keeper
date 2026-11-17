@@ -1,7 +1,8 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronRight } from 'lucide-react-native';
+import { Check, ChevronRight } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ResponsiveContent } from '@/components/responsive-content';
 import { Text } from '@/components/text';
@@ -29,7 +30,9 @@ export default function ShareGameRoute() {
   const importGameTransfer = useGameStore((state) => state.importGameTransfer);
   const setAppUserName = useGameStore((state) => state.setAppUserName);
   const handledRef = useRef(false);
+  const insets = useSafeAreaInsets();
   const [declinedMatch, setDeclinedMatch] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState<number>();
   const decoded = useMemo<DecodedShare>(() => {
     if (!g) {
       return { error: 'This link has no game in it. Ask for the link again.' };
@@ -88,6 +91,9 @@ export default function ShareGameRoute() {
   const seatedPlayers = sharedGame
     ? sharedGame.p.flatMap((player, index) => (player[4] ? [] : [{ index, name: player[0] }]))
     : [];
+  // The player who shared the game is not you, so they are not offered.
+  const pickablePlayers = seatedPlayers.filter((player) => player.index !== sharedGame?.o);
+  const selectedPlayer = pickablePlayers.find((player) => player.index === selectedIndex);
   const scriptName = sharedGame ? getSharedScriptName(sharedGame) : undefined;
 
   return (
@@ -98,69 +104,87 @@ export default function ShareGameRoute() {
           title: 'Join game',
         }}
       />
-      <ScrollView contentContainerStyle={styles.scrollContent} style={styles.screen}>
-        <ResponsiveContent style={styles.content}>
-          {decoded.error ? (
-            <>
-              <Text selectable style={styles.title}>
-                Could not open this game
+      <View style={styles.screen}>
+        <ScrollView contentContainerStyle={styles.scrollContent} style={styles.scroll}>
+          <ResponsiveContent style={styles.content}>
+            {decoded.error ? (
+              <>
+                <Text selectable style={styles.title}>
+                  Could not open this game
+                </Text>
+                <Text selectable style={styles.description}>
+                  {decoded.error}
+                </Text>
+              </>
+            ) : sharedGame && matchedIndex !== undefined ? (
+              <>
+                <Text selectable style={styles.description}>
+                  {[scriptName, `${seatedPlayers.length} players`].filter(Boolean).join(' · ')}
+                </Text>
+                <Text selectable style={styles.title}>
+                  Are you {sharedGame.p[matchedIndex][0]}?
+                </Text>
+                <Text selectable style={styles.description}>
+                  The map turns so your token sits at the bottom.
+                </Text>
+                <View style={styles.list}>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => joinAs(sharedGame, matchedIndex)}
+                    style={({ pressed }) => [styles.confirm, pressed && styles.confirmPressed]}
+                  >
+                    <Text style={styles.confirmText}>
+                      Yes, I am {sharedGame.p[matchedIndex][0]}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setDeclinedMatch(true)}
+                    style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}
+                  >
+                    <Text style={styles.optionText}>No, pick someone else</Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : (
+              <>
+                <Text selectable style={styles.description}>
+                  {[scriptName, `${seatedPlayers.length} players`].filter(Boolean).join(' · ')}
+                </Text>
+                <Text selectable style={styles.title}>
+                  Who are you?
+                </Text>
+                <Text selectable style={styles.description}>
+                  Tap your name. The map turns so your token sits at the bottom.
+                </Text>
+                <View style={styles.list}>
+                  {pickablePlayers.map((player) => (
+                    <SharedPlayerOption
+                      key={player.index}
+                      name={player.name}
+                      onPress={() => setSelectedIndex(player.index)}
+                      selected={player.index === selectedIndex}
+                    />
+                  ))}
+                </View>
+              </>
+            )}
+          </ResponsiveContent>
+        </ScrollView>
+        {sharedGame && selectedPlayer && matchedIndex === undefined ? (
+          <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => joinAs(sharedGame, selectedPlayer.index)}
+              style={({ pressed }) => [styles.confirm, pressed && styles.confirmPressed]}
+            >
+              <Text numberOfLines={1} style={styles.confirmText}>
+                Yes, I am {selectedPlayer.name}
               </Text>
-              <Text selectable style={styles.description}>
-                {decoded.error}
-              </Text>
-            </>
-          ) : sharedGame && matchedIndex !== undefined ? (
-            <>
-              <Text selectable style={styles.description}>
-                {[scriptName, `${seatedPlayers.length} players`].filter(Boolean).join(' · ')}
-              </Text>
-              <Text selectable style={styles.title}>
-                Are you {sharedGame.p[matchedIndex][0]}?
-              </Text>
-              <Text selectable style={styles.description}>
-                The map turns so your token sits at the bottom.
-              </Text>
-              <View style={styles.list}>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => joinAs(sharedGame, matchedIndex)}
-                  style={({ pressed }) => [styles.confirm, pressed && styles.confirmPressed]}
-                >
-                  <Text style={styles.confirmText}>Yes, I am {sharedGame.p[matchedIndex][0]}</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => setDeclinedMatch(true)}
-                  style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}
-                >
-                  <Text style={styles.optionText}>No, pick someone else</Text>
-                </Pressable>
-              </View>
-            </>
-          ) : (
-            <>
-              <Text selectable style={styles.description}>
-                {[scriptName, `${seatedPlayers.length} players`].filter(Boolean).join(' · ')}
-              </Text>
-              <Text selectable style={styles.title}>
-                Who are you?
-              </Text>
-              <Text selectable style={styles.description}>
-                Pick your name. The map turns so your token sits at the bottom.
-              </Text>
-              <View style={styles.list}>
-                {seatedPlayers.map((player) => (
-                  <SharedPlayerOption
-                    key={player.index}
-                    name={player.name}
-                    onPress={() => sharedGame && joinAs(sharedGame, player.index)}
-                  />
-                ))}
-              </View>
-            </>
-          )}
-        </ResponsiveContent>
-      </ScrollView>
+            </Pressable>
+          </View>
+        ) : null}
+      </View>
     </>
   );
 }
@@ -208,6 +232,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
+  optionSelected: {
+    backgroundColor: colors.surfacePressed,
+    borderColor: colors.primary,
+    borderWidth: 2,
+  },
   optionPressed: {
     backgroundColor: colors.surfacePressed,
   },
@@ -217,8 +246,18 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
   },
+  footer: {
+    backgroundColor: colors.background,
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+  },
   screen: {
     backgroundColor: colors.background,
+    flex: 1,
+  },
+  scroll: {
     flex: 1,
   },
   scrollContent: {
@@ -231,18 +270,35 @@ const styles = StyleSheet.create({
   },
 });
 
-function SharedPlayerOption({ name, onPress }: { name: string; onPress: () => void }) {
+function SharedPlayerOption({
+  name,
+  onPress,
+  selected,
+}: {
+  name: string;
+  onPress: () => void;
+  selected: boolean;
+}) {
   return (
     <Pressable
       accessibilityLabel={`I am ${name}`}
       accessibilityRole="button"
+      accessibilityState={{ selected }}
       onPress={onPress}
-      style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}
+      style={({ pressed }) => [
+        styles.option,
+        selected && styles.optionSelected,
+        pressed && styles.optionPressed,
+      ]}
     >
       <Text numberOfLines={1} style={styles.optionText}>
         {name}
       </Text>
-      <ChevronRight color={colors.textMuted} size={20} strokeWidth={2.4} />
+      {selected ? (
+        <Check color={colors.primary} size={20} strokeWidth={3} />
+      ) : (
+        <ChevronRight color={colors.textMuted} size={20} strokeWidth={2.4} />
+      )}
     </Pressable>
   );
 }

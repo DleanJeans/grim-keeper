@@ -207,6 +207,19 @@ describe('share game link', () => {
     });
   });
 
+  it('leaves the player who shared the game out of the names to pick from', () => {
+    const shared = createSharedGame(createGame(), [script], [], 'DJ');
+    const decoded = decodeSharedGame(encodeSharedGame(shared));
+
+    expect(shared.o).toBe(0);
+    expect(decoded.o).toBe(0);
+    expect(decoded.p[decoded.o ?? -1][0]).toBe('DJ');
+    // Someone else with the sharer's name is not matched as the viewer.
+    expect(findSharedPlayerIndex(decoded, 'DJ')).toBeUndefined();
+    expect(findSharedPlayerIndex(decoded, 'Bob')).toBe(2);
+    expect(decodeSharedGame(encodeSharedGame({ ...shared, o: undefined })).o).toBeUndefined();
+  });
+
   it('rejects a broken link', () => {
     expect(() => decodeSharedGame('not-a-game')).toThrow('This share link is broken');
   });

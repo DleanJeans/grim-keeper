@@ -65,6 +65,14 @@ export function createSharedGame(
   const isSushi = scriptId === SUSHI_BUFFET_SCRIPT_ID;
   const reference = !isSushi ? getScriptReference(game, scriptId, scripts) : undefined;
 
+  const sortedPlayers = [...setupGame.players].sort(
+    (first, second) =>
+      Number(!!first.isStoryteller) - Number(!!second.isStoryteller) || first.seat - second.seat,
+  );
+  const sharerIndex = sortedPlayers.findIndex(
+    (player) => player.id === APP_USER_ID && !player.isStoryteller,
+  );
+
   return {
     v: SHARE_GAME_VERSION,
     c: game.createdAt,
@@ -72,26 +80,21 @@ export function createSharedGame(
     w: Math.round(mapWidth),
     h: Math.round(mapHeight),
     ...(game.tokenSize !== undefined ? { t: game.tokenSize } : {}),
-    p: [...setupGame.players]
-      .sort(
-        (first, second) =>
-          Number(!!first.isStoryteller) - Number(!!second.isStoryteller) ||
-          first.seat - second.seat,
-      )
-      .map((player): SharedPlayer => {
-        const position = getPlayerMapPosition(
-          player,
-          setupGame.players,
-          mapWidth,
-          mapHeight,
-          game.tokenSize,
-        );
-        const x = Math.round(position.x);
-        const y = Math.round(position.y);
-        return player.isStoryteller
-          ? [player.name, player.seat, x, y, 1]
-          : [player.name, player.seat, x, y];
-      }),
+    p: sortedPlayers.map((player): SharedPlayer => {
+      const position = getPlayerMapPosition(
+        player,
+        setupGame.players,
+        mapWidth,
+        mapHeight,
+        game.tokenSize,
+      );
+      const x = Math.round(position.x);
+      const y = Math.round(position.y);
+      return player.isStoryteller
+        ? [player.name, player.seat, x, y, 1]
+        : [player.name, player.seat, x, y];
+    }),
+    ...(sharerIndex >= 0 ? { o: sharerIndex } : {}),
     ...(isSushi
       ? { su: game.sushiRoleIds ?? exportedGame.scriptRoleIds ?? [] }
       : reference
@@ -125,7 +128,7 @@ export function findSharedPlayerIndex(sharedGame: SharedGame, appUserName: strin
   }
 
   const matches = sharedGame.p.flatMap((player, index) =>
-    !player[4] && getNameKey(player[0]) === nameKey ? [index] : [],
+    !player[4] && index !== sharedGame.o && getNameKey(player[0]) === nameKey ? [index] : [],
   );
 
   return matches.length === 1 ? matches[0] : undefined;
