@@ -216,7 +216,7 @@ function RepeatBadge({ label }: { label: string }) {
   );
 }
 
-/** The time of day the talk was logged, such as `9:38 PM`. */
+/** The time of day the talk was logged, such as `9:38:05 PM`. */
 function formatConversationTime(createdAt: string) {
   const date = new Date(createdAt);
 
@@ -224,5 +224,9 @@ function formatConversationTime(createdAt: string) {
     return '';
   }
 
-  return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(date);
+  return new Intl.DateTimeFormat(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(date);
 }
