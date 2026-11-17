@@ -93,7 +93,7 @@ describe('share preview icons', () => {
     const png = createSharePreviewPng(sharedGame, icons);
     const plain = createSharePreviewPng(sharedGame);
 
-    expect(note).toBe('2 of 2 icons');
+    expect(note).toContain('2 of 2 icons loaded');
     expect(icons).toHaveLength(2);
     expect(fetched.filter((url) => url.startsWith('https://wsrv.nl/'))).toHaveLength(2);
     expect(fetched.join(' ')).toContain(
@@ -108,6 +108,6 @@ describe('share preview icons', () => {
     await expect(loadPreviewIcons(sharedGame, failing)).resolves.toMatchObject({ icons: [] });
     await expect(
       loadPreviewIcons({ ...sharedGame, r: undefined, su: ['imp'] }, failing),
-    ).resolves.toEqual({ icons: [], note: 'no script' });
+    ).resolves.toEqual({ icons: [], note: 'no script to list' });
   });
 });

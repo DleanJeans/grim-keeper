@@ -12,6 +12,15 @@ export async function GET(request: Request) {
       icons: [],
       note: 'failed',
     }));
+    const url = new URL(request.url);
+    // Open /og?g=...&debug=1 to read why the icons did or did not load.
+    if (url.searchParams.get('debug')) {
+      return new Response(
+        `script: ${JSON.stringify(sharedGame.r ?? (sharedGame.s ? 'sent in link' : (sharedGame.su ?? 'none')))}\nicons: ${note}`,
+        { headers: { 'content-type': 'text/plain' } },
+      );
+    }
+
     const png = createSharePreviewPng(sharedGame, icons);
     // Without the icons the picture is only a stopgap, so chat apps may ask again soon.
     const incomplete = hasPreviewScript(sharedGame) && icons.length === 0;

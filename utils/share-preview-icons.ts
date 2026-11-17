@@ -35,47 +35,57 @@ export async function loadPreviewIcons(
   deadlineMs = DEADLINE_MS,
 ): Promise<PreviewIcons> {
   if (!hasPreviewScript(sharedGame)) {
-    return { icons: [], note: 'no script' };
+    return { icons: [], note: 'no script to list' };
   }
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), deadlineMs);
   const fetchWithDeadline: FetchLike = (url) => fetchImpl(url, { signal: controller.signal });
+  const trace: string[] = [];
 
   try {
     const [roleIds, catalog] = await Promise.all([
-      getScriptRoleIds(sharedGame, fetchWithDeadline),
-      getIconUrlsById(fetchWithDeadline),
+      getScriptRoleIds(sharedGame, fetchWithDeadline, trace),
+      getIconUrlsById(fetchWithDeadline, trace),
     ]);
     const urls = roleIds
       .map((id) => catalog.get(id))
       .filter((url): url is string => !!url)
       .slice(0, MAX_ICONS);
+    trace.push(`${urls.length} of ${roleIds.length} characters have an icon address`);
     if (urls.length === 0) {
-      return { icons: [], note: `no icons for ${roleIds.length} characters` };
+      return { icons: [], note: trace.join('; ') };
     }
 
+    const errors: string[] = [];
     const results = await Promise.all(
       urls.map(async (url) => {
         try {
           return await fetchIcon(url, fetchWithDeadline);
-        } catch {
+        } catch (error) {
+          errors.push(error instanceof Error ? error.message : 'failed');
           return undefined;
         }
       }),
     );
     const icons = results.filter((icon): icon is PreviewIcon => !!icon);
+    trace.push(`${icons.length} of ${urls.length} icons loaded`);
+    if (errors.length > 0) {
+      trace.push(`first icon error: ${errors[0]}`);
+    }
 
-    return { icons, note: `${icons.length} of ${urls.length} icons` };
+    return { icons, note: trace.join('; ') };
   } catch (error) {
-    return { icons: [], note: error instanceof Error ? error.message : 'failed' };
+    trace.push(error instanceof Error ? `${error.name}: ${error.message}` : 'failed');
+    return { icons: [], note: trace.join('; ') };
   } finally {
     clearTimeout(timer);
   }
 }
 
-async function getScriptRoleIds(sharedGame: SharedGame, fetchImpl: FetchLike) {
+async function getScriptRoleIds(sharedGame: SharedGame, fetchImpl: FetchLike, trace: string[]) {
   if (sharedGame.s) {
+    trace.push('script sent in the link');
     return unique(sharedGame.s.roles.map((role) => (typeof role === 'string' ? role : role.id)));
   }
 
@@ -86,11 +96,13 @@ async function getScriptRoleIds(sharedGame: SharedGame, fetchImpl: FetchLike) {
 
   const response = await fetchImpl(`${SCRIPT_API_URL}/${remoteId}/json`);
   if (!response.ok) {
-    throw new Error(`script ${response.status}`);
+    throw new Error(`script download ${response.status}`);
   }
 
   const content: unknown = await response.json();
-  return Array.isArray(content) ? unique(content.map(getEntryId)) : [];
+  const ids = Array.isArray(content) ? unique(content.map(getEntryId)) : [];
+  trace.push(`script ${remoteId} lists ${ids.length} characters`);
+  return ids;
 }
 
 function getEntryId(entry: unknown) {
@@ -102,24 +114,31 @@ function unique(ids: string[]) {
   return [...new Set(ids.filter(Boolean))];
 }
 
-async function getIconUrlsById(fetchImpl: FetchLike) {
+async function getIconUrlsById(fetchImpl: FetchLike, trace: string[]) {
   const response = await fetchImpl(ROLE_CATALOG_URL);
   if (!response.ok) {
-    throw new Error(`catalog ${response.status}`);
+    throw new Error(`catalog download ${response.status}`);
   }
 
   const content: unknown = await response.json();
+  const entries = Array.isArray(content)
+    ? content
+    : (Object.values((content ?? {}) as Record<string, unknown>).find(Array.isArray) ?? []);
   const urls = new Map<string, string>();
-  for (const entry of Array.isArray(content) ? content : []) {
-    const candidate = entry as { id?: unknown; image?: unknown; imageUrls?: unknown } | null;
+  for (const entry of entries as unknown[]) {
+    const candidate = entry as Record<string, unknown> | null;
     const id = typeof candidate?.id === 'string' ? candidate.id : '';
-    const images = [candidate?.image, candidate?.imageUrls].flat();
+    const images = [candidate?.image, candidate?.imageUrls, candidate?.imageUrl].flat();
     const image = images.find((value): value is string => typeof value === 'string' && !!value);
     if (id && image && !urls.has(id)) {
       urls.set(id, new URL(image.trim(), ROLE_SITE_URL).href);
     }
   }
 
+  const sample = (entries[0] ? Object.keys(entries[0] as object) : []).slice(0, 8).join(',');
+  trace.push(
+    `catalog has ${entries.length} entries, ${urls.size} with an image (fields: ${sample})`,
+  );
   return urls;
 }
 
