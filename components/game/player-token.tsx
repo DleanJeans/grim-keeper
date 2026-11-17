@@ -53,6 +53,8 @@ type PlayerTokenProps = {
   mapWidth: number;
   confirmedRoleIds?: string[];
   deadVoteAvailable?: boolean;
+  /** When they died, e.g. N2 or D4; shown as a badge at the bottom left. */
+  deathLabel?: string;
   disabled?: boolean;
   /** Faded but still tappable, e.g. cleared players under the suspect filter. */
   dimmed?: boolean;
@@ -91,6 +93,7 @@ export function PlayerToken({
   claimRoles,
   confirmedRoleIds,
   deadVoteAvailable,
+  deathLabel,
   dimmed = false,
   disabled = false,
   displayName,
@@ -141,6 +144,9 @@ export function PlayerToken({
   const claimObstacles: ClaimOrbitObstacle[] = [];
   if (hasDeadVote) {
     claimObstacles.push({ radius: badgeSize / 2, x: edgeReach, y: edgeReach });
+  }
+  if (deathLabel) {
+    claimObstacles.push({ radius: badgeSize / 2, x: -edgeReach, y: edgeReach });
   }
   if (suspicion) {
     claimObstacles.push({ radius: suspicionDotSize / 2, x: edgeReach, y: -edgeReach });
@@ -465,6 +471,22 @@ export function PlayerToken({
             </Text>
           </View>
         ) : null}
+        {deathLabel ? (
+          <View
+            style={[
+              styles.deathBadge,
+              {
+                borderRadius: badgeSize / 2,
+                height: badgeSize,
+                left: tokenSize / 2 - edgeReach - badgeSize / 2,
+                top: tokenSize / 2 + edgeReach - badgeSize / 2,
+                width: badgeSize,
+              },
+            ]}
+          >
+            <Text style={[styles.deathBadgeText, { fontSize: badgeSize * 0.5 }]}>{deathLabel}</Text>
+          </View>
+        ) : null}
         {hasDeadVote ? (
           <View
             style={[
@@ -558,6 +580,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'absolute',
   },
+  deathBadge: {
+    alignItems: 'center',
+    backgroundColor: badgeColors.deathBackground,
+    justifyContent: 'center',
+    pointerEvents: 'none',
+    position: 'absolute',
+  },
+  deathBadgeText: { color: badgeColors.deathText, fontWeight: '700' },
   lessonsDot: { backgroundColor: colors.savedNoteIcon },
   picture: {
     borderColor: colors.grimoireToken.innerRing,

@@ -122,6 +122,8 @@ const baseColors = {
   playerTokenEdgeBadge: {
     deadVoteBackground: '#166534',
     deadVoteIcon: '#dcfce7',
+    deathBackground: '#1f2937',
+    deathText: '#f3f4f6',
     deathExecutionIcon: '#fecaca',
     deathNightIcon: '#bfdbfe',
     nominatedIcon: '#fef3c7',

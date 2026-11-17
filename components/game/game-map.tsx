@@ -17,7 +17,7 @@ import { colors } from '@/theme/colors';
 import type { Conversation, Player, PlayerPosition, Role, RoleDisplayMode } from '@/types/game';
 import { buildConversationGroupRepeats, getConversationGroupKey } from '@/utils/conversation-utils';
 import { getFriendPictureLookup } from '@/utils/friend-picture-utils';
-import type { GamePhasePosition } from '@/utils/game-phase-utils';
+import { type GamePhasePosition, getDeathPhase } from '@/utils/game-phase-utils';
 import { getKnavesStorytellers } from '@/utils/knaves-utils';
 import { getPlayerMapPosition, getPlayerTokenScale, getTokenSize } from '@/utils/layout-utils';
 import { getLessonsForPlayers } from '@/utils/lesson-utils';
@@ -600,7 +600,14 @@ function PlayerTokenForMap({
     activeRoleDisplayModes,
     activePhase,
   );
+  const { startingNight } = useGameRouteContext();
   const deadVoteAvailable = hasDeadVoteAvailable(player, phaseDay, activePhase, conversations);
+  // "N2" / "D4": when they died, with the night number shifted by the starting-night setting.
+  const deathLabel = player.death
+    ? getDeathPhase(player.death) === 'night'
+      ? `N${player.death.day + startingNight - 1}`
+      : `D${player.death.day}`
+    : undefined;
   const claim = showRoles
     ? getRoleAssignmentForDayOrPrevious(player.roleAssignments, activeDay, 'claim', activePhase)
     : undefined;
@@ -620,6 +627,7 @@ function PlayerTokenForMap({
       theoryEvil={theoryEvil}
       displayName={getPlayerTokenName(player, players)}
       deadVoteAvailable={deadVoteAvailable}
+      deathLabel={deathLabel}
       interactionMode={interactionMode}
       isInitiator={highlightedPlayerIds[0] === player.id}
       isSelected={highlightedPlayerIds.includes(player.id)}
