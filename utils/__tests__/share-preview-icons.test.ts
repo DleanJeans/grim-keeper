@@ -102,6 +102,25 @@ describe('share preview icons', () => {
     expect(png).not.toEqual(plain);
   });
 
+  it('lists an official script from the catalog edition when it has no BotC Scripts number', async () => {
+    const icon = makePng(8, 8, [200, 30, 30, 255]);
+    const fetchImpl = async (url: string) =>
+      url.includes('roles.json')
+        ? jsonResponse([
+            { edition: 'tb', id: 'washerwoman', image: '/a.webp', team: 'townsfolk' },
+            { edition: 'tb', id: 'imp', image: '/b.webp', team: 'demon' },
+            { edition: 'tb', id: 'scapegoat', image: '/c.webp', team: 'traveller' },
+            { edition: 'snv', id: 'clockmaker', image: '/d.webp', team: 'townsfolk' },
+          ])
+        : new Response(icon);
+    const game = { ...sharedGame, r: { id: 'trouble-brewing' } };
+
+    const { icons, note } = await loadPreviewIcons(game, fetchImpl);
+
+    expect(icons).toHaveLength(2);
+    expect(note).toContain('2 characters in the trouble-brewing edition');
+  });
+
   it('leaves icons out when anything fails', async () => {
     const failing = async () => new Response('no', { status: 500 });
 

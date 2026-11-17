@@ -11,6 +11,13 @@ const ROLE_SITE_URL = 'https://release.botc.app';
 const SCRIPT_API_URL = 'https://www.botcscripts.com/api/scripts';
 const IMAGE_CONVERTER_URL = 'https://wsrv.nl/';
 const MAX_ICONS = 40;
+// The official scripts have no BotC Scripts number, so their characters come from the catalog.
+const OFFICIAL_EDITIONS: Record<string, string[]> = {
+  'bad-moon-rising': ['bmr', 'bad moon rising'],
+  'sects-and-violets': ['snv', 'sects and violets'],
+  'trouble-brewing': ['tb', 'trouble brewing'],
+};
+const EXTRA_TEAMS = ['traveller', 'traveler', 'fabled', 'loric'];
 const DEADLINE_MS = 3500;
 
 export const PREVIEW_ICON_PIXELS = 112;
@@ -26,7 +33,11 @@ export function hasPreviewScript(sharedGame: SharedGame) {
     return false;
   }
 
-  return !!sharedGame.s || sharedGame.r?.remoteId !== undefined;
+  return (
+    !!sharedGame.s ||
+    sharedGame.r?.remoteId !== undefined ||
+    (!!sharedGame.r && sharedGame.r.id in OFFICIAL_EDITIONS)
+  );
 }
 
 export async function loadPreviewIcons(
@@ -44,10 +55,12 @@ export async function loadPreviewIcons(
   const trace: string[] = [];
 
   try {
-    const [roleIds, catalog] = await Promise.all([
+    const [scriptIds, catalogResult] = await Promise.all([
       getScriptRoleIds(sharedGame, fetchWithDeadline, trace),
-      getIconUrlsById(fetchWithDeadline, trace),
+      getIconUrlsById(fetchWithDeadline, trace, sharedGame.r?.id),
     ]);
+    const catalog = catalogResult.urls;
+    const roleIds = scriptIds.length > 0 ? scriptIds : catalogResult.officialIds;
     const urls = roleIds
       .map((id) => catalog.get(id))
       .filter((url): url is string => !!url)
@@ -114,7 +127,7 @@ function unique(ids: string[]) {
   return [...new Set(ids.filter(Boolean))];
 }
 
-async function getIconUrlsById(fetchImpl: FetchLike, trace: string[]) {
+async function getIconUrlsById(fetchImpl: FetchLike, trace: string[], referenceId?: string) {
   const response = await fetchImpl(ROLE_CATALOG_URL);
   if (!response.ok) {
     throw new Error(`catalog download ${response.status}`);
@@ -125,6 +138,8 @@ async function getIconUrlsById(fetchImpl: FetchLike, trace: string[]) {
     ? content
     : (Object.values((content ?? {}) as Record<string, unknown>).find(Array.isArray) ?? []);
   const urls = new Map<string, string>();
+  const officialIds: string[] = [];
+  const editions = (referenceId && OFFICIAL_EDITIONS[referenceId]) || [];
   for (const entry of entries as unknown[]) {
     const candidate = entry as Record<string, unknown> | null;
     const id = typeof candidate?.id === 'string' ? candidate.id : '';
@@ -133,13 +148,21 @@ async function getIconUrlsById(fetchImpl: FetchLike, trace: string[]) {
     if (id && image && !urls.has(id)) {
       urls.set(id, new URL(image.trim(), ROLE_SITE_URL).href);
     }
+    const edition = typeof candidate?.edition === 'string' ? candidate.edition.toLowerCase() : '';
+    const team = typeof candidate?.team === 'string' ? candidate.team.toLowerCase() : '';
+    if (id && editions.includes(edition) && !EXTRA_TEAMS.includes(team)) {
+      officialIds.push(id);
+    }
   }
 
   const sample = (entries[0] ? Object.keys(entries[0] as object) : []).slice(0, 8).join(',');
   trace.push(
     `catalog has ${entries.length} entries, ${urls.size} with an image (fields: ${sample})`,
   );
-  return urls;
+  if (referenceId && editions.length > 0) {
+    trace.push(`${officialIds.length} characters in the ${referenceId} edition`);
+  }
+  return { officialIds: unique(officialIds), urls };
 }
 
 async function fetchIcon(url: string, fetchImpl: FetchLike) {
