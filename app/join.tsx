@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ShareGameMap } from '@/components/create/share-game-map';
 import { ShareScriptTokens } from '@/components/create/share-script-tokens';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { Text } from '@/components/text';
@@ -101,12 +102,24 @@ export default function ShareGameRoute() {
     }
   }, [sharedGame]);
 
+  function handleSelect(index: number) {
+    // Picking someone else on the map or list turns down the name match.
+    if (matchedIndex !== undefined) {
+      if (index === matchedIndex) {
+        return;
+      }
+      setDeclinedMatch(true);
+    }
+    setSelectedIndex(index);
+  }
+
   const seatedPlayers = sharedGame
     ? sharedGame.p.flatMap((player, index) => (player[4] ? [] : [{ index, name: player[0] }]))
     : [];
   // The player who shared the game is not you, so they are not offered.
   const pickablePlayers = seatedPlayers.filter((player) => player.index !== sharedGame?.o);
   const selectedPlayer = pickablePlayers.find((player) => player.index === selectedIndex);
+  const activeIndex = matchedIndex ?? selectedPlayer?.index;
   const scriptName = sharedGame ? getSharedScriptName(sharedGame) : undefined;
   const scriptRoles = useMemo(
     () => (sharedGame ? getSharedScriptRoles(sharedGame, scripts, roleCatalog) : []),
@@ -142,61 +155,67 @@ export default function ShareGameRoute() {
                   {decoded.error}
                 </Text>
               </>
-            ) : sharedGame && matchedIndex !== undefined ? (
+            ) : sharedGame ? (
               <>
                 <Text selectable style={styles.description}>
                   {[scriptName, `${seatedPlayers.length} players`].filter(Boolean).join(' · ')}
                 </Text>
-                <ShareScriptTokens roles={scriptRoles} />
-                <Text selectable style={styles.title}>
-                  Are you {sharedGame.p[matchedIndex][0]}?
-                </Text>
-                <Text selectable style={styles.description}>
-                  The map turns so your token sits at the bottom.
-                </Text>
-                <View style={styles.list}>
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => joinAs(sharedGame, matchedIndex)}
-                    style={({ pressed }) => [styles.confirm, pressed && styles.confirmPressed]}
-                  >
-                    <Text style={styles.confirmText}>
-                      Yes, I am {sharedGame.p[matchedIndex][0]}
+                <ShareGameMap
+                  onSelect={handleSelect}
+                  pickableIndexes={pickablePlayers.map((player) => player.index)}
+                  selectedIndex={activeIndex}
+                  sharedGame={sharedGame}
+                />
+                {matchedIndex !== undefined ? (
+                  <>
+                    <Text selectable style={styles.title}>
+                      Are you {sharedGame.p[matchedIndex][0]}?
                     </Text>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => setDeclinedMatch(true)}
-                    style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}
-                  >
-                    <Text style={styles.optionText}>No, pick someone else</Text>
-                  </Pressable>
-                </View>
-              </>
-            ) : (
-              <>
-                <Text selectable style={styles.description}>
-                  {[scriptName, `${seatedPlayers.length} players`].filter(Boolean).join(' · ')}
-                </Text>
+                    <Text selectable style={styles.description}>
+                      The map turns so your token sits at the bottom. Tap another token to change.
+                    </Text>
+                    <View style={styles.list}>
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => joinAs(sharedGame, matchedIndex)}
+                        style={({ pressed }) => [styles.confirm, pressed && styles.confirmPressed]}
+                      >
+                        <Text style={styles.confirmText}>
+                          Yes, I am {sharedGame.p[matchedIndex][0]}
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => setDeclinedMatch(true)}
+                        style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}
+                      >
+                        <Text style={styles.optionText}>No, pick someone else</Text>
+                      </Pressable>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <Text selectable style={styles.title}>
+                      Who are you?
+                    </Text>
+                    <Text selectable style={styles.description}>
+                      Tap your token or your name. The map turns so your token sits at the bottom.
+                    </Text>
+                    <View style={styles.list}>
+                      {pickablePlayers.map((player) => (
+                        <SharedPlayerOption
+                          key={player.index}
+                          name={player.name}
+                          onPress={() => handleSelect(player.index)}
+                          selected={player.index === selectedIndex}
+                        />
+                      ))}
+                    </View>
+                  </>
+                )}
                 <ShareScriptTokens roles={scriptRoles} />
-                <Text selectable style={styles.title}>
-                  Who are you?
-                </Text>
-                <Text selectable style={styles.description}>
-                  Tap your name. The map turns so your token sits at the bottom.
-                </Text>
-                <View style={styles.list}>
-                  {pickablePlayers.map((player) => (
-                    <SharedPlayerOption
-                      key={player.index}
-                      name={player.name}
-                      onPress={() => setSelectedIndex(player.index)}
-                      selected={player.index === selectedIndex}
-                    />
-                  ))}
-                </View>
               </>
-            )}
+            ) : null}
           </ResponsiveContent>
         </ScrollView>
         {sharedGame && selectedPlayer && matchedIndex === undefined ? (
