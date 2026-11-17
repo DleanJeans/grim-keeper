@@ -276,7 +276,6 @@ type GameState = GameData & {
     day: number,
     participantIds: string[],
     kind?: 'interaction' | 'nomination',
-    durationMs?: number,
   ) => Conversation | undefined;
   updateNominationVotes: (gameId: string, nominationId: string, voterIds: string[]) => void;
   setNominationBigWig: (gameId: string, nominationId: string, playerId?: string) => void;
@@ -1728,7 +1727,7 @@ export const useGameStore = create<GameState>()(
           }),
         }));
       },
-      addConversation: (gameId, day, participantIds, kind = 'interaction', durationMs) => {
+      addConversation: (gameId, day, participantIds, kind = 'interaction') => {
         const uniqueParticipantIds = [...new Set(participantIds)];
 
         if (uniqueParticipantIds.length < 2) {
@@ -1748,7 +1747,6 @@ export const useGameStore = create<GameState>()(
           participantIds: uniqueParticipantIds,
           initiatorId: uniqueParticipantIds[0],
           createdAt,
-          ...(durationMs === undefined ? {} : { durationMs }),
         };
 
         set((state) => ({

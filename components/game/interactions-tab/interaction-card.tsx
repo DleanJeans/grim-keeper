@@ -1,4 +1,4 @@
-import { MessagesSquare, Timer, Trash2 } from 'lucide-react-native';
+import { Clock, MessagesSquare, Trash2 } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useAppDialog } from '@/components/dialog/app-dialog-provider';
@@ -6,7 +6,6 @@ import { PlayerNameWithRole } from '@/components/game/player-name-with-role';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Conversation, Player } from '@/types/game';
-import { formatDuration } from '@/utils/conversation-utils';
 
 type InteractionCardProps = {
   conversation: Conversation;
@@ -72,14 +71,12 @@ export function InteractionCard({
             </View>
           </View>
         </View>
-        {conversation.durationMs === undefined ? null : (
-          <View style={styles.duration}>
-            <Timer color={colors.textMuted} size={13} />
-            <Text selectable style={styles.durationText}>
-              {formatDuration(conversation.durationMs)}
-            </Text>
-          </View>
-        )}
+        <View style={styles.time}>
+          <Clock color={colors.textMuted} size={13} />
+          <Text selectable style={styles.timeText}>
+            {formatConversationTime(conversation.createdAt)}
+          </Text>
+        </View>
         <Pressable
           accessibilityLabel="Delete interaction"
           accessibilityRole="button"
@@ -138,18 +135,6 @@ const styles = StyleSheet.create({
   deleteButtonPressed: {
     backgroundColor: colors.surfacePressed,
   },
-  duration: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 3,
-    marginRight: 8,
-  },
-  durationText: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontVariant: ['tabular-nums'],
-    fontWeight: '800',
-  },
   initiatorName: {
     color: colors.text,
     fontSize: 16,
@@ -191,6 +176,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
   },
+  time: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 3,
+    marginRight: 8,
+  },
+  timeText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontVariant: ['tabular-nums'],
+    fontWeight: '800',
+  },
   talkedTo: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -217,4 +214,15 @@ function RepeatBadge({ label }: { label: string }) {
       </Text>
     </View>
   );
+}
+
+/** The time of day the talk was logged, such as `9:38 PM`. */
+function formatConversationTime(createdAt: string) {
+  const date = new Date(createdAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(date);
 }

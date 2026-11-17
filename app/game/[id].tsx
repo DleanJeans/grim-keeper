@@ -177,7 +177,6 @@ export default function GameRoute() {
   const [undo, setUndo] = useState<{ before: Game; id: number; label: string } | null>(null);
   // Game before a new nomination, kept until its votes are saved so one Undo covers both.
   const pendingUndoBase = useRef<Game | null>(null);
-  const talkStartedAt = useRef<number | null>(null);
   const restoreGame = useGameStore((state) => state.restoreGame);
   const [dayEditLocked, setDayEditLocked] = useState(false);
   const scrollContentStyle = useMemo(
@@ -612,7 +611,6 @@ export default function GameRoute() {
       return;
     }
 
-    talkStartedAt.current = Date.now();
     setTrackingMode(mode);
     setHighlightedVoterIds(null);
     exitRearrangeMode();
@@ -643,9 +641,6 @@ export default function GameRoute() {
         activeGame.activeDay,
         selectedPlayerIds,
         trackingMode,
-        trackingMode === 'interaction' && talkStartedAt.current !== null
-          ? Date.now() - talkStartedAt.current
-          : undefined,
       );
 
       if (trackingMode === 'nomination' && conversation) {
