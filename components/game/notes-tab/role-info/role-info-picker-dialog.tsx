@@ -66,7 +66,7 @@ export function RoleInfoPickerDialog({
             </Text>
           </View>
           <ScrollView
-            contentContainerStyle={styles.options}
+            contentContainerStyle={slot?.kind === 'player' ? styles.optionList : styles.options}
             keyboardShouldPersistTaps="handled"
             style={styles.scroll}
           >
@@ -225,8 +225,15 @@ const styles = StyleSheet.create({
   optionDisabled: {
     opacity: 0.35,
   },
+  optionList: {
+    gap: 8,
+  },
   optionPressed: {
     backgroundColor: colors.surfacePressed,
+  },
+  optionRow: {
+    gap: 10,
+    paddingHorizontal: 14,
   },
   optionSelected: {
     backgroundColor: colors.surfaceRaised,
@@ -293,6 +300,7 @@ function SlotOptions({
           disabled={!isPlayerChoosableForSlot(option, slot, day, phase)}
           key={option.id}
           label={option.name}
+          list
           onPress={() => onSelect(option.id)}
           role={
             showRoles
@@ -355,6 +363,7 @@ function SlotOptions({
 function PickerOption({
   disabled = false,
   label,
+  list = false,
   number = false,
   onPress,
   role,
@@ -363,6 +372,8 @@ function PickerOption({
   /** Grayed out, such as a dead player for an ability that only works on alive players. */
   disabled?: boolean;
   label: string;
+  /** Full-width row for a vertical list instead of a wrapping chip. */
+  list?: boolean;
   number?: boolean;
   onPress: () => void;
   role?: Role;
@@ -377,13 +388,14 @@ function PickerOption({
       onPress={onPress}
       style={({ pressed }) => [
         styles.option,
+        list && styles.optionRow,
         number && styles.numberOption,
         selected && styles.optionSelected,
         pressed && styles.optionPressed,
         disabled && styles.optionDisabled,
       ]}
     >
-      {role ? <RoleIcon role={role} size={22} /> : null}
+      {role ? <RoleIcon role={role} size={list ? 28 : 22} /> : null}
       <Text
         style={[
           styles.optionText,
