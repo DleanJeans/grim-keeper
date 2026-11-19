@@ -478,14 +478,20 @@ export const useGameStore = create<GameState>()(
         });
         const appUserName = normalizePlayerName(get().appUserName) || 'You';
         const appUserKey = appUserName.toLocaleLowerCase();
-        const storytellerNameKeys = getStorytellerNameKeys(storytellers);
+        const appUserStorytells = storytellers.some(
+          (storyteller) => storyteller.id === APP_USER_ID,
+        );
+        const friendStorytellers = storytellers.filter(
+          (storyteller) => storyteller.id !== APP_USER_ID,
+        );
+        const storytellerNameKeys = getStorytellerNameKeys(friendStorytellers);
         const otherPlayerNames = playerNames.filter((name) => {
           const nameKey = normalizePlayerName(name).toLocaleLowerCase();
           return nameKey !== appUserKey && !storytellerNameKeys.has(nameKey);
         });
         const friends = addMissingFriends(
           get().friends,
-          [...otherPlayerNames, ...storytellers.map((storyteller) => storyteller.name)],
+          [...otherPlayerNames, ...friendStorytellers.map((storyteller) => storyteller.name)],
           now,
         );
         const friendIdsByName = new Map(
@@ -494,20 +500,29 @@ export const useGameStore = create<GameState>()(
             friend.id,
           ]),
         );
-        const storytellerFriends = storytellers.map(
-          (storyteller) => getFriendByName(friends, storyteller.name) ?? storyteller,
-        );
-        const players = [appUserName, ...otherPlayerNames].map<Player>((name, index) => {
+        const storytellerFriends = [
+          ...(appUserStorytells ? [{ id: APP_USER_ID, name: appUserName }] : []),
+          ...friendStorytellers.map(
+            (storyteller) => getFriendByName(friends, storyteller.name) ?? storyteller,
+          ),
+        ];
+        const allPlayerNames = [appUserName, ...otherPlayerNames];
+        const players = allPlayerNames.flatMap<Player>((name, index) => {
+          if (index === 0 && appUserStorytells) {
+            return [];
+          }
           const normalizedName = normalizePlayerName(name);
 
-          return {
-            id:
-              (index === 0
-                ? APP_USER_ID
-                : friendIdsByName.get(normalizedName.toLocaleLowerCase())) ?? createId('player'),
-            name: normalizedName,
-            seat: index,
-          };
+          return [
+            {
+              id:
+                (index === 0
+                  ? APP_USER_ID
+                  : friendIdsByName.get(normalizedName.toLocaleLowerCase())) ?? createId('player'),
+              name: normalizedName,
+              seat: index,
+            },
+          ];
         });
         const normalizedMapWidth = Math.max(1, Math.round(mapWidth));
         const normalizedMapHeight = clampMapHeight(mapHeight);
@@ -781,7 +796,13 @@ export const useGameStore = create<GameState>()(
           }
 
           const updatedAt = new Date().toISOString();
-          const storytellerNameKeys = getStorytellerNameKeys(storytellers);
+          const appUserStorytells = storytellers.some(
+            (storyteller) => storyteller.id === APP_USER_ID,
+          );
+          const friendStorytellers = storytellers.filter(
+            (storyteller) => storyteller.id !== APP_USER_ID,
+          );
+          const storytellerNameKeys = getStorytellerNameKeys(friendStorytellers);
           const regularDraftPlayers = draftPlayers.filter(
             (player) =>
               !storytellerNameKeys.has(normalizePlayerName(player.name).toLocaleLowerCase()),
@@ -789,7 +810,7 @@ export const useGameStore = create<GameState>()(
           const names = regularDraftPlayers.map((player) => normalizePlayerName(player.name));
           const friends = addMissingFriends(
             state.friends,
-            [...names, ...storytellers.map((storyteller) => storyteller.name)],
+            [...names, ...friendStorytellers.map((storyteller) => storyteller.name)],
             updatedAt,
           );
           const friendIdsByName = new Map(
@@ -798,12 +819,15 @@ export const useGameStore = create<GameState>()(
               friend.id,
             ]),
           );
-          const storytellerFriends = storytellers.map(
-            (storyteller) => getFriendByName(friends, storyteller.name) ?? storyteller,
-          );
+          const storytellerFriends = [
+            ...(appUserStorytells ? [{ id: APP_USER_ID, name: state.appUserName }] : []),
+            ...friendStorytellers.map(
+              (storyteller) => getFriendByName(friends, storyteller.name) ?? storyteller,
+            ),
+          ];
           const existingPlayersById = new Map(game.players.map((player) => [player.id, player]));
           const appUser = game.players.find((player) => player.id === APP_USER_ID);
-          const retainedPlayerIds = new Set(appUser ? [appUser.id] : []);
+          const retainedPlayerIds = new Set(appUser && !appUserStorytells ? [appUser.id] : []);
           // New players take free spots around the map center, one after another.
           const placedPlayers = [...game.players];
           // Tokens without a saved spot sit by seat; pin them first so a new seat order (or a
@@ -833,9 +857,15 @@ export const useGameStore = create<GameState>()(
                 }
               : {};
           const players = [
-            appUser
-              ? { ...appUser, ...pinPosition(appUser) }
-              : { id: APP_USER_ID, name: state.appUserName, seat: 0 },
+            ...(appUserStorytells
+              ? []
+              : [
+                  appUser
+                    ? appUser.isStoryteller
+                      ? { ...appUser, isStoryteller: undefined, position: undefined, seat: 0 }
+                      : { ...appUser, ...pinPosition(appUser) }
+                    : { id: APP_USER_ID, name: state.appUserName, seat: 0 },
+                ]),
             ...regularDraftPlayers.map((player, index) => {
               const name = names[index];
               const existingPlayer = existingPlayersById.get(player.id);

@@ -1089,4 +1089,28 @@ describe('migrateV2ToV3', () => {
       expect.objectContaining({ scriptName: '', gameId: '', day: 1 }),
     );
   });
+
+  it('lets the app user be the Storyteller instead of a seated player', () => {
+    const store = useGameStore.getState();
+    const game = store.createGame({
+      mapHeight: 400,
+      mapWidth: 600,
+      playerNames: ['Alice'],
+      storytellers: [{ id: 'app-user', name: 'You' }],
+    });
+
+    expect(game.players.map((player) => [player.id, !!player.isStoryteller])).toEqual([
+      [game.players[0].id, false],
+      ['app-user', true],
+    ]);
+    expect(game.players.filter((player) => player.id === 'app-user')).toHaveLength(1);
+
+    useGameStore
+      .getState()
+      .updateGamePlayers(game.id, [{ id: game.players[0].id, name: 'Alice' }], []);
+    const updated = useGameStore.getState().games[0].players;
+    const appUser = updated.find((player) => player.id === 'app-user');
+    expect(appUser?.isStoryteller).toBeFalsy();
+    expect(appUser?.seat).toBe(0);
+  });
 });

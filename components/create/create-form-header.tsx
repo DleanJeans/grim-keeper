@@ -21,7 +21,7 @@ type CreateFormHeaderProps = {
   canStart: boolean;
   duplicateName: boolean;
   featuredScript?: StoredScript;
-  fixedPlayerName: string;
+  fixedPlayerName?: string;
   friends: FriendSummary[];
   helperText: string;
   inputRef: RefObject<RNTextInput | null>;
@@ -249,7 +249,7 @@ export function CreateFormHeader({
       <Text selectable style={[styles.helperText, duplicateName && styles.helperTextDuplicate]}>
         {helperText}
       </Text>
-      <FixedPlayerRow name={fixedPlayerName} />
+      {fixedPlayerName ? <FixedPlayerRow name={fixedPlayerName} /> : null}
     </View>
   );
 }

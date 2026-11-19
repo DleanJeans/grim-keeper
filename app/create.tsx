@@ -125,17 +125,34 @@ export default function CreateRoute() {
     () => sortFriendSummaries(getFriendSummaries(games, storedFriends, appUserName), savedNotes),
     [appUserName, games, savedNotes, storedFriends],
   );
+  const appUserSummary = useMemo<FriendSummary>(
+    () => ({
+      createdAt: '',
+      gamesPlayed: 0,
+      gamesStorytold: 0,
+      id: APP_USER_ID,
+      name: fixedPlayerName,
+    }),
+    [fixedPlayerName],
+  );
+  const appUserStorytells = draftSelectedStorytellerIds.includes(APP_USER_ID);
   const selectedStorytellers = useMemo(
     () =>
       draftSelectedStorytellerIds.flatMap((friendId) => {
-        const friend = friends.find((candidate) => candidate.id === friendId);
+        const friend =
+          friendId === APP_USER_ID
+            ? appUserSummary
+            : friends.find((candidate) => candidate.id === friendId);
         return friend ? [friend] : [];
       }),
-    [draftSelectedStorytellerIds, friends],
+    [appUserSummary, draftSelectedStorytellerIds, friends],
   );
   const seatedNames = useMemo(
-    () => [fixedPlayerName, ...players.map((player) => player.name)],
-    [fixedPlayerName, players],
+    () => [
+      ...(appUserStorytells ? [] : [fixedPlayerName]),
+      ...players.map((player) => player.name),
+    ],
+    [appUserStorytells, fixedPlayerName, players],
   );
   const selectedNames = useMemo(
     () => [...seatedNames, ...selectedStorytellers.map((storyteller) => storyteller.name)],
@@ -143,10 +160,11 @@ export default function CreateRoute() {
   );
   const storytellerFriends = useMemo(
     () =>
-      sortStorytellerSummaries(
-        friends.filter((friend) => !hasDuplicatePlayerName(seatedNames, friend.name)),
-      ),
-    [friends, seatedNames],
+      sortStorytellerSummaries([
+        appUserSummary,
+        ...friends.filter((friend) => !hasDuplicatePlayerName(seatedNames, friend.name)),
+      ]),
+    [appUserSummary, friends, seatedNames],
   );
   const playerPickerFriends = useMemo(() => {
     const pickerFriends = friends.filter(
@@ -433,7 +451,7 @@ export default function CreateRoute() {
               canStart={canStart}
               duplicateName={duplicateName}
               featuredScript={sushiBuffetScript}
-              fixedPlayerName={fixedPlayerName}
+              fixedPlayerName={appUserStorytells ? undefined : fixedPlayerName}
               friends={suggestedFriends}
               helperText={helperText}
               inputRef={inputRef}
