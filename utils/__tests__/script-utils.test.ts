@@ -167,10 +167,10 @@ describe('script utils', () => {
     ];
 
     expect(sortScriptsByMostPlayed(scripts, games).map((script) => script.name)).toEqual([
+      'Unused',
       'Zulu',
       'Alpha',
       'Bravo',
-      'Unused',
     ]);
   });
 
@@ -182,21 +182,21 @@ describe('script utils', () => {
     ];
 
     expect(sortScriptsByMostPlayed(scripts, games).map((script) => script.name)).toEqual([
+      'Unused',
       'Alpha',
       'Bravo',
-      'Unused',
       'Zulu',
     ]);
   });
 
-  it('sorts ties alphabetically without mutating the input', () => {
+  it('sorts ties alphabetically after the newest script, without mutating the input', () => {
     const originalOrder = [...scripts];
     const sortedScripts = sortScriptsByMostPlayed(scripts, []);
 
     expect(sortedScripts.map((script) => script.name)).toEqual([
+      'Unused',
       'Alpha',
       'Bravo',
-      'Unused',
       'Zulu',
     ]);
     expect(scripts).toEqual(originalOrder);

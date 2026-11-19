@@ -186,8 +186,7 @@ export function formatWinRecord(record: ScriptWinRecord | undefined) {
 
 export function sortScriptsByMostPlayed(scripts: StoredScript[], games: Game[]) {
   const gamesPlayedByScript = getScriptPlayCounts(games);
-
-  return [...scripts].sort((first, second) => {
+  const sortedScripts = [...scripts].sort((first, second) => {
     const gamesDifference =
       (gamesPlayedByScript.get(second.id) ?? 0) - (gamesPlayedByScript.get(first.id) ?? 0);
 
@@ -195,6 +194,15 @@ export function sortScriptsByMostPlayed(scripts: StoredScript[], games: Game[]) 
       gamesDifference || first.name.localeCompare(second.name, undefined, { sensitivity: 'base' })
     );
   });
+
+  // New scripts are appended to the list: keep the latest on top until a game uses it,
+  // so it can be selected right away.
+  const newestScript = scripts.at(-1);
+  if (!newestScript || gamesPlayedByScript.has(newestScript.id)) {
+    return sortedScripts;
+  }
+
+  return [newestScript, ...sortedScripts.filter((script) => script.id !== newestScript.id)];
 }
 
 export function getScriptRoleEntries(
