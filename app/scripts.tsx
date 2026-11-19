@@ -19,6 +19,7 @@ import type { StoredScript } from '@/types/game';
 import { extractImageTextLines } from '@/utils/image-text';
 import { type PdfScriptDraft, parseScriptPdfText } from '@/utils/pdf-script-parser';
 import { extractPdfTextLines } from '@/utils/pdf-text';
+import { pocketGrimoireLinkToScriptJson } from '@/utils/pocket-grimoire-link';
 import {
   createDuplicateScript,
   createEmptyScript,
@@ -219,7 +220,12 @@ export default function ScriptsRoute() {
     // Offline, import with the roles we already have; setRoleCatalog fills in the
     // official role details once the catalog loads.
     const catalog = await getUsableRoleCatalog().catch(() => roleCatalog);
-    const uploadedScript = createHomebrewScript(value, catalog, undefined, fallbackName);
+    const uploadedScript = createHomebrewScript(
+      pocketGrimoireLinkToScriptJson(value, fallbackName) ?? value,
+      catalog,
+      undefined,
+      fallbackName,
+    );
     const existingScript = scripts.find(
       (script) =>
         script.remoteId === undefined &&
@@ -361,8 +367,8 @@ export default function ScriptsRoute() {
         <ResponsiveContent style={styles.content}>
           <View style={styles.intro}>
             <Text selectable style={styles.introText}>
-              Download scripts from BotC Scripts, upload a script PDF, image or JSON, or paste JSON,
-              then add or remove roles before using it in a game.
+              Download scripts from BotC Scripts, upload a script PDF, image or JSON, or paste JSON
+              or a Pocket Grimoire link, then add or remove roles before using it in a game.
             </Text>
           </View>
 

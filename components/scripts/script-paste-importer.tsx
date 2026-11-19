@@ -33,8 +33,8 @@ export function ScriptPasteImporter({ onImport }: ScriptPasteImporterProps) {
   return (
     <View style={styles.container}>
       <Pressable
-        accessibilityHint="Opens a field where you can paste or type script JSON."
-        accessibilityLabel="Paste script JSON"
+        accessibilityHint="Opens a field where you can paste or type script JSON or a Pocket Grimoire link."
+        accessibilityLabel="Paste script JSON or link"
         accessibilityRole="button"
         accessibilityState={{ expanded: isExpanded }}
         onPress={() => setIsExpanded((expanded) => !expanded)}
@@ -42,14 +42,15 @@ export function ScriptPasteImporter({ onImport }: ScriptPasteImporterProps) {
       >
         <ClipboardPaste color={colors.text} size={18} strokeWidth={2.6} />
         <Text style={styles.toggleLabel}>
-          {isExpanded ? 'Hide paste field' : 'Paste script JSON'}
+          {isExpanded ? 'Hide paste field' : 'Paste script JSON or link'}
         </Text>
       </Pressable>
 
       {isExpanded ? (
         <View style={styles.form}>
           <Text selectable style={styles.description}>
-            Paste a script JSON array below. Add a name if its _meta entry has no name.
+            Paste a script JSON array or a Pocket Grimoire sheet link below. Add a name if the
+            script has none.
           </Text>
           <TextInput
             accessibilityLabel="Fallback script name"
@@ -67,7 +68,7 @@ export function ScriptPasteImporter({ onImport }: ScriptPasteImporterProps) {
             autoCorrect={false}
             multiline
             onChangeText={setScriptJson}
-            placeholder="Paste script JSON"
+            placeholder="Paste script JSON or link"
             placeholderTextColor={colors.textSubtle}
             textAlignVertical="top"
             value={scriptJson}
