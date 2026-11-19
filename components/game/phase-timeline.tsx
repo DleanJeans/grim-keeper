@@ -33,7 +33,7 @@ type PhaseTimelineProps = {
 
 type PhaseDeaths = { executions: number; kills: number };
 
-type Stop = {
+export type Stop = {
   /** The phase this stop goes to. */
   index: number;
   kind: 'earlier' | 'phase' | 'upcoming';
@@ -127,7 +127,7 @@ function getDeathsByPhase(players: Player[]): Map<number, PhaseDeaths> {
 }
 
 /** The stops to draw: every phase up to the latest one and the next one, folded when long. */
-function getStops(activeIndex: number, lastIndex: number): Stop[] {
+export function getStops(activeIndex: number, lastIndex: number): Stop[] {
   const upcomingIndex = lastIndex + 1;
   const total = upcomingIndex + 1;
   if (total <= MAX_STOPS) {

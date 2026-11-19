@@ -11,7 +11,6 @@ import { NightOrderSection } from '@/components/game/notes-tab/night-order-secti
 import { NotesTabScriptPicker } from '@/components/game/notes-tab/notes-tab-script-picker';
 import { PlayerNoteSection } from '@/components/game/notes-tab/player-note-section';
 import { PlayerTimelineButton } from '@/components/game/notes-tab/player-timeline-button';
-import { RoleAssignmentActions } from '@/components/game/notes-tab/role-assignment-actions';
 import { EvilInPlayPicker } from '@/components/game/notes-tab/role-info/evil-in-play-picker';
 import { RoleInfoTable } from '@/components/game/notes-tab/role-info/role-info-table';
 import { SavedFriendNotesLink } from '@/components/game/notes-tab/saved-friend-notes-link';
@@ -62,7 +61,6 @@ export function NotesTab() {
     return (
       <View style={styles.focusedContainer}>
         <NotesTabScriptPicker />
-        <RoleAssignmentActions />
         <TheoryEvilToggle player={focusedPlayer} />
         {showRoles ? <TokenLabelInput key={focusedPlayer.id} player={focusedPlayer} /> : null}
         <RoleInfoTable player={focusedPlayer} />
@@ -97,7 +95,6 @@ export function NotesTab() {
     return (
       <View style={styles.emptyContainer}>
         <NotesTabScriptPicker />
-        <RoleAssignmentActions />
         <TonightLessonsCard />
         <EvilInPlayPicker />
         <TheoriesSection />
@@ -116,7 +113,6 @@ export function NotesTab() {
   return (
     <View style={styles.container}>
       <NotesTabScriptPicker />
-      <RoleAssignmentActions />
       <TonightLessonsCard />
       <EvilInPlayPicker />
       <TheoriesSection />

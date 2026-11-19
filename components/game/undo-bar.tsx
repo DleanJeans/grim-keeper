@@ -10,13 +10,15 @@ const UNDO_VISIBLE_MS = 6000;
 
 /** Give it a new `key` for each edit so the timer restarts. */
 type UndoBarProps = {
+  /** Sits in a row with other controls instead of floating above its parent. */
+  inline?: boolean;
   label: string;
   onDismiss: () => void;
   onUndo: () => void;
 };
 
 /** Floating "Claim saved · Undo" bar shown for a few seconds after an undoable edit. */
-export function UndoBar({ label, onDismiss, onUndo }: UndoBarProps) {
+export function UndoBar({ inline = false, label, onDismiss, onUndo }: UndoBarProps) {
   const dismissRef = useRef(onDismiss);
   dismissRef.current = onDismiss;
 
@@ -26,7 +28,10 @@ export function UndoBar({ label, onDismiss, onUndo }: UndoBarProps) {
   }, []);
 
   return (
-    <View accessibilityLiveRegion="polite" style={styles.bar}>
+    <View
+      accessibilityLiveRegion="polite"
+      style={[styles.bar, inline ? styles.inline : styles.floating]}
+    >
       <Text numberOfLines={1} style={styles.label}>
         {label}
       </Text>
@@ -51,16 +56,11 @@ const styles = StyleSheet.create({
     borderColor: colors.gameBorder,
     borderRadius: 10,
     borderWidth: 1,
-    bottom: '100%',
     flexDirection: 'row',
     gap: 8,
-    left: 16,
-    marginBottom: 16,
     minHeight: 48,
     paddingLeft: 14,
     paddingRight: 6,
-    position: 'absolute',
-    right: 16,
   },
   button: {
     alignItems: 'center',
@@ -70,6 +70,8 @@ const styles = StyleSheet.create({
     minHeight: 40,
     paddingHorizontal: 10,
   },
+  inline: { flex: 1, minHeight: 42 },
+  floating: { bottom: '100%', left: 16, marginBottom: 16, position: 'absolute', right: 16 },
   buttonPressed: { backgroundColor: colors.gameSurfacePressed },
   buttonText: { color: colors.gameText, fontSize: 14, fontWeight: '800' },
   label: { color: colors.gameTextSoft, flex: 1, fontSize: 14, fontWeight: '700' },

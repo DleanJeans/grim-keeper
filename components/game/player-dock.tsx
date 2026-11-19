@@ -4,12 +4,10 @@ import {
   CircleHelp,
   FlameKindling,
   HeartPulse,
-  Megaphone,
   MessageCircle,
   ShieldAlert,
   ShieldCheck,
   Skull,
-  Tag,
   Undo2,
 } from 'lucide-react-native';
 import { type ComponentType, useEffect, useState } from 'react';
@@ -24,6 +22,7 @@ import { DockNomination } from '@/components/game/noms-tab/dock-nomination';
 import { NomIcon } from '@/components/game/noms-tab/nom-icon';
 import { QUICK_TAGS, QuickNoteTags } from '@/components/game/notes-tab/quick-note-tags';
 import { SuspicionPicker } from '@/components/game/notes-tab/suspicion-picker';
+import { RoleKindButtons } from '@/components/game/role-assignment/role-kind-buttons';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { PlayerRoleAssignment } from '@/types/game';
@@ -33,13 +32,6 @@ import { getPlayerSuspicion, type SuspicionLevel } from '@/utils/suspicion-utils
 type IconComponent = ComponentType<{ color: string; size: number; strokeWidth?: number }>;
 type ActionTone = 'default' | 'execute' | 'kill' | 'revive';
 type AssignmentKind = PlayerRoleAssignment['kind'];
-
-const NOTE_ACTIONS: { icon: IconComponent; kind: AssignmentKind; label: string }[] = [
-  { icon: Tag, kind: 'claim', label: 'Claim' },
-  { icon: ShieldCheck, kind: 'confirm', label: 'Confirm' },
-  { icon: Megaphone, kind: 'rumor', label: 'Rumor' },
-  { icon: CircleHelp, kind: 'guess', label: 'Guess' },
-];
 
 const ACTION_TONE_COLORS: Record<ActionTone, string> = {
   default: colors.gameTextSoft,
@@ -78,7 +70,6 @@ export function PlayerDock({
     focusedPlayer,
     focusedPlayerIsDead,
     game,
-    handleCancelRoleAssignment,
     handleReviveFocusedPlayer,
     handleSetFocusedPlayerDeath,
     handleUndoFocusedPlayerDeath,
@@ -122,6 +113,11 @@ export function PlayerDock({
         <DockTalk />
       </View>
     );
+  }
+
+  // The role drawer covers the screen, dock included, while a kind is open.
+  if (roleAssignmentKind && focusedPlayer && game.script) {
+    return null;
   }
 
   const killShown =
@@ -209,21 +205,7 @@ export function PlayerDock({
         </View>
       ) : null}
       {showActions ? (
-        <View style={styles.actions}>
-          {NOTE_ACTIONS.map(({ icon, kind, label }) => (
-            <NoteActionButton
-              icon={icon}
-              key={kind}
-              label={label}
-              onPress={() =>
-                roleAssignmentKind === kind
-                  ? handleCancelRoleAssignment()
-                  : onStartRoleAssignment(kind)
-              }
-              selected={roleAssignmentKind === kind}
-            />
-          ))}
-        </View>
+        <RoleKindButtons onPress={onStartRoleAssignment} selectedKind={roleAssignmentKind} />
       ) : null}
       {canMark ? (
         <>

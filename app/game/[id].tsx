@@ -34,6 +34,7 @@ import { PhaseTimeline } from '@/components/game/phase-timeline';
 import { PlayerCountStatus } from '@/components/game/player-count-status';
 import { PlayerDock } from '@/components/game/player-dock';
 import { RearrangeActions } from '@/components/game/rearrange-actions';
+import { RoleAssignmentDrawer } from '@/components/game/role-assignment/role-assignment-drawer';
 import { UndoBar } from '@/components/game/undo-bar';
 import { NotFoundScreen } from '@/components/not-found-screen';
 import { ResponsiveContent } from '@/components/responsive-content';
@@ -180,6 +181,10 @@ export default function GameRoute() {
   const pendingUndoBase = useRef<Game | null>(null);
   const restoreGame = useGameStore((state) => state.restoreGame);
   const [dayEditLocked, setDayEditLocked] = useState(false);
+  const roleDrawerStyle = useMemo(
+    () => createRoleDrawerStyle(isFullscreen || process.env.EXPO_OS !== 'web' ? insets.top : 0),
+    [insets.top, isFullscreen],
+  );
   const scrollContentStyle = useMemo(
     // The header is drawn under the status bar on Android, so the content also starts below it.
     () => createScrollContentStyle(isFullscreen || process.env.EXPO_OS !== 'web' ? insets.top : 0),
@@ -951,14 +956,9 @@ export default function GameRoute() {
     }
   }
 
-  /** The dock's note buttons open the picker on the Roles tab and scroll it into view. */
+  /** The dock's note buttons open the role drawer, which covers the dock. */
   function handleDockRoleAssignment(kind: PlayerRoleAssignment['kind']) {
-    setActiveTab('notes');
     handleStartRoleAssignment(kind);
-    // A rumor's source is picked on the map, so it stays in view.
-    if (kind !== 'rumor') {
-      scrollToTabBar();
-    }
   }
 
   /** Kill in the dock opens the kill attribution panel on the Deaths tab. */
@@ -1066,6 +1066,22 @@ export default function GameRoute() {
       day,
       phase,
     );
+  }
+
+  function handleDeleteRoleAssignment(
+    playerId: string,
+    day: number,
+    kind: PlayerRoleAssignment['kind'],
+    phase: GamePhase,
+  ) {
+    // Remove is picked on purpose, so an earlier phase needs no extra confirmation; undo is on offer.
+    runDayEdit(() => {
+      deletePlayerRoleAssignment(activeGame.id, playerId, day, kind, phase);
+      if (kind === roleAssignmentKind && day === activeGame.activeDay && phase === activePhase) {
+        // The open picker still holds the removed pick.
+        setRoleAssignmentRoleIds([]);
+      }
+    });
   }
 
   function handleMovePlayer(playerId: string, position: PlayerPosition) {
@@ -1285,6 +1301,7 @@ export default function GameRoute() {
     handleToggleRoleAssignment,
     handleSaveRoleAssignment,
     handleDeleteRumor,
+    handleDeleteRoleAssignment,
     handleSelectRumorSource,
     setActiveRoleDisplayModes,
     setShowRoles,
@@ -1300,6 +1317,27 @@ export default function GameRoute() {
     handleDeleteNomination,
     enterRearrangeMode,
   };
+
+  // The role picker covers the dock and everything above it but the header.
+  const roleDrawerOpen =
+    !!roleAssignmentKind &&
+    !!focusedPlayer &&
+    !trackingMode &&
+    !votingNominationId &&
+    !!activeGame.script;
+  const renderUndoBar = (inline: boolean) =>
+    undo ? (
+      <UndoBar
+        inline={inline}
+        key={undo.id}
+        label={undo.label}
+        onDismiss={() => setUndo(null)}
+        onUndo={() => {
+          restoreGame(undo.before);
+          setUndo(null);
+        }}
+      />
+    ) : null;
 
   return (
     <>
@@ -1417,23 +1455,19 @@ export default function GameRoute() {
             </ResponsiveContent>
           </Animated.ScrollView>
 
+          {roleDrawerOpen ? (
+            <View style={roleDrawerStyle}>
+              <RoleAssignmentDrawer footer={renderUndoBar(true)} />
+            </View>
+          ) : null}
+
           <View style={styles.bottomArea}>
             <PlayerDock
               onStartKill={handleDockKill}
               onStartRoleAssignment={handleDockRoleAssignment}
               onStartTracking={handleDockTracking}
             />
-            {undo ? (
-              <UndoBar
-                key={undo.id}
-                label={undo.label}
-                onDismiss={() => setUndo(null)}
-                onUndo={() => {
-                  restoreGame(undo.before);
-                  setUndo(null);
-                }}
-              />
-            ) : null}
+            {roleDrawerOpen ? null : renderUndoBar(false)}
           </View>
         </View>
       </GameRouteProvider>
@@ -1447,6 +1481,18 @@ type PausedNominationState = PausedNomination & {
   returnTab: GameTab | null;
   undoBase: Game | null;
 };
+
+function createRoleDrawerStyle(topInset: number) {
+  return StyleSheet.create({
+    drawer: {
+      bottom: 0,
+      left: 0,
+      position: 'absolute',
+      right: 0,
+      top: INLINE_GAME_HEADER_HEIGHT + topInset,
+    },
+  }).drawer;
+}
 
 function createScrollContentStyle(topInset: number) {
   return StyleSheet.create({

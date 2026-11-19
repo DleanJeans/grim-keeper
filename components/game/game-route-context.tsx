@@ -137,6 +137,13 @@ export type GameRouteContextValue = {
   ) => void;
   handleSaveRoleAssignment: (roleIds?: string[]) => void;
   handleDeleteRumor: (sourcePlayerId: string, day: number, phase?: GamePhase) => void;
+  /** Removes a logged claim, confirm, guess or rumor from the phase it was made in. */
+  handleDeleteRoleAssignment: (
+    playerId: string,
+    day: number,
+    kind: PlayerRoleAssignment['kind'],
+    phase: GamePhase,
+  ) => void;
   handleSelectRumorSource: (sourcePlayerId: string) => void;
   setActiveRoleDisplayModes: (modes: RoleDisplayMode[]) => void;
   setShowRoles: (show: boolean) => void;
