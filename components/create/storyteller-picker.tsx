@@ -94,12 +94,6 @@ export function StorytellerPicker({
           behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
           style={styles.backdrop}
         >
-          <Pressable
-            accessibilityLabel="Close Storyteller picker"
-            accessibilityRole="button"
-            onPress={closePicker}
-            style={styles.dismissArea}
-          />
           <View style={styles.dialog}>
             <View style={styles.dialogHeader}>
               <View style={styles.dialogTitleGroup}>
@@ -180,6 +174,12 @@ export function StorytellerPicker({
               </Pressable>
             ) : null}
           </View>
+          <Pressable
+            accessibilityLabel="Close Storyteller picker"
+            accessibilityRole="button"
+            onPress={closePicker}
+            style={styles.dismissArea}
+          />
         </KeyboardAvoidingView>
       </ScaledModal>
     </View>
@@ -187,7 +187,7 @@ export function StorytellerPicker({
 }
 
 const styles = StyleSheet.create({
-  backdrop: { backgroundColor: colors.backdrop, flex: 1, justifyContent: 'flex-end' },
+  backdrop: { backgroundColor: colors.backdrop, flex: 1, justifyContent: 'flex-start' },
   clearButton: { alignItems: 'center', paddingVertical: 10 },
   clearText: { color: colors.danger, fontWeight: '800' },
   closeButton: {
