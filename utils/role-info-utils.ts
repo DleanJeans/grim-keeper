@@ -7,6 +7,7 @@ import type {
   RoleInfoEntry,
 } from '@/types/game';
 import nightSheet from '@/utils/botc-nightsheet.json';
+import { getNomineeId } from '@/utils/conversation-utils';
 import { getDeathPhase, getEventPhaseIndex } from '@/utils/game-phase-utils';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 import { getRoleDisplayForDayOrPrevious } from '@/utils/role-utils';
@@ -1255,10 +1256,7 @@ export function inferVirginNominations(
     const nomination = conversations
       .filter(
         (conversation) =>
-          conversation.kind === 'nomination' &&
-          conversation.participantIds.some(
-            (playerId) => playerId !== conversation.initiatorId && virginIds.has(playerId),
-          ),
+          conversation.kind === 'nomination' && virginIds.has(getNomineeId(conversation)),
       )
       .sort(
         (first, second) =>

@@ -12,6 +12,7 @@ import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Conversation, GamePhase, Player, PlayerDayNoteEntry, Role } from '@/types/game';
+import { getNomineeId } from '@/utils/conversation-utils';
 import { getDeathPhase, getPhaseLabel } from '@/utils/game-phase-utils';
 import {
   getRoleAssignmentForDay,
@@ -292,13 +293,9 @@ function getNominationActivity(playerId: string, day: number, conversations: Con
   const nominations = conversations.filter(
     ({ kind, day: nominationDay }) => kind === 'nomination' && nominationDay === day,
   );
-  const getNomineeId = (nomination: (typeof nominations)[number]) =>
-    nomination.participantIds.find((participantId) => participantId !== nomination.initiatorId);
 
   return {
-    nomineeIds: nominations
-      .filter(({ initiatorId }) => initiatorId === playerId)
-      .flatMap((nomination) => getNomineeId(nomination) ?? []),
+    nomineeIds: nominations.filter(({ initiatorId }) => initiatorId === playerId).map(getNomineeId),
     nominatorIds: nominations
       .filter((nomination) => getNomineeId(nomination) === playerId)
       .map(({ initiatorId }) => initiatorId),
@@ -307,7 +304,7 @@ function getNominationActivity(playerId: string, day: number, conversations: Con
       .flatMap(({ bigWigPlayerId }) => bigWigPlayerId ?? []),
     votedForIds: nominations
       .filter(({ voterIds }) => voterIds?.includes(playerId))
-      .flatMap((nomination) => getNomineeId(nomination) ?? []),
+      .map(getNomineeId),
   };
 }
 

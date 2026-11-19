@@ -53,6 +53,7 @@ import type {
   RoleDisplayMode,
 } from '@/types/game';
 import { getClaimClashes } from '@/utils/claim-clash-utils';
+import { getNomineeId } from '@/utils/conversation-utils';
 import { getAutomaticCharacterTypeCounts } from '@/utils/evil-in-play-utils';
 import {
   getAdjacentPhasePosition,
@@ -371,11 +372,7 @@ export default function GameRoute() {
   const activeDayNominations = activeGame.conversations.filter(
     (conversation) => conversation.day === activeDayCutoff && conversation.kind === 'nomination',
   );
-  const nominatedPlayerIds = new Set(
-    activeDayNominations.flatMap((nomination) =>
-      nomination.participantIds.filter((playerId) => playerId !== nomination.initiatorId),
-    ),
-  );
+  const nominatedPlayerIds = new Set(activeDayNominations.map(getNomineeId));
   const focusedPlayerNominationCount = activeDayNominations.filter(
     (nomination) => nomination.initiatorId === focusedPlayerId,
   ).length;
@@ -387,18 +384,12 @@ export default function GameRoute() {
     !!focusedPlayer &&
     focusedPlayerNominationCount >= getNominationLimit(focusedPlayer, activeGame.activeDay);
   const nominationCurves = activeDayNominations
-    .map((nomination) => {
-      const nomineeId = nomination.participantIds.find(
-        (playerId) => playerId !== nomination.initiatorId,
-      );
-      return nomineeId
-        ? { conversationId: nomination.id, initiatorId: nomination.initiatorId, nomineeId }
-        : null;
-    })
-    .filter(
-      (curve): curve is { conversationId: string; initiatorId: string; nomineeId: string } =>
-        !!curve,
-    );
+    .map((nomination) => ({
+      conversationId: nomination.id,
+      initiatorId: nomination.initiatorId,
+      nomineeId: getNomineeId(nomination),
+    }))
+    .filter(({ initiatorId, nomineeId }) => initiatorId !== nomineeId);
   const nominationDisabled =
     (focusedPlayerIsDead && !focusedPlayerIsDeadBanshee) || focusedPlayerAlreadyNominatedToday;
   const deadVoteUnavailablePlayerIds = new Set(
@@ -640,7 +631,16 @@ export default function GameRoute() {
   }
 
   function handleConfirmTracking() {
-    if (selectedPlayerIds.length < 2 || !trackingMode) {
+    confirmTracking(false);
+  }
+
+  /** The nominator nominates themselves, without picking a nominee on the map. */
+  function handleConfirmSelfNomination() {
+    confirmTracking(true);
+  }
+
+  function confirmTracking(selfNomination: boolean) {
+    if ((selectedPlayerIds.length < 2 && !selfNomination) || !trackingMode) {
       return;
     }
 
@@ -648,7 +648,7 @@ export default function GameRoute() {
       const conversation = addConversation(
         activeGame.id,
         activeGame.activeDay,
-        selectedPlayerIds,
+        selfNomination ? [selectedPlayerIds[0], selectedPlayerIds[0]] : selectedPlayerIds,
         trackingMode,
       );
 
@@ -1282,6 +1282,7 @@ export default function GameRoute() {
     handleStartTracking,
     handleCancelTracking,
     handleConfirmTracking,
+    handleConfirmSelfNomination,
     handleConfirmVotes,
     handleCancelVoting,
     handlePauseNomination,

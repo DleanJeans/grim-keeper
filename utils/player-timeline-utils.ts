@@ -1,4 +1,5 @@
 import type { Game, GamePhase, PlayerRoleAssignment, Role } from '@/types/game';
+import { getNomineeId } from '@/utils/conversation-utils';
 import {
   getDeathPhase,
   getEventPhaseIndex,
@@ -86,7 +87,7 @@ export function getPlayerTimeline(
   for (const conversation of game.conversations) {
     const index = getEventPhaseIndex(conversation.day, 'day');
     if (conversation.kind === 'nomination') {
-      const nomineeId = conversation.participantIds.find((id) => id !== conversation.initiatorId);
+      const nomineeId = getNomineeId(conversation);
       const votes = getVoteCount(conversation, game.players);
       if (conversation.initiatorId === playerId) {
         add(index, `Nominated ${nameOf(nomineeId)} (${votes} ${votes === 1 ? 'vote' : 'votes'})`);

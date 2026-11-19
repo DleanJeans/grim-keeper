@@ -1,4 +1,5 @@
 import type { Conversation, Player } from '@/types/game';
+import { getNomineeId } from '@/utils/conversation-utils';
 import { getNominationLimit, getVoteWeight, isDeadBanshee, isDeadVote } from '@/utils/player-utils';
 
 /** Players alive when the day began, not counting Storytellers. Same-day deaths still count. */
@@ -84,7 +85,7 @@ export function getPlayerNominationHistory(
 
   for (const nomination of conversations) {
     if (nomination.kind !== 'nomination' || nomination.day > lastDay) continue;
-    const nomineeId = nomination.participantIds.find((id) => id !== nomination.initiatorId);
+    const nomineeId = getNomineeId(nomination);
     const entry = byDay.get(nomination.day) ?? {
       day: nomination.day,
       didNotVoteFor: [],
@@ -135,7 +136,7 @@ export function getVotingBuddies(
       let total = 0;
       for (const nomination of nominations) {
         // Nominees rarely vote on themselves, so their nomination says little.
-        const nomineeId = nomination.participantIds.find((id) => id !== nomination.initiatorId);
+        const nomineeId = getNomineeId(nomination);
         if (nomineeId === playerId || nomineeId === player.id) continue;
         const voters = nomination.voterIds ?? [];
         total += 1;
@@ -170,13 +171,7 @@ export function getNominationAvailability(
       (nominationCounts.get(nomination.initiatorId) ?? 0) + 1,
     );
   }
-  const nomineeIds = new Set(
-    todays.map(
-      (nomination) =>
-        nomination.participantIds.find((id) => id !== nomination.initiatorId) ??
-        nomination.initiatorId,
-    ),
-  );
+  const nomineeIds = new Set(todays.map(getNomineeId));
   const playing = players.filter((player) => !player.isStoryteller);
   return {
     canNominate: playing.filter(

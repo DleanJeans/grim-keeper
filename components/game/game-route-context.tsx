@@ -109,6 +109,7 @@ export type GameRouteContextValue = {
   handleStartTracking: (mode: TrackingMode) => void;
   handleCancelTracking: () => void;
   handleConfirmTracking: () => void;
+  handleConfirmSelfNomination: () => void;
   handleConfirmVotes: () => void;
   handleCancelVoting: () => void;
   handlePauseNomination: () => void;

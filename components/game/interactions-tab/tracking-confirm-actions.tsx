@@ -1,4 +1,4 @@
-import { Check, X } from 'lucide-react-native';
+import { Check, User, X } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
@@ -10,10 +10,12 @@ import { colors } from '@/theme/colors';
 export function TrackingConfirmActions() {
   const {
     focusedPlayer,
+    nominatedPlayerIds,
     players,
     selectedPlayerIds,
     trackingMode,
     handleCancelTracking: onCancel,
+    handleConfirmSelfNomination: onSelfNominate,
     handleConfirmTracking: onConfirm,
   } = useGameRouteContext();
 
@@ -41,6 +43,8 @@ export function TrackingConfirmActions() {
   })();
 
   const disabled = selectedPlayerIds.length < 2;
+  const nominatorId = selectedPlayerIds[0];
+  const selfNominationDisabled = !nominatorId || nominatedPlayerIds.has(nominatorId);
   const confirmTextStyle = [styles.confirmText, disabled && styles.confirmTextDisabled];
   return (
     <View style={confirmRowStyle}>
@@ -52,6 +56,25 @@ export function TrackingConfirmActions() {
         <X color={colors.gameText} size={17} strokeWidth={2.7} />
         <Text style={onDarkText}>Cancel</Text>
       </Pressable>
+      {trackingMode === 'nomination' ? (
+        <Pressable
+          accessibilityLabel="Nominate self"
+          accessibilityRole="button"
+          disabled={selfNominationDisabled}
+          onPress={onSelfNominate}
+          style={solidActionStyle({
+            backgroundColor: selfNominationDisabled ? colors.gameBorder : colors.gameSurface,
+            flex: 0.9,
+          })}
+        >
+          <User
+            color={selfNominationDisabled ? colors.gameTextMuted : colors.gameText}
+            size={17}
+            strokeWidth={2.7}
+          />
+          <Text style={selfNominationDisabled ? styles.confirmTextDisabled : onDarkText}>Self</Text>
+        </Pressable>
+      ) : null}
       <Pressable
         accessibilityRole="button"
         disabled={disabled}

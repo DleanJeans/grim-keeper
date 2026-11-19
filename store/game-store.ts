@@ -1742,7 +1742,11 @@ export const useGameStore = create<GameState>()(
       addConversation: (gameId, day, participantIds, kind = 'interaction') => {
         const uniqueParticipantIds = [...new Set(participantIds)];
 
-        if (uniqueParticipantIds.length < 2) {
+        // A self nomination keeps the nominator as the only participant.
+        if (
+          participantIds.length < 2 ||
+          (kind !== 'nomination' && uniqueParticipantIds.length < 2)
+        ) {
           return undefined;
         }
 

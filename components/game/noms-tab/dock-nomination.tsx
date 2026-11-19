@@ -7,6 +7,7 @@ import { VoteConfirmActions } from '@/components/game/noms-tab/vote-confirm-acti
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Conversation, Player } from '@/types/game';
+import { getNomineeId } from '@/utils/conversation-utils';
 import { getPhaseLabel } from '@/utils/game-phase-utils';
 import { getVoteCount } from '@/utils/nomination-utils';
 
@@ -170,10 +171,7 @@ function getNominationTitle(
   selectedPlayerIds: string[],
 ) {
   const nominatorId = nomination ? nomination.initiatorId : selectedPlayerIds[0];
-  const nomineeId = nomination
-    ? (nomination.participantIds.find((playerId) => playerId !== nomination.initiatorId) ??
-      nomination.initiatorId)
-    : selectedPlayerIds[1];
+  const nomineeId = nomination ? getNomineeId(nomination) : selectedPlayerIds[1];
   const nameOf = (playerId: string | undefined) =>
     players.find((player) => player.id === playerId)?.name;
   const nominator = nameOf(nominatorId) ?? 'Someone';

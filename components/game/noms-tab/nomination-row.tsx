@@ -11,6 +11,7 @@ import { VoterList } from '@/components/game/noms-tab/voter-list';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Conversation, GamePhase, Player, Role } from '@/types/game';
+import { getNomineeId } from '@/utils/conversation-utils';
 import { getVoteCount } from '@/utils/nomination-utils';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 
@@ -51,10 +52,7 @@ export function NominationRow({
   const playerById = new Map(players.map((player) => [player.id, player]));
   const nominator = playerById.get(nomination.initiatorId);
   const voterIds = nomination.voterIds ?? [];
-  const nomineeId = nomination.participantIds.find(
-    (playerId) => playerId !== nomination.initiatorId,
-  );
-  const nominee = nomineeId ? playerById.get(nomineeId) : undefined;
+  const nominee = playerById.get(getNomineeId(nomination));
   const selectedBigWigPlayer = nomination.bigWigPlayerId
     ? playerById.get(nomination.bigWigPlayerId)
     : undefined;

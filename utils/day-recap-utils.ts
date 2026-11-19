@@ -1,4 +1,5 @@
 import type { Game, GamePhase, Player, PlayerRoleAssignment, Role } from '@/types/game';
+import { getNomineeId } from '@/utils/conversation-utils';
 import { getDeathPhase, getEventPhaseIndex } from '@/utils/game-phase-utils';
 import {
   getOnTheBlockNominationId,
@@ -67,9 +68,7 @@ export function getDayRecap(
       const votesNeeded = getVotesToExecute(game.players, day);
       const onTheBlockId = getOnTheBlockNominationId(nominations, game.players, day);
       for (const nomination of nominations) {
-        const nomineeId = nomination.participantIds.find(
-          (playerId) => playerId !== nomination.initiatorId,
-        );
+        const nomineeId = getNomineeId(nomination);
         const votes = getVoteCount(nomination, game.players);
         events.push({
           id: `nomination-${nomination.id}`,

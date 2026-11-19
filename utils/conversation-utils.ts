@@ -36,6 +36,14 @@ export function getPairKey(firstPlayerId: string, secondPlayerId: string) {
   return [firstPlayerId, secondPlayerId].sort().join(':');
 }
 
+/** A nomination's nominee: the other participant, or the nominator for a self nomination. */
+export function getNomineeId(nomination: Conversation) {
+  return (
+    nomination.participantIds.find((playerId) => playerId !== nomination.initiatorId) ??
+    nomination.initiatorId
+  );
+}
+
 export function getConversationGroupKey(conversation: Conversation) {
   return [...new Set(conversation.participantIds)].sort().join(':');
 }

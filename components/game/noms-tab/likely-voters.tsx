@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
+import { getNomineeId } from '@/utils/conversation-utils';
 import { getVotingBuddies } from '@/utils/nomination-utils';
 
 const MAX_LIKELY_VOTERS = 3;
@@ -19,7 +20,7 @@ export function LikelyVoters() {
   }
 
   const nominator = players.find((player) => player.id === nomination.initiatorId);
-  const nomineeId = nomination.participantIds.find((id) => id !== nomination.initiatorId);
+  const nomineeId = getNomineeId(nomination);
   const likely = getVotingBuddies(
     conversations.filter((conversation) => conversation.id !== nomination.id),
     players,
