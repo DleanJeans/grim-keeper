@@ -1,4 +1,5 @@
-import { BookMarked, X } from 'lucide-react-native';
+import { BookMarked, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
@@ -18,13 +19,13 @@ import {
 /**
  * Notes you saved in other games about the players in this one, grouped by player, then notes
  * about only the characters on this script, grouped by character (with the note's other
- * characters beside it in the heading), until the game ends. The X hides
- * them for this game only; the gold dots on the map stay.
+ * characters beside it in the heading), until the game ends. The header button collapses
+ * the card to just its title and expands it again.
  */
 export function TonightLessonsCard() {
   const { game } = useGameRouteContext();
+  const [collapsed, setCollapsed] = useState(false);
   const savedNotes = useGameStore((state) => state.savedNotes);
-  const dismissGameNote = useGameStore((state) => state.dismissGameNote);
   const appUserName = useGameStore((state) => state.appUserName);
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const scriptRoles = game.script?.roles ?? [];
@@ -44,48 +45,45 @@ export function TonightLessonsCard() {
     return null;
   }
 
-  function handleHide() {
-    for (const entry of [...entries, ...characterEntries]) {
-      for (const lesson of entry.lessons) {
-        dismissGameNote(game.id, lesson.id);
-      }
-    }
-  }
+  const Chevron = collapsed ? ChevronDown : ChevronUp;
 
   return (
     <View style={styles.card}>
-      <View style={styles.header}>
+      <Pressable
+        accessibilityLabel={collapsed ? 'Show lessons' : 'Collapse lessons'}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: !collapsed }}
+        onPress={() => setCollapsed((value) => !value)}
+        style={({ pressed }) => [styles.header, pressed && styles.headerPressed]}
+      >
         <BookMarked color={colors.savedNoteIcon} size={16} strokeWidth={2.4} />
         <Text style={styles.title}>Lessons for tonight</Text>
-        <Pressable
-          accessibilityHint="Hides these notes for this game. The dots on the map stay."
-          accessibilityLabel="Hide lessons"
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={handleHide}
-          style={({ pressed }) => [styles.close, pressed && styles.closePressed]}
-        >
-          <X color={colors.gameTextMuted} size={16} strokeWidth={2.4} />
-        </Pressable>
-      </View>
-      {entries.map((entry) => (
-        <View key={entry.playerId} style={styles.player}>
-          <FriendNameLink name={entry.playerName} style={styles.name} />
-          <LessonsList lessons={entry.lessons} />
+        <View style={styles.close}>
+          <Chevron color={colors.gameTextMuted} size={18} strokeWidth={2.4} />
         </View>
-      ))}
-      {characterEntries.map((entry) => (
-        <View key={entry.key} style={styles.player}>
-          <CharacterHeading
-            otherRoles={entry.otherRoleIds.map((roleId) => ({
-              id: roleId,
-              role: findNoteRole(roleId, scriptRoles, roleCatalog),
-            }))}
-            role={entry.role}
-          />
-          <LessonsList lessons={entry.lessons} roles={scriptRoles} />
-        </View>
-      ))}
+      </Pressable>
+      {collapsed
+        ? null
+        : entries.map((entry) => (
+            <View key={entry.playerId} style={styles.player}>
+              <FriendNameLink name={entry.playerName} style={styles.name} />
+              <LessonsList lessons={entry.lessons} />
+            </View>
+          ))}
+      {collapsed
+        ? null
+        : characterEntries.map((entry) => (
+            <View key={entry.key} style={styles.player}>
+              <CharacterHeading
+                otherRoles={entry.otherRoleIds.map((roleId) => ({
+                  id: roleId,
+                  role: findNoteRole(roleId, scriptRoles, roleCatalog),
+                }))}
+                role={entry.role}
+              />
+              <LessonsList lessons={entry.lessons} roles={scriptRoles} />
+            </View>
+          ))}
     </View>
   );
 }
@@ -131,8 +129,8 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   close: { alignItems: 'center', height: 32, justifyContent: 'center', width: 32 },
-  closePressed: { opacity: 0.65 },
   header: { alignItems: 'center', flexDirection: 'row', gap: 6 },
+  headerPressed: { opacity: 0.65 },
   mainRole: { alignItems: 'center', flexDirection: 'row', gap: 6 },
   name: { color: colors.gameText, fontSize: 14, fontWeight: '800' },
   otherRole: { alignItems: 'center', flexDirection: 'row', gap: 4 },
