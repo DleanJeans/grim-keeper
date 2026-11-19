@@ -501,6 +501,44 @@ export function rotatePlayerMapPositions(
   );
 }
 
+/**
+ * Moves every token by the same offset. The move stops when the first token reaches the map's
+ * edge, so the group keeps its shape instead of squashing against the edge.
+ */
+export function shiftPlayerMapPositions(
+  players: Player[],
+  mapWidth: number,
+  mapHeight: number,
+  dx: number,
+  dy: number,
+  tokenSize = defaultTokenSize,
+): Record<string, PlayerPosition> {
+  const entries = players.map((player) => {
+    const size = getTokenSize(tokenSize) * getPlayerTokenScale(player, players);
+    return {
+      id: player.id,
+      inset: size / 2,
+      position: getPlayerMapPosition(player, players, mapWidth, mapHeight, tokenSize),
+    };
+  });
+  let allowedDx = dx;
+  let allowedDy = dy;
+  for (const { inset, position } of entries) {
+    allowedDx = Math.min(mapWidth - inset - position.x, Math.max(inset - position.x, allowedDx));
+    allowedDy = Math.min(mapHeight - inset - position.y, Math.max(inset - position.y, allowedDy));
+  }
+  // Tokens already outside the limits must not move the others backwards.
+  allowedDx = dx >= 0 ? Math.max(0, allowedDx) : Math.min(0, allowedDx);
+  allowedDy = dy >= 0 ? Math.max(0, allowedDy) : Math.min(0, allowedDy);
+
+  return Object.fromEntries(
+    entries.map(({ id, position }) => [
+      id,
+      { x: position.x + allowedDx, y: position.y + allowedDy },
+    ]),
+  );
+}
+
 export type TokenArrangement = 'circle' | 'square';
 
 /**

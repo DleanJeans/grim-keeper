@@ -1,3 +1,4 @@
+import { Minus, Plus } from 'lucide-react-native';
 import { useRef } from 'react';
 import {
   type GestureResponderEvent,
@@ -63,6 +64,12 @@ export function DimensionSlider({
   return (
     <View style={styles.row}>
       <Text style={styles.label}>{label}</Text>
+      <StepButton
+        accessibilityLabel={`Decrease ${label.toLowerCase()}`}
+        disabled={value <= min}
+        icon={Minus}
+        onPress={() => onChange(Math.max(min, value - step))}
+      />
       <GestureDetector gesture={drag}>
         <Pressable
           accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
@@ -85,10 +92,41 @@ export function DimensionSlider({
           <View style={[styles.thumb, { left: `${fraction * 100}%` }]} />
         </Pressable>
       </GestureDetector>
+      <StepButton
+        accessibilityLabel={`Increase ${label.toLowerCase()}`}
+        disabled={value >= max}
+        icon={Plus}
+        onPress={() => onChange(Math.min(max, value + step))}
+      />
       <Text selectable style={styles.value}>
         {formatValue(value)}
       </Text>
     </View>
+  );
+}
+
+function StepButton({
+  accessibilityLabel,
+  disabled,
+  icon: Icon,
+  onPress,
+}: {
+  accessibilityLabel: string;
+  disabled: boolean;
+  icon: typeof Minus;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="button"
+      disabled={disabled}
+      hitSlop={4}
+      onPress={onPress}
+      style={({ pressed }) => [styles.stepButton, pressed && styles.stepButtonPressed]}
+    >
+      <Icon color={disabled ? colors.gameBorder : colors.gameText} size={16} strokeWidth={2.7} />
+    </Pressable>
   );
 }
 
@@ -102,8 +140,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   hit: { flex: 1, height: HIT_HEIGHT, justifyContent: 'center' },
-  label: { color: colors.gameTextMuted, fontSize: 12, fontWeight: '800', width: 52 },
-  row: { alignItems: 'center', flexDirection: 'row', gap: 10 },
+  label: { color: colors.gameTextMuted, fontSize: 12, fontWeight: '800', width: 48 },
+  row: { alignItems: 'center', flexDirection: 'row', gap: 6 },
+  stepButton: {
+    alignItems: 'center',
+    borderRadius: 8,
+    height: 30,
+    justifyContent: 'center',
+    width: 30,
+  },
+  stepButtonPressed: { backgroundColor: colors.gameSurfacePressed },
   thumb: {
     pointerEvents: 'none',
     backgroundColor: sliderColors.thumb,

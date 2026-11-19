@@ -123,6 +123,7 @@ export type GameRouteContextValue = {
   handleSetMapWidth: (width: number) => void;
   handleSetMapHeight: (height: number) => void;
   handleRotateTokens: (angleRadians: number) => void;
+  handleShiftTokens: (dx: number, dy: number) => void;
   handleUndoRotation: () => void;
   handleArrangeTokens: (arrangement: TokenArrangement) => void;
   handleResizeTokens: (sizeDelta: number) => void;

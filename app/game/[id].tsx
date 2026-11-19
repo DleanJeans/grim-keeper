@@ -74,6 +74,7 @@ import {
   resolveMapOverlaps,
   rotatePlayerMapPositions,
   scalePlayerMapPositions,
+  shiftPlayerMapPositions,
   type TokenArrangement,
 } from '@/utils/layout-utils';
 import {
@@ -806,6 +807,19 @@ export default function GameRoute() {
     });
   }
 
+  function handleShiftTokens(dx: number, dy: number) {
+    const previousPositions: Record<string, PlayerPosition | undefined> = Object.fromEntries(
+      activeGame.players.map((player) => [player.id, player.position]),
+    );
+    runDayEdit(() => {
+      setLastRotationPositions(previousPositions);
+      updatePlayerPositions(
+        activeGame.id,
+        shiftPlayerMapPositions(activeGame.players, mapWidth, mapHeight, dx, dy, activeTokenSize),
+      );
+    });
+  }
+
   function handleArrangeTokens(arrangement: TokenArrangement) {
     const previousPositions: Record<string, PlayerPosition | undefined> = Object.fromEntries(
       activeGame.players.map((player) => [player.id, player.position]),
@@ -1262,6 +1276,7 @@ export default function GameRoute() {
     handleSetMapWidth,
     handleSetMapHeight,
     handleRotateTokens,
+    handleShiftTokens,
     handleUndoRotation,
     handleArrangeTokens,
     handleResizeTokens,

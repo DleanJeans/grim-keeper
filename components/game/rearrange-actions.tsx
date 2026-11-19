@@ -1,4 +1,16 @@
-import { Circle, Minus, Plus, RotateCcw, RotateCw, Square, Undo2 } from 'lucide-react-native';
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  Circle,
+  Minus,
+  Plus,
+  RotateCcw,
+  RotateCw,
+  Square,
+  Undo2,
+} from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { DimensionSlider } from '@/components/game/dimension-slider';
 import { useGameRouteContext } from '@/components/game/game-route-context';
@@ -17,6 +29,7 @@ import {
   tokenSizeStep,
 } from '@/utils/layout-utils';
 
+const shiftStep = 10;
 const rotationStepRadians = Math.PI / 8;
 
 /** Rearrange mode's controls: sliders for the map size and one bar for everything else. */
@@ -30,6 +43,7 @@ export function RearrangeActions() {
     handleSetMapWidth,
     handleResizeTokens,
     handleRotateTokens,
+    handleShiftTokens,
     handleUndoRotation,
     mapHeight,
     mapWidth,
@@ -55,6 +69,30 @@ export function RearrangeActions() {
           onChange={handleSetMapHeight}
           step={mapHeightStep}
           value={mapHeight}
+        />
+      </View>
+      <View style={styles.bar}>
+        <Text style={styles.shiftTitle}>Move all</Text>
+        <View style={styles.spacer} />
+        <BarButton
+          accessibilityLabel="Shift tokens left"
+          icon={ArrowLeft}
+          onPress={() => handleShiftTokens(-shiftStep, 0)}
+        />
+        <BarButton
+          accessibilityLabel="Shift tokens up"
+          icon={ArrowUp}
+          onPress={() => handleShiftTokens(0, -shiftStep)}
+        />
+        <BarButton
+          accessibilityLabel="Shift tokens down"
+          icon={ArrowDown}
+          onPress={() => handleShiftTokens(0, shiftStep)}
+        />
+        <BarButton
+          accessibilityLabel="Shift tokens right"
+          icon={ArrowRight}
+          onPress={() => handleShiftTokens(shiftStep, 0)}
         />
       </View>
       <View style={styles.bar}>
@@ -167,6 +205,7 @@ const styles = StyleSheet.create({
   },
   root: { alignSelf: 'stretch', gap: 8 },
   sliders: { paddingHorizontal: 4 },
+  shiftTitle: { color: colors.gameTextMuted, fontSize: 12, fontWeight: '800', paddingLeft: 8 },
   spacer: { flex: 1 },
   tokenSize: { alignItems: 'center', minWidth: 40 },
   tokenSizeTitle: { color: colors.gameTextMuted, fontSize: 10, fontWeight: '800' },
