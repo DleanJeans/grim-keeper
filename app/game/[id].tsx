@@ -468,7 +468,7 @@ export default function GameRoute() {
           getAutomaticCharacterTypeCounts(nonTravelerPlayers.length),
         activeGame.activeDay,
         activePhase,
-        { bluffRoleIds: Object.values(activeGame.bluffs ?? {}), catalog: roleCatalog },
+        { catalog: roleCatalog },
       )
     : undefined;
   function getStoredGame() {

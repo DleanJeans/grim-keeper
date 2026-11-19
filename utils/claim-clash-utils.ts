@@ -1,8 +1,6 @@
 import type { CharacterTypeCounts, GamePhase, Player, Role } from '@/types/game';
-import { APP_USER_ID } from '@/utils/app-user';
 import {
   GENERIC_CHARACTER_TYPE_ROLES,
-  getRoleAlignment,
   getRoleAssignmentForDayOrPrevious,
 } from '@/utils/role-utils';
 
@@ -38,8 +36,6 @@ export type PlayerRoleClaim = {
 };
 
 export type ClaimClashes = {
-  /** Claims of a character in the Bluffs row, leaving out your own claims. */
-  bluffClaims: PlayerRoleClaim[];
   doubleClaims: DoubleClaim[];
   /** Claims of a character that isn't on the script (Travellers are fine). */
   offScriptClaims: PlayerRoleClaim[];
@@ -47,15 +43,13 @@ export type ClaimClashes = {
 };
 
 type ClaimClashOptions = {
-  /** Characters in the Bluffs row. */
-  bluffRoleIds?: string[];
   /** All known characters, to tell Travellers apart from off-script claims. */
   catalog?: Role[];
 };
 
 /**
  * Claims that can't all be true: two players on the same character, more Outsiders claimed than
- * the setup could have, a character from the Bluffs row, or one that isn't on the script. A
+ * the setup could have, or one that isn't on the script. A
  * confirmed character wins over that player's claim.
  */
 export function getClaimClashes(
@@ -64,14 +58,12 @@ export function getClaimClashes(
   counts: CharacterTypeCounts,
   day: number,
   phase: GamePhase,
-  { bluffRoleIds = [], catalog = [] }: ClaimClashOptions = {},
+  { catalog = [] }: ClaimClashOptions = {},
 ): ClaimClashes {
-  const bluffs = new Set(bluffRoleIds);
   const scriptRoleIds = new Set(scriptRoles.map((role) => role.id));
   const travellerIds = new Set(
     catalog.filter((role) => role.team?.toLocaleLowerCase() === 'traveller').map((role) => role.id),
   );
-  const bluffClaims: PlayerRoleClaim[] = [];
   const offScriptClaims: PlayerRoleClaim[] = [];
   const roleById = new Map(
     [...GENERIC_CHARACTER_TYPE_ROLES, ...scriptRoles].map((role) => [role.id, role]),
@@ -82,14 +74,9 @@ export function getClaimClashes(
   for (const player of players) {
     if (player.isStoryteller) continue;
     const roleIds = getCurrentRoleIds(player, day, phase);
-    const isEvil = isPlayerEvil(player, day, phase, roleById);
     for (const roleId of roleIds) {
       // "Outsider" and the like say what type someone is, not which character.
       if (roleId.startsWith('generic_')) continue;
-      // Your own claim, or an evil teammate's, of a bluff is using it, not a clash.
-      if (bluffs.has(roleId) && player.id !== APP_USER_ID && !isEvil) {
-        bluffClaims.push({ playerId: player.id, roleId });
-      }
       if (scriptRoleIds.size > 0 && !scriptRoleIds.has(roleId) && !travellerIds.has(roleId)) {
         offScriptClaims.push({ playerId: player.id, roleId });
       }
@@ -118,7 +105,6 @@ export function getClaimClashes(
     modifierRoleIds.reduce((most, roleId) => Math.max(most, OUTSIDER_INCREASES[roleId]), 0);
 
   return {
-    bluffClaims,
     doubleClaims,
     offScriptClaims,
     outsiders:
@@ -126,26 +112,6 @@ export function getClaimClashes(
         ? { claimed: claimedOutsiders, maxSetup, modifierRoleIds, setup: counts.outsiders }
         : undefined,
   };
-}
-
-/** Confirmed as evil: a good character turned evil (`_evil`) or an evil character. */
-function isPlayerEvil(
-  player: Player,
-  day: number,
-  phase: GamePhase,
-  roleById: Map<string, Role>,
-): boolean {
-  const confirmed = getRoleAssignmentForDayOrPrevious(
-    player.roleAssignments,
-    day,
-    'confirm',
-    phase,
-  );
-  return (confirmed?.roleIds ?? []).some((roleId) => {
-    if (roleId.endsWith('_evil')) return true;
-    const role = roleById.get(roleId);
-    return !!role && getRoleAlignment(role) === 'e';
-  });
 }
 
 function getCurrentRoleIds(player: Player, day: number, phase: GamePhase): string[] {

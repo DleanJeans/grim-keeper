@@ -1,5 +1,4 @@
 import type { CharacterTypeCounts, Player, PlayerRoleAssignment, Role } from '@/types/game';
-import { APP_USER_ID } from '@/utils/app-user';
 import { getClaimClashes } from '@/utils/claim-clash-utils';
 
 const now = '2026-10-31T00:00:00.000Z';
@@ -75,7 +74,7 @@ describe('getClaimClashes', () => {
     });
   });
 
-  it('flags claims of a bluff or of a character not on the script, but not Travellers', () => {
+  it('flags claims of a character not on the script, but not Travellers', () => {
     const players = [
       player('a', [assignment('claim', ['chef'])]),
       player('b', [assignment('claim', ['clockmaker'])]),
@@ -86,33 +85,9 @@ describe('getClaimClashes', () => {
       { id: 'gunslinger', name: 'Gunslinger', team: 'traveller' },
     ];
     const clashes = getClaimClashes(players, roles, counts, 1, 'day', {
-      bluffRoleIds: ['chef'],
       catalog,
     });
-    expect(clashes.bluffClaims).toEqual([{ playerId: 'a', roleId: 'chef' }]);
     expect(clashes.offScriptClaims).toEqual([{ playerId: 'b', roleId: 'clockmaker' }]);
-  });
-
-  it('does not flag your own claim of one of your bluffs', () => {
-    const players = [
-      player(APP_USER_ID, [assignment('claim', ['chef'])]),
-      player('b', [assignment('claim', ['empath'])]),
-    ];
-    const clashes = getClaimClashes(players, roles, counts, 1, 'day', {
-      bluffRoleIds: ['chef', 'empath'],
-    });
-    expect(clashes.bluffClaims).toEqual([{ playerId: 'b', roleId: 'empath' }]);
-  });
-
-  it('does not flag an evil teammate claiming one of your bluffs', () => {
-    const players = [
-      player('a', [assignment('claim', ['chef']), assignment('confirm', ['chef_evil'])]),
-      player('b', [assignment('claim', ['empath'])]),
-    ];
-    const clashes = getClaimClashes(players, roles, counts, 1, 'day', {
-      bluffRoleIds: ['chef', 'empath'],
-    });
-    expect(clashes.bluffClaims).toEqual([{ playerId: 'b', roleId: 'empath' }]);
   });
 
   it('does not count a multi-character claim as a double claim', () => {
