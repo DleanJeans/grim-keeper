@@ -38,7 +38,6 @@ import { RoleAssignmentDrawer } from '@/components/game/role-assignment/role-ass
 import { UndoBar } from '@/components/game/undo-bar';
 import { NotFoundScreen } from '@/components/not-found-screen';
 import { ResponsiveContent } from '@/components/responsive-content';
-import { getAutoNomination } from '@/hooks/use-auto-nomination';
 import { useScaledWindowDimensions } from '@/hooks/use-scaled-window-dimensions';
 import { useWebFullscreen } from '@/hooks/use-web-fullscreen';
 import { useDjStore } from '@/store/dj-store';
@@ -597,11 +596,6 @@ export default function GameRoute() {
         return;
       }
 
-      if (getAutoNomination() && selectedPlayerIds[0] && selectedPlayerIds[0] !== playerId) {
-        confirmTracking([selectedPlayerIds[0], playerId]);
-        return;
-      }
-
       setSelectedPlayerIds((currentIds) =>
         currentIds[0] === playerId ? currentIds : [currentIds[0], playerId],
       );
@@ -646,11 +640,7 @@ export default function GameRoute() {
   }
 
   function handleConfirmTracking() {
-    confirmTracking(selectedPlayerIds);
-  }
-
-  function confirmTracking(playerIds: string[]) {
-    if (playerIds.length < 2 || !trackingMode) {
+    if (selectedPlayerIds.length < 2 || !trackingMode) {
       return;
     }
 
@@ -658,7 +648,7 @@ export default function GameRoute() {
       const conversation = addConversation(
         activeGame.id,
         activeGame.activeDay,
-        playerIds,
+        selectedPlayerIds,
         trackingMode,
       );
 

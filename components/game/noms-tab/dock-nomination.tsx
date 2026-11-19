@@ -1,11 +1,10 @@
-import { Pause, Play, X, Zap } from 'lucide-react-native';
+import { Pause, Play, X } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { TrackingConfirmActions } from '@/components/game/interactions-tab/tracking-confirm-actions';
 import { VoteConfirmActions } from '@/components/game/noms-tab/vote-confirm-actions';
 import { Text } from '@/components/text';
-import { setAutoNomination, useAutoNomination } from '@/hooks/use-auto-nomination';
 import { colors } from '@/theme/colors';
 import type { Conversation, Player } from '@/types/game';
 import { getPhaseLabel } from '@/utils/game-phase-utils';
@@ -29,7 +28,6 @@ export function DockNomination() {
     trackingMode,
     votingNominationId,
   } = useGameRouteContext();
-  const autoNomination = useAutoNomination();
 
   if (trackingMode === 'nomination' || votingNominationId) {
     const nomination = findNomination(game.conversations, votingNominationId);
@@ -44,28 +42,6 @@ export function DockNomination() {
               {votingNominationId ? 'Tap who voted on the map' : 'Tap the nominee on the map'}
             </Text>
           </View>
-          {trackingMode === 'nomination' && !votingNominationId ? (
-            <Pressable
-              accessibilityHint="Tapping the nominee on the map nominates right away"
-              accessibilityLabel="Auto nomination"
-              accessibilityRole="switch"
-              accessibilityState={{ checked: autoNomination }}
-              hitSlop={6}
-              onPress={() => setAutoNomination(!autoNomination)}
-              style={({ pressed }) => [
-                styles.pill,
-                autoNomination && styles.pillOn,
-                pressed && styles.pillPressed,
-              ]}
-            >
-              <Zap
-                color={autoNomination ? colors.onPrimary : colors.gameText}
-                size={15}
-                strokeWidth={2.7}
-              />
-              <Text style={[styles.pillLabel, autoNomination && styles.pillLabelOn]}>Auto</Text>
-            </Pressable>
-          ) : null}
           {pausedNomination ? null : (
             <Pressable
               accessibilityHint="Keeps the nomination so you can check other tabs and days"
@@ -164,8 +140,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   pillLabel: { color: colors.gameText, fontSize: 13, fontWeight: '800' },
-  pillLabelOn: { color: colors.onPrimary },
-  pillOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   pillPressed: { backgroundColor: colors.gameSurfacePressed },
   resume: {
     alignItems: 'center',
