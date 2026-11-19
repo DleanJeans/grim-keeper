@@ -511,6 +511,7 @@ export default function CreateRoute() {
           }
           renderItem={({ index, item }) => (
             <SeatListItem
+              firstSeat={appUserStorytells ? 1 : 2}
               index={index}
               item={item}
               movingPlayer={movingPlayer}
@@ -529,6 +530,7 @@ export default function CreateRoute() {
 
 /** A seated player, with the gaps around them while another player is picked to move. */
 function SeatListItem({
+  firstSeat,
   index,
   item,
   movingPlayer,
@@ -537,6 +539,7 @@ function SeatListItem({
   onRemove,
   players,
 }: {
+  firstSeat: number;
   index: number;
   item: DraftPlayer;
   movingPlayer?: DraftPlayer;
@@ -548,8 +551,8 @@ function SeatListItem({
   const showGap = (gapIndex: number) =>
     !!movingPlayer && !isNoOpGap(players, movingPlayer.id, gapIndex);
   const gapLabel = (gapIndex: number) => {
-    const before = gapIndex === 0 ? 'you' : players[gapIndex - 1]?.name;
-    const after = gapIndex === players.length ? 'you' : players[gapIndex]?.name;
+    const before = gapIndex === 0 && firstSeat === 2 ? 'you' : players[gapIndex - 1]?.name;
+    const after = gapIndex === players.length && firstSeat === 2 ? 'you' : players[gapIndex]?.name;
     return `Move ${movingPlayer?.name} between ${before} and ${after}`;
   };
 
@@ -559,7 +562,7 @@ function SeatListItem({
         <PlayerMoveTarget label={gapLabel(0)} onPress={() => onMoveToGap(0)} />
       ) : null}
       <PlayerRow
-        index={index + 1}
+        index={index + firstSeat - 1}
         isMoving={movingPlayer?.id === item.id}
         item={item}
         onPress={onPressPlayer}

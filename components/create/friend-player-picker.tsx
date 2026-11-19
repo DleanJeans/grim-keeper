@@ -12,6 +12,8 @@ import { normalizePlayerName } from '@/utils/conversation-utils';
 import { hasFriendName } from '@/utils/friend-utils';
 
 type FriendPlayerPickerProps = {
+  /** Seat number of the first picked friend: 2 after you, 1 when you are the Storyteller. */
+  firstSeat?: number;
   friends: FriendSummary[];
   /** Creates the friend and returns its id, or undefined when it can't be added. */
   onAddFriend: (name: string) => string | undefined;
@@ -20,6 +22,7 @@ type FriendPlayerPickerProps = {
 };
 
 export function FriendPlayerPicker({
+  firstSeat = 2,
   friends,
   onAddFriend,
   onDone,
@@ -167,7 +170,7 @@ export function FriendPlayerPicker({
                   Choose friends
                 </Text>
                 <Text selectable style={styles.description}>
-                  Select players in clockwise seat order. You are #1.
+                  Select players in clockwise seat order.{firstSeat === 2 ? ' You are #1.' : ''}
                 </Text>
               </View>
               <Pressable
@@ -233,7 +236,7 @@ export function FriendPlayerPicker({
                 visibleFriends.map((friend) => {
                   const selected = selectedFriendIdSet.has(friend.id);
                   const selectionNumber = selected
-                    ? draftSelectedFriendIds.indexOf(friend.id) + 2
+                    ? draftSelectedFriendIds.indexOf(friend.id) + firstSeat
                     : undefined;
 
                   return (

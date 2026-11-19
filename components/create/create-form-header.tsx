@@ -159,6 +159,7 @@ export function CreateFormHeader({
         </Text>
         {!isEditing ? (
           <FriendPlayerPicker
+            firstSeat={fixedPlayerName ? 2 : 1}
             friends={allFriends}
             onAddFriend={onAddFriend}
             onDone={onApplyFriendSelection}
