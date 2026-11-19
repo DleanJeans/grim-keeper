@@ -1,15 +1,20 @@
 import type { GamePhase, Player, Role } from '@/types/game';
+import { getDeathPhase } from '@/utils/game-phase-utils';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 import { getAssignedRoleIdsForDayOrPrevious } from '@/utils/role-utils';
 import type { NightSheet } from '@/utils/script-utils';
 
 export type NightOrderClaimer = {
   dead: boolean;
+  /** Died during this very night, so a Ravenkeeper still wakes. */
+  diedTonight: boolean;
   id: string;
   name: string;
 };
 
 export type NightOrderRow = {
+  /** True when every known claimer is dead, so the character won't be woken tonight. */
+  asleep: boolean;
   claimers: NightOrderClaimer[];
   role: Role;
 };
@@ -39,6 +44,8 @@ export function getNightOrderRows(
       const claimers = claimersByRole.get(roleId) ?? [];
       claimers.push({
         dead: isPlayerCurrentlyDead(player, day, phase),
+        diedTonight:
+          !!player.death && player.death.day === day && getDeathPhase(player.death) === 'night',
         id: player.id,
         name: player.name,
       });
@@ -50,9 +57,20 @@ export function getNightOrderRows(
     .map((role) => ({ index: order.get(normalizeRoleId(role.id)), role }))
     .filter((item): item is { index: number; role: Role } => item.index !== undefined)
     .sort((a, b) => a.index - b.index)
-    .map(({ role }) => ({ claimers: claimersByRole.get(role.id) ?? [], role }));
+    .map(({ role }) => {
+      const claimers = claimersByRole.get(role.id) ?? [];
+      return { asleep: isAsleep(role, claimers), claimers, role };
+    });
 }
 
 function normalizeRoleId(roleId: string) {
   return roleId.toLocaleLowerCase().replace(/[^a-z]/g, '');
+}
+
+/** Unclaimed characters stay awake (unknown); a Ravenkeeper killed tonight still wakes. */
+function isAsleep(role: Role, claimers: NightOrderClaimer[]) {
+  if (claimers.length === 0) return false;
+  const keepsWaking = (claimer: NightOrderClaimer) =>
+    !claimer.dead || (normalizeRoleId(role.id) === 'ravenkeeper' && claimer.diedTonight);
+  return !claimers.some(keepsWaking);
 }

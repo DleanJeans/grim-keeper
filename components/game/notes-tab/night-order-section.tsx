@@ -77,6 +77,7 @@ const styles = StyleSheet.create({
     width: 18,
   },
   roleName: { color: colors.gameText, flex: 1, fontSize: 14, fontWeight: '700', minWidth: 0 },
+  rowAsleep: { opacity: 0.4 },
   row: {
     alignItems: 'center',
     borderBottomColor: colors.gameBorder,
@@ -106,7 +107,7 @@ function NightOrderRowView({
   showClaimers: boolean;
 }) {
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, row.asleep && styles.rowAsleep]}>
       <Text style={styles.index}>{index + 1}</Text>
       <RoleIcon role={row.role} size={22} />
       <Text numberOfLines={1} style={styles.roleName}>

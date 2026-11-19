@@ -42,8 +42,14 @@ describe('getNightOrderRows', () => {
     const rows = getNightOrderRows(roles, players, nightSheet, 2);
     expect(rows.map((row) => row.role.id)).toEqual(['imp', 'fang_gu', 'empath']);
     expect(rows[2].claimers).toEqual([
-      { dead: false, id: 'a', name: 'Ann' },
-      { dead: true, id: 'b', name: 'Bob' },
+      { dead: false, diedTonight: false, id: 'a', name: 'Ann' },
+      { dead: true, diedTonight: true, id: 'b', name: 'Bob' },
     ]);
+  });
+
+  it('marks a character asleep only when all its claimers are dead', () => {
+    const rows = getNightOrderRows(roles, players.slice(1), nightSheet, 3);
+    expect(rows.map((row) => row.asleep)).toEqual([false, false, true]);
+    expect(getNightOrderRows(roles, players, nightSheet, 3)[2].asleep).toBe(false);
   });
 });
