@@ -27,4 +27,17 @@ describe('share preview image', () => {
     expect(view.getUint32(20)).toBe(630);
     expect(png.length).toBeGreaterThan(5000);
   });
+
+  it('draws Vietnamese names that the token serif cannot spell', () => {
+    const png = createSharePreviewPng({
+      ...sharedGame,
+      p: [
+        ['Hiếu', 0, 250, 455],
+        ['Bưu', 1, 455, 250],
+        ['Hoàng', 2, 250, 45],
+      ],
+    });
+
+    expect(png.length).toBeGreaterThan(5000);
+  });
 });

@@ -96,14 +96,28 @@ export function createSharePreviewPng(
     y: mapTop + y * mapScale,
   }));
   const radius = getTokenRadius(sharedGame, mapScale, centers);
+  // The serif lacks many Vietnamese letters, so one such name switches every token to the sans.
+  const tokenFonts = needsSansTokens(sharedGame, fonts) ? { ...fonts, token: fonts.body } : fonts;
   sharedGame.p.forEach(([name, , , , storyteller], index) => {
-    drawToken(canvas, fonts, centers[index], radius, name, !!storyteller);
+    drawToken(canvas, tokenFonts, centers[index], radius, name, !!storyteller);
   });
 
   drawInfo(canvas, fonts, sharedGame, mapLeft + mapWidth + 50, contentTop, contentHeight);
   drawScriptIcons(canvas, scriptIcons, iconsPerRow, SHARE_PREVIEW_HEIGHT - MARGIN - stripHeight);
 
   return encodePng(canvas);
+}
+
+/** True when a name has a Vietnamese letter the token font lacks but the sans font draws. */
+function needsSansTokens(sharedGame: SharedGame, fonts: Fonts) {
+  return sharedGame.p.some(([name]) =>
+    Array.from(name).some(
+      (character) =>
+        /[ăâđêôơưĂÂĐÊÔƠƯ\u1ea0-\u1ef9]/.test(character) &&
+        fonts.token.charToGlyphIndex(character) === 0 &&
+        fonts.body.charToGlyphIndex(character) > 0,
+    ),
+  );
 }
 
 function getFonts(): Fonts {
