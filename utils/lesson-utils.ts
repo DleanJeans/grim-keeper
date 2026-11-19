@@ -112,7 +112,8 @@ export type CharacterLessons = {
 /**
  * Notes from other games that are only about characters (no friend tagged), grouped under the
  * note's first character (in its own role order) that is on this game's script, together with
- * the same other characters. Groups follow script order, then the newest note; notes in a group
+ * the same other characters. A note with `requiredRoleIds` only shows when all of those are on
+ * the script, and is listed under the first of them. Groups follow script order, then the newest note; notes in a group
  * are newest first.
  */
 export function getLessonsForScriptCharacters(
@@ -130,7 +131,12 @@ export function getLessonsForScriptCharacters(
   for (const note of sorted) {
     const playerKey = normalizePlayerName(note.playerName).toLocaleLowerCase();
     if (note.gameId === game.id || (playerKey && playerKey !== appUserKey)) continue;
-    const mainPosition = note.roleIds.findIndex((roleId) => indexById.has(stripTeam(roleId)));
+    const required = note.requiredRoleIds ?? [];
+    if (!required.every((roleId) => indexById.has(stripTeam(roleId)))) continue;
+    const mainPosition = note.roleIds.findIndex(
+      (roleId) =>
+        indexById.has(stripTeam(roleId)) && (required.length === 0 || required.includes(roleId)),
+    );
     if (mainPosition < 0) continue;
     const index = indexById.get(stripTeam(note.roleIds[mainPosition])) as number;
     const otherRoleIds = note.roleIds.filter((_, position) => position !== mainPosition);

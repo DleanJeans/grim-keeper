@@ -145,4 +145,27 @@ describe('getLessonsForScriptCharacters', () => {
       ['spy', [], ['3', '2']],
     ]);
   });
+
+  it('shows a note with required characters only when all of them are on the script', () => {
+    const withRequired = (id: string, roleIds: string[], requiredRoleIds: string[]) => ({
+      ...note(id, '', roleIds),
+      requiredRoleIds,
+    });
+    const groups = getLessonsForScriptCharacters(
+      game,
+      [
+        withRequired('1', ['washerwoman', 'mayor', 'spy'], ['washerwoman', 'spy']),
+        withRequired('2', ['imp', 'mayor', 'spy'], ['mayor', 'spy']),
+        withRequired('3', ['mayor', 'spy'], ['spy']),
+      ],
+      'You',
+    );
+
+    expect(
+      groups.map((group) => [group.role.id, group.lessons.map((lesson) => lesson.id)]),
+    ).toEqual([
+      ['mayor', ['2']],
+      ['spy', ['3']],
+    ]);
+  });
 });

@@ -120,6 +120,11 @@ export type SavedNote = {
   /** Empty string when the note is saved for the app user with no player context. */
   playerName: string;
   roleIds: string[];
+  /**
+   * Characters that must all be on the script for a character-only note to show in "Lessons for
+   * tonight". Unset: the note shows when any of its characters is on the script.
+   */
+  requiredRoleIds?: string[];
   text: string;
   /** Game this note originated from. May be empty for legacy notes pre-dating the unification. */
   gameId: string;

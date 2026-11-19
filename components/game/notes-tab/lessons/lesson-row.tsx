@@ -37,6 +37,7 @@ export function LessonRow({ lesson, roles }: LessonRowProps) {
   const [tagPlayer, setTagPlayer] = useState(true);
   const [error, setError] = useState('');
   const [firstRoleId, setFirstRoleId] = useState(lesson.roleIds[0]);
+  const [requiredRoleIds, setRequiredRoleIds] = useState(lesson.requiredRoleIds ?? []);
   const playerName = lesson.playerName;
   const noteRoles = useMemo(
     () => getNoteRoles(lesson.roleIds, roles ?? [], roleCatalog),
@@ -47,6 +48,7 @@ export function LessonRow({ lesson, roles }: LessonRowProps) {
     setText(lesson.text);
     setTagPlayer(true);
     setFirstRoleId(lesson.roleIds[0]);
+    setRequiredRoleIds(lesson.requiredRoleIds ?? []);
     setError('');
     setEditing(true);
   }
@@ -56,7 +58,14 @@ export function LessonRow({ lesson, roles }: LessonRowProps) {
       tagPlayer || lesson.roleIds.length > 0
         ? [firstRoleId, ...lesson.roleIds.filter((roleId) => roleId !== firstRoleId)]
         : detectRoleIdsInNote(text, roleCatalog);
-    if (updateSavedNote(lesson.id, { playerName: tagPlayer ? playerName : '', roleIds, text })) {
+    if (
+      updateSavedNote(lesson.id, {
+        playerName: tagPlayer ? playerName : '',
+        requiredRoleIds,
+        roleIds,
+        text,
+      })
+    ) {
       setEditing(false);
       return;
     }
@@ -139,6 +148,31 @@ export function LessonRow({ lesson, roles }: LessonRowProps) {
             </View>
           </View>
         ) : null}
+        {noteRoles.length > 1 ? (
+          <View style={styles.firstRole}>
+            <Text style={styles.tagText}>
+              {requiredRoleIds.length > 0
+                ? 'Show only when all selected characters are on the script'
+                : 'Show when any character is on the script. Tap to require:'}
+            </Text>
+            <View style={styles.roleChips}>
+              {noteRoles.map(({ id, role }) => (
+                <RoleChip
+                  accessibilityLabel={`Require ${role?.name ?? id}`}
+                  key={id}
+                  name={role?.name ?? id}
+                  onPress={() =>
+                    setRequiredRoleIds((ids) =>
+                      ids.includes(id) ? ids.filter((value) => value !== id) : [...ids, id],
+                    )
+                  }
+                  role={role}
+                  selected={requiredRoleIds.includes(id)}
+                />
+              ))}
+            </View>
+          </View>
+        ) : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <View style={styles.actions}>
           <Pressable
@@ -210,11 +244,13 @@ function getNoteRoles(roleIds: string[], scriptRoles: Role[], roleCatalog: Role[
 }
 
 function RoleChip({
+  accessibilityLabel,
   name,
   onPress,
   role,
   selected,
 }: {
+  accessibilityLabel?: string;
   name: string;
   onPress: () => void;
   role?: Role;
@@ -222,8 +258,8 @@ function RoleChip({
 }) {
   return (
     <Pressable
-      accessibilityLabel={`List under ${name}`}
-      accessibilityRole="radio"
+      accessibilityLabel={accessibilityLabel ?? `List under ${name}`}
+      accessibilityRole={accessibilityLabel ? 'checkbox' : 'radio'}
       accessibilityState={{ checked: selected }}
       onPress={onPress}
       style={({ pressed }) => [
