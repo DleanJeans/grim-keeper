@@ -303,6 +303,9 @@ export default function GameRoute() {
     if (game.result) {
       setShowRoles(true);
       setActiveRoleDisplayModes(['confirm', 'claim']);
+    } else {
+      // An in-progress game opens on Claims.
+      setActiveRoleDisplayModes(['claim']);
     }
     const requestedDay = Number.parseInt(dayParam ?? '', 10);
     if (Number.isFinite(requestedDay) && requestedDay > 0) {
