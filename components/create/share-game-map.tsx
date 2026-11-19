@@ -41,10 +41,11 @@ export function ShareGameMap({
   const angle = useSharedValue(0);
   const targetAngleRef = useRef(0);
   const size = Math.min(width, MAX_MAP_SIZE);
-  const tokenSize = Math.max(
-    MIN_TOKEN_SIZE,
-    ((sharedGame.t ?? DEFAULT_TOKEN_SIZE) * size) / Math.max(sharedGame.w, sharedGame.h),
-  );
+  // The map keeps the shared game's width and height ratio, so a wide or tall map looks the same.
+  const scale = size / Math.max(sharedGame.w, sharedGame.h);
+  const mapWidth = sharedGame.w * scale;
+  const mapHeight = sharedGame.h * scale;
+  const tokenSize = Math.max(MIN_TOKEN_SIZE, (sharedGame.t ?? DEFAULT_TOKEN_SIZE) * scale);
 
   useEffect(() => {
     if (selectedIndex === undefined) {
@@ -78,14 +79,15 @@ export function ShareGameMap({
   return (
     <View onLayout={handleLayout} style={styles.wrapper}>
       {size > 0 ? (
-        <View style={[styles.map, { height: size, width: size }]}>
+        <View style={[styles.map, { height: mapHeight, width: mapWidth }]}>
           {sharedGame.p.map((player, index) => (
             <ShareMapToken
               angle={angle}
               dimmed={selectedIndex !== undefined && index !== selectedIndex}
               index={index}
               key={`${player[0]}-${player[1]}`}
-              mapSize={size}
+              mapHeight={mapHeight}
+              mapWidth={mapWidth}
               name={player[0]}
               onSelect={onSelect}
               pickable={pickableIndexes.includes(index)}
@@ -106,7 +108,8 @@ type ShareMapTokenProps = {
   angle: SharedValue<number>;
   dimmed: boolean;
   index: number;
-  mapSize: number;
+  mapHeight: number;
+  mapWidth: number;
   name: string;
   onSelect: (index: number) => void;
   pickable: boolean;
@@ -121,7 +124,8 @@ function ShareMapToken({
   angle,
   dimmed,
   index,
-  mapSize,
+  mapHeight,
+  mapWidth,
   name,
   onSelect,
   pickable,
@@ -132,18 +136,22 @@ function ShareMapToken({
   v,
 }: ShareMapTokenProps) {
   const half = tokenSize / 2;
-  const limit = mapSize - tokenSize;
+  const limitX = Math.max(0, mapWidth - tokenSize);
+  const limitY = Math.max(0, mapHeight - tokenSize);
   // Each token travels round the map's center, so names stay upright while the map turns.
   const positionStyle = useAnimatedStyle(() => {
     const radians = (angle.value * Math.PI) / 180;
-    const dx = (u - 0.5) * mapSize;
-    const dy = (v - 0.5) * mapSize;
-    const x = mapSize / 2 + dx * Math.cos(radians) - dy * Math.sin(radians) - half;
-    const y = mapSize / 2 + dx * Math.sin(radians) + dy * Math.cos(radians) - half;
+    // Turn in map ratios (like the game does after joining), then stretch onto the map's shape.
+    const du = u - 0.5;
+    const dv = v - 0.5;
+    const turnedU = 0.5 + du * Math.cos(radians) - dv * Math.sin(radians);
+    const turnedV = 0.5 + du * Math.sin(radians) + dv * Math.cos(radians);
+    const x = turnedU * mapWidth - half;
+    const y = turnedV * mapHeight - half;
 
     return {
-      left: Math.min(limit, Math.max(0, x)),
-      top: Math.min(limit, Math.max(0, y)),
+      left: Math.min(limitX, Math.max(0, x)),
+      top: Math.min(limitY, Math.max(0, y)),
       transform: [{ scale: selected ? SELECTED_SCALE : 1 }],
     };
   });
