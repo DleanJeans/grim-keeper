@@ -4,21 +4,36 @@ import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 
 export type WinRateScope = 'all' | 'game';
+export type WinRateRange = 'all' | 'script';
 
-const SCOPE_OPTIONS: Array<{ description: string; label: string; scope: WinRateScope }> = [
+type ScopeOption<T extends string> = { description: string; label: string; scope: T };
+
+export const WHO_OPTIONS: Array<ScopeOption<WinRateScope>> = [
   { description: 'only the players in this game', label: 'This game', scope: 'game' },
   { description: 'every friend', label: 'All friends', scope: 'all' },
 ];
 
-type ScriptWinRateScopeProps = {
-  onChange: (scope: WinRateScope) => void;
-  scope: WinRateScope;
+export const RANGE_OPTIONS: Array<ScopeOption<WinRateRange>> = [
+  { description: 'only games on this script', label: 'This script', scope: 'script' },
+  { description: 'games on every script', label: 'All scripts', scope: 'all' },
+];
+
+type ScriptWinRateScopeProps<T extends string> = {
+  label: string;
+  onChange: (scope: T) => void;
+  options: Array<ScopeOption<T>>;
+  scope: T;
 };
 
-export function ScriptWinRateScope({ onChange, scope }: ScriptWinRateScopeProps) {
+export function ScriptWinRateScope<T extends string>({
+  label,
+  onChange,
+  options,
+  scope,
+}: ScriptWinRateScopeProps<T>) {
   return (
-    <View accessibilityLabel="Choose who to show" accessibilityRole="toolbar" style={styles.row}>
-      {SCOPE_OPTIONS.map((option) => (
+    <View accessibilityLabel={label} accessibilityRole="toolbar" style={styles.row}>
+      {options.map((option) => (
         <ScopeButton
           accessibilityLabel={`Show ${option.description}`}
           key={option.scope}

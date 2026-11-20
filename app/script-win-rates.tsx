@@ -6,7 +6,13 @@ import { FriendSortControls } from '@/components/friends/friend-sort-controls';
 import { NotFoundScreen } from '@/components/not-found-screen';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { GamePlayersWinRates } from '@/components/scripts/game-players-win-rates';
-import { ScriptWinRateScope, type WinRateScope } from '@/components/scripts/script-win-rate-scope';
+import {
+  RANGE_OPTIONS,
+  ScriptWinRateScope,
+  WHO_OPTIONS,
+  type WinRateRange,
+  type WinRateScope,
+} from '@/components/scripts/script-win-rate-scope';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
 import { useGameStore } from '@/store/game-store';
@@ -37,6 +43,7 @@ export default function ScriptWinRatesRoute() {
   const savedNotes = useGameStore((state) => state.savedNotes);
   const game = gameId ? allGames.find((item) => item.id === gameId) : undefined;
   const [scope, setScope] = useState<WinRateScope>(game ? 'game' : 'all');
+  const [range, setRange] = useState<WinRateRange>('script');
   const [sort, setSort] = useState<FriendSort>('winRate');
   // Only a handful of people sit at one table, so the game scope shows everyone with a rate.
   const [minGames, setMinGames] = useState(game ? 1 : DEFAULT_SCRIPT_MIN_GAMES);
@@ -52,21 +59,23 @@ export default function ScriptWinRatesRoute() {
     () => getScriptFamilyNames(scriptId, allGames, scripts),
     [allGames, scriptId, scripts],
   );
+  // "All scripts" counts every saved game for the rows, not only this script's.
+  const rankedGames = range === 'all' ? allGames : games;
   const ratedGames = games.filter((item) => isDecidedResult(item.result)).length;
   const gamePlayerIds = useMemo(() => (game ? getGamePlayerIds(game) : null), [game]);
   const ranking = useMemo(() => {
-    const scriptFriends = getFriendSummaries(games, storedFriends, appUserName).filter(
+    const scriptFriends = getFriendSummaries(rankedGames, storedFriends, appUserName).filter(
       (friend) => friend.gamesPlayed > 0,
     );
     // Your own row joins the ranking, so you can see where you stand.
     const you: FriendSummary = {
       createdAt: '',
-      gamesPlayed: games.length,
+      gamesPlayed: rankedGames.length,
       gamesStorytold: 0,
       id: APP_USER_ID,
       name: normalizePlayerName(appUserName) || 'You',
     };
-    const everyone = games.length > 0 ? [...scriptFriends, you] : scriptFriends;
+    const everyone = rankedGames.length > 0 ? [...scriptFriends, you] : scriptFriends;
     const people =
       scope === 'game' && gamePlayerIds
         ? everyone.filter((friend) => gamePlayerIds.has(friend.id))
@@ -76,10 +85,10 @@ export default function ScriptWinRatesRoute() {
       return { friends: sortFriendSummaries(people, savedNotes), hiddenCount: 0 };
     }
 
-    const result = rankFriendsByWinRate(people, games, sort, minGames);
+    const result = rankFriendsByWinRate(people, rankedGames, sort, minGames);
     const youHidden = people.includes(you) && you.gamesPlayed < Math.max(1, minGames);
     return { ...result, hiddenCount: result.hiddenCount - (youHidden ? 1 : 0) };
-  }, [appUserName, gamePlayerIds, games, minGames, savedNotes, scope, sort, storedFriends]);
+  }, [appUserName, gamePlayerIds, minGames, rankedGames, savedNotes, scope, sort, storedFriends]);
   const unratedPlayers = useMemo(() => {
     if (scope !== 'game' || !game) return [];
     return game.players
@@ -87,11 +96,11 @@ export default function ScriptWinRatesRoute() {
         (player) =>
           !player.isStoryteller &&
           player.id !== APP_USER_ID &&
-          getFriendStats(games, player.id).completedGames === 0,
+          getFriendStats(rankedGames, player.id).completedGames === 0,
       )
       .map((player) => normalizePlayerName(player.name))
       .filter(Boolean);
-  }, [game, games, scope]);
+  }, [game, rankedGames, scope]);
 
   if (!scriptName) {
     return <NotFoundScreen message="Script not found." title="Script not found" />;
@@ -121,12 +130,27 @@ export default function ScriptWinRatesRoute() {
               Also counts games on {otherScriptNames.join(', ')}.
             </Text>
           ) : null}
-          {game ? <ScriptWinRateScope onChange={setScope} scope={scope} /> : null}
+          {game ? (
+            <ScriptWinRateScope
+              label="Choose who to show"
+              onChange={setScope}
+              options={WHO_OPTIONS}
+              scope={scope}
+            />
+          ) : null}
           {scope === 'game' && gamePlayerIds ? (
             <GamePlayersWinRates
               allGames={allGames}
               playerIds={gamePlayerIds}
               scriptGames={games}
+            />
+          ) : null}
+          {scope === 'game' ? (
+            <ScriptWinRateScope
+              label="Choose which scripts to count"
+              onChange={setRange}
+              options={RANGE_OPTIONS}
+              scope={range}
             />
           ) : null}
           <FriendSortControls
@@ -138,7 +162,7 @@ export default function ScriptWinRatesRoute() {
           <View style={styles.list}>
             {ranking.friends.length === 0 ? (
               <Text selectable style={styles.emptyText}>
-                {games.length === 0
+                {rankedGames.length === 0
                   ? 'No games on this script yet.'
                   : 'Nobody has a rate for this view yet.'}
               </Text>
@@ -146,7 +170,7 @@ export default function ScriptWinRatesRoute() {
               ranking.friends.map((friend, index) => (
                 <FriendRow
                   friend={friend}
-                  games={games}
+                  games={rankedGames}
                   isYou={friend.id === APP_USER_ID}
                   key={friend.id}
                   rank={index + 1}
@@ -160,7 +184,8 @@ export default function ScriptWinRatesRoute() {
             ) : null}
             {unratedPlayers.length > 0 ? (
               <Text selectable style={styles.noteText}>
-                No finished games on this script yet: {unratedPlayers.join(', ')}.
+                No finished games{range === 'all' ? '' : ' on this script'} yet:{' '}
+                {unratedPlayers.join(', ')}.
               </Text>
             ) : null}
           </View>
