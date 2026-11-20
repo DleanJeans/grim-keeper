@@ -6,6 +6,7 @@ import { ScaledModal } from '@/components/scaled-modal';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Game, GameResult } from '@/types/game';
+import { getResultLabel } from '@/utils/game-utils';
 import { detectRoleIdsInNote } from '@/utils/saved-note-utils';
 
 type GameResultDialogProps = {
@@ -74,7 +75,9 @@ export function GameResultDialog({
                 pressed && styles.actionPressed,
               ]}
             >
-              <Text style={[styles.actionText, styles.successActionText]}>Won</Text>
+              <Text style={[styles.actionText, styles.successActionText]}>
+                {getResultLabel(game, 'won')}
+              </Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -87,7 +90,9 @@ export function GameResultDialog({
                 pressed && styles.actionPressed,
               ]}
             >
-              <Text style={[styles.actionText, styles.destructiveActionText]}>Lost</Text>
+              <Text style={[styles.actionText, styles.destructiveActionText]}>
+                {getResultLabel(game, 'lost')}
+              </Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"

@@ -6,6 +6,7 @@ import { GameResultDialog } from '@/components/game/game-result-dialog';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Game, GameResult } from '@/types/game';
+import { getResultLabel } from '@/utils/game-utils';
 
 type GameResultButtonProps = {
   game: Game;
@@ -32,13 +33,15 @@ export function GameResultButton({
         : result === 'draw'
           ? Handshake
           : Trophy;
-  const label = result === undefined ? 'Result' : capitalize(result);
+  const label = result === undefined ? 'Result' : getResultLabel(game, result);
 
   return (
     <>
       <Pressable
         accessibilityHint="Choose won, lost, draw, or clear the game result, and note a lesson"
-        accessibilityLabel={result ? `Game result: ${result}` : 'Set game result'}
+        accessibilityLabel={
+          result ? `Game result: ${getResultLabel(game, result)}` : 'Set game result'
+        }
         accessibilityRole="button"
         hitSlop={8}
         onPress={() => setOpen(true)}
@@ -85,10 +88,6 @@ export function GameResultButton({
       ) : null}
     </>
   );
-}
-
-function capitalize(value: GameResult) {
-  return value[0].toLocaleUpperCase() + value.slice(1);
 }
 
 const styles = StyleSheet.create({

@@ -110,7 +110,7 @@ export function getGamesWithRoleInPlay(games: Game[], roleId: string): Game[] {
 
 function getPlayerGames(games: Game[], playerId: string) {
   return playerId === APP_USER_ID
-    ? games
+    ? games.filter((game) => !isAppUserStoryteller(game))
     : games.filter((game) => game.players.some((player) => player.id === playerId));
 }
 
@@ -338,21 +338,31 @@ function getGameAlignment(game: Game, playerId: string) {
 
 /** Which team won, from the app user's alignment and result. Unknown without either. */
 export function getWinningTeam(game: Game): 'good' | 'evil' | undefined {
+  if (!isDecidedResult(game.result)) return undefined;
+  if (isAppUserStoryteller(game)) return game.result === 'won' ? 'good' : 'evil';
+
   const alignment = getGameAlignment(game, APP_USER_ID);
-  if (!isDecidedResult(game.result) || !alignment) return undefined;
+  if (!alignment) return undefined;
 
   const userWon = game.result === 'won';
   return (alignment === 'g') === userWon ? 'good' : 'evil';
 }
 
-/** A friend's result in a game, from their side. Games they storytold have no result. */
+/** A player's result in a game, from their side. Games they storytold have no result. */
 export function getGameResultForPlayer(game: Game, playerId: string): GameResult | undefined {
-  if (game.result === undefined || playerId === APP_USER_ID) {
-    return game.result;
+  if (game.result === undefined || isStorytellerInGame(game, playerId)) {
+    return undefined;
   }
 
-  if (isStorytellerInGame(game, playerId)) {
-    return undefined;
+  if (isAppUserStoryteller(game)) {
+    // The result names the winning team: won = Good, lost = Evil.
+    const alignment = getGameAlignment(game, playerId);
+    if (!alignment || game.result === 'draw') return alignment ? game.result : undefined;
+    return (alignment === 'g') === (game.result === 'won') ? 'won' : 'lost';
+  }
+
+  if (playerId === APP_USER_ID) {
+    return game.result;
   }
 
   const playerAlignment = getGameAlignment(game, playerId);
@@ -362,6 +372,18 @@ export function getGameResultForPlayer(game: Game, playerId: string): GameResult
   }
 
   return game.result === 'draw' ? 'draw' : game.result === 'won' ? 'lost' : 'won';
+}
+
+/** Whether the app user ran this game as Storyteller, which makes the result a winning team. */
+export function isAppUserStoryteller(game: Game) {
+  return isStorytellerInGame(game, APP_USER_ID);
+}
+
+/** The label of a result: Won / Lost, or Good won / Evil won when the app user is Storyteller. */
+export function getResultLabel(game: Game, result: GameResult) {
+  if (result === 'draw') return 'Draw';
+  if (isAppUserStoryteller(game)) return result === 'won' ? 'Good won' : 'Evil won';
+  return result === 'won' ? 'Won' : 'Lost';
 }
 
 function isStorytellerInGame(game: Game, playerId: string) {
@@ -410,7 +432,11 @@ export function getHeadToHeadStats(games: Game[], friendId: string): HeadToHeadS
   };
 
   for (const game of games) {
-    if (friendId === APP_USER_ID || !game.players.some((player) => player.id === friendId)) {
+    if (
+      friendId === APP_USER_ID ||
+      isAppUserStoryteller(game) ||
+      !game.players.some((player) => player.id === friendId)
+    ) {
       continue;
     }
     const friendAlignment = getGameAlignment(game, friendId);

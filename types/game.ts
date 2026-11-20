@@ -7,7 +7,10 @@ export type PlayerPosition = {
 
 export type RoleDisplayMode = 'all' | 'claim' | 'confirm' | 'guess' | 'rumor';
 
-/** 'draw' marks a game that doesn't count for win rates (storyteller mistake, experiment). */
+/**
+ * 'won' / 'lost' are from the app user's side. When the app user is the Storyteller, 'won' means
+ * Good won and 'lost' means Evil won.
+ * 'draw' marks a game that doesn't count for win rates (storyteller mistake, experiment). */
 export type GameResult = 'draw' | 'lost' | 'won';
 
 export type GamePhase = 'day' | 'night';

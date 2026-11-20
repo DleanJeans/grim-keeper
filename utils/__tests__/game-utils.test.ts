@@ -10,7 +10,9 @@ import {
   getGamesWithRoleInPlay,
   getHeadToHeadStats,
   getLastDayWithData,
+  getResultLabel,
   getResumeGame,
+  getWinningTeam,
 } from '@/utils/game-utils';
 import { APP_USER_ID } from '@/utils/object-id';
 
@@ -378,6 +380,56 @@ describe('storytold games', () => {
     expect(stats.completedGames).toBe(1);
     expect(stats.wins).toBe(0);
     expect(stats.winRate).toBe(0);
+  });
+});
+
+describe('games the app user storytold', () => {
+  function makeStorytoldGame(result: Game['result']) {
+    const confirm = (roleId: string) => [
+      { day: 1, kind: 'confirm' as const, roleIds: [roleId], updatedAt: '' },
+    ];
+    return makeGame({
+      id: 'told',
+      players: [
+        makePlayer({ id: APP_USER_ID, isStoryteller: true }),
+        makePlayer({ id: 'good', roleAssignments: confirm('townsfolk-role'), seat: 1 }),
+        makePlayer({ id: 'evil', roleAssignments: confirm('demon-role'), seat: 2 }),
+      ],
+      result,
+      script: {
+        id: 's',
+        name: 's',
+        roles: [
+          { id: 'townsfolk-role', name: 'T', team: 'townsfolk' },
+          { id: 'demon-role', name: 'D', team: 'demon' },
+        ],
+        updatedAt: '',
+        version: '1',
+      },
+    });
+  }
+
+  it('reads won as Good won and lost as Evil won', () => {
+    expect(getResultLabel(makeStorytoldGame('won'), 'won')).toBe('Good won');
+    expect(getResultLabel(makeStorytoldGame('won'), 'lost')).toBe('Evil won');
+    expect(getResultLabel(makeGame({ result: 'won' }), 'won')).toBe('Won');
+    expect(getWinningTeam(makeStorytoldGame('lost'))).toBe('evil');
+  });
+
+  it('gives each seated player the result of their team', () => {
+    const goodWon = makeStorytoldGame('won');
+    expect(getGameResultForPlayer(goodWon, 'good')).toBe('won');
+    expect(getGameResultForPlayer(goodWon, 'evil')).toBe('lost');
+    expect(getGameResultForPlayer(makeStorytoldGame('lost'), 'evil')).toBe('won');
+    expect(getGameResultForPlayer(makeStorytoldGame('draw'), 'evil')).toBe('draw');
+    expect(getGameResultForPlayer(goodWon, APP_USER_ID)).toBeUndefined();
+  });
+
+  it('leaves them out of the app user stats', () => {
+    expect(getGameStats([makeStorytoldGame('won')])).toMatchObject({
+      completedGames: 0,
+      totalGames: 0,
+    });
   });
 });
 

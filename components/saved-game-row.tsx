@@ -8,7 +8,7 @@ import { SavedGameRolesRow } from '@/components/saved-game-roles-row';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Game, GameResult } from '@/types/game';
-import { getLastDayWithData } from '@/utils/game-utils';
+import { getLastDayWithData, getResultLabel } from '@/utils/game-utils';
 import { requestWebFullscreen } from '@/utils/web-fullscreen';
 
 type SavedGameRowProps = {
@@ -29,7 +29,7 @@ export function SavedGameRow({ game, onDelete }: SavedGameRowProps) {
     <View style={[styles.container, resultStyles.container]}>
       <View style={styles.row}>
         <Pressable
-          accessibilityLabel={`Open ${gameTitle}, ${playerCountLabel}, ${dayCountLabel}${game.result ? `, ${formatResult(game.result)}` : ''}`}
+          accessibilityLabel={`Open ${gameTitle}, ${playerCountLabel}, ${dayCountLabel}${game.result ? `, ${getResultLabel(game, game.result)}` : ''}`}
           accessibilityRole="button"
           accessibilityHint={onDelete ? 'Hold to delete' : undefined}
           onLongPress={onDelete ? () => onDelete(game.id) : undefined}
@@ -47,7 +47,7 @@ export function SavedGameRow({ game, onDelete }: SavedGameRowProps) {
             <View style={styles.titleGroup}>
               <View style={styles.titleRow}>
                 <Text style={styles.title}>{gameTitle}</Text>
-                {game.result ? <GameResultBadge result={game.result} /> : null}
+                {game.result ? <GameResultBadge game={game} result={game.result} /> : null}
               </View>
               {game.script ? (
                 <Text style={styles.date}>{formatGameDate(game.createdAt)}</Text>
@@ -111,7 +111,7 @@ export function SavedGameRow({ game, onDelete }: SavedGameRowProps) {
   );
 }
 
-function GameResultBadge({ result }: { result: GameResult }) {
+function GameResultBadge({ game, result }: { game: Game; result: GameResult }) {
   return (
     <View
       accessibilityLabel={`Game result: ${result}`}
@@ -134,7 +134,7 @@ function GameResultBadge({ result }: { result: GameResult }) {
               : styles.drawBadgeLabel,
         ]}
       >
-        {formatResult(result)}
+        {getResultLabel(game, result)}
       </Text>
     </View>
   );
@@ -162,10 +162,6 @@ function getResultStyles(result?: GameResult) {
     divider: null,
     surface: styles.surface,
   };
-}
-
-function formatResult(result: GameResult) {
-  return `${result[0].toLocaleUpperCase()}${result.slice(1)}`;
 }
 
 function formatGameDate(createdAt: string) {
