@@ -6,6 +6,7 @@ import { DjSettingsCard } from '@/components/dj/dj-settings-card';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { AppVersionInfo } from '@/components/settings/app-version-info';
 import { DataTransferCard } from '@/components/settings/data-transfer-card';
+import { GoogleSyncCard } from '@/components/settings/google-sync-card';
 import { NightStartSettingsCard } from '@/components/settings/night-start-settings-card';
 import { SizeSettingsCard } from '@/components/settings/size-settings-card';
 import { ThemeSettingsCard } from '@/components/settings/theme-settings-card';
@@ -54,6 +55,7 @@ export default function SettingsRoute() {
           <SizeSettingsCard />
           <DjSettingsCard />
           <NightStartSettingsCard />
+          <GoogleSyncCard />
           <DataTransferCard />
           <Pressable
             accessibilityRole="button"

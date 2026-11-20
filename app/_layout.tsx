@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { AutoSync } from '@/components/auto-sync';
 import { AppDialogProvider } from '@/components/dialog/app-dialog-provider';
 import { GameHeader } from '@/components/game-header';
 import { HiddenNavigationBar } from '@/components/hidden-navigation-bar';
@@ -96,6 +97,7 @@ export default function RootLayout() {
           <AppDialogProvider>
             <PwaHead />
             <OfficialScriptsLoader />
+            <AutoSync />
             <Stack
               screenOptions={{
                 contentStyle: { backgroundColor: colors.background },
@@ -136,6 +138,10 @@ export default function RootLayout() {
               <Stack.Screen name="join" options={{ title: 'Join game' }} />
               <Stack.Screen name="dj/[id]" options={{ title: 'DJ' }} />
               <Stack.Screen name="dj-callback" options={{ headerShown: false, title: 'Spotify' }} />
+              <Stack.Screen
+                name="google-callback"
+                options={{ headerShown: false, title: 'Google' }}
+              />
               <Stack.Screen
                 name="save-note-for-future"
                 options={{ title: 'Save Note for Future' }}
