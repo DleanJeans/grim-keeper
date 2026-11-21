@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { StyleSheet, Switch, View } from 'react-native';
 
 import { Text } from '@/components/text';
-import { isAutoFullscreenEnabled, setAutoFullscreenEnabled } from '@/utils/web-fullscreen';
 import { colors } from '@/theme/colors';
+import { isAutoFullscreenEnabled, setAutoFullscreenEnabled } from '@/utils/web-fullscreen';
 
 export function AutoFullscreenSettingsCard() {
   const [enabled, setEnabled] = useState(isAutoFullscreenEnabled);
