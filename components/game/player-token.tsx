@@ -20,6 +20,7 @@ import { useUiScale } from '@/theme/display-scale';
 import type { Player, PlayerPosition, Role } from '@/types/game';
 import { APP_USER_ID } from '@/utils/app-user';
 import { type ClaimOrbitObstacle, getClaimOrbitLayout } from '@/utils/claim-orbit-utils';
+import { getDrunkTokenOffset } from '@/utils/drunk-token-utils';
 import { formatBirthYearShort } from '@/utils/friend-info-utils';
 import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
 import { isTravelerRole } from '@/utils/role-utils';
@@ -41,6 +42,8 @@ const APP_USER_TOKEN_LABEL = 'You';
 const PICTURE_RATIO = 0.5;
 const PICTURE_LIFT_RATIO = 0.06;
 const CLAIM_TOKEN_BORDER_WIDTH = 1;
+// The "drunk as" token, as a share of the player's token size.
+const DRUNK_TOKEN_RATIO = 0.5;
 const EMPTY_OTHER_TOKEN_POSITIONS: OtherTokenPosition[] = [];
 const badgeColors = colors.playerTokenEdgeBadge;
 
@@ -54,6 +57,8 @@ type PlayerTokenProps = {
   mapScale: number;
   mapWidth: number;
   confirmedRoleIds?: string[];
+  /** Character a confirmed Drunk believes they are, shown as a small token toward the map center. */
+  drunkAsRole?: Role;
   deadVoteAvailable?: boolean;
   /** When they died, e.g. N2 or D4; shown as a badge at the bottom left. */
   deathLabel?: string;
@@ -100,6 +105,7 @@ type PlayerTokenProps = {
 export function PlayerToken({
   claimRoles,
   confirmedRoleIds,
+  drunkAsRole,
   deadVoteAvailable,
   deathLabel,
   deathKind,
@@ -189,6 +195,16 @@ export function PlayerToken({
         positions: flippedClaimLayout.positions.map((claim) => ({ x: claim.x, y: -claim.y })),
         size: flippedClaimLayout.size,
       }
+    : undefined;
+  const drunkSize = tokenSize * DRUNK_TOKEN_RATIO;
+  const drunkOffset = drunkAsRole
+    ? getDrunkTokenOffset({
+        center: { x: mapWidth / 2, y: mapHeight / 2 },
+        others: otherTokenPositions.map((other) => ({ ...other, size: other.size ?? tokenSize })),
+        position,
+        size: drunkSize,
+        tokenSize,
+      })
     : undefined;
   const isAppUser = player.id === APP_USER_ID;
   const hasClaimTokens = (claimLayout?.positions.length ?? 0) > 0;
@@ -413,6 +429,14 @@ export function PlayerToken({
               />
             ))
           : null}
+        {drunkAsRole && drunkOffset ? (
+          <PlayerTokenClaim
+            left={tokenSize / 2 + drunkOffset.x - drunkSize / 2}
+            role={drunkAsRole}
+            size={drunkSize}
+            top={tokenSize / 2 + drunkOffset.y - drunkSize / 2}
+          />
+        ) : null}
         {suspicion ? (
           <View
             style={[

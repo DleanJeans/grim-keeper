@@ -623,11 +623,21 @@ function PlayerTokenForMap({
     ? getRoleAssignmentForDayOrPrevious(player.roleAssignments, activeDay, 'claim', activePhase)
     : undefined;
 
+  const confirm = showRoles
+    ? getRoleAssignmentForDayOrPrevious(player.roleAssignments, activeDay, 'confirm', activePhase)
+    : undefined;
+  // A confirmed Drunk believes they are the character they claim.
+  const drunkAsRoleId = confirm?.roleIds.includes('drunk') ? claim?.roleIds[0] : undefined;
+  const drunkAsRole = drunkAsRoleId ? getRolesByIds([drunkAsRoleId], gameRoles)[0] : undefined;
+
   return (
     <PlayerToken
+      drunkAsRole={drunkAsRole}
       // A single claim already shows as the token's background, so only several get claim tokens.
       claimRoles={
-        claim && claim.roleIds.length > 1 ? getRolesByIds(claim.roleIds, gameRoles) : undefined
+        claim && claim.roleIds.length > 1 && !drunkAsRole
+          ? getRolesByIds(claim.roleIds, gameRoles)
+          : undefined
       }
       confirmedRoleIds={roleDisplay.kind === 'confirm' ? roleDisplay.roleIds : undefined}
       dimmed={dimmed}
