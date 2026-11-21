@@ -17,6 +17,7 @@ import { useTokenInfoStore } from '@/store/token-info-store';
 import { colors } from '@/theme/colors';
 import type { Conversation, Player, PlayerPosition, Role, RoleDisplayMode } from '@/types/game';
 import { buildConversationGroupRepeats, getConversationGroupKey } from '@/utils/conversation-utils';
+import { getDrunkAsRoleId } from '@/utils/drunk-token-utils';
 import { getFriendInfoLookup } from '@/utils/friend-info-utils';
 import { getFriendPictureLookup } from '@/utils/friend-picture-utils';
 import { type GamePhasePosition, getDeathPhase } from '@/utils/game-phase-utils';
@@ -623,11 +624,10 @@ function PlayerTokenForMap({
     ? getRoleAssignmentForDayOrPrevious(player.roleAssignments, activeDay, 'claim', activePhase)
     : undefined;
 
-  const confirm = showRoles
-    ? getRoleAssignmentForDayOrPrevious(player.roleAssignments, activeDay, 'confirm', activePhase)
+  // A confirmed Drunk believes they are the character they were confirmed or claimed as before.
+  const drunkAsRoleId = showRoles
+    ? getDrunkAsRoleId(player.roleAssignments, activeDay, activePhase)
     : undefined;
-  // A confirmed Drunk believes they are the character they claim.
-  const drunkAsRoleId = confirm?.roleIds.includes('drunk') ? claim?.roleIds[0] : undefined;
   const drunkAsRole = drunkAsRoleId ? getRolesByIds([drunkAsRoleId], gameRoles)[0] : undefined;
 
   return (

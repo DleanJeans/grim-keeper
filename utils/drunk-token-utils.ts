@@ -1,4 +1,5 @@
-import type { PlayerPosition } from '@/types/game';
+import type { GamePhase, PlayerPosition, PlayerRoleAssignment } from '@/types/game';
+import { getEventPhaseIndex } from '@/utils/game-phase-utils';
 
 type Circle = { size: number; x: number; y: number };
 
@@ -47,4 +48,39 @@ export function getDrunkTokenOffset({
     }
   }
   return best;
+}
+
+/**
+ * The character a confirmed Drunk believes they are: the character they were confirmed as before
+ * the Drunk confirmation, else their latest claim. Undefined unless the latest confirm so far
+ * is the Drunk.
+ */
+export function getDrunkAsRoleId(
+  assignments: PlayerRoleAssignment[] | undefined,
+  day: number,
+  phase: GamePhase,
+): string | undefined {
+  const activeIndex = getEventPhaseIndex(day, phase);
+  const upToNow = (assignments ?? [])
+    .filter(
+      (assignment) => getEventPhaseIndex(assignment.day, assignment.phase ?? 'day') <= activeIndex,
+    )
+    .sort(
+      (a, b) =>
+        getEventPhaseIndex(a.day, a.phase ?? 'day') - getEventPhaseIndex(b.day, b.phase ?? 'day'),
+    );
+  const confirms = upToNow.filter((assignment) => assignment.kind === 'confirm');
+  const latest = confirms[confirms.length - 1];
+  if (!latest?.roleIds.includes('drunk')) {
+    return undefined;
+  }
+  const earlier = confirms
+    .slice(0, -1)
+    .reverse()
+    .find((assignment) => assignment.roleIds.length > 0 && !assignment.roleIds.includes('drunk'));
+  if (earlier) {
+    return earlier.roleIds[0];
+  }
+  const claims = upToNow.filter((assignment) => assignment.kind === 'claim');
+  return claims[claims.length - 1]?.roleIds[0];
 }
