@@ -23,6 +23,7 @@ import { type ClaimOrbitObstacle, getClaimOrbitLayout } from '@/utils/claim-orbi
 import { getDrunkTokenOffset } from '@/utils/drunk-token-utils';
 import { formatBirthYearShort } from '@/utils/friend-info-utils';
 import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
+import { getPlayerStatusKinds } from '@/utils/player-status-utils';
 import { isTravelerRole } from '@/utils/role-utils';
 import type { SuspicionLevel } from '@/utils/suspicion-utils';
 
@@ -153,6 +154,7 @@ export function PlayerToken({
   const nameRoles = hasMultipleClaims ? visibleRoles.filter(isTravelerRole) : visibleRoles;
   const roleIconSource = useRoleIconSource(backgroundRole);
   const reduceMotion = useReducedMotion();
+  const statusKinds = getPlayerStatusKinds(player.statuses);
   const hasDeadVote = !!player.death && (deadVoteAvailable ?? player.deadVoteUsed !== true);
   const badgeSize = Math.min(MAX_BADGE_SIZE, tokenSize * BADGE_SIZE_RATIO);
   const suspicionDotSize = badgeSize * SUSPICION_DOT_RATIO;
@@ -571,6 +573,28 @@ export function PlayerToken({
             </Text>
           </View>
         ) : null}
+        {statusKinds.length > 0 ? (
+          <View style={[styles.statusRow, { bottom: tokenSize + 2 }]}>
+            {statusKinds.map((kind) => (
+              <View
+                key={kind.id}
+                style={[
+                  styles.statusBadge,
+                  {
+                    backgroundColor: kind.color,
+                    borderRadius: badgeSize / 2,
+                    height: badgeSize,
+                    minWidth: badgeSize,
+                  },
+                ]}
+              >
+                <Text style={[styles.statusText, { fontSize: badgeSize * 0.5 }]}>
+                  {kind.initials}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
         {hasDeadVote ? (
           <View
             style={[
@@ -674,6 +698,18 @@ const styles = StyleSheet.create({
     pointerEvents: 'none',
     position: 'absolute',
   },
+  statusBadge: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 2 },
+  statusRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 2,
+    justifyContent: 'center',
+    left: -40,
+    pointerEvents: 'none',
+    position: 'absolute',
+    right: -40,
+  },
+  statusText: { color: colors.playerStatus.text, fontWeight: '800' },
   deadVoteBadge: {
     alignItems: 'center',
     backgroundColor: badgeColors.deadVoteBackground,

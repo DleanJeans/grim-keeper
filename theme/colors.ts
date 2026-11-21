@@ -119,6 +119,15 @@ const baseColors = {
   /** Map arrows from the focused player to the players their character info is about. */
   roleInfoTargetLine: '#a78bfa',
   roleInfoTokenTrueBorder: '#6fbf73',
+  playerStatus: {
+    drunk: '#a16207',
+    mad: '#be185d',
+    marked: '#7c3aed',
+    poisoned: '#15803d',
+    protected: '#0369a1',
+    redHerring: '#b91c1c',
+    text: '#ffffff',
+  },
   playerTokenEdgeBadge: {
     deadVoteBackground: '#166534',
     deadVoteIcon: '#dcfce7',
