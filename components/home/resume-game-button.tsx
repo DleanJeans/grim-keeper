@@ -6,7 +6,7 @@ import { Text } from '@/components/text';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import { getLastDayWithData, getResumeGame } from '@/utils/game-utils';
-import { requestWebFullscreen } from '@/utils/web-fullscreen';
+import { requestAutoFullscreen } from '@/utils/web-fullscreen';
 
 /** Jumps back into the most recent game that has no result yet. */
 export function ResumeGameButton() {
@@ -27,7 +27,7 @@ export function ResumeGameButton() {
       accessibilityLabel={`Resume ${title}, ${detail}`}
       accessibilityRole="button"
       onPress={() => {
-        void requestWebFullscreen();
+        void requestAutoFullscreen();
         router.push({ pathname: '/game/[id]', params: { id: game.id } });
       }}
       style={({ pressed }) => [styles.button, pressed && styles.pressed]}

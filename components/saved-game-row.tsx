@@ -9,7 +9,7 @@ import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Game, GameResult } from '@/types/game';
 import { getLastDayWithData, getResultLabel } from '@/utils/game-utils';
-import { requestWebFullscreen } from '@/utils/web-fullscreen';
+import { requestAutoFullscreen } from '@/utils/web-fullscreen';
 
 type SavedGameRowProps = {
   game: Game;
@@ -34,7 +34,7 @@ export function SavedGameRow({ game, onDelete }: SavedGameRowProps) {
           accessibilityHint={onDelete ? 'Hold to delete' : undefined}
           onLongPress={onDelete ? () => onDelete(game.id) : undefined}
           onPress={() => {
-            void requestWebFullscreen();
+            void requestAutoFullscreen();
             router.push({ pathname: '/game/[id]', params: { id: game.id } });
           }}
           style={({ pressed }) => [

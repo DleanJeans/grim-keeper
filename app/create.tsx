@@ -33,7 +33,7 @@ import { SUSHI_BUFFET_SCRIPT_ID } from '@/utils/script-constants';
 import { createSushiBuffetScript, isSushiBuffetScript } from '@/utils/script-service';
 import { getScriptPlayCounts, sortScriptsByMostPlayed } from '@/utils/script-utils';
 import { isNoOpGap, movePlayerToGap, swapPlayers } from '@/utils/seat-order-utils';
-import { requestWebFullscreen } from '@/utils/web-fullscreen';
+import { requestAutoFullscreen } from '@/utils/web-fullscreen';
 
 export default function CreateRoute() {
   const {
@@ -441,7 +441,7 @@ export default function CreateRoute() {
     });
     gameCreatedRef.current = true;
     clearNewGameDraft();
-    void requestWebFullscreen();
+    void requestAutoFullscreen();
     router.replace({ pathname: '/game/[id]', params: { id: game.id } });
   }
 

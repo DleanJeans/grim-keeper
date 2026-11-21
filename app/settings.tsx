@@ -5,6 +5,7 @@ import { useAppDialog } from '@/components/dialog/app-dialog-provider';
 import { DjSettingsCard } from '@/components/dj/dj-settings-card';
 import { ResponsiveContent } from '@/components/responsive-content';
 import { AppVersionInfo } from '@/components/settings/app-version-info';
+import { AutoFullscreenSettingsCard } from '@/components/settings/auto-fullscreen-settings-card';
 import { DataTransferCard } from '@/components/settings/data-transfer-card';
 import { GoogleSyncCard } from '@/components/settings/google-sync-card';
 import { NightStartSettingsCard } from '@/components/settings/night-start-settings-card';
@@ -55,6 +56,7 @@ export default function SettingsRoute() {
           <ThemeSettingsCard />
           <SizeSettingsCard />
           <DjSettingsCard />
+          <AutoFullscreenSettingsCard />
           <NightStartSettingsCard />
           <TokenInfoSettingsCard />
           <GoogleSyncCard />
