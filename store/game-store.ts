@@ -91,6 +91,7 @@ import {
   type SuspicionLevel,
   setPlayerSuspicion as setSuspicionMark,
 } from '@/utils/suspicion-utils';
+import { swapGamePlayer } from '@/utils/swap-player-utils';
 import { webStorage } from '@/utils/web-storage';
 
 export { getNotesForPlayer, migrateV2ToV3 };
@@ -141,6 +142,8 @@ type GameState = GameData & {
   ) => void;
   deleteGame: (gameId: string) => void;
   deletePlayer: (gameId: string, playerId: string) => void;
+  /** Replaces a player with another friend, keeping everything the player did in the game. */
+  swapPlayer: (gameId: string, playerId: string, friend: Pick<Friend, 'id' | 'name'>) => void;
   setPlayerDeath: (gameId: string, playerId: string, death: PlayerDeath | null) => void;
   setPlayerRevive: (gameId: string, playerId: string, revive: PlayerRevive | null) => void;
   setPlayerRoleAssignment: (
@@ -979,6 +982,27 @@ export const useGameStore = create<GameState>()(
         set((state) => ({
           games: state.games.filter((game) => game.id !== gameId),
         }));
+      },
+      swapPlayer: (gameId, playerId, friend) => {
+        set((state) => {
+          const game = state.games.find((candidate) => candidate.id === gameId);
+          const name = normalizePlayerName(friend.name);
+          if (!game || !name || playerId === APP_USER_ID || friend.id === APP_USER_ID) {
+            return state;
+          }
+
+          const swapped = swapGamePlayer(game, playerId, { id: friend.id, name });
+          if (swapped === game) {
+            return state;
+          }
+
+          return {
+            friends: state.friends.some((candidate) => candidate.id === friend.id)
+              ? state.friends
+              : [...state.friends, { id: friend.id, name, createdAt: new Date().toISOString() }],
+            games: state.games.map((candidate) => (candidate.id === gameId ? swapped : candidate)),
+          };
+        });
       },
       deletePlayer: (gameId, playerId) => {
         set((state) => ({

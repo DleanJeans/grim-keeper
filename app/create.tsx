@@ -8,6 +8,7 @@ import { ExportGameButton } from '@/components/create/export-game-button';
 import { PlayerMoveTarget } from '@/components/create/player-move-target';
 import { type DraftPlayer, PlayerRow } from '@/components/create/player-row';
 import { ShareGameLinkButton } from '@/components/create/share-game-link-button';
+import { SwapPlayerSheet } from '@/components/create/swap-player-sheet';
 import { KeyboardAvoidingView } from '@/components/keyboard-avoiding-view';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
@@ -48,6 +49,7 @@ export default function CreateRoute() {
   const appUserName = useGameStore((state) => state.appUserName);
   const createGame = useGameStore((state) => state.createGame);
   const updateGamePlayers = useGameStore((state) => state.updateGamePlayers);
+  const swapPlayer = useGameStore((state) => state.swapPlayer);
   const games = useGameStore((state) => state.games);
   const scripts = useGameStore((state) => state.scripts);
   const setGameScript = useGameStore((state) => state.setGameScript);
@@ -64,6 +66,7 @@ export default function CreateRoute() {
   const [nameFocused, setNameFocused] = useState(false);
   const [draftPlayers, setDraftPlayers] = useState<DraftPlayer[]>(initialDraft?.players ?? []);
   const [movingPlayerId, setMovingPlayerId] = useState<string | null>(null);
+  const [swappingPlayerId, setSwappingPlayerId] = useState<string | null>(null);
   const [draftSelectedScriptId, setDraftSelectedScriptId] = useState<string | null>(
     scriptIdParam ?? initialDraft?.scriptId ?? null,
   );
@@ -125,6 +128,20 @@ export default function CreateRoute() {
     () => sortFriendSummaries(getFriendSummaries(games, storedFriends, appUserName), savedNotes),
     [appUserName, games, savedNotes, storedFriends],
   );
+  // Anyone already in the game, as a player or Storyteller, can't take another seat.
+  const swapCandidates = useMemo(() => {
+    const takenNames = new Set(
+      [
+        ...(editingGame?.players ?? []).map((player) => player.name),
+        ...players.map((player) => player.name),
+      ].map((playerName) => normalizePlayerName(playerName).toLocaleLowerCase()),
+    );
+    return friends.filter(
+      (friend) =>
+        !takenNames.has(normalizePlayerName(friend.name).toLocaleLowerCase()) &&
+        !editingGame?.players.some((player) => player.id === friend.id),
+    );
+  }, [editingGame, friends, players]);
   const appUserSummary = useMemo<FriendSummary>(
     () => ({
       createdAt: '',
@@ -343,6 +360,29 @@ export default function CreateRoute() {
     return friend && !draftSelectedStorytellerIds.includes(friend.id) ? friend.id : undefined;
   }
 
+  function handleSwapPlayer(friend: FriendSummary) {
+    if (!editingGame || !swappingPlayerId) {
+      return;
+    }
+
+    swapPlayer(editingGame.id, swappingPlayerId, friend);
+    setDraftPlayers((currentPlayers) =>
+      currentPlayers.map((player) =>
+        player.id === swappingPlayerId
+          ? { id: friend.id, name: normalizePlayerName(friend.name) }
+          : player,
+      ),
+    );
+    setSwappingPlayerId(null);
+  }
+
+  function handleAddSwapFriend(friendName: string) {
+    addFriend(friendName);
+
+    const state = useGameStore.getState();
+    return getFriendByName(getFriendSummaries(state.games, state.friends, appUserName), friendName);
+  }
+
   function handleRemovePlayer(playerId: string) {
     setDraftPlayers((currentPlayers) => currentPlayers.filter((player) => player.id !== playerId));
     if (movingPlayerId === playerId) {
@@ -518,12 +558,20 @@ export default function CreateRoute() {
               onMoveToGap={handleMoveToGap}
               onPressPlayer={handlePressPlayer}
               onRemove={handleRemovePlayer}
+              onSwap={isEditing ? setSwappingPlayerId : undefined}
               players={players}
             />
           )}
           style={styles.screen}
         />
       </KeyboardAvoidingView>
+      <SwapPlayerSheet
+        friends={swapCandidates}
+        onAddFriend={handleAddSwapFriend}
+        onClose={() => setSwappingPlayerId(null)}
+        onSwap={handleSwapPlayer}
+        playerName={players.find((player) => player.id === swappingPlayerId)?.name}
+      />
     </>
   );
 }
@@ -537,6 +585,7 @@ function SeatListItem({
   onMoveToGap,
   onPressPlayer,
   onRemove,
+  onSwap,
   players,
 }: {
   firstSeat: number;
@@ -546,6 +595,7 @@ function SeatListItem({
   onMoveToGap: (gapIndex: number) => void;
   onPressPlayer: (playerId: string) => void;
   onRemove: (playerId: string) => void;
+  onSwap?: (playerId: string) => void;
   players: DraftPlayer[];
 }) {
   const showGap = (gapIndex: number) =>
@@ -567,6 +617,7 @@ function SeatListItem({
         item={item}
         onPress={onPressPlayer}
         onRemove={onRemove}
+        onSwap={onSwap}
       />
       {showGap(index + 1) ? (
         <PlayerMoveTarget label={gapLabel(index + 1)} onPress={() => onMoveToGap(index + 1)} />

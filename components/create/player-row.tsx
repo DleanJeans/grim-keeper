@@ -1,4 +1,4 @@
-import { ArrowUpDown, Trash2 } from 'lucide-react-native';
+import { ArrowUpDown, Replace, Trash2 } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
@@ -16,6 +16,7 @@ export function PlayerRow({
   item,
   onPress,
   onRemove,
+  onSwap,
 }: {
   index: number;
   isFixed?: boolean;
@@ -24,6 +25,8 @@ export function PlayerRow({
   item: DraftPlayer;
   onPress?: (playerId: string) => void;
   onRemove?: (playerId: string) => void;
+  /** Set when the player can be replaced by another friend (saved games only). */
+  onSwap?: (playerId: string) => void;
 }) {
   const canMove = !isFixed && !!onPress;
 
@@ -57,6 +60,18 @@ export function PlayerRow({
           />
         ) : null}
       </Pressable>
+      {isFixed || !onSwap ? null : (
+        <Pressable
+          accessibilityHint="Replaces this player with another friend, keeping everything logged for them"
+          accessibilityLabel={`Swap ${item.name}`}
+          accessibilityRole="button"
+          hitSlop={7}
+          onPress={() => onSwap(item.id)}
+          style={({ pressed }) => [styles.removeButton, pressed && styles.removeButtonPressed]}
+        >
+          <Replace color={colors.textMuted} size={17} strokeWidth={2.5} />
+        </Pressable>
+      )}
       {isFixed ? null : (
         <Pressable
           accessibilityLabel={`Remove ${item.name}`}
