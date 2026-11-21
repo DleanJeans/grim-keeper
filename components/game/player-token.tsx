@@ -9,6 +9,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
+import { CountryFlag } from '@/components/country-flag';
 import { DeadVoteIcon } from '@/components/game/dead-vote-icon';
 import { GrimoireTokenFace } from '@/components/game/grimoire-token-face';
 import { RoleIcon } from '@/components/role-icon';
@@ -19,6 +20,7 @@ import { useUiScale } from '@/theme/display-scale';
 import type { Player, PlayerPosition, Role } from '@/types/game';
 import { APP_USER_ID } from '@/utils/app-user';
 import { type ClaimOrbitObstacle, getClaimOrbitLayout } from '@/utils/claim-orbit-utils';
+import { formatBirthYearShort } from '@/utils/friend-info-utils';
 import { clampTokenPosition, getTokenSize } from '@/utils/layout-utils';
 import { isTravelerRole } from '@/utils/role-utils';
 import type { SuspicionLevel } from '@/utils/suspicion-utils';
@@ -74,6 +76,10 @@ type PlayerTokenProps = {
   otherTokenPositions?: OtherTokenPosition[];
   /** Friend's profile picture, shown in the middle when no character is on the token. */
   picture?: string;
+  /** Year of birth to show as its last two digits on the right edge. */
+  birthYear?: number;
+  /** Country code to show as a flag on the left edge. */
+  country?: string;
   player: Player;
   position: PlayerPosition;
   roles?: Role[];
@@ -112,6 +118,8 @@ export function PlayerToken({
   onSelect,
   otherTokenPositions = EMPTY_OTHER_TOKEN_POSITIONS,
   picture,
+  birthYear,
+  country,
   player,
   position,
   rearrangeMode = false,
@@ -153,6 +161,13 @@ export function PlayerToken({
   }
   if (suspicion) {
     claimObstacles.push({ radius: suspicionDotSize / 2, x: edgeReach, y: -edgeReach });
+  }
+  // Personal info sits on the side edges: the flag on the left, the birth year on the right.
+  if (country) {
+    claimObstacles.push({ radius: badgeSize / 2, x: -tokenSize / 2, y: 0 });
+  }
+  if (birthYear) {
+    claimObstacles.push({ radius: badgeSize / 2, x: tokenSize / 2, y: 0 });
   }
   // The lessons dot mirrors the suspicion dot at the top left.
   if (hasLessons) {
@@ -474,6 +489,40 @@ export function PlayerToken({
             </Text>
           </View>
         ) : null}
+        {country ? (
+          <View
+            style={[
+              styles.countryBadge,
+              {
+                borderRadius: badgeSize / 2,
+                height: badgeSize,
+                left: -badgeSize / 2,
+                top: tokenSize / 2 - badgeSize / 2,
+                width: badgeSize,
+              },
+            ]}
+          >
+            <CountryFlag code={country} size={badgeSize * 0.8} />
+          </View>
+        ) : null}
+        {birthYear ? (
+          <View
+            style={[
+              styles.birthYearBadge,
+              {
+                borderRadius: badgeSize / 2,
+                height: badgeSize,
+                left: tokenSize - badgeSize / 2,
+                minWidth: badgeSize,
+                top: tokenSize / 2 - badgeSize / 2,
+              },
+            ]}
+          >
+            <Text style={[styles.birthYearText, { fontSize: badgeSize * 0.55 }]}>
+              {formatBirthYearShort(birthYear)}
+            </Text>
+          </View>
+        ) : null}
         {deathLabel ? (
           <View
             style={[
@@ -585,6 +634,22 @@ const styles = StyleSheet.create({
   tokenLabelWrap: { alignItems: 'center', pointerEvents: 'none', position: 'absolute', zIndex: 3 },
   trustedDot: { backgroundColor: colors.suspicionTrusted },
   unsureDot: { backgroundColor: colors.suspicionUnsure },
+  birthYearBadge: {
+    alignItems: 'center',
+    backgroundColor: badgeColors.infoBackground,
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    pointerEvents: 'none',
+    position: 'absolute',
+  },
+  birthYearText: { color: badgeColors.infoText, fontWeight: '800' },
+  countryBadge: {
+    alignItems: 'center',
+    backgroundColor: badgeColors.infoBackground,
+    justifyContent: 'center',
+    pointerEvents: 'none',
+    position: 'absolute',
+  },
   deadVoteBadge: {
     alignItems: 'center',
     backgroundColor: badgeColors.deadVoteBackground,

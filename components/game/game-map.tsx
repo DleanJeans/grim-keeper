@@ -13,9 +13,11 @@ import type { OtherTokenPosition } from '@/components/game/player-token';
 import { PlayerToken } from '@/components/game/player-token';
 import { RoleInfoMapToken } from '@/components/game/role-info-map-token';
 import { useGameStore } from '@/store/game-store';
+import { useTokenInfoStore } from '@/store/token-info-store';
 import { colors } from '@/theme/colors';
 import type { Conversation, Player, PlayerPosition, Role, RoleDisplayMode } from '@/types/game';
 import { buildConversationGroupRepeats, getConversationGroupKey } from '@/utils/conversation-utils';
+import { getFriendInfoLookup } from '@/utils/friend-info-utils';
 import { getFriendPictureLookup } from '@/utils/friend-picture-utils';
 import { type GamePhasePosition, getDeathPhase } from '@/utils/game-phase-utils';
 import { getKnavesStorytellers } from '@/utils/knaves-utils';
@@ -240,6 +242,9 @@ export function GameMap() {
   const savedNotes = useGameStore((state) => state.savedNotes);
   const friends = useGameStore((state) => state.friends);
   const getPlayerPicture = useMemo(() => getFriendPictureLookup(friends), [friends]);
+  const getPlayerInfo = useMemo(() => getFriendInfoLookup(friends), [friends]);
+  const showBirthYear = useTokenInfoStore((state) => state.showBirthYear);
+  const showCountry = useTokenInfoStore((state) => state.showCountry);
   const lessonPlayerIds = useMemo(
     () => new Set(getLessonsForPlayers(game, savedNotes).map(({ playerId }) => playerId)),
     [game, savedNotes],
@@ -514,6 +519,8 @@ export function GameMap() {
               hasLessons={lessonPlayerIds.has(player.id)}
               knavesIndex={knavesIndexById.get(player.id)}
               picture={getPlayerPicture(player)}
+              birthYear={showBirthYear ? getPlayerInfo(player)?.birthYear : undefined}
+              country={showCountry ? getPlayerInfo(player)?.country : undefined}
               showRoles={showRoles}
               suspicion={
                 showRoles
@@ -557,6 +564,8 @@ function PlayerTokenForMap({
   mapWidth,
   otherTokenPositions,
   picture,
+  birthYear,
+  country,
   player,
   players,
   position,
@@ -586,6 +595,8 @@ function PlayerTokenForMap({
   mapWidth: number;
   otherTokenPositions: OtherTokenPosition[];
   picture?: string;
+  birthYear?: number;
+  country?: string;
   player: Player;
   players: Player[];
   position: PlayerPosition;
@@ -639,6 +650,8 @@ function PlayerTokenForMap({
       onSelect={handleSelectPlayer}
       otherTokenPositions={otherTokenPositions}
       picture={picture}
+      birthYear={birthYear}
+      country={country}
       player={player}
       position={position}
       rearrangeMode={isRearrangeMode}

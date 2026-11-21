@@ -226,6 +226,10 @@ export type Friend = {
   createdAt: string;
   /** Profile picture (small data URI, or an image URL). */
   picture?: string;
+  /** Year of birth, e.g. 1995 (for Vietnamese honorifics). */
+  birthYear?: number;
+  /** Country of origin as an ISO 3166-1 alpha-2 code, e.g. VN. */
+  country?: string;
 };
 
 export type FriendSummary = Friend & {

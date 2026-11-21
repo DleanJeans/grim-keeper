@@ -122,9 +122,9 @@ type GameState = GameData & {
   renameFriend: (friendId: string, currentName: string, nextName: string) => string | undefined;
   /** Removes a stored friend. Friends that appear in a game stay, so returns whether it deleted. */
   deleteFriend: (friendId: string) => boolean;
-  updateFriendPicture: (
+  updateFriendDetails: (
     friend: Pick<Friend, 'createdAt' | 'id' | 'name'>,
-    patch: Partial<Pick<Friend, 'picture'>>,
+    patch: Partial<Pick<Friend, 'birthYear' | 'country' | 'picture'>>,
   ) => void;
   createGame: (input: CreateGameInput) => Game;
   saveScript: (script: StoredScript) => void;
@@ -356,16 +356,16 @@ export const useGameStore = create<GameState>()(
           };
         });
       },
-      updateFriendPicture: (target, patch) => {
+      updateFriendDetails: (target, patch) => {
         set((state) => {
           const index = state.friends.findIndex((friend) => friend.id === target.id);
-          // Friends only seen in games are not stored yet; store them to keep the picture.
+          // Friends only seen in games are not stored yet; store them to keep the details.
           const current: Friend =
             index >= 0
               ? state.friends[index]
               : { createdAt: target.createdAt, id: target.id, name: target.name };
           const next: Friend = { ...current, ...patch };
-          for (const key of ['picture'] as const) {
+          for (const key of ['picture', 'birthYear', 'country'] as const) {
             if (!next[key]) {
               delete next[key];
             }

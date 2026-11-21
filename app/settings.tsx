@@ -10,6 +10,7 @@ import { GoogleSyncCard } from '@/components/settings/google-sync-card';
 import { NightStartSettingsCard } from '@/components/settings/night-start-settings-card';
 import { SizeSettingsCard } from '@/components/settings/size-settings-card';
 import { ThemeSettingsCard } from '@/components/settings/theme-settings-card';
+import { TokenInfoSettingsCard } from '@/components/settings/token-info-settings-card';
 import { Text } from '@/components/text';
 import { TitleHeader } from '@/components/title-header';
 import { useDjStore } from '@/store/dj-store';
@@ -55,6 +56,7 @@ export default function SettingsRoute() {
           <SizeSettingsCard />
           <DjSettingsCard />
           <NightStartSettingsCard />
+          <TokenInfoSettingsCard />
           <GoogleSyncCard />
           <DataTransferCard />
           <Pressable

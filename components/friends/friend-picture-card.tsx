@@ -17,7 +17,7 @@ type FriendPictureCardProps = {
 
 /** Profile picture of a friend, chosen from an image file or an image link. */
 export function FriendPictureCard({ friend }: FriendPictureCardProps) {
-  const updateFriendPicture = useGameStore((state) => state.updateFriendPicture);
+  const updateFriendDetails = useGameStore((state) => state.updateFriendDetails);
   const [editing, setEditing] = useState(false);
   const [pictureUrl, setPictureUrl] = useState('');
   const [status, setStatus] = useState<string>();
@@ -30,7 +30,7 @@ export function FriendPictureCard({ friend }: FriendPictureCardProps) {
     try {
       const chosen = await pickPictureFile();
       if (chosen) {
-        updateFriendPicture(friend, { picture: chosen });
+        updateFriendDetails(friend, { picture: chosen });
         setStatus('Using your picture.');
       }
     } catch {
@@ -44,13 +44,13 @@ export function FriendPictureCard({ friend }: FriendPictureCardProps) {
     if (!typedPictureUrl) {
       return;
     }
-    updateFriendPicture(friend, { picture: typedPictureUrl });
+    updateFriendDetails(friend, { picture: typedPictureUrl });
     setPictureUrl('');
     setStatus('Using that image link.');
   }
 
   function handleRemove() {
-    updateFriendPicture(friend, { picture: undefined });
+    updateFriendDetails(friend, { picture: undefined });
     setStatus('Picture removed.');
   }
 

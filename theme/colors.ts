@@ -125,6 +125,8 @@ const baseColors = {
     deathBackground: '#1f2937',
     deathExecutionIcon: '#fecaca',
     deathNightIcon: '#bfdbfe',
+    infoBackground: '#1f2937',
+    infoText: '#f3f4f6',
     nominatedIcon: '#fef3c7',
     nominatorIcon: '#ddd6fe',
   },

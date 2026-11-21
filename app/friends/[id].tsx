@@ -5,6 +5,7 @@ import { DjSongSection } from '@/components/dj/dj-song-section';
 import { FriendClaimsCard } from '@/components/friend-claims-card';
 import { FriendDeleteButton } from '@/components/friends/friend-delete-button';
 import { FriendGamesList } from '@/components/friends/friend-games-list';
+import { FriendInfoCard } from '@/components/friends/friend-info-card';
 import { FriendNameEditToggle } from '@/components/friends/friend-name-edit-toggle';
 import { FriendNameInputRow } from '@/components/friends/friend-name-input-row';
 import { FriendNameSaveButton } from '@/components/friends/friend-name-save-button';
@@ -130,6 +131,7 @@ export default function FriendDetailRoute() {
           ) : null}
 
           <FriendPictureCard friend={friend} />
+          <FriendInfoCard friend={friend} />
           <GameStatsCards games={games} playerId={friend.id} />
           <HeadToHeadStatsCard friendId={friend.id} friendName={friend.name} games={games} />
           <FriendClaimsCard friendId={friend.id} games={games} roles={roleCatalog} />

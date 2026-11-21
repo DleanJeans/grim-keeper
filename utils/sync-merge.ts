@@ -103,9 +103,16 @@ function mergeFriends(local: Friend[], remote: Friend[], baseIds: string[] | und
     .filter((friend) => remoteById.has(friend.id) || !inBase.has(friend.id))
     .map((friend) => {
       const other = remoteById.get(friend.id);
-      return other && !friend.picture && other.picture
-        ? { ...friend, picture: other.picture }
-        : friend;
+      if (!other) {
+        return friend;
+      }
+      // Details missing here are filled from the other side.
+      return {
+        ...friend,
+        ...(!friend.picture && other.picture ? { picture: other.picture } : null),
+        ...(!friend.birthYear && other.birthYear ? { birthYear: other.birthYear } : null),
+        ...(!friend.country && other.country ? { country: other.country } : null),
+      };
     });
 
   for (const friend of remote) {
