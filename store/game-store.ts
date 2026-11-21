@@ -18,6 +18,7 @@ import type {
   PlayerDeath,
   PlayerPosition,
   PlayerRevive,
+  PlayerStatus,
   PlayerRoleAssignment,
   PlayerStatus,
   Role,
