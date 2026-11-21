@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight } from 'lucide-react-native';
+import { Check, ChevronDown, ChevronRight } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -6,8 +6,11 @@ import { useGameRouteContext } from '@/components/game/game-route-context';
 import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
+import type { Player } from '@/types/game';
+import { APP_USER_ID } from '@/utils/app-user';
 import { getPhaseLabel } from '@/utils/game-phase-utils';
 import { getNightOrderRows, type NightOrderRow } from '@/utils/night-order-utils';
+import { getPlayerStatusKinds } from '@/utils/player-status-utils';
 import { BUNDLED_NIGHT_SHEET, getGameScriptRoles } from '@/utils/script-service';
 
 /**
@@ -17,6 +20,11 @@ import { BUNDLED_NIGHT_SHEET, getGameScriptRoles } from '@/utils/script-service'
 export function NightOrderSection() {
   const { activeDay, activePhase, game, players, showRoles, startingNight } = useGameRouteContext();
   const [expanded, setExpanded] = useState(true);
+  // Characters the Storyteller has already woken, per night; a new night starts empty.
+  const [wokenState, setWokenState] = useState<{ day: number; ids: string[] }>({
+    day: activeDay,
+    ids: [],
+  });
 
   if (activePhase !== 'night' || !game.script) {
     return null;
@@ -33,6 +41,16 @@ export function NightOrderSection() {
     return null;
   }
 
+  const runThrough = players.some((player) => player.id === APP_USER_ID && player.isStoryteller);
+  const woken = new Set(wokenState.day === activeDay ? wokenState.ids : []);
+  const nextRoleId = runThrough
+    ? rows.find((row) => !row.asleep && !woken.has(row.role.id))?.role.id
+    : undefined;
+  const toggleWoken = (roleId: string) =>
+    setWokenState({
+      day: activeDay,
+      ids: woken.has(roleId) ? [...woken].filter((id) => id !== roleId) : [...woken, roleId],
+    });
   const title = `${getPhaseLabel({ activeDay, activePhase }, startingNight)} order`;
   const Chevron = expanded ? ChevronDown : ChevronRight;
 
@@ -50,7 +68,16 @@ export function NightOrderSection() {
       </Pressable>
       {expanded
         ? rows.map((row, index) => (
-            <NightOrderRowView index={index} key={row.role.id} row={row} showClaimers={showRoles} />
+            <NightOrderRowView
+              index={index}
+              isNext={row.role.id === nextRoleId}
+              key={row.role.id}
+              onToggleWoken={runThrough ? () => toggleWoken(row.role.id) : undefined}
+              players={players}
+              row={row}
+              showClaimers={showRoles || runThrough}
+              woken={woken.has(row.role.id)}
+            />
           ))
         : null}
     </View>
@@ -58,6 +85,9 @@ export function NightOrderSection() {
 }
 
 const styles = StyleSheet.create({
+  ability: { color: colors.gameTextSoft, fontSize: 12, paddingBottom: 6, paddingLeft: 26 },
+  rowBox: { borderRadius: 8 },
+  rowNext: { backgroundColor: colors.gameSurfaceRaised },
   claimer: { color: colors.gameTextSoft, fontSize: 13, fontWeight: '700' },
   claimerDead: { color: colors.gameTextSubtle, textDecorationLine: 'line-through' },
   claimers: {
@@ -99,33 +129,63 @@ const styles = StyleSheet.create({
 
 function NightOrderRowView({
   index,
+  isNext,
+  onToggleWoken,
+  players,
   row,
   showClaimers,
+  woken,
 }: {
   index: number;
+  isNext: boolean;
+  /** Set while the Storyteller runs the night: tapping the row marks the character as woken. */
+  onToggleWoken?: () => void;
+  players: Player[];
   row: NightOrderRow;
   showClaimers: boolean;
+  woken: boolean;
 }) {
   return (
-    <View style={[styles.row, row.asleep && styles.rowAsleep]}>
-      <Text style={styles.index}>{index + 1}</Text>
-      <RoleIcon role={row.role} size={22} />
-      <Text numberOfLines={1} style={styles.roleName}>
-        {row.role.name}
-      </Text>
-      {showClaimers ? (
-        <View style={styles.claimers}>
-          {row.claimers.length === 0 ? (
-            <Text style={styles.unclaimed}>Unclaimed</Text>
-          ) : (
-            row.claimers.map((claimer) => (
-              <Text key={claimer.id} style={[styles.claimer, claimer.dead && styles.claimerDead]}>
-                {claimer.name}
-              </Text>
-            ))
-          )}
-        </View>
-      ) : null}
-    </View>
+    <Pressable
+      accessibilityLabel={`${row.role.name}${woken ? ', woken' : ''}`}
+      accessibilityRole={onToggleWoken ? 'button' : undefined}
+      disabled={!onToggleWoken}
+      onPress={onToggleWoken}
+      style={[styles.rowBox, isNext && styles.rowNext]}
+    >
+      <View style={[styles.row, (row.asleep || woken) && styles.rowAsleep]}>
+        <Text style={styles.index}>{index + 1}</Text>
+        <RoleIcon role={row.role} size={22} />
+        <Text numberOfLines={1} style={styles.roleName}>
+          {row.role.name}
+        </Text>
+        {woken ? <Check color={colors.revive} size={16} strokeWidth={3} /> : null}
+        {showClaimers ? (
+          <View style={styles.claimers}>
+            {row.claimers.length === 0 ? (
+              <Text style={styles.unclaimed}>Unclaimed</Text>
+            ) : (
+              row.claimers.map((claimer) => {
+                const statuses = getPlayerStatusKinds(
+                  players.find((player) => player.id === claimer.id)?.statuses,
+                );
+                return (
+                  <Text
+                    key={claimer.id}
+                    style={[styles.claimer, claimer.dead && styles.claimerDead]}
+                  >
+                    {claimer.name}
+                    {statuses.length > 0
+                      ? ` (${statuses.map((status) => status.label.toLowerCase()).join(', ')})`
+                      : ''}
+                  </Text>
+                );
+              })
+            )}
+          </View>
+        ) : null}
+      </View>
+      {isNext && row.role.ability ? <Text style={styles.ability}>{row.role.ability}</Text> : null}
+    </Pressable>
   );
 }
