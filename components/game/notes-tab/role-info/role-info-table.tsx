@@ -23,6 +23,7 @@ import type {
   RoleInfoEntry,
   StartingNight,
 } from '@/types/game';
+import { APP_USER_ID } from '@/utils/app-user';
 import {
   type EvilInPlayTeam,
   getEvilInPlayRoleIds,
@@ -61,6 +62,7 @@ import {
   isRoleInfoOver,
   isRoleInfoShownInPhase,
   isRoleInfoTriggered,
+  normalizeRoleInfoId,
   ROLE_INFO_STORYTELLER_KEY,
   ROLE_INFO_TRUE_KEY,
   type RoleInfoClaimer,
@@ -69,6 +71,7 @@ import {
 import { getRoleAssignmentForDayOrPrevious, getRolesByIds } from '@/utils/role-utils';
 import { getSavedNotesForRole } from '@/utils/saved-note-utils';
 import { getGameScriptRoles, isSushiBuffetScript } from '@/utils/script-service';
+import { getTrueEmpathInfo } from '@/utils/true-info-utils';
 
 const TEAM_SECTIONS = [
   { label: 'Townsfolk', team: 'townsfolk' },
@@ -299,7 +302,38 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
           team: fakeTeam,
         }
       : undefined;
+  const appUserIsStoryteller = players.some(
+    (entry) => entry.id === APP_USER_ID && entry.isStoryteller,
+  );
+  const getTrueValues = ({ day, owners, phase, role }: RandomizeRequest) =>
+    appUserIsStoryteller && owners[0] && normalizeRoleInfoId(role.id) === 'empath'
+      ? getTrueEmpathInfo({ day, ownerId: owners[0].id, phase, players, roles: scriptRoles })
+      : undefined;
   const getRandomize = (request: RandomizeRequest) => {
+    if (appUserIsStoryteller && normalizeRoleInfoId(request.role.id) === 'empath') {
+      // The Storyteller's info comes from the true characters, never from a fake team.
+      if (!getTrueValues(request)) return undefined;
+      return () => {
+        const values = getTrueValues(request);
+        if (!values) return;
+        const { carryForward, claimer, day, phase, role } = request;
+        runDayEdit(() => {
+          for (const slot of getRoleInfoTemplate(role).slots) {
+            setRoleInfoValue(
+              game.id,
+              role.id,
+              day,
+              phase,
+              slot.id,
+              values[slot.id],
+              inferredRoleInfos,
+              carryForward,
+              claimer,
+            );
+          }
+        });
+      };
+    }
     const context = getFakeInfoContext(request);
     if (!canRollFakeInfo || !context || !canFakeRoleInfo(request.role)) return undefined;
     if (!getFakeRoleInfoValues(request.role, context)) return undefined;
