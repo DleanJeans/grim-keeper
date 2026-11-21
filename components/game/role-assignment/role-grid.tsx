@@ -17,7 +17,7 @@ const TEAMS = [
   { color: colors.winBarDemon, id: 'demon', label: 'Demon' },
 ] as const;
 
-type TabId = (typeof TEAMS)[number]['id'] | 'traveller' | 'other';
+type TabId = (typeof TEAMS)[number]['id'] | 'all' | 'traveller' | 'other';
 
 type RoleGridProps = {
   kind: RoleKind;
@@ -43,6 +43,12 @@ export function RoleGrid({
   const selectedIds = new Set(selectedRoleIds);
   const otherRoles = roles.filter((role) => !getTeam(role));
   const tabs: { color: string; count: number | null; id: TabId; label: string }[] = [
+    {
+      color: colors.gameText,
+      count: roles.filter((role) => !isGeneric(role)).length,
+      id: 'all',
+      label: 'All',
+    },
     ...TEAMS.map((team) => ({
       color: team.color,
       count: roles.filter((role) => getTeam(role) === team.id && !isGeneric(role)).length,
@@ -70,10 +76,7 @@ export function RoleGrid({
         ]
       : []),
   ];
-  const selectedTeam = tabs.find((tab) =>
-    roles.some((role) => selectedIds.has(role.id) && (getTeam(role) ?? 'other') === tab.id),
-  );
-  const [tabId, setTabId] = useState<TabId>(selectedTeam?.id ?? 'townsfolk');
+  const [tabId, setTabId] = useState<TabId>('all');
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const searching = normalizedQuery.length > 0;
   const matches = searching
@@ -84,6 +87,26 @@ export function RoleGrid({
       )
     : [];
   const tabRoles = roles.filter((role) => (getTeam(role) ?? 'other') === tabId);
+  const renderCells = (list: Role[], withTeamLabel = false) =>
+    list.map((role) => (
+      <RoleCell
+        kind={kind}
+        key={role.id}
+        onPress={() => onToggleRole(role.id)}
+        ownerNames={roleOwnerNames?.[role.id]}
+        role={role}
+        selected={selectedIds.has(role.id)}
+        teamLabel={withTeamLabel ? getTeamLabel(role) : undefined}
+      />
+    ));
+  const sections = [
+    ...TEAMS.map((team) => ({
+      id: team.id,
+      label: team.label,
+      roles: roles.filter((role) => getTeam(role) === team.id),
+    })),
+    { id: 'other' as const, label: 'Other', roles: otherRoles },
+  ].filter((section) => section.roles.length > 0);
 
   return (
     <View style={styles.container}>
@@ -119,19 +142,18 @@ export function RoleGrid({
       >
         {!searching && tabId === 'traveller' ? (
           travelerPicker
+        ) : !searching && tabId === 'all' ? (
+          sections.map((section) => (
+            <View key={section.id}>
+              <Text style={[styles.sectionLabel, tabStyles[section.id].label]}>
+                {section.label}
+              </Text>
+              <View style={styles.grid}>{renderCells(section.roles)}</View>
+            </View>
+          ))
         ) : (
           <View style={styles.grid}>
-            {(searching ? matches : tabRoles).map((role) => (
-              <RoleCell
-                kind={kind}
-                key={role.id}
-                onPress={() => onToggleRole(role.id)}
-                ownerNames={roleOwnerNames?.[role.id]}
-                role={role}
-                selected={selectedIds.has(role.id)}
-                teamLabel={searching ? getTeamLabel(role) : undefined}
-              />
-            ))}
+            {renderCells(searching ? matches : tabRoles, searching)}
             {searching && matches.length === 0 ? (
               <Text style={styles.empty}>No character matches “{query.trim()}”.</Text>
             ) : null}
@@ -214,6 +236,7 @@ const kindStyles: Record<RoleKind, ReturnType<typeof createKindStyles>> = {
 };
 
 const tabStyles = {
+  all: createTabStyles(colors.gameText),
   townsfolk: createTabStyles(colors.winBarTownsfolk),
   outsider: createTabStyles(colors.winBarOutsider),
   minion: createTabStyles(colors.winBarMinion),
@@ -257,6 +280,15 @@ const styles = StyleSheet.create({
   },
   owners: { color: colors.gameTextMuted, fontSize: 11, fontWeight: '700' },
   scroll: { flex: 1 },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+    paddingBottom: 2,
+    paddingHorizontal: 4,
+    paddingTop: 6,
+    textTransform: 'uppercase',
+  },
   scrollContent: { padding: 10, paddingBottom: 16 },
   tab: { alignItems: 'center', flex: 1, paddingBottom: 7, paddingTop: 8 },
   tabCount: { color: colors.gameTextSubtle, fontSize: 10, fontWeight: '700' },
