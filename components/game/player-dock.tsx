@@ -22,10 +22,12 @@ import { DockNomination } from '@/components/game/noms-tab/dock-nomination';
 import { NomIcon } from '@/components/game/noms-tab/nom-icon';
 import { QUICK_TAGS, QuickNoteTags } from '@/components/game/notes-tab/quick-note-tags';
 import { SuspicionPicker } from '@/components/game/notes-tab/suspicion-picker';
+import { PlayerStatusChips } from '@/components/game/player-status-chips';
 import { RoleKindButtons } from '@/components/game/role-assignment/role-kind-buttons';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { PlayerRoleAssignment } from '@/types/game';
+import { APP_USER_ID } from '@/utils/app-user';
 import { isDeadBanshee } from '@/utils/player-utils';
 import { getPlayerSuspicion, type SuspicionLevel } from '@/utils/suspicion-utils';
 
@@ -141,6 +143,9 @@ export function PlayerDock({
   }
 
   const canMark = !interactionMode && !focusedPlayer.isStoryteller;
+  const appUserIsStoryteller = game.players.some(
+    (player) => player.id === APP_USER_ID && player.isStoryteller,
+  );
   const suspicion = getPlayerSuspicion(game.suspicions, focusedPlayer.id, activeDay, activePhase);
   const activeTags =
     game.playerDayNotes
@@ -198,6 +203,7 @@ export function PlayerDock({
           </Pressable>
         ) : null}
       </View>
+      {canMark && appUserIsStoryteller ? <PlayerStatusChips /> : null}
       {canMark && expanded ? (
         <View style={styles.expanded}>
           <SuspicionPicker />

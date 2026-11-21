@@ -18,6 +18,7 @@ import type {
   PlayerDeath,
   PlayerPosition,
   PlayerRevive,
+  PlayerStatus,
   PlayerRoleAssignment,
   Role,
   RoleInfoEntry,
@@ -146,6 +147,8 @@ type GameState = GameData & {
   swapPlayer: (gameId: string, playerId: string, friend: Pick<Friend, 'id' | 'name'>) => void;
   setPlayerDeath: (gameId: string, playerId: string, death: PlayerDeath | null) => void;
   setPlayerRevive: (gameId: string, playerId: string, revive: PlayerRevive | null) => void;
+  /** Adds the Storyteller reminder to the player, or removes it when it is already there. */
+  togglePlayerStatus: (gameId: string, playerId: string, status: PlayerStatus) => void;
   setPlayerRoleAssignment: (
     gameId: string,
     playerId: string,
@@ -1079,6 +1082,26 @@ export const useGameStore = create<GameState>()(
                   : player,
               ),
             });
+          }),
+        }));
+      },
+      togglePlayerStatus: (gameId, playerId, status) => {
+        set((state) => ({
+          games: state.games.map((game) => {
+            if (game.id !== gameId) return game;
+            return {
+              ...game,
+              updatedAt: new Date().toISOString(),
+              players: game.players.map((player) => {
+                if (player.id !== playerId) return player;
+                const current = player.statuses ?? [];
+                const has = current.some((entry) => entry.kind === status.kind);
+                const next = has
+                  ? current.filter((entry) => entry.kind !== status.kind)
+                  : [...current, status];
+                return { ...player, statuses: next.length > 0 ? next : undefined };
+              }),
+            };
           }),
         }));
       },

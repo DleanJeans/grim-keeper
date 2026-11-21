@@ -79,9 +79,20 @@ export type PlayerRevive = {
   updatedAt: string;
 };
 
+/** A Storyteller reminder on a player, such as poisoned or protected. Stays until removed. */
+export type PlayerStatus = {
+  /** One of `PLAYER_STATUS_KINDS` in utils/player-status-utils.ts. */
+  kind: string;
+  /** Day the reminder was placed. */
+  day: number;
+  /** Character that caused it, when known. */
+  sourceRoleId?: string;
+};
+
 export type Player = {
   id: string;
   isStoryteller?: boolean;
+  statuses?: PlayerStatus[];
   name: string;
   seat: number;
   death?: PlayerDeath;
