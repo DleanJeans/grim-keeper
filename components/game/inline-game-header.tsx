@@ -3,11 +3,11 @@ import { ChevronLeft } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { type SharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 import { FullscreenButton } from '@/components/fullscreen-button';
 import { EditGameButton } from '@/components/game/edit-game-button';
 import { GameResultButton } from '@/components/game/game-result-button';
 import { ViewScriptButton } from '@/components/game/view-script-button';
+import type { GameLessonInput } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Game, GameResult } from '@/types/game';
 import { goBackOrHome } from '@/utils/navigation-utils';
@@ -23,7 +23,7 @@ export const INLINE_GAME_HEADER_HEIGHT = ROW_HEIGHT + TOP_MARGIN + VISUAL_GAP;
 type InlineGameHeaderProps = {
   activeGame: Game;
   headerTranslateY: SharedValue<number>;
-  onLessonChange: (lesson: string) => void;
+  onLessonChange: (lessons: GameLessonInput[]) => void;
   onResultChange: (result?: GameResult) => void;
 };
 

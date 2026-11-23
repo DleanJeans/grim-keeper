@@ -173,7 +173,11 @@ export type Game = {
   activePhase?: GamePhase;
   startingNight?: StartingNight;
   result?: GameResult;
-  /** The app user's own takeaway from this game, typed in the Game result dialog. */
+  /** The app user's own takeaways from this game, one per box in the Game result dialog. */
+  lessons?: string[];
+  /** Lessons (by text) saved without tagging the player they mention. */
+  untaggedLessons?: string[];
+  /** Older single-lesson field; read through `getGameLessons`, cleared when lessons are saved. */
   lesson?: string;
   mapWidth?: number;
   mapHeight?: number;

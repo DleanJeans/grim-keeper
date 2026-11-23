@@ -165,3 +165,11 @@ export function findNoteRole(roleId: string, scriptRoles: Role[], roleCatalog: R
 function stripTeam(roleId: string) {
   return roleId.replace(/_(?:good|evil)$/, '');
 }
+
+/** The game's lessons, with an older single `lesson` counting as one. */
+export function getGameLessons(game: Pick<Game, 'lesson' | 'lessons'>): string[] {
+  if (game.lessons) {
+    return game.lessons;
+  }
+  return game.lesson ? [game.lesson] : [];
+}

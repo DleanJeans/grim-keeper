@@ -113,3 +113,21 @@ function getNameMatches<T>(text: string, items: T[], getName: (item: T) => strin
 
   return matches;
 }
+
+/** The first player (not the storyteller) whose name appears in the note, by position in the text. */
+export function detectPlayerNameInNote(text: string, players: Player[]) {
+  let found: { index: number; name: string } | undefined;
+  for (const player of players) {
+    const name = player.name.trim();
+    if (!name || player.isStoryteller) continue;
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+    const match = new RegExp(`(^|[^\\p{L}\\p{N}])(${escaped})(?=$|[^\\p{L}\\p{N}])`, 'iu').exec(
+      text,
+    );
+    if (match) {
+      const index = match.index + match[1].length;
+      if (!found || index < found.index) found = { index, name };
+    }
+  }
+  return found?.name;
+}

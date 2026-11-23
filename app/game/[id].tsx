@@ -138,7 +138,7 @@ export default function GameRoute() {
   const setTokenSize = useGameStore((state) => state.setTokenSize);
   const setCharacterTypeCounts = useGameStore((state) => state.setCharacterTypeCounts);
   const setGameResult = useGameStore((state) => state.setGameResult);
-  const setGameLesson = useGameStore((state) => state.setGameLesson);
+  const setGameLessons = useGameStore((state) => state.setGameLessons);
   const djEnabled = useDjStore((state) => state.enabled);
   const [activeTab, setActiveTab] = useState<GameTab>('notes');
   // Player the kill attribution panel was opened for; selecting someone else closes it.
@@ -1352,7 +1352,7 @@ export default function GameRoute() {
           <InlineGameHeader
             activeGame={activeGame}
             headerTranslateY={gameHeaderTranslateY}
-            onLessonChange={(lesson) => setGameLesson(activeGame.id, lesson)}
+            onLessonChange={(lessons) => setGameLessons(activeGame.id, lessons)}
             onResultChange={(result) => setGameResult(activeGame.id, result)}
           />
           <Animated.ScrollView

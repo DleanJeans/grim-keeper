@@ -9,6 +9,7 @@ import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Game, GameResult } from '@/types/game';
 import { getLastDayWithData, getResultLabel } from '@/utils/game-utils';
+import { getGameLessons } from '@/utils/lesson-utils';
 import { requestAutoFullscreen } from '@/utils/web-fullscreen';
 
 type SavedGameRowProps = {
@@ -57,11 +58,11 @@ export function SavedGameRow({ game, onDelete }: SavedGameRowProps) {
               {playerCountLabel} · {dayCountLabel}
             </Text>
             {game.script && !isExpanded ? <SavedGameRolesRow game={game} /> : null}
-            {game.lesson ? (
-              <Text numberOfLines={3} style={styles.lesson}>
-                {game.lesson}
+            {getGameLessons(game).map((lesson) => (
+              <Text key={lesson} numberOfLines={3} style={styles.lesson}>
+                {lesson}
               </Text>
-            ) : null}
+            ))}
           </View>
         </Pressable>
       </View>

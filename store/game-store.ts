@@ -46,6 +46,7 @@ import {
   getTokenSize,
   resolveTokenCollisions,
 } from '@/utils/layout-utils';
+import { getGameLessons } from '@/utils/lesson-utils';
 import {
   APP_USER_ID,
   createConversationId,
@@ -74,7 +75,11 @@ import {
   migrateV2ToV3,
   resolveScriptName,
 } from '@/utils/saved-note-store';
-import { detectRoleIdsInNote, getSavedNote } from '@/utils/saved-note-utils';
+import {
+  detectPlayerNameInNote,
+  detectRoleIdsInNote,
+  getSavedNote,
+} from '@/utils/saved-note-utils';
 import { SUSHI_BUFFET_SCRIPT_ID } from '@/utils/script-constants';
 import {
   normalizeRoleImageUrls,
@@ -96,6 +101,8 @@ import { swapGamePlayer } from '@/utils/swap-player-utils';
 import { webStorage } from '@/utils/web-storage';
 
 export { getNotesForPlayer, migrateV2ToV3 };
+
+export type GameLessonInput = { tagPlayer: boolean; text: string };
 
 type CreateGameInput = {
   lorics?: Role[];
@@ -260,10 +267,11 @@ type GameState = GameData & {
   toggleTheoryEvil: (gameId: string, theoryId: string, playerId: string) => void;
   setGameResult: (gameId: string, result?: GameResult) => void;
   /**
-   * Saves the app user's lesson from the game; blank text removes it. Characters named in the
-   * lesson also get it as a saved note about the character only.
+   * Saves the app user's lessons from the game, one note each; blank ones are dropped. A lesson
+   * naming characters or a player also gets saved as a note about them; `tagPlayer: false` keeps
+   * the player out of that note.
    */
-  setGameLesson: (gameId: string, lesson: string) => void;
+  setGameLessons: (gameId: string, lessons: GameLessonInput[]) => void;
   setActiveDay: (gameId: string, day: number) => void;
   setGamePhase: (gameId: string, day: number, phase: GamePhase) => void;
   setDefaultStartingNight: (night: StartingNight) => void;
@@ -1687,11 +1695,24 @@ export const useGameStore = create<GameState>()(
           ),
         }));
       },
-      setGameLesson: (gameId, lesson) => {
-        const trimmed = lesson.trim();
+      setGameLessons: (gameId, lessons) => {
+        const entries = lessons
+          .map((lesson) => ({ ...lesson, text: lesson.text.trim() }))
+          .filter((lesson) => lesson.text);
         const game = get().games.find((candidate) => candidate.id === gameId);
-        const previous = game?.lesson ?? '';
-        if (!game || previous === trimmed) {
+        if (!game) {
+          return;
+        }
+        const texts = entries.map((lesson) => lesson.text);
+        const untagged = entries.filter((lesson) => !lesson.tagPlayer).map((lesson) => lesson.text);
+        const previous = getGameLessons(game);
+        const previousUntagged = game.untaggedLessons ?? [];
+        if (
+          previous.length === texts.length &&
+          previous.every((text, i) => text === texts[i]) &&
+          previousUntagged.length === untagged.length &&
+          previousUntagged.every((text, i) => text === untagged[i])
+        ) {
           return;
         }
         set((state) => ({
@@ -1699,27 +1720,55 @@ export const useGameStore = create<GameState>()(
             if (candidate.id !== gameId) {
               return candidate;
             }
-            const { lesson: _lesson, ...rest } = candidate;
+            const {
+              lesson: _lesson,
+              lessons: _lessons,
+              untaggedLessons: _untagged,
+              ...rest
+            } = candidate;
             return {
               ...rest,
-              ...(trimmed ? { lesson: trimmed } : {}),
+              ...(texts.length > 0 ? { lessons: texts } : {}),
+              ...(untagged.length > 0 ? { untaggedLessons: untagged } : {}),
               updatedAt: new Date().toISOString(),
             };
           }),
         }));
 
-        // A lesson that names characters is also saved as a note about those characters only.
-        const roleIds = trimmed ? detectRoleIdsInNote(trimmed, game.script?.roles ?? []) : [];
-        if (roleIds.length > 0) {
-          get().saveNoteForFutureGames('', roleIds, trimmed, {
+        // A lesson naming characters or a player is also saved as a note about them.
+        const getTarget = (text: string, tagged: boolean) => {
+          const roleIds = detectRoleIdsInNote(text, game.script?.roles ?? []);
+          const playerName = tagged ? (detectPlayerNameInNote(text, game.players) ?? '') : '';
+          return roleIds.length > 0 || playerName ? { playerName, roleIds } : undefined;
+        };
+        const noteKey = (text: string, target?: { playerName: string }) =>
+          target ? `${normalizePlayerName(target.playerName).toLocaleLowerCase()}\n${text}` : '';
+        const previousKeys = new Map(
+          previous.map((text) => {
+            const target = getTarget(text, !previousUntagged.includes(text));
+            return [noteKey(text, target), { target, text }] as const;
+          }),
+        );
+        const nextKeys = new Map(
+          entries.map((lesson) => {
+            const target = getTarget(lesson.text, lesson.tagPlayer);
+            return [noteKey(lesson.text, target), { target, text: lesson.text }] as const;
+          }),
+        );
+        for (const [key, { target, text }] of previousKeys) {
+          if (!target || nextKeys.has(key)) continue;
+          const previousNote = getSavedNote(get().savedNotes, target.playerName, text);
+          if (previousNote?.gameId === gameId) {
+            get().deleteSavedNote(previousNote);
+          }
+        }
+        for (const [key, { target, text }] of nextKeys) {
+          if (!target || previousKeys.has(key)) continue;
+          get().saveNoteForFutureGames(target.playerName, target.roleIds, text, {
             day: game.activeDay,
             gameId,
             scriptId: game.scriptId ?? game.script?.id,
           });
-        }
-        const previousNote = previous ? getSavedNote(get().savedNotes, '', previous) : undefined;
-        if (previousNote?.gameId === gameId) {
-          get().deleteSavedNote(previousNote);
         }
       },
       setActiveDay: (gameId, day) => {

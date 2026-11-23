@@ -1,18 +1,22 @@
-import { useMemo, useState } from 'react';
+import { Plus } from 'lucide-react-native';
+import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { NoteAutocompleteInput } from '@/components/game/notes-tab/note-autocomplete-input';
+import { LessonBox } from '@/components/game/lesson-box';
 import { KeyboardAvoidingView } from '@/components/keyboard-avoiding-view';
 import { ScaledModal } from '@/components/scaled-modal';
 import { Text } from '@/components/text';
+import type { GameLessonInput } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Game, GameResult } from '@/types/game';
 import { getResultLabel } from '@/utils/game-utils';
-import { detectRoleIdsInNote } from '@/utils/saved-note-utils';
+import { getGameLessons } from '@/utils/lesson-utils';
+
+type LessonDraft = GameLessonInput & { key: number };
 
 type GameResultDialogProps = {
   game: Game;
   onClose: () => void;
-  onLessonChange: (lesson: string) => void;
+  onLessonChange: (lessons: GameLessonInput[]) => void;
   onResultChange: (result?: GameResult) => void;
   /** Opens the win rates on the game's script. Leave out when the game has no script. */
   onShowWinRates?: () => void;
@@ -20,8 +24,8 @@ type GameResultDialogProps = {
 };
 
 /**
- * Won / Lost / Clear plus a free-text lesson with the Notes tab's player and character suggestions.
- * The lesson saves whenever the dialog closes.
+ * Won / Lost / Clear plus free-text lessons (one box each) with the Notes tab's player and character suggestions.
+ * The lessons save whenever the dialog closes.
  */
 export function GameResultDialog({
   game,
@@ -31,15 +35,35 @@ export function GameResultDialog({
   onShowWinRates,
   result,
 }: GameResultDialogProps) {
-  const [draft, setDraft] = useState(game.lesson ?? '');
-  const roles = game.script?.roles;
-  const namedRoles = useMemo(() => {
-    const roleIds = detectRoleIdsInNote(draft, roles ?? []);
-    return (roles ?? []).filter((role) => roleIds.includes(role.id));
-  }, [draft, roles]);
+  const nextKey = useRef(0);
+  const [drafts, setDrafts] = useState<LessonDraft[]>(() => {
+    const lessons = getGameLessons(game);
+    return (lessons.length > 0 ? lessons : ['']).map((text) => ({
+      key: nextKey.current++,
+      tagPlayer: !game.untaggedLessons?.includes(text),
+      text,
+    }));
+  });
+
+  function updateDraft(key: number, changes: Partial<GameLessonInput>) {
+    setDrafts((current) =>
+      current.map((draft) => (draft.key === key ? { ...draft, ...changes } : draft)),
+    );
+  }
+
+  function removeDraft(key: number) {
+    setDrafts((current) => {
+      const rest = current.filter((draft) => draft.key !== key);
+      return rest.length > 0 ? rest : [{ key: nextKey.current++, tagPlayer: true, text: '' }];
+    });
+  }
+
+  function addDraft() {
+    setDrafts((current) => [...current, { key: nextKey.current++, tagPlayer: true, text: '' }]);
+  }
 
   function close(after?: () => void) {
-    onLessonChange(draft);
+    onLessonChange(drafts.map(({ tagPlayer, text }) => ({ tagPlayer, text })));
     onClose();
     after?.();
   }
@@ -115,25 +139,26 @@ export function GameResultDialog({
             </Pressable>
           </View>
           <View style={styles.lesson}>
-            <Text style={styles.lessonLabel}>Lesson</Text>
-            <View style={styles.inputRow}>
-              <NoteAutocompleteInput
-                accessibilityLabel="Lesson from this game"
-                day={game.activeDay}
+            <Text style={styles.lessonLabel}>Lessons</Text>
+            {drafts.map((draft) => (
+              <LessonBox
                 game={game}
-                onChangeText={setDraft}
-                phase={game.activePhase ?? 'day'}
-                placeholder="What will you take away from this game?"
-                placeholderTextColor={colors.inputPlaceholder}
-                style={styles.input}
-                value={draft}
+                key={draft.key}
+                onChangeText={(text) => updateDraft(draft.key, { text })}
+                onRemove={() => removeDraft(draft.key)}
+                onTagPlayerChange={(tagPlayer) => updateDraft(draft.key, { tagPlayer })}
+                tagPlayer={draft.tagPlayer}
+                value={draft.text}
               />
-            </View>
-            {namedRoles.length > 0 ? (
-              <Text style={styles.savedFor}>
-                {`Also saved as a note about ${namedRoles.map((role) => role.name).join(', ')}`}
-              </Text>
-            ) : null}
+            ))}
+            <Pressable
+              accessibilityLabel="Add another lesson"
+              accessibilityRole="button"
+              onPress={addDraft}
+              style={({ pressed }) => [styles.add, pressed && styles.actionPressed]}
+            >
+              <Plus color={colors.textMuted} size={20} strokeWidth={2.5} />
+            </Pressable>
           </View>
           <View style={styles.actions}>
             {onShowWinRates ? (
@@ -160,6 +185,15 @@ export function GameResultDialog({
 }
 
 const styles = StyleSheet.create({
+  add: {
+    alignItems: 'center',
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 44,
+  },
   action: {
     alignItems: 'center',
     backgroundColor: colors.surfaceRaised,
@@ -220,24 +254,8 @@ const styles = StyleSheet.create({
     padding: 20,
     width: '100%',
   },
-  input: {
-    backgroundColor: colors.inputBackground,
-    borderColor: colors.inputBorder,
-    borderRadius: 8,
-    borderWidth: 1,
-    color: colors.inputText,
-    fontSize: 15,
-    maxHeight: 160,
-    minHeight: 72,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    textAlignVertical: 'top',
-  },
-  inputRow: {
-    flexDirection: 'row',
-  },
   lesson: {
-    gap: 6,
+    gap: 8,
     zIndex: 1,
   },
   lessonLabel: {
@@ -249,11 +267,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 15,
     lineHeight: 21,
-  },
-  savedFor: {
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 18,
   },
   successAction: {
     backgroundColor: colors.successSurface,

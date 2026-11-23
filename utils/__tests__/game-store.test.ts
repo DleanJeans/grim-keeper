@@ -346,7 +346,7 @@ describe('setGameResult', () => {
   });
 });
 
-describe('setGameLesson', () => {
+describe('setGameLessons', () => {
   const game: Game = {
     activeDay: 1,
     conversations: [],
@@ -363,18 +363,21 @@ describe('setGameLesson', () => {
   it('saves a trimmed lesson and removes it when blank', () => {
     useGameStore.setState({ games: [game] });
 
-    useGameStore.getState().setGameLesson('game-1', '  Trust the Chef sooner \n');
-    expect(useGameStore.getState().games[0].lesson).toBe('Trust the Chef sooner');
+    useGameStore.getState().setGameLessons('game-1', [
+      { tagPlayer: true, text: '  Trust the Chef sooner \n' },
+      { tagPlayer: true, text: '  ' },
+    ]);
+    expect(useGameStore.getState().games[0].lessons).toEqual(['Trust the Chef sooner']);
     expect(useGameStore.getState().games[0].updatedAt).not.toBe(game.updatedAt);
 
-    useGameStore.getState().setGameLesson('game-1', '   ');
-    expect('lesson' in useGameStore.getState().games[0]).toBe(false);
+    useGameStore.getState().setGameLessons('game-1', [{ tagPlayer: true, text: '   ' }]);
+    expect('lessons' in useGameStore.getState().games[0]).toBe(false);
   });
 
   it('leaves the game untouched when the lesson did not change', () => {
     useGameStore.setState({ games: [game] });
 
-    useGameStore.getState().setGameLesson('game-1', '');
+    useGameStore.getState().setGameLessons('game-1', [{ tagPlayer: true, text: '' }]);
     expect(useGameStore.getState().games[0]).toBe(game);
   });
 
@@ -396,7 +399,9 @@ describe('setGameLesson', () => {
     };
     useGameStore.setState({ games: [scripted], savedNotes: [] });
 
-    useGameStore.getState().setGameLesson('game-1', 'Kill the Witch early');
+    useGameStore
+      .getState()
+      .setGameLessons('game-1', [{ tagPlayer: true, text: 'Kill the Witch early' }]);
     expect(useGameStore.getState().savedNotes).toMatchObject([
       {
         day: 3,
@@ -407,13 +412,39 @@ describe('setGameLesson', () => {
       },
     ]);
 
-    useGameStore.getState().setGameLesson('game-1', 'Trust the Chef');
+    useGameStore.getState().setGameLessons('game-1', [{ tagPlayer: true, text: 'Trust the Chef' }]);
     expect(useGameStore.getState().savedNotes).toMatchObject([
       { playerName: '', roleIds: ['chef'], text: 'Trust the Chef' },
     ]);
 
-    useGameStore.getState().setGameLesson('game-1', 'Talk more');
+    useGameStore.getState().setGameLessons('game-1', [{ tagPlayer: true, text: 'Talk more' }]);
     expect(useGameStore.getState().savedNotes).toEqual([]);
+
+    useGameStore.getState().setGameLessons('game-1', [
+      { tagPlayer: true, text: 'Kill the Witch early' },
+      { tagPlayer: true, text: 'Trust the Chef' },
+    ]);
+    expect(useGameStore.getState().savedNotes).toHaveLength(2);
+    useGameStore.getState().setGameLessons('game-1', [{ tagPlayer: true, text: 'Trust the Chef' }]);
+    expect(useGameStore.getState().savedNotes).toMatchObject([{ text: 'Trust the Chef' }]);
+  });
+
+  it('tags the player a lesson mentions unless told not to', () => {
+    useGameStore.setState({
+      games: [{ ...game, players: [{ id: 'p1', name: 'Stefan', seat: 1 }] }],
+      savedNotes: [],
+    });
+
+    useGameStore
+      .getState()
+      .setGameLessons('game-1', [{ tagPlayer: true, text: 'Stefan lies a lot' }]);
+    expect(useGameStore.getState().savedNotes).toMatchObject([{ playerName: 'Stefan' }]);
+
+    useGameStore
+      .getState()
+      .setGameLessons('game-1', [{ tagPlayer: false, text: 'Stefan lies a lot' }]);
+    expect(useGameStore.getState().savedNotes).toEqual([]);
+    expect(useGameStore.getState().games[0].untaggedLessons).toEqual(['Stefan lies a lot']);
   });
 });
 

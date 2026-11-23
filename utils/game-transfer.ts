@@ -244,6 +244,8 @@ function isGame(value: unknown): value is SerializedGame {
     isOptionalStartingNight(value.startingNight) &&
     isOptionalGameResult(value.result) &&
     isOptionalString(value.lesson) &&
+    isOptionalStringArray(value.lessons) &&
+    isOptionalStringArray(value.untaggedLessons) &&
     isOptionalStringArray(value.sushiRoleIds) &&
     isOptionalFiniteNumber(value.mapWidth) &&
     isOptionalFiniteNumber(value.mapHeight) &&
