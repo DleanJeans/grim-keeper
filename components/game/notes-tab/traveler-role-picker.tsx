@@ -1,6 +1,8 @@
+import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { TravelerRoleAlignmentButton } from '@/components/game/notes-tab/traveler-role-alignment-button';
 import { TravelerRoleOption } from '@/components/game/notes-tab/traveler-role-option';
+import { SearchBox } from '@/components/search-box';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Role } from '@/types/game';
@@ -28,6 +30,18 @@ export function TravelerRolePicker({
     ? selectedRoleIds.find((roleId) => isTravelerRoleSelection(selectedTravelerRole, roleId))
     : undefined;
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const filteredRoles = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase();
+    return query
+      ? roles.filter(
+          (role) =>
+            role.name.toLocaleLowerCase().includes(query) ||
+            role.id.toLocaleLowerCase().includes(query),
+        )
+      : roles;
+  }, [roles, searchQuery]);
+
   return (
     <View style={styles.container}>
       {selectedTravelerRole ? (
@@ -38,11 +52,20 @@ export function TravelerRolePicker({
           selectedRoleId={selectedTravelerRoleId}
         />
       ) : null}
+      <SearchBox
+        label="Search traveller characters"
+        onChangeText={setSearchQuery}
+        value={searchQuery}
+      />
       <Text selectable style={styles.description}>
-        {roles.length === 0 ? 'Traveller characters are unavailable offline' : description}
+        {roles.length === 0
+          ? 'Traveller characters are unavailable offline'
+          : filteredRoles.length === 0
+            ? 'No traveller characters found.'
+            : description}
       </Text>
       <View style={styles.roleOptions}>
-        {roles.map((role) => (
+        {filteredRoles.map((role) => (
           <TravelerRoleOption
             key={role.id}
             onPress={() =>

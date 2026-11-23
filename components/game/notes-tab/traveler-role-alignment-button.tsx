@@ -52,10 +52,9 @@ function TravelerRoleAlignmentOption({
 }) {
   return (
     <Pressable
-      accessibilityLabel={`Select ${label} ${role.name.replace(/^(Good|Evil) /, '')}`}
+      accessibilityLabel={`${selected ? 'Unselect' : 'Select'} ${label} ${role.name.replace(/^(Good|Evil) /, '')}`}
       accessibilityRole="radio"
       accessibilityState={{ selected }}
-      disabled={selected}
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
