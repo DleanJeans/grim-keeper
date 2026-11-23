@@ -195,7 +195,9 @@ export type Game = {
   roleInfos?: RoleInfoEntry[];
   /** Demon and Minion slot id (such as `demon-0`, `minion-1`) → character chosen as in play. */
   evilInPlay?: Record<string, string>;
-  /** Demons and Minions ruled out as not in play; hidden from the evil info rows and pickers. */
+  /** Townsfolk and Outsider slot id (such as `townsfolk-0`) → character chosen as in play. */
+  goodInPlay?: Record<string, string>;
+  /** Characters ruled out as not in play; hidden from the info table, info rows and pickers. */
   notInPlay?: string[];
   /** Bluff slot id (such as `bluff-0`) → good character the Demon is bluffing. */
   bluffs?: Record<string, string>;

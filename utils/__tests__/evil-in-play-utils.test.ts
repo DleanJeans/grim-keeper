@@ -4,6 +4,7 @@ import {
   getEvilInPlayRoleIds,
   getEvilInPlaySlots,
   getGameEvilInPlaySlots,
+  getGoodInPlaySlots,
   getPlayersWithoutClaims,
   getUnclaimedRoles,
   setEvilInPlayRole,
@@ -239,5 +240,28 @@ describe('setNotInPlayRole', () => {
     expect(added).toEqual(['imp', 'poisoner']);
     expect(setNotInPlayRole(added, 'imp', 'spy')).toEqual(['poisoner', 'spy']);
     expect(setNotInPlayRole(['imp'], 'imp', undefined)).toBeUndefined();
+  });
+});
+
+describe('getGoodInPlaySlots', () => {
+  const roles = [
+    role('washerwoman', 'townsfolk'),
+    role('chef', 'townsfolk'),
+    role('saint', 'outsider'),
+  ];
+  const setup = { demons: 1, minions: 1, outsiders: 1, townsfolk: 2 };
+
+  it('sizes slots by the setup and keeps chosen characters of the right team', () => {
+    const slots = getGoodInPlaySlots(roles, setup, { 'townsfolk-0': 'chef', 'outsider-0': 'chef' });
+    expect(slots.map((slot) => [slot.slotId, slot.roleId])).toEqual([
+      ['townsfolk-0', 'chef'],
+      ['townsfolk-1', undefined],
+      ['outsider-0', undefined],
+    ]);
+  });
+
+  it('fills empty slots with confirmed characters and locks them', () => {
+    const slots = getGoodInPlaySlots(roles, setup, undefined, ['saint']);
+    expect(slots[2]).toMatchObject({ locked: true, roleId: 'saint' });
   });
 });

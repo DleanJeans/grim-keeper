@@ -18,7 +18,15 @@ export type EvilInPlaySlot = {
   team: EvilInPlayTeam;
 };
 
-export type NotInPlaySlot = Omit<EvilInPlaySlot, 'team'> & { team: 'notInPlay' };
+export type GoodInPlayTeam = 'townsfolk' | 'outsider';
+
+export type GoodInPlaySlot = Omit<EvilInPlaySlot, 'team'> & { team: GoodInPlayTeam };
+
+export type NotInPlaySlot = Omit<EvilInPlaySlot, 'team'> & {
+  /** Which characters can be ruled out in this slot. */
+  group: 'evil' | GoodInPlayTeam;
+  team: 'notInPlay';
+};
 
 export type BluffSlot = Omit<EvilInPlaySlot, 'team'> & { team: 'bluff' };
 
@@ -52,42 +60,52 @@ export function getEvilInPlaySlots(
       };
     });
 
-  const fillConfirmed = (slots: EvilInPlaySlot[]) => {
-    const confirmed = new Set(
-      confirmedRoleIds.filter((roleId) =>
-        scriptRoles.some((role) => role.id === roleId && getTeam(role) === slots[0]?.team),
-      ),
+  const confirmedOf = (team: EvilInPlayTeam) =>
+    confirmedRoleIds.filter((roleId) =>
+      scriptRoles.some((role) => role.id === roleId && getTeam(role) === team),
     );
-    for (const slot of slots) {
-      if (slot.roleId && confirmed.delete(slot.roleId)) slot.locked = true;
-    }
-    const openSlots = [
-      ...slots.filter((slot) => !slot.roleId),
-      ...slots.filter((slot) => slot.roleId && !slot.locked).reverse(),
-    ];
-    [...confirmed].forEach((roleId, index) => {
-      const slot = openSlots[index];
-      if (!slot) return;
-      slot.roleId = roleId;
-      slot.locked = true;
-    });
-    return slots;
-  };
 
   return [
-    ...fillConfirmed(getSlots('demon', counts.demons)),
-    ...fillConfirmed(getSlots('minion', counts.minions)),
+    ...fillConfirmedSlots(getSlots('demon', counts.demons), confirmedOf('demon')),
+    ...fillConfirmedSlots(getSlots('minion', counts.minions), confirmedOf('minion')),
   ];
 }
 
 /**
- * In-play slots for a game, sized by its character counts or the standard setup, with characters
- * any player was confirmed as filled in.
+ * Townsfolk then Outsider slots sized by the setup, with the chosen character in each. Confirmed
+ * characters fill empty slots first, like the evil ones.
  */
-export function getGameEvilInPlaySlots(
-  game: Pick<Game, 'characterTypeCounts' | 'evilInPlay' | 'players'>,
+export function getGoodInPlaySlots(
   scriptRoles: Role[],
-) {
+  counts: CharacterTypeCounts,
+  goodInPlay: Game['goodInPlay'],
+  confirmedRoleIds: string[] = [],
+): GoodInPlaySlot[] {
+  const getSlots = (team: GoodInPlayTeam, count: number) => {
+    const teamRoleIds = new Set(
+      scriptRoles.filter((role) => getTeam(role) === team).map((role) => role.id),
+    );
+    const slots = Array.from({ length: Math.max(0, count) }, (_, index): GoodInPlaySlot => {
+      const slotId = `${team}-${index}`;
+      const roleId = goodInPlay?.[slotId];
+      return {
+        locked: false,
+        roleId: roleId && teamRoleIds.has(roleId) ? roleId : undefined,
+        slotId,
+        team,
+      };
+    });
+    return fillConfirmedSlots(
+      slots,
+      confirmedRoleIds.filter((roleId) => teamRoleIds.has(roleId)),
+    );
+  };
+
+  return [...getSlots('townsfolk', counts.townsfolk), ...getSlots('outsider', counts.outsiders)];
+}
+
+/** Game players (no Storytellers or Travellers) and the setup counts for them. */
+function getGameSetup(game: Pick<Game, 'characterTypeCounts' | 'players'>, scriptRoles: Role[]) {
   const travellerRoleIds = new Set(
     scriptRoles.filter((role) => getTeam(role) === 'traveller').map((role) => role.id),
   );
@@ -106,6 +124,54 @@ export function getGameEvilInPlaySlots(
       .filter((assignment) => assignment.kind === 'confirm')
       .flatMap((assignment) => assignment.roleIds.map((roleId) => roleId.replace(/_evil$/, ''))),
   );
+  return { confirmedRoleIds, counts };
+}
+
+/** Townsfolk and Outsider slots for a game, with characters any player was confirmed as filled in. */
+export function getGameGoodInPlaySlots(
+  game: Pick<Game, 'characterTypeCounts' | 'goodInPlay' | 'players'>,
+  scriptRoles: Role[],
+) {
+  const { confirmedRoleIds, counts } = getGameSetup(game, scriptRoles);
+  return getGoodInPlaySlots(scriptRoles, counts, game.goodInPlay, confirmedRoleIds);
+}
+
+/**
+ * Fills the empty Townsfolk and Outsider slots with characters claimed or confirmed by this phase
+ * that aren't in a slot yet, as far as they fit.
+ */
+export function autoFillGoodInPlay(
+  slots: GoodInPlaySlot[],
+  scriptRoles: Role[],
+  players: Player[],
+  day: number,
+  phase: GamePhase,
+  goodInPlay: Game['goodInPlay'],
+): Game['goodInPlay'] {
+  const next = { ...goodInPlay };
+  const taken = new Set(slots.map((slot) => slot.roleId));
+  for (const roleId of getClaimedRoleIdsForDayOrPrevious(players, day, phase)) {
+    const role = scriptRoles.find((candidate) => candidate.id === roleId);
+    const team = role ? getTeam(role) : undefined;
+    if (!role || taken.has(role.id) || (team !== 'townsfolk' && team !== 'outsider')) continue;
+    const slot = slots.find((candidate) => candidate.team === team && !candidate.roleId);
+    if (!slot) continue;
+    slot.roleId = role.id;
+    taken.add(role.id);
+    next[slot.slotId] = role.id;
+  }
+  return Object.keys(next).length > 0 ? next : undefined;
+}
+
+/**
+ * In-play slots for a game, sized by its character counts or the standard setup, with characters
+ * any player was confirmed as filled in.
+ */
+export function getGameEvilInPlaySlots(
+  game: Pick<Game, 'characterTypeCounts' | 'evilInPlay' | 'players'>,
+  scriptRoles: Role[],
+) {
+  const { confirmedRoleIds, counts } = getGameSetup(game, scriptRoles);
   return getEvilInPlaySlots(scriptRoles, counts, game.evilInPlay, confirmedRoleIds);
 }
 
@@ -149,10 +215,12 @@ export function getUnclaimedRoles(
   bluffs: Game['bluffs'],
   day: number,
   phase: GamePhase,
+  notInPlay: Game['notInPlay'] = [],
 ) {
   const takenRoleIds = new Set([
     ...getClaimedRoleIdsForDayOrPrevious(players, day, phase),
     ...Object.values(bluffs ?? {}),
+    ...notInPlay,
   ]);
   return scriptRoles.filter((role) => isGoodRole(role) && !takenRoleIds.has(role.id));
 }
@@ -169,7 +237,7 @@ export function getPlayersWithoutClaims(players: Player[], day: number, phase: G
 }
 
 /**
- * Sets or clears the character chosen in one slot (in play or bluff), dropping the map once it is
+ * Sets or clears the character chosen in one slot (in play, good in play or bluff), dropping the map once it is
  * empty.
  */
 export function setEvilInPlayRole(
@@ -195,6 +263,28 @@ export function setNotInPlayRole(
   const next = (notInPlay ?? []).filter((id) => id !== previousRoleId && id !== roleId);
   if (roleId) next.push(roleId);
   return next.length > 0 ? next : undefined;
+}
+
+/** Confirmed characters fill empty slots first, then replace chosen ones from the last slot. */
+function fillConfirmedSlots<Slot extends { locked: boolean; roleId?: string }>(
+  slots: Slot[],
+  confirmedRoleIds: string[],
+) {
+  const confirmed = new Set(confirmedRoleIds);
+  for (const slot of slots) {
+    if (slot.roleId && confirmed.delete(slot.roleId)) slot.locked = true;
+  }
+  const openSlots = [
+    ...slots.filter((slot) => !slot.roleId),
+    ...slots.filter((slot) => slot.roleId && !slot.locked).reverse(),
+  ];
+  [...confirmed].forEach((roleId, index) => {
+    const slot = openSlots[index];
+    if (!slot) return;
+    slot.roleId = roleId;
+    slot.locked = true;
+  });
+  return slots;
 }
 
 function getTeam(role: Role) {

@@ -28,6 +28,7 @@ import {
   type EvilInPlayTeam,
   getEvilInPlayRoleIds,
   getGameEvilInPlaySlots,
+  getGameGoodInPlaySlots,
 } from '@/utils/evil-in-play-utils';
 import { canFakeRoleInfo, getFakeEvilIds, getFakeRoleInfoValues } from '@/utils/fake-info-utils';
 import {
@@ -169,6 +170,20 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
     [game.characterTypeCounts, game.evilInPlay, game.players, scriptRoles],
   );
   const evilInPlayRoleIds = useMemo(() => getEvilInPlayRoleIds(evilInPlaySlots), [evilInPlaySlots]);
+  const goodInPlayRoleIds = useMemo(
+    () =>
+      new Set(
+        getGameGoodInPlaySlots(
+          {
+            characterTypeCounts: game.characterTypeCounts,
+            goodInPlay: game.goodInPlay,
+            players: game.players,
+          },
+          scriptRoles,
+        ).flatMap((slot) => (slot.roleId ? [slot.roleId] : [])),
+      ),
+    [game.characterTypeCounts, game.goodInPlay, game.players, scriptRoles],
+  );
   const notInPlayRoleIds = useMemo(() => new Set(game.notInPlay ?? []), [game.notInPlay]);
   const evilCounts = useMemo(
     () => ({
@@ -226,13 +241,20 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
                     activePhase,
                   ) &&
                   !notInPlayRoleIds.has(role.id) &&
-                  isShownTeamRole(role, team, mentionedRoleIds, evilInPlayRoleIds)),
+                  isShownTeamRole(
+                    role,
+                    team,
+                    mentionedRoleIds,
+                    evilInPlayRoleIds,
+                    goodInPlayRoleIds,
+                  )),
         ),
       })).filter(({ roles }) => roles.length > 0),
     [
       activeDay,
       activePhase,
       evilInPlayRoleIds,
+      goodInPlayRoleIds,
       isSushiBuffet,
       mentionedRoleIds,
       notInPlayRoleIds,
@@ -628,15 +650,18 @@ const styles = StyleSheet.create({
 
 /**
  * Evil characters show even when nobody claims them, since they rarely get claimed, but only the
- * ones chosen as in play once any are. Good characters show once mentioned.
+ * ones chosen as in play once any are. Good characters show once mentioned or chosen as in play.
  */
 function isShownTeamRole(
   role: Role,
   team: string,
   mentionedRoleIds: Set<string>,
   evilInPlayRoleIds: Map<EvilInPlayTeam, Set<string>>,
+  goodInPlayRoleIds: Set<string>,
 ) {
-  if (team !== 'demon' && team !== 'minion') return mentionedRoleIds.has(role.id);
+  if (team !== 'demon' && team !== 'minion') {
+    return mentionedRoleIds.has(role.id) || goodInPlayRoleIds.has(role.id);
+  }
 
   const inPlayRoleIds = evilInPlayRoleIds.get(team);
   return !inPlayRoleIds || inPlayRoleIds.has(role.id);

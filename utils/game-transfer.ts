@@ -260,6 +260,7 @@ function isGame(value: unknown): value is SerializedGame {
     isOptionalPlayerDayNotes(value.playerDayNotes) &&
     isOptionalRoleInfos(value.roleInfos) &&
     isOptionalStringRecord(value.evilInPlay) &&
+    isOptionalStringRecord(value.goodInPlay) &&
     isOptionalStringArray(value.notInPlay) &&
     isOptionalStringRecord(value.bluffs) &&
     isOptionalStringRecord(value.suspicions) &&

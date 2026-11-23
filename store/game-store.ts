@@ -243,6 +243,8 @@ type GameState = GameData & {
   setEvilInPlayRole: (gameId: string, slotId: string, roleId?: string) => void;
   setBluffRole: (gameId: string, slotId: string, roleId?: string) => void;
   /** Adds a character to the not-in-play list, or replaces/removes `previousRoleId`. */
+  setGoodInPlay: (gameId: string, goodInPlay: Game['goodInPlay']) => void;
+  setGoodInPlayRole: (gameId: string, slotId: string, roleId?: string) => void;
   setNotInPlayRole: (gameId: string, previousRoleId?: string, roleId?: string) => void;
   /** Sets or clears the made-up evil team used to roll bluffed Character info. */
   setFakeEvilTeam: (gameId: string, team?: FakeEvilTeam) => void;
@@ -1546,6 +1548,28 @@ export const useGameStore = create<GameState>()(
               ? {
                   ...game,
                   evilInPlay: setEvilInPlayRole(game.evilInPlay, slotId, roleId),
+                  updatedAt: new Date().toISOString(),
+                }
+              : game,
+          ),
+        }));
+      },
+      setGoodInPlay: (gameId, goodInPlay) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? { ...game, goodInPlay, updatedAt: new Date().toISOString() }
+              : game,
+          ),
+        }));
+      },
+      setGoodInPlayRole: (gameId, slotId, roleId) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? {
+                  ...game,
+                  goodInPlay: setEvilInPlayRole(game.goodInPlay, slotId, roleId),
                   updatedAt: new Date().toISOString(),
                 }
               : game,
