@@ -1,6 +1,12 @@
-import type { Conversation, Player } from '@/types/game';
+import type { Conversation, Player, Role } from '@/types/game';
 import { getNomineeId } from '@/utils/conversation-utils';
-import { getNominationLimit, getVoteWeight, isDeadBanshee, isDeadVote } from '@/utils/player-utils';
+import {
+  getNominationLimit,
+  getVoteWeight,
+  isDeadBanshee,
+  isDeadVote,
+  isTravelerNomination,
+} from '@/utils/player-utils';
 
 /** Players alive when the day began, not counting Storytellers. Same-day deaths still count. */
 export function getAlivePlayerCount(players: Player[], day: number): number {
@@ -12,14 +18,21 @@ export function getVotesToExecute(players: Player[], day: number): number {
   return Math.ceil(getAlivePlayerCount(players, day) / 2);
 }
 
-/** Votes on a nomination: each voter's hand, with a dead Banshee's counting twice. */
+/**
+ * Votes on a nomination: each voter's hand, with a dead Banshee's counting twice. Dead players'
+ * votes don't count when the nominee is a Traveller (pass the script `roles` to detect that).
+ */
 export function getVoteCount(
-  nomination: Pick<Conversation, 'day' | 'voterIds'>,
+  nomination: Pick<Conversation, 'day' | 'voterIds'> &
+    Partial<Pick<Conversation, 'initiatorId' | 'participantIds'>>,
   players: Player[],
+  roles?: Role[],
 ): number {
   const playerById = new Map(players.map((player) => [player.id, player]));
+  const ignoreDead = isTravelerNomination(nomination, players, roles);
   return (nomination.voterIds ?? []).reduce((votes, voterId) => {
     const voter = playerById.get(voterId);
+    if (voter && ignoreDead && isDeadVote(voter, nomination.day)) return votes;
     return votes + (voter ? getVoteWeight(voter, nomination.day) : 1);
   }, 0);
 }
@@ -32,6 +45,7 @@ export function getOnTheBlockNominationId(
   nominations: Conversation[],
   players: Player[],
   day: number,
+  roles?: Role[],
 ): string | undefined {
   const votesNeeded = getVotesToExecute(players, day);
   let topId: string | undefined;
@@ -39,7 +53,7 @@ export function getOnTheBlockNominationId(
   let tied = false;
 
   for (const nomination of nominations) {
-    const votes = getVoteCount(nomination, players);
+    const votes = getVoteCount(nomination, players, roles);
     if (votes > topVotes) {
       topId = nomination.id;
       topVotes = votes;
@@ -160,12 +174,15 @@ export function getNominationAvailability(
   players: Player[],
   nominations: Conversation[],
   day: number,
+  roles?: Role[],
 ): NominationAvailability {
   const todays = nominations.filter(
     (nomination) => nomination.kind === 'nomination' && nomination.day === day,
   );
   const nominationCounts = new Map<string, number>();
   for (const nomination of todays) {
+    // Nominating a Traveller doesn't use up the day's nomination.
+    if (isTravelerNomination(nomination, players, roles)) continue;
     nominationCounts.set(
       nomination.initiatorId,
       (nominationCounts.get(nomination.initiatorId) ?? 0) + 1,

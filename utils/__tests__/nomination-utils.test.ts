@@ -1,4 +1,4 @@
-import type { Conversation, Player } from '@/types/game';
+import type { Conversation, Player, Role } from '@/types/game';
 import {
   getAlivePlayerCount,
   getDaysLeft,
@@ -9,6 +9,7 @@ import {
   getVotesToExecute,
   getVotingBuddies,
 } from '@/utils/nomination-utils';
+import { hasDeadVoteAvailable } from '@/utils/player-utils';
 
 const now = '2026-10-31T00:00:00.000Z';
 
@@ -135,5 +136,51 @@ describe('dead Banshee', () => {
     expect(
       getNominationAvailability(withBanshee, [first, second], 2).canNominate.map((p) => p.id),
     ).not.toContain('d');
+  });
+});
+
+describe('Traveller nominations', () => {
+  const roles = [
+    { id: 'thief_good', name: 'Good Thief', team: 'traveller' },
+    { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
+  ] as unknown as Role[];
+  const assignment = (roleId: string): Player['roleAssignments'] => [
+    { day: 1, kind: 'confirm', phase: 'night', roleIds: [roleId], updatedAt: now },
+  ];
+  const cast = [
+    player('a'),
+    player('b'),
+    player('t', { roleAssignments: assignment('thief_good') }),
+    player('d', { death: { day: 1, kind: 'night', updatedAt: now } }),
+  ];
+  const nom = (id: string, initiatorId: string, nomineeId: string, voterIds: string[] = []) =>
+    ({
+      createdAt: now,
+      day: 2,
+      id,
+      initiatorId,
+      kind: 'nomination',
+      participantIds: [initiatorId, nomineeId],
+      voterIds,
+    }) as Conversation;
+
+  it('lets a player nominate again after nominating a Traveller', () => {
+    const available = (noms: Conversation[]) =>
+      getNominationAvailability(cast, noms, 2, roles).canNominate.map((p) => p.id);
+    expect(available([nom('n1', 'a', 't')])).toContain('a');
+    expect(available([nom('n1', 'a', 'b')])).not.toContain('a');
+    expect(getNominationAvailability(cast, [nom('n1', 'a', 't')], 2).canNominate).toHaveLength(2);
+  });
+
+  it("does not count dead players' votes on a Traveller", () => {
+    expect(getVoteCount(nom('n1', 'a', 't', ['a', 'b', 'd']), cast, roles)).toBe(2);
+    expect(getVoteCount(nom('n2', 'a', 'b', ['a', 'b', 'd']), cast, roles)).toBe(3);
+  });
+
+  it('keeps the dead vote when it was only cast on a Traveller', () => {
+    const conversations = [nom('n1', 'a', 't', ['d'])];
+    expect(hasDeadVoteAvailable(cast[3], 2, 'day', conversations, roles, cast)).toBe(true);
+    conversations.push(nom('n2', 'a', 'b', ['d']));
+    expect(hasDeadVoteAvailable(cast[3], 2, 'day', conversations, roles, cast)).toBe(false);
   });
 });

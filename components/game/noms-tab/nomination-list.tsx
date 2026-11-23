@@ -34,7 +34,12 @@ export function NominationList() {
     (conversation) => conversation.day === activeDayCutoff && conversation.kind === 'nomination',
   );
   const votesNeeded = getVotesToExecute(players, activeDayCutoff);
-  const onTheBlockId = getOnTheBlockNominationId(nominations, players, activeDayCutoff);
+  const onTheBlockId = getOnTheBlockNominationId(
+    nominations,
+    players,
+    activeDayCutoff,
+    game.script?.roles,
+  );
   const voterIds = [...new Set(nominations.flatMap((nomination) => nomination.voterIds ?? []))];
   const hasFlowerGirl = game.script?.roles.some(isFlowerGirlRole) ?? false;
   const bigWig = getRolesByIds(game.lorics ?? [], roleCatalog).find((role) => role.id === 'bigwig');
@@ -42,7 +47,12 @@ export function NominationList() {
   return (
     <View style={styles.list}>
       {activePhase === 'day' && activeDayCutoff >= 1 && !trackingMode && !votingNominationId ? (
-        <NominationAvailability day={activeDayCutoff} nominations={nominations} players={players} />
+        <NominationAvailability
+          day={activeDayCutoff}
+          nominations={nominations}
+          players={players}
+          roles={game.script?.roles}
+        />
       ) : null}
       {nominations.length === 0 ? (
         <View style={styles.empty}>
@@ -61,6 +71,7 @@ export function NominationList() {
             index={index}
             key={nomination.id}
             nomination={nomination}
+            roles={game.script?.roles}
             onDelete={() => handleDeleteNomination(nomination.id)}
             onEditVotes={(nominationVoterIds) =>
               handleEditNominationVotes(nomination.id, nominationVoterIds)

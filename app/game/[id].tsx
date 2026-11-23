@@ -84,6 +84,7 @@ import {
   hasDeadVoteAvailable,
   isDeadBanshee,
   isPlayerCurrentlyDead,
+  isTravelerNomination,
 } from '@/utils/player-utils';
 import {
   addRoleToScript,
@@ -373,8 +374,11 @@ export default function GameRoute() {
     (conversation) => conversation.day === activeDayCutoff && conversation.kind === 'nomination',
   );
   const nominatedPlayerIds = new Set(activeDayNominations.map(getNomineeId));
+  // Nominating a Traveller doesn't use up the day's nomination.
   const focusedPlayerNominationCount = activeDayNominations.filter(
-    (nomination) => nomination.initiatorId === focusedPlayerId,
+    (nomination) =>
+      nomination.initiatorId === focusedPlayerId &&
+      !isTravelerNomination(nomination, activeGame.players, activeGame.script?.roles),
   ).length;
   // A dead Banshee may still nominate, twice a day.
   const focusedPlayerIsDeadBanshee = focusedPlayer
@@ -402,15 +406,31 @@ export default function GameRoute() {
             activeGame.activeDay,
             activePhase,
             activeGame.conversations,
+            activeGame.script?.roles,
+            activeGame.players,
           ),
       )
       .map((player) => player.id),
   );
+  const votingNomination = votingNominationId
+    ? activeGame.conversations.find((conversation) => conversation.id === votingNominationId)
+    : undefined;
+  // Dead players can't vote on a Traveller.
+  const votingOnTraveler =
+    !!votingNomination &&
+    isTravelerNomination(votingNomination, activeGame.players, activeGame.script?.roles);
+  const travelerVoteBlockedPlayerIds = votingOnTraveler
+    ? new Set(
+        activeGame.players
+          .filter((player) => isPlayerCurrentlyDead(player, activeGame.activeDay, activePhase))
+          .map((player) => player.id),
+      )
+    : undefined;
   const disabledPlayerIds =
     trackingMode === 'nomination'
       ? [...nominatedPlayerIds].filter((playerId) => playerId !== selectedPlayerIds[0])
       : votingNominationId
-        ? [...deadVoteUnavailablePlayerIds].filter(
+        ? [...(travelerVoteBlockedPlayerIds ?? deadVoteUnavailablePlayerIds)].filter(
             (playerId) => !selectedPlayerIds.includes(playerId),
           )
         : [];
@@ -449,7 +469,14 @@ export default function GameRoute() {
           .filter(
             (player) =>
               !player.isStoryteller &&
-              hasDeadVoteAvailable(player, activeGame.activeDay, 'day', activeGame.conversations),
+              hasDeadVoteAvailable(
+                player,
+                activeGame.activeDay,
+                'day',
+                activeGame.conversations,
+                gameRoles,
+                activeGame.players,
+              ),
           )
           .map((player) => player.name)
       : EMPTY_IDS;
@@ -557,12 +584,15 @@ export default function GameRoute() {
       if (
         player &&
         !selectedPlayerIds.includes(playerId) &&
-        !hasDeadVoteAvailable(
-          player,
-          activeGame.activeDay,
-          activePhase,
-          activeGame.conversations,
-        ) &&
+        (travelerVoteBlockedPlayerIds?.has(playerId) ||
+          !hasDeadVoteAvailable(
+            player,
+            activeGame.activeDay,
+            activePhase,
+            activeGame.conversations,
+            activeGame.script?.roles,
+            activeGame.players,
+          )) &&
         isPlayerCurrentlyDead(player, activeGame.activeDay, activePhase)
       ) {
         return;

@@ -34,7 +34,7 @@ const SUSPICION_LABELS: Record<string, string> = {
  * With `showRoles` off, characters and marks are left out.
  */
 export function getPlayerTimeline(
-  game: Pick<Game, 'conversations' | 'playerDayNotes' | 'players' | 'suspicions'>,
+  game: Pick<Game, 'script' | 'conversations' | 'playerDayNotes' | 'players' | 'suspicions'>,
   playerId: string,
   roles: Role[],
   lastDay: number,
@@ -88,7 +88,7 @@ export function getPlayerTimeline(
     const index = getEventPhaseIndex(conversation.day, 'day');
     if (conversation.kind === 'nomination') {
       const nomineeId = getNomineeId(conversation);
-      const votes = getVoteCount(conversation, game.players);
+      const votes = getVoteCount(conversation, game.players, game.script?.roles);
       if (conversation.initiatorId === playerId) {
         add(index, `Nominated ${nameOf(nomineeId)} (${votes} ${votes === 1 ? 'vote' : 'votes'})`);
       }

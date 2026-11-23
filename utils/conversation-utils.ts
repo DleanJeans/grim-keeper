@@ -37,7 +37,7 @@ export function getPairKey(firstPlayerId: string, secondPlayerId: string) {
 }
 
 /** A nomination's nominee: the other participant, or the nominator for a self nomination. */
-export function getNomineeId(nomination: Conversation) {
+export function getNomineeId(nomination: Pick<Conversation, 'initiatorId' | 'participantIds'>) {
   return (
     nomination.participantIds.find((playerId) => playerId !== nomination.initiatorId) ??
     nomination.initiatorId

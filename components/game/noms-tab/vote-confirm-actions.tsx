@@ -20,8 +20,9 @@ export function VoteConfirmActions() {
     (conversation) => conversation.id === votingNominationId,
   );
   const voteCount = getVoteCount(
-    { ...(nomination ?? { day: activeDayCutoff }), voterIds: selectedPlayerIds },
+    { ...nomination, day: nomination?.day ?? activeDayCutoff, voterIds: selectedPlayerIds },
     game.players,
+    game.script?.roles,
   );
   return (
     <View style={confirmRowStyle}>

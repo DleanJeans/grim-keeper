@@ -27,7 +27,7 @@ const RECAP_KINDS: PlayerRoleAssignment['kind'][] = ['claim', 'confirm'];
  * With `showRoles` off, claims and killer characters are left out.
  */
 export function getDayRecap(
-  game: Pick<Game, 'conversations' | 'players'>,
+  game: Pick<Game, 'script' | 'conversations' | 'players'>,
   day: number,
   roles: Role[],
   showRoles = true,
@@ -66,10 +66,15 @@ export function getDayRecap(
         (conversation) => conversation.kind === 'nomination' && conversation.day === day,
       );
       const votesNeeded = getVotesToExecute(game.players, day);
-      const onTheBlockId = getOnTheBlockNominationId(nominations, game.players, day);
+      const onTheBlockId = getOnTheBlockNominationId(
+        nominations,
+        game.players,
+        day,
+        game.script?.roles,
+      );
       for (const nomination of nominations) {
         const nomineeId = getNomineeId(nomination);
-        const votes = getVoteCount(nomination, game.players);
+        const votes = getVoteCount(nomination, game.players, game.script?.roles);
         events.push({
           id: `nomination-${nomination.id}`,
           kind: 'nomination',

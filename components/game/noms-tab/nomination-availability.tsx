@@ -2,18 +2,24 @@ import { StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import type { Conversation, Player } from '@/types/game';
+import type { Conversation, Player, Role } from '@/types/game';
 import { getNominationAvailability } from '@/utils/nomination-utils';
 
 type NominationAvailabilityProps = {
   day: number;
   nominations: Conversation[];
   players: Player[];
+  roles?: Role[];
 };
 
 /** Who can still nominate today and who hasn't been nominated yet. */
-export function NominationAvailability({ day, nominations, players }: NominationAvailabilityProps) {
-  const { canNominate, notNominated } = getNominationAvailability(players, nominations, day);
+export function NominationAvailability({
+  day,
+  nominations,
+  players,
+  roles,
+}: NominationAvailabilityProps) {
+  const { canNominate, notNominated } = getNominationAvailability(players, nominations, day, roles);
   const names = (list: Player[]) =>
     list.length === 0 ? 'Nobody' : list.map((player) => player.name).join(', ');
 

@@ -70,8 +70,9 @@ export function DockNomination() {
   const title = getNominationTitle(game.players, nomination, pausedNomination.selectedPlayerIds);
   const voteCount = nomination
     ? getVoteCount(
-        { day: nomination.day, voterIds: pausedNomination.selectedPlayerIds },
+        { ...nomination, voterIds: pausedNomination.selectedPlayerIds },
         game.players,
+        game.script?.roles,
       )
     : null;
   const pausedPosition = { activeDay: pausedNomination.day, activePhase: pausedNomination.phase };

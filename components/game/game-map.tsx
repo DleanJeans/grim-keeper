@@ -613,7 +613,14 @@ function PlayerTokenForMap({
     activePhase,
   );
   const { startingNight } = useGameRouteContext();
-  const deadVoteAvailable = hasDeadVoteAvailable(player, phaseDay, activePhase, conversations);
+  const deadVoteAvailable = hasDeadVoteAvailable(
+    player,
+    phaseDay,
+    activePhase,
+    conversations,
+    gameRoles,
+    players,
+  );
   // "N2" / "D4": when they died, with the night number shifted by the starting-night setting.
   const deathLabel = player.death
     ? getDeathPhase(player.death) === 'night'

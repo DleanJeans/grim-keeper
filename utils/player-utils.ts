@@ -1,8 +1,12 @@
-import type { Conversation, GamePhase, Player } from '@/types/game';
+import type { Conversation, GamePhase, Player, Role } from '@/types/game';
 import { APP_USER_ID } from '@/utils/app-user';
-import { normalizePlayerName } from '@/utils/conversation-utils';
+import { getNomineeId, normalizePlayerName } from '@/utils/conversation-utils';
 import { getDeathPhase, getEventPhaseIndex, getPhaseIndex } from '@/utils/game-phase-utils';
-import { getRoleAssignmentForDayOrPrevious } from '@/utils/role-utils';
+import {
+  getRoleAssignmentForDayOrPrevious,
+  getRolesForDayOrPrevious,
+  isTravelerRole,
+} from '@/utils/role-utils';
 
 const BANSHEE_ROLE_ID = 'banshee';
 
@@ -34,11 +38,37 @@ export function isPlayerCurrentlyDead(
   return true;
 }
 
+/** Whether the nominee was a Traveller (confirmed or claimed) on the nomination's day. */
+export function isTravelerNomination(
+  nomination: Pick<Conversation, 'day'> &
+    Partial<Pick<Conversation, 'initiatorId' | 'participantIds'>>,
+  players: Player[],
+  roles: Role[] | undefined,
+): boolean {
+  if (!roles?.length || !nomination.initiatorId || !nomination.participantIds) return false;
+  const nominee = players.find(
+    (player) =>
+      player.id ===
+      getNomineeId({
+        initiatorId: nomination.initiatorId as string,
+        participantIds: nomination.participantIds as string[],
+      }),
+  );
+  return (
+    !!nominee &&
+    getRolesForDayOrPrevious(nominee.roleAssignments, nomination.day, roles, 'day').some(
+      isTravelerRole,
+    )
+  );
+}
+
 export function hasDeadVoteAvailable(
   player: Player,
   activeDay: number,
   activePhase: GamePhase = 'day',
   conversations?: Conversation[],
+  roles?: Role[],
+  players?: Player[],
 ): boolean {
   if (!isPlayerCurrentlyDead(player, activeDay, activePhase)) {
     return false;
@@ -60,7 +90,8 @@ export function hasDeadVoteAvailable(
       conversation.voterIds?.includes(player.id) &&
       getEventPhaseIndex(conversation.day, 'day') <= activePhaseIndex &&
       isDeadVote(player, conversation.day) &&
-      !isDeadBanshee(player, conversation.day),
+      !isDeadBanshee(player, conversation.day) &&
+      !(players && isTravelerNomination(conversation, players, roles)),
   );
 }
 

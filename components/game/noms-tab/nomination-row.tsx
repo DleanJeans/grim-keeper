@@ -30,6 +30,7 @@ type NominationRowProps = {
   /** This nominee has the most votes and enough of them to be executed. */
   onTheBlock: boolean;
   players: Player[];
+  roles?: Role[];
   votesNeeded: number;
 };
 
@@ -47,6 +48,7 @@ export function NominationRow({
   onUndoExecution,
   onTheBlock,
   players,
+  roles,
   votesNeeded,
 }: NominationRowProps) {
   const playerById = new Map(players.map((player) => [player.id, player]));
@@ -94,7 +96,7 @@ export function NominationRow({
       <View style={styles.actions}>
         <EditVotesButton
           onPress={() => onEditVotes(voterIds)}
-          voteCount={getVoteCount(nomination, players)}
+          voteCount={getVoteCount(nomination, players, roles)}
           votesNeeded={votesNeeded}
         />
         <View style={styles.rightActions}>
