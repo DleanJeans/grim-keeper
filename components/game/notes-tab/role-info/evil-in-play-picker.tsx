@@ -15,6 +15,7 @@ import {
   type EvilInPlaySlot,
   type GoodInPlaySlot,
   getBluffSlots,
+  getGameCharacterCounts,
   getGameEvilInPlaySlots,
   getGameGoodInPlaySlots,
   getPlayersWithoutClaims,
@@ -43,7 +44,7 @@ export function EvilInPlayPicker() {
     () => getGameScriptRoles({ script: game.script, sushiRoleIds: game.sushiRoleIds }),
     [game.script, game.sushiRoleIds],
   );
-  const slots = useMemo(
+  const baseSlots = useMemo(
     () =>
       getGameEvilInPlaySlots(
         {
@@ -55,7 +56,7 @@ export function EvilInPlayPicker() {
       ),
     [game.characterTypeCounts, game.evilInPlay, game.players, scriptRoles],
   );
-  const goodSlots = useMemo(
+  const baseGoodSlots = useMemo(
     () =>
       getGameGoodInPlaySlots(
         {
@@ -66,6 +67,13 @@ export function EvilInPlayPicker() {
         scriptRoles,
       ),
     [game.characterTypeCounts, game.goodInPlay, game.players, scriptRoles],
+  );
+  const counts = useMemo(() => getGameCharacterCounts(game, scriptRoles), [game, scriptRoles]);
+  // Once every slot of a team is filled, one more empty slot lets extra characters be logged.
+  const slots = useMemo(() => withSpareSlot(baseSlots, 'minion'), [baseSlots]);
+  const goodSlots = useMemo(
+    () => withSpareSlot(withSpareSlot(baseGoodSlots, 'townsfolk'), 'outsider'),
+    [baseGoodSlots],
   );
   const notInPlayGroups = useMemo(
     () =>
@@ -146,21 +154,35 @@ export function EvilInPlayPicker() {
     <View style={styles.container}>
       <Text style={styles.title}>In play</Text>
       {showEvil ? (
-        <View style={styles.evilRow}>
-          <SlotTokens onPressSlot={setActiveSlot} rolesById={rolesById} slots={slots} />
-          <View style={styles.separator} />
-          <SlotTokens
-            onPressSlot={setActiveSlot}
-            rolesById={rolesById}
-            slots={notInPlayGroups.find(({ group }) => group === 'evil')?.slots ?? []}
-          />
-        </View>
+        <>
+          <View style={styles.evilRow}>
+            <SlotTokens onPressSlot={setActiveSlot} rolesById={rolesById} slots={slots} />
+            <SlotTokens
+              onPressSlot={setActiveSlot}
+              rolesById={rolesById}
+              separated
+              slots={notInPlayGroups.find(({ group }) => group === 'evil')?.slots ?? []}
+            />
+          </View>
+          {[
+            { expected: counts.demons, label: 'Demons', team: 'demon' },
+            { expected: counts.minions, label: 'Minions', team: 'minion' },
+          ].map(({ expected, label, team }) => (
+            <OverCountWarning
+              expected={expected}
+              key={team}
+              label={label}
+              logged={slots.filter((slot) => slot.team === team && slot.roleId).length}
+            />
+          ))}
+        </>
       ) : null}
       {GOOD_TEAMS.map(({ label, team }) =>
         showGood(team) ? (
           <GoodRow
             key={team}
             label={label}
+            expected={team === 'townsfolk' ? counts.townsfolk : counts.outsiders}
             onAutoFill={team === 'townsfolk' ? handleAutoFill : undefined}
             onPressSlot={setActiveSlot}
             rolesById={rolesById}
@@ -228,14 +250,24 @@ const styles = StyleSheet.create({
   },
   evilRow: {
     alignItems: 'flex-start',
+    columnGap: 4,
     flexDirection: 'row',
     flexWrap: 'wrap',
+  },
+  separatedToken: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+  },
+  overCount: {
+    color: colors.danger,
+    fontSize: 12,
+    fontWeight: '800',
   },
   separator: {
     alignSelf: 'flex-start',
     backgroundColor: colors.borderStrong,
     height: 46,
-    marginHorizontal: 6,
+    marginRight: 6,
     width: 1,
   },
   tokens: {
@@ -248,17 +280,20 @@ const styles = StyleSheet.create({
 function SlotTokens({
   onPressSlot,
   rolesById,
+  separated,
   slots,
 }: {
   onPressSlot: (slot: PickerSlot) => void;
   rolesById: Map<string, Role>;
+  /** Puts a divider before the first token, kept on the same line as it when the row wraps. */
+  separated?: boolean;
   slots: PickerSlot[];
 }) {
   return (
-    <View style={styles.tokens}>
-      {slots.map((slot) => {
+    <>
+      {slots.map((slot, index) => {
         const role = slot.roleId ? rolesById.get(slot.roleId) : undefined;
-        return (
+        const token = (
           <RoleInfoToken
             crossedOut={slot.team === 'notInPlay'}
             key={slot.slotId}
@@ -268,13 +303,52 @@ function SlotTokens({
             value={slot.roleId}
           />
         );
+        if (!separated || index > 0) return token;
+        return (
+          <View key={slot.slotId} style={styles.separatedToken}>
+            <View style={styles.separator} />
+            {token}
+          </View>
+        );
       })}
-    </View>
+    </>
+  );
+}
+
+/** Adds an empty slot after the team's last one when none of its slots is empty. */
+function withSpareSlot<Slot extends { roleId?: string; slotId: string; team: string }>(
+  slots: Slot[],
+  team: Slot['team'],
+): Slot[] {
+  const teamSlots = slots.filter((slot) => slot.team === team);
+  if (teamSlots.length === 0 || teamSlots.some((slot) => !slot.roleId)) return slots;
+  const spare = { locked: false, slotId: `${team}-${teamSlots.length}`, team } as unknown as Slot;
+  const lastIndex = slots.map((slot) => slot.team).lastIndexOf(team);
+  return [...slots.slice(0, lastIndex + 1), spare, ...slots.slice(lastIndex + 1)];
+}
+
+/** A small red "logged/expected" when more characters are logged than the setup has slots for. */
+function OverCountWarning({
+  expected,
+  label,
+  logged,
+}: {
+  expected: number;
+  label?: string;
+  logged: number;
+}) {
+  if (logged <= expected) return null;
+  return (
+    <Text style={styles.overCount}>
+      {label ? `${label} ` : ''}
+      {logged}/{expected}
+    </Text>
   );
 }
 
 /** One good team: its in-play tokens, then the characters ruled out as not in play. */
 function GoodRow({
+  expected,
   label,
   notInPlaySlots,
   onAutoFill,
@@ -282,6 +356,7 @@ function GoodRow({
   rolesById,
   slots,
 }: {
+  expected: number;
   label: string;
   notInPlaySlots: NotInPlaySlot[];
   onAutoFill?: () => void;
@@ -298,15 +373,16 @@ function GoodRow({
             <Text style={styles.autoFill}>Auto fill from claims</Text>
           </Pressable>
         ) : null}
+        <OverCountWarning expected={expected} logged={slots.filter((slot) => slot.roleId).length} />
       </View>
       <View style={styles.evilRow}>
-        {slots.length > 0 ? (
-          <>
-            <SlotTokens onPressSlot={onPressSlot} rolesById={rolesById} slots={slots} />
-            <View style={styles.separator} />
-          </>
-        ) : null}
-        <SlotTokens onPressSlot={onPressSlot} rolesById={rolesById} slots={notInPlaySlots} />
+        <SlotTokens onPressSlot={onPressSlot} rolesById={rolesById} slots={slots} />
+        <SlotTokens
+          onPressSlot={onPressSlot}
+          rolesById={rolesById}
+          separated={slots.length > 0}
+          slots={notInPlaySlots}
+        />
       </View>
     </>
   );

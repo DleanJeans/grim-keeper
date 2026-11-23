@@ -260,6 +260,19 @@ describe('getGoodInPlaySlots', () => {
     ]);
   });
 
+  it('keeps slots past the setup count for extra characters logged or confirmed', () => {
+    const slots = getGoodInPlaySlots(roles, setup, { 'townsfolk-2': 'chef' }, [
+      'saint',
+      'washerwoman',
+    ]);
+    expect(slots.map((slot) => [slot.slotId, slot.roleId])).toEqual([
+      ['townsfolk-0', 'washerwoman'],
+      ['townsfolk-1', undefined],
+      ['townsfolk-2', 'chef'],
+      ['outsider-0', 'saint'],
+    ]);
+  });
+
   it('fills empty slots with confirmed characters and locks them', () => {
     const slots = getGoodInPlaySlots(roles, setup, undefined, ['saint']);
     expect(slots[2]).toMatchObject({ locked: true, roleId: 'saint' });

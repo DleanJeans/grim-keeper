@@ -45,20 +45,24 @@ export function getEvilInPlaySlots(
   const demons = scriptRoles.filter((role) => getTeam(role) === 'demon');
   const onlyDemon = demons.length === 1 ? demons[0] : undefined;
   const scriptRoleIds = new Set(scriptRoles.map((role) => role.id));
+  const getSlot = (team: EvilInPlayTeam, index: number): EvilInPlaySlot => {
+    const slotId = `${team}-${index}`;
+    if (team === 'demon' && onlyDemon) {
+      return { locked: true, roleId: onlyDemon.id, slotId, team };
+    }
+    const roleId = evilInPlay?.[slotId];
+    return {
+      locked: false,
+      roleId: roleId && scriptRoleIds.has(roleId) ? roleId : undefined,
+      slotId,
+      team,
+    };
+  };
   const getSlots = (team: EvilInPlayTeam, count: number) =>
-    Array.from({ length: Math.max(0, count) }, (_, index): EvilInPlaySlot => {
-      const slotId = `${team}-${index}`;
-      if (team === 'demon' && onlyDemon) {
-        return { locked: true, roleId: onlyDemon.id, slotId, team };
-      }
-      const roleId = evilInPlay?.[slotId];
-      return {
-        locked: false,
-        roleId: roleId && scriptRoleIds.has(roleId) ? roleId : undefined,
-        slotId,
-        team,
-      };
-    });
+    Array.from(
+      { length: getSlotCount(team, count, (roleId) => scriptRoleIds.has(roleId), evilInPlay) },
+      (_, index) => getSlot(team, index),
+    );
 
   const confirmedOf = (team: EvilInPlayTeam) =>
     confirmedRoleIds.filter((roleId) =>
@@ -66,8 +70,12 @@ export function getEvilInPlaySlots(
     );
 
   return [
-    ...fillConfirmedSlots(getSlots('demon', counts.demons), confirmedOf('demon')),
-    ...fillConfirmedSlots(getSlots('minion', counts.minions), confirmedOf('minion')),
+    ...fillConfirmedSlots(getSlots('demon', counts.demons), confirmedOf('demon'), (index) =>
+      getSlot('demon', index),
+    ),
+    ...fillConfirmedSlots(getSlots('minion', counts.minions), confirmedOf('minion'), (index) =>
+      getSlot('minion', index),
+    ),
   ];
 }
 
@@ -85,7 +93,7 @@ export function getGoodInPlaySlots(
     const teamRoleIds = new Set(
       scriptRoles.filter((role) => getTeam(role) === team).map((role) => role.id),
     );
-    const slots = Array.from({ length: Math.max(0, count) }, (_, index): GoodInPlaySlot => {
+    const getSlot = (index: number): GoodInPlaySlot => {
       const slotId = `${team}-${index}`;
       const roleId = goodInPlay?.[slotId];
       return {
@@ -94,10 +102,15 @@ export function getGoodInPlaySlots(
         slotId,
         team,
       };
-    });
+    };
+    const slots = Array.from(
+      { length: getSlotCount(team, count, (roleId) => teamRoleIds.has(roleId), goodInPlay) },
+      (_, index) => getSlot(index),
+    );
     return fillConfirmedSlots(
       slots,
       confirmedRoleIds.filter((roleId) => teamRoleIds.has(roleId)),
+      getSlot,
     );
   };
 
@@ -269,6 +282,8 @@ export function setNotInPlayRole(
 function fillConfirmedSlots<Slot extends { locked: boolean; roleId?: string }>(
   slots: Slot[],
   confirmedRoleIds: string[],
+  /** Makes an extra slot, past the setup count, for a confirmed character that doesn't fit. */
+  createSlot?: (index: number) => Slot,
 ) {
   const confirmed = new Set(confirmedRoleIds);
   for (const slot of slots) {
@@ -279,12 +294,41 @@ function fillConfirmedSlots<Slot extends { locked: boolean; roleId?: string }>(
     ...slots.filter((slot) => slot.roleId && !slot.locked).reverse(),
   ];
   [...confirmed].forEach((roleId, index) => {
-    const slot = openSlots[index];
+    let slot = openSlots[index];
+    if (!slot && createSlot) {
+      slot = createSlot(slots.length);
+      slots.push(slot);
+    }
     if (!slot) return;
     slot.roleId = roleId;
     slot.locked = true;
   });
   return slots;
+}
+
+/** The setup count, or more when characters were logged in slots past it. */
+function getSlotCount(
+  team: string,
+  count: number,
+  isValidRole: (roleId: string) => boolean,
+  stored: Record<string, string> | undefined,
+) {
+  let length = Math.max(0, count);
+  for (const [slotId, roleId] of Object.entries(stored ?? {})) {
+    const match = slotId.match(/^(.+)-(\d+)$/);
+    if (match?.[1] === team && isValidRole(roleId)) {
+      length = Math.max(length, Number(match[2]) + 1);
+    }
+  }
+  return length;
+}
+
+/** The Townsfolk, Outsider, Minion and Demon counts the setup expects for a game. */
+export function getGameCharacterCounts(
+  game: Pick<Game, 'characterTypeCounts' | 'players'>,
+  scriptRoles: Role[],
+) {
+  return getGameSetup(game, scriptRoles).counts;
 }
 
 function getTeam(role: Role) {
