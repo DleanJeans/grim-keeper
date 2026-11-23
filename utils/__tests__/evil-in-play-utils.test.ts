@@ -113,6 +113,24 @@ describe('getGameEvilInPlaySlots', () => {
     expect(slots.filter((slot) => slot.team === 'minion')).toHaveLength(2);
   });
 
+  it('does not count a player who claimed a good or evil Traveller', () => {
+    const players = Array.from(
+      { length: 10 },
+      (_, index) =>
+        ({
+          id: `p${index}`,
+          roleAssignments:
+            index === 1 ? [{ day: 1, kind: 'claim', roleIds: ['thief_evil'] }] : undefined,
+        }) as unknown as Player,
+    );
+    const slots = getGameEvilInPlaySlots({ players }, [
+      ...TROUBLE_BREWING,
+      role('thief', 'traveller'),
+    ]);
+    // 9 players: 1 Minion.
+    expect(slots.filter((slot) => slot.team === 'minion')).toHaveLength(1);
+  });
+
   it('fills in characters a player was confirmed as', () => {
     const players = [
       { id: 'a', roleAssignments: [{ day: 1, kind: 'confirm', roleIds: ['spy'] }] },

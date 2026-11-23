@@ -95,7 +95,9 @@ export function getGameEvilInPlaySlots(
     (player) =>
       !player.isStoryteller &&
       !(player.roleAssignments ?? []).some((assignment) =>
-        assignment.roleIds.some((roleId) => travellerRoleIds.has(roleId)),
+        assignment.roleIds.some((roleId) =>
+          travellerRoleIds.has(roleId.replace(/_(good|evil)$/, '')),
+        ),
       ),
   ).length;
   const counts = game.characterTypeCounts ?? getAutomaticCharacterTypeCounts(playerCount);
