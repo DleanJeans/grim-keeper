@@ -169,6 +169,7 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
     [game.characterTypeCounts, game.evilInPlay, game.players, scriptRoles],
   );
   const evilInPlayRoleIds = useMemo(() => getEvilInPlayRoleIds(evilInPlaySlots), [evilInPlaySlots]);
+  const notInPlayRoleIds = useMemo(() => new Set(game.notInPlay ?? []), [game.notInPlay]);
   const evilCounts = useMemo(
     () => ({
       demons: evilInPlaySlots.filter((slot) => slot.team === 'demon').length,
@@ -224,6 +225,7 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
                     activeDay,
                     activePhase,
                   ) &&
+                  !notInPlayRoleIds.has(role.id) &&
                   isShownTeamRole(role, team, mentionedRoleIds, evilInPlayRoleIds)),
         ),
       })).filter(({ roles }) => roles.length > 0),
@@ -233,6 +235,7 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
       evilInPlayRoleIds,
       isSushiBuffet,
       mentionedRoleIds,
+      notInPlayRoleIds,
       playerRoleIds,
       players,
       roleInfos,
@@ -289,6 +292,7 @@ export function RoleInfoTable({ player }: RoleInfoTableProps) {
           excludedRoleIds: new Set([
             ...Object.values(game.bluffs ?? {}),
             ...Object.values(game.evilInPlay ?? {}),
+            ...(game.notInPlay ?? []),
           ]),
           executed,
           inPlayRoleIds: {

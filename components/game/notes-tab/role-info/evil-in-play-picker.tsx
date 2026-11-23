@@ -16,11 +16,12 @@ import {
   getGameEvilInPlaySlots,
   getPlayersWithoutClaims,
   getUnclaimedRoles,
+  type NotInPlaySlot,
 } from '@/utils/evil-in-play-utils';
 import type { RoleInfoSlot } from '@/utils/role-info-utils';
 import { getGameScriptRoles } from '@/utils/script-service';
 
-type PickerSlot = BluffSlot | EvilInPlaySlot;
+type PickerSlot = BluffSlot | EvilInPlaySlot | NotInPlaySlot;
 
 /**
  * Tokens for choosing which Demon and Minions are in play, which limits the evil info rows, a row
@@ -30,6 +31,7 @@ export function EvilInPlayPicker() {
   const { activeDay, activePhase, game, players, runDayEdit } = useGameRouteContext();
   const setEvilInPlayRole = useGameStore((state) => state.setEvilInPlayRole);
   const setBluffRole = useGameStore((state) => state.setBluffRole);
+  const setNotInPlayRole = useGameStore((state) => state.setNotInPlayRole);
   const [activeSlot, setActiveSlot] = useState<PickerSlot | null>(null);
 
   const scriptRoles = useMemo(
@@ -47,6 +49,10 @@ export function EvilInPlayPicker() {
         scriptRoles,
       ),
     [game.characterTypeCounts, game.evilInPlay, game.players, scriptRoles],
+  );
+  const notInPlaySlots = useMemo(
+    () => getNotInPlaySlots(scriptRoles, game.notInPlay),
+    [game.notInPlay, scriptRoles],
   );
   const bluffSlots = useMemo(
     () => getBluffSlots(scriptRoles, game.bluffs),
@@ -66,12 +72,13 @@ export function EvilInPlayPicker() {
   );
   // A character already chosen in another slot of the same row can't be picked again.
   const pickableRoles = useMemo(() => {
-    const rowSlots: PickerSlot[] = activeSlot?.team === 'bluff' ? bluffSlots : slots;
+    const rowSlots: PickerSlot[] =
+      activeSlot?.team === 'bluff' ? bluffSlots : [...slots, ...notInPlaySlots];
     const takenRoleIds = new Set(
       rowSlots.filter((slot) => slot.slotId !== activeSlot?.slotId).map((slot) => slot.roleId),
     );
     return scriptRoles.filter((role) => !takenRoleIds.has(role.id));
-  }, [activeSlot, bluffSlots, scriptRoles, slots]);
+  }, [activeSlot, bluffSlots, notInPlaySlots, scriptRoles, slots]);
 
   const showEvil = slots.length > 0 && scriptRoles.some((role) => isEvilTeam(role.team));
   const showBluffs = scriptRoles.some((role) => isGoodTeam(role.team));
@@ -82,18 +89,22 @@ export function EvilInPlayPicker() {
 
     const { slotId, team } = activeSlot;
     setActiveSlot(null);
-    runDayEdit(() =>
-      team === 'bluff'
-        ? setBluffRole(game.id, slotId, roleId)
-        : setEvilInPlayRole(game.id, slotId, roleId),
-    );
+    runDayEdit(() => {
+      if (team === 'bluff') setBluffRole(game.id, slotId, roleId);
+      else if (team === 'notInPlay') setNotInPlayRole(game.id, activeSlot.roleId, roleId);
+      else setEvilInPlayRole(game.id, slotId, roleId);
+    });
   }
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>In play</Text>
       {showEvil ? (
-        <SlotTokens onPressSlot={setActiveSlot} rolesById={rolesById} slots={slots} />
+        <SlotTokens
+          onPressSlot={setActiveSlot}
+          rolesById={rolesById}
+          slots={[...slots, ...notInPlaySlots]}
+        />
       ) : null}
       {showBluffs ? (
         <>
@@ -210,12 +221,31 @@ function UnclaimedRoles({
   );
 }
 
-const TOKEN_LABELS = { bluff: 'Bluff', demon: 'Demon', minion: 'Minion' } as const;
+const TOKEN_LABELS = {
+  bluff: 'Bluff',
+  demon: 'Demon',
+  minion: 'Minion',
+  notInPlay: 'Not in play',
+} as const;
+
+/** Each Demon or Minion ruled out, then an empty token to rule out another. */
+function getNotInPlaySlots(scriptRoles: Role[], notInPlay: string[] | undefined): NotInPlaySlot[] {
+  const evilRoleIds = new Set(
+    scriptRoles.filter((role) => isEvilTeam(role.team)).map((role) => role.id),
+  );
+  const roleIds = (notInPlay ?? []).filter((roleId) => evilRoleIds.has(roleId));
+  return [...roleIds, undefined].map((roleId, index) => ({
+    locked: false,
+    roleId,
+    slotId: `not-in-play-${index}`,
+    team: 'notInPlay',
+  }));
+}
 
 /** Labelled with the chosen character's name, or its type while empty. */
 function getTokenSlot({ slotId, team }: PickerSlot, roleName?: string): RoleInfoSlot {
   return {
-    filter: team === 'bluff' ? 'good' : team,
+    filter: team === 'bluff' ? 'good' : team === 'notInPlay' ? 'evil' : team,
     id: slotId,
     kind: 'role',
     label: roleName ?? TOKEN_LABELS[team],

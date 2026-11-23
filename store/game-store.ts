@@ -27,7 +27,7 @@ import type {
   StoredScript,
 } from '@/types/game';
 import { normalizePlayerName } from '@/utils/conversation-utils';
-import { setEvilInPlayRole } from '@/utils/evil-in-play-utils';
+import { setEvilInPlayRole, setNotInPlayRole } from '@/utils/evil-in-play-utils';
 import {
   addMissingFriends,
   getFriendByName,
@@ -235,6 +235,8 @@ type GameState = GameData & {
   setCharacterTypeCounts: (gameId: string, counts?: CharacterTypeCounts) => void;
   setEvilInPlayRole: (gameId: string, slotId: string, roleId?: string) => void;
   setBluffRole: (gameId: string, slotId: string, roleId?: string) => void;
+  /** Adds a character to the not-in-play list, or replaces/removes `previousRoleId`. */
+  setNotInPlayRole: (gameId: string, previousRoleId?: string, roleId?: string) => void;
   /** Sets or clears the made-up evil team used to roll bluffed Character info. */
   setFakeEvilTeam: (gameId: string, team?: FakeEvilTeam) => void;
   /** Knaves: which Storyteller the app user thinks lies, and the day they switched at dusk. */
@@ -1536,6 +1538,19 @@ export const useGameStore = create<GameState>()(
               ? {
                   ...game,
                   evilInPlay: setEvilInPlayRole(game.evilInPlay, slotId, roleId),
+                  updatedAt: new Date().toISOString(),
+                }
+              : game,
+          ),
+        }));
+      },
+      setNotInPlayRole: (gameId, previousRoleId, roleId) => {
+        set((state) => ({
+          games: state.games.map((game) =>
+            game.id === gameId
+              ? {
+                  ...game,
+                  notInPlay: setNotInPlayRole(game.notInPlay, previousRoleId, roleId),
                   updatedAt: new Date().toISOString(),
                 }
               : game,

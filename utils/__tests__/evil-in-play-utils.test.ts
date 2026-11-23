@@ -7,6 +7,7 @@ import {
   getPlayersWithoutClaims,
   getUnclaimedRoles,
   setEvilInPlayRole,
+  setNotInPlayRole,
 } from '@/utils/evil-in-play-utils';
 
 const role = (id: string, team: string): Role => ({ id, name: id, team }) as Role;
@@ -210,5 +211,15 @@ describe('getPlayersWithoutClaims', () => {
       'c',
       'd',
     ]);
+  });
+});
+
+describe('setNotInPlayRole', () => {
+  it('adds, swaps and removes characters, dropping an empty list', () => {
+    const first = setNotInPlayRole(undefined, undefined, 'imp');
+    const added = setNotInPlayRole(first, undefined, 'poisoner');
+    expect(added).toEqual(['imp', 'poisoner']);
+    expect(setNotInPlayRole(added, 'imp', 'spy')).toEqual(['poisoner', 'spy']);
+    expect(setNotInPlayRole(['imp'], 'imp', undefined)).toBeUndefined();
   });
 });

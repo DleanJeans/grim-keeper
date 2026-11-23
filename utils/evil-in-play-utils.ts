@@ -18,6 +18,8 @@ export type EvilInPlaySlot = {
   team: EvilInPlayTeam;
 };
 
+export type NotInPlaySlot = Omit<EvilInPlaySlot, 'team'> & { team: 'notInPlay' };
+
 export type BluffSlot = Omit<EvilInPlaySlot, 'team'> & { team: 'bluff' };
 
 export { getAutomaticCharacterTypeCounts } from '@/utils/character-type-counts';
@@ -177,6 +179,20 @@ export function setEvilInPlayRole(
   if (roleId) next[slotId] = roleId;
   else delete next[slotId];
   return Object.keys(next).length > 0 ? next : undefined;
+}
+
+/**
+ * Adds a character to the not-in-play list, or swaps/removes `previousRoleId`. An empty list is
+ * dropped.
+ */
+export function setNotInPlayRole(
+  notInPlay: Game['notInPlay'],
+  previousRoleId: string | undefined,
+  roleId: string | undefined,
+): Game['notInPlay'] {
+  const next = (notInPlay ?? []).filter((id) => id !== previousRoleId && id !== roleId);
+  if (roleId) next.push(roleId);
+  return next.length > 0 ? next : undefined;
 }
 
 function getTeam(role: Role) {
