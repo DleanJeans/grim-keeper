@@ -18,7 +18,7 @@ const OFFICIAL_EDITIONS: Record<string, string[]> = {
   'trouble-brewing': ['tb', 'trouble brewing'],
 };
 const EXTRA_TEAMS = ['traveller', 'traveler', 'fabled', 'loric'];
-const DEADLINE_MS = 3500;
+const DEADLINE_MS = 2500;
 
 export const PREVIEW_ICON_PIXELS = 112;
 

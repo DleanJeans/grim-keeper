@@ -2,6 +2,8 @@ import { decodeSharedGame, SHARE_GAME_PARAM } from '@/utils/share-game-codec';
 import { hasPreviewScript, loadPreviewIcons } from '@/utils/share-preview-icons';
 import { createSharePreviewPng } from '@/utils/share-preview-image';
 
+const MAX_PREVIEW_BYTES = 250_000;
+
 /** The map picture shown in chat apps next to the link: tokens as discs with their initials. */
 export async function GET(request: Request) {
   try {
@@ -21,7 +23,9 @@ export async function GET(request: Request) {
       );
     }
 
-    const png = createSharePreviewPng(sharedGame, icons);
+    let png = createSharePreviewPng(sharedGame, icons);
+    // WhatsApp drops pictures over about 300 KB, so a heavy strip of icons is not worth it.
+    if (png.byteLength > MAX_PREVIEW_BYTES) png = createSharePreviewPng(sharedGame, []);
     // Without the icons the picture is only a stopgap, so chat apps may ask again soon.
     const incomplete = hasPreviewScript(sharedGame) && icons.length === 0;
 

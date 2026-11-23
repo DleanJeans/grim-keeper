@@ -1,6 +1,7 @@
 import type { Game, Player, PlayerPosition, Role, StoredScript } from '@/types/game';
 import { APP_USER_ID } from '@/utils/app-user';
 import { normalizePlayerName } from '@/utils/conversation-utils';
+import { getGameActivePhase } from '@/utils/game-phase-utils';
 import { createGameTransfer, type GameTransfer, parseGameTransfer } from '@/utils/game-transfer';
 import {
   defaultMapHeight,
@@ -8,6 +9,7 @@ import {
   getPlayerMapPosition,
   resolveMapOverlaps,
 } from '@/utils/layout-utils';
+import { getRolesForDayOrPrevious, isTravelerRole } from '@/utils/role-utils';
 import { SUSHI_BUFFET_SCRIPT_ID } from '@/utils/script-constants';
 import { OFFICIAL_CAROUSEL_SCRIPT_ID } from '@/utils/script-service';
 import {
@@ -35,6 +37,7 @@ export {
   decodeSharedGame,
   encodeSharedGame,
   getSharedCharacterCounts,
+  getSharedPlayerCount,
   getSharedScriptName,
 } from '@/utils/share-game-codec';
 export type { SharedGame };
@@ -77,6 +80,16 @@ export function createSharedGame(
     (player) => player.id === APP_USER_ID && !player.isStoryteller,
   );
 
+  const gameRoles = [...(game.script?.roles ?? []), ...roleCatalog];
+  const activePhase = getGameActivePhase(game);
+  const travelerCount = game.players.filter(
+    (player) =>
+      !player.isStoryteller &&
+      getRolesForDayOrPrevious(player.roleAssignments, game.activeDay, gameRoles, activePhase).some(
+        isTravelerRole,
+      ),
+  ).length;
+
   return {
     v: SHARE_GAME_VERSION,
     c: game.createdAt,
@@ -99,6 +112,7 @@ export function createSharedGame(
         : [player.name, player.seat, x, y];
     }),
     ...(sharerIndex >= 0 ? { o: sharerIndex } : {}),
+    ...(travelerCount > 0 ? { tv: travelerCount } : {}),
     ...(isSushi
       ? { su: game.sushiRoleIds ?? exportedGame.scriptRoleIds ?? [] }
       : reference

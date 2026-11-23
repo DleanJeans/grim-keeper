@@ -14,6 +14,7 @@ import {
   findSharedPlayerIndex,
   getQuarterTurnsToBottom,
   getSharedCharacterCounts,
+  getSharedPlayerCount,
   getSharedScriptRoles,
 } from '@/utils/share-game-link';
 
@@ -225,6 +226,44 @@ describe('share game link', () => {
       outsiders: 1,
       townsfolk: 7,
     });
+  });
+
+  it('leaves Travellers out of the player and character counts', () => {
+    const big = createBigGame(script);
+    const withTraveller: Game = {
+      ...big,
+      players: big.players.map((player, index) =>
+        index === 3
+          ? {
+              ...player,
+              roleAssignments: [
+                {
+                  day: 1,
+                  kind: 'confirm',
+                  roleIds: ['beggar'],
+                  updatedAt: '2026-01-01T00:00:00.000Z',
+                },
+              ],
+            }
+          : player,
+      ),
+    };
+    const seated = big.players.filter((player) => !player.isStoryteller).length;
+    const shared = createSharedGame(
+      { ...withTraveller, activeDay: 1 },
+      [],
+      [{ ability: 'Begs.', id: 'beggar', name: 'Beggar', team: 'traveller' }],
+      'DJ',
+    );
+    const decoded = decodeSharedGame(encodeSharedGame(shared));
+
+    expect(decoded.tv).toBe(1);
+    expect(getSharedPlayerCount(decoded)).toBe(seated - 1);
+    expect(getSharedCharacterCounts(decoded)).toEqual(
+      getSharedCharacterCounts({ ...decoded, tv: undefined, p: decoded.p.slice(1) }),
+    );
+    expect(decoded.o).toBe(shared.o);
+    expect(decodeSharedGame(encodeSharedGame({ ...shared, o: undefined })).tv).toBe(1);
   });
 
   it('leaves the player who shared the game out of the names to pick from', () => {

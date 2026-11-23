@@ -3,6 +3,7 @@ import * as opentype from 'opentype.js';
 
 import {
   getSharedCharacterCounts,
+  getSharedPlayerCount,
   getSharedScriptName,
   SHARE_PREVIEW_HEIGHT,
   SHARE_PREVIEW_WIDTH,
@@ -241,7 +242,8 @@ function drawInfo(
   const font = fonts.body;
   const maxWidth = canvas.width - left - MARGIN;
   const scriptName = getSharedScriptName(sharedGame) ?? 'Grim Keeper game';
-  const seated = sharedGame.p.filter((player) => !player[4]).length;
+  const seated = getSharedPlayerCount(sharedGame);
+  const travellers = sharedGame.tv ?? 0;
   const counts = getSharedCharacterCounts(sharedGame);
   const ratio: Array<[number, string, string]> = [
     [counts.townsfolk, 'Townsfolk', '#60a5fa'],
@@ -270,7 +272,7 @@ function drawInfo(
   drawText(
     canvas,
     font,
-    `${seated} player${seated === 1 ? '' : 's'}`,
+    `${seated} player${seated === 1 ? '' : 's'}${travellers > 0 ? ` + ${travellers} Traveller${travellers === 1 ? '' : 's'}` : ''}`,
     left,
     y + playersSize * 0.9,
     playersSize,

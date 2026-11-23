@@ -1,6 +1,7 @@
 import {
   decodeSharedGame,
   getSharedCharacterCounts,
+  getSharedPlayerCount,
   getSharedScriptName,
   SHARE_GAME_IMAGE_PATH,
   SHARE_GAME_PARAM,
@@ -10,6 +11,7 @@ import {
 } from '@/utils/share-game-codec';
 
 const MAX_DESCRIPTION_LENGTH = 180;
+const FALLBACK_IMAGE_PATH = '/pwa/icon-512.png';
 
 /**
  * The link people send. Chat apps read the preview tags (script, players and a map picture);
@@ -22,17 +24,17 @@ export function GET(request: Request) {
   const openUrl = `${SHARE_GAME_PATH}?${SHARE_GAME_PARAM}=${encodeURIComponent(value)}`;
   let title = 'Track a Grim Keeper game';
   let description = 'Open the link to follow the game.';
-  let imageTag = '';
+  // A broken link still gets the app icon instead of no picture.
+  let imageTag = getImageTags(`${url.origin}${FALLBACK_IMAGE_PATH}`, 512, 512, 'Grim Keeper');
 
   try {
     const sharedGame = decodeSharedGame(value);
     const scriptName = getSharedScriptName(sharedGame);
-    const seated = sharedGame.p.filter((player) => !player[4]);
     const storytellers = sharedGame.p.filter((player) => player[4]);
     title = scriptName ? `Track a game of ${scriptName}` : title;
     description = truncate(
       [
-        `${seated.length} players: ${formatCharacterCounts(getSharedCharacterCounts(sharedGame))}.`,
+        `${getSharedPlayerCount(sharedGame)} players: ${formatCharacterCounts(getSharedCharacterCounts(sharedGame))}${formatTravellers(sharedGame.tv)}.`,
         storytellers.length > 0
           ? `Storyteller: ${storytellers.map((player) => player[0]).join(', ')}.`
           : '',
@@ -41,15 +43,13 @@ export function GET(request: Request) {
         .join(' '),
     );
     const imageUrl = `${url.origin}${SHARE_GAME_IMAGE_PATH}?${SHARE_GAME_PARAM}=${encodeURIComponent(value)}`;
-    imageTag = [
-      `<meta property="og:image" content="${escapeHtml(imageUrl)}">`,
-      '<meta property="og:image:type" content="image/png">',
-      `<meta property="og:image:width" content="${SHARE_PREVIEW_WIDTH}">`,
-      `<meta property="og:image:height" content="${SHARE_PREVIEW_HEIGHT}">`,
-      `<meta property="og:image:alt" content="${escapeHtml(`Map of the game: ${seated.length} players`)}">`,
-      '<meta name="twitter:card" content="summary_large_image">',
-      `<meta name="twitter:image" content="${escapeHtml(imageUrl)}">`,
-    ].join('\n');
+    imageTag = getImageTags(
+      imageUrl,
+      SHARE_PREVIEW_WIDTH,
+      SHARE_PREVIEW_HEIGHT,
+      `Map of the game: ${getSharedPlayerCount(sharedGame)} players`,
+      'summary_large_image',
+    );
   } catch {
     // A broken link still opens the app, which explains what is wrong.
   }
@@ -82,6 +82,25 @@ ${imageTag}
   });
 }
 
+function getImageTags(
+  imageUrl: string,
+  width: number,
+  height: number,
+  alt: string,
+  card = 'summary',
+) {
+  return [
+    `<meta property="og:image" content="${escapeHtml(imageUrl)}">`,
+    `<meta property="og:image:secure_url" content="${escapeHtml(imageUrl)}">`,
+    '<meta property="og:image:type" content="image/png">',
+    `<meta property="og:image:width" content="${width}">`,
+    `<meta property="og:image:height" content="${height}">`,
+    `<meta property="og:image:alt" content="${escapeHtml(alt)}">`,
+    `<meta name="twitter:card" content="${card}">`,
+    `<meta name="twitter:image" content="${escapeHtml(imageUrl)}">`,
+  ].join('\n');
+}
+
 function formatCharacterCounts(counts: ReturnType<typeof getSharedCharacterCounts>) {
   const parts: Array<[number, string, string]> = [
     [counts.townsfolk, 'Townsfolk', 'Townsfolk'],
@@ -91,6 +110,10 @@ function formatCharacterCounts(counts: ReturnType<typeof getSharedCharacterCount
   ];
 
   return parts.map(([count, one, many]) => `${count} ${count === 1 ? one : many}`).join(', ');
+}
+
+function formatTravellers(count = 0) {
+  return count > 0 ? `, ${count} ${count === 1 ? 'Traveller' : 'Travellers'}` : '';
 }
 
 function truncate(text: string) {

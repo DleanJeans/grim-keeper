@@ -54,6 +54,8 @@ export type SharedGame = {
   k?: [number, number, number, number];
   /** Index in `p` of the player who shared the game, who is not offered as "you". */
   o?: number;
+  /** Seated players who are Travellers: they are not part of the character counts. */
+  tv?: number;
 };
 
 export function encodeSharedGame(sharedGame: SharedGame) {
@@ -137,6 +139,7 @@ function isSharedGame(value: unknown): value is SharedGame {
         Number.isInteger(game.o) &&
         game.o >= 0 &&
         game.o < game.p.length)) &&
+    (game.tv === undefined || isPositiveOrZero(game.tv)) &&
     (game.k === undefined ||
       (Array.isArray(game.k) && game.k.length === 4 && game.k.every(isPositiveOrZero)))
   );
@@ -243,7 +246,11 @@ function packSharedGame(sharedGame: SharedGame) {
     // The packed order lists seated players before Storytellers.
     const packedIndex = players.indexOf(sharedGame.p[sharedGame.o]);
     if (packedIndex >= 0) writer.varint(packedIndex);
+  } else if (sharedGame.tv) {
+    // Out of range: no sharer, but the Traveller count follows.
+    writer.varint(players.length);
   }
+  if (sharedGame.tv) writer.varint(sharedGame.tv);
 
   return writer.bytes();
 }
@@ -284,7 +291,9 @@ function unpackSharedGame(bytes: Uint8Array): SharedGame {
       ? ([reader.varint(), reader.varint(), reader.varint(), reader.varint()] as SharedGame['k'])
       : undefined;
 
-  const sharer = reader.done() ? undefined : reader.varint();
+  const sharerValue = reader.done() ? undefined : reader.varint();
+  const sharer = sharerValue !== undefined && sharerValue < count ? sharerValue : undefined;
+  const travellers = reader.done() ? undefined : reader.varint();
 
   return {
     v: SHARE_GAME_VERSION,
@@ -298,6 +307,7 @@ function unpackSharedGame(bytes: Uint8Array): SharedGame {
     ...(lorics ? { l: lorics } : {}),
     ...(counts ? { k: counts } : {}),
     ...(sharer !== undefined ? { o: sharer } : {}),
+    ...(travellers ? { tv: travellers } : {}),
   };
 }
 
@@ -428,5 +438,10 @@ export function getSharedCharacterCounts(sharedGame: SharedGame): CharacterTypeC
     return { townsfolk, outsiders, minions, demons };
   }
 
-  return getAutomaticCharacterTypeCounts(sharedGame.p.filter((player) => !player[4]).length);
+  return getAutomaticCharacterTypeCounts(getSharedPlayerCount(sharedGame));
+}
+
+/** Seated players without the Travellers, who are not part of the starting setup. */
+export function getSharedPlayerCount(sharedGame: SharedGame) {
+  return Math.max(0, sharedGame.p.filter((player) => !player[4]).length - (sharedGame.tv ?? 0));
 }
