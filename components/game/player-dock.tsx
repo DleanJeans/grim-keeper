@@ -20,11 +20,12 @@ import { useGameRouteContext } from '@/components/game/game-route-context';
 import { DockTalk } from '@/components/game/interactions-tab/dock-talk';
 import { DockNomination } from '@/components/game/noms-tab/dock-nomination';
 import { NomIcon } from '@/components/game/noms-tab/nom-icon';
-import { QUICK_TAGS, QuickNoteTags } from '@/components/game/notes-tab/quick-note-tags';
+import { QuickNoteTags } from '@/components/game/notes-tab/quick-note-tags';
 import { SuspicionPicker } from '@/components/game/notes-tab/suspicion-picker';
 import { PlayerStatusChips } from '@/components/game/player-status-chips';
 import { RoleKindButtons } from '@/components/game/role-assignment/role-kind-buttons';
 import { Text } from '@/components/text';
+import { useQuickTags } from '@/hooks/use-quick-tags';
 import { colors } from '@/theme/colors';
 import type { PlayerRoleAssignment } from '@/types/game';
 import { APP_USER_ID } from '@/utils/app-user';
@@ -83,6 +84,7 @@ export function PlayerDock({
     trackingMode,
     votingNominationId,
   } = useGameRouteContext();
+  const quickTags = useQuickTags();
   const [expanded, setExpanded] = useState(false);
   const [keyboardShown, setKeyboardShown] = useState(false);
 
@@ -155,7 +157,7 @@ export function PlayerDock({
           entry.day === activeDay &&
           (entry.phase ?? 'day') === activePhase,
       )
-      ?.notes.filter((note) => QUICK_TAGS.includes(note.text))
+      ?.notes.filter((note) => quickTags.includes(note.text))
       .map((note) => note.text) ?? [];
   const showActions = !interactionMode && !!game.script;
   const isDay = activePhase === 'day';

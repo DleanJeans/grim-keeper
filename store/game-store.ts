@@ -60,6 +60,7 @@ import {
   migrateObjectIds,
 } from '@/utils/object-id';
 import { isDeadBanshee, isDeadVote } from '@/utils/player-utils';
+import { normalizeQuickTags } from '@/utils/quick-tag-utils';
 import {
   mapRoleInfoPlayerIds,
   type RoleInfoClaimer,
@@ -119,6 +120,8 @@ export type GameData = {
   defaultStartingNight?: StartingNight;
   games: Game[];
   friends: Friend[];
+  /** The player tag chips in the dock; missing means the default tags. */
+  quickTags?: string[];
   roleCatalog: Role[];
   savedNotes: SavedNote[];
   scripts: StoredScript[];
@@ -277,6 +280,7 @@ type GameState = GameData & {
   setActiveDay: (gameId: string, day: number) => void;
   setGamePhase: (gameId: string, day: number, phase: GamePhase) => void;
   setDefaultStartingNight: (night: StartingNight) => void;
+  setQuickTags: (tags: string[]) => void;
   updatePlayerPosition: (gameId: string, playerId: string, position: PlayerPosition) => void;
   updatePlayerPositions: (
     gameId: string,
@@ -1824,6 +1828,7 @@ export const useGameStore = create<GameState>()(
         }));
       },
       setDefaultStartingNight: (night) => set({ defaultStartingNight: night === 0 ? 0 : 1 }),
+      setQuickTags: (tags) => set({ quickTags: normalizeQuickTags(tags) }),
       updatePlayerPosition: (gameId, playerId, position) => {
         set((state) => ({
           games: state.games.map((game) =>
@@ -2005,6 +2010,7 @@ export const useGameStore = create<GameState>()(
           defaultStartingNight: 1,
           games: [],
           friends: [],
+          quickTags: undefined,
           roleCatalog: [],
           savedNotes: [],
           scripts: [],
@@ -2016,6 +2022,7 @@ export const useGameStore = create<GameState>()(
         set({
           ...migratedData,
           defaultStartingNight: migratedData.defaultStartingNight ?? get().defaultStartingNight,
+          quickTags: migratedData.quickTags ?? get().quickTags,
           games: restoreSushiBuffetScriptRoles(
             migratedData.games.map((game) => ({
               ...game,
@@ -2114,6 +2121,7 @@ export const useGameStore = create<GameState>()(
         appUserName: state.appUserName,
         defaultStartingNight: state.defaultStartingNight,
         friends: state.friends,
+        quickTags: state.quickTags,
         games: serializeGameScripts(
           stripDuplicateScriptImages(state.games, state.scripts),
           state.roleCatalog,

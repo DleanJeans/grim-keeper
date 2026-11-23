@@ -1,16 +1,20 @@
+import { Pencil } from 'lucide-react-native';
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { EditTagsSheet } from '@/components/game/notes-tab/edit-tags-sheet';
 import { Text } from '@/components/text';
+import { useQuickTags } from '@/hooks/use-quick-tags';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 
 /** One-tap notes about how a player is acting; tapping a used tag again removes it. */
-export const QUICK_TAGS = ['Quiet', 'Pushy', 'Confident', 'Nervous', 'Talkative', 'Defensive'];
-
 export function QuickNoteTags() {
   const { activeDay, activePhase, focusedPlayer, game, interactionMode, runDayEdit } =
     useGameRouteContext();
+  const tags = useQuickTags();
+  const [editing, setEditing] = useState(false);
   const addPlayerDayNote = useGameStore((state) => state.addPlayerDayNote);
   const removePlayerDayNote = useGameStore((state) => state.removePlayerDayNote);
 
@@ -40,7 +44,7 @@ export function QuickNoteTags() {
 
   return (
     <View style={styles.row}>
-      {QUICK_TAGS.map((tag) => (
+      {tags.map((tag) => (
         <TagChip
           active={phaseNotes.some((note) => note.text === tag)}
           key={tag}
@@ -49,6 +53,15 @@ export function QuickNoteTags() {
           tag={tag}
         />
       ))}
+      <Pressable
+        accessibilityLabel="Edit tags"
+        accessibilityRole="button"
+        onPress={() => setEditing(true)}
+        style={({ pressed }) => [styles.chip, styles.editChip, pressed && styles.chipPressed]}
+      >
+        <Pencil color={colors.gameTextMuted} size={15} strokeWidth={2.4} />
+      </Pressable>
+      <EditTagsSheet onClose={() => setEditing(false)} visible={editing} />
     </View>
   );
 }
@@ -65,6 +78,7 @@ const styles = StyleSheet.create({
   },
   chipActive: { backgroundColor: colors.gameText, borderColor: colors.gameText },
   chipPressed: { backgroundColor: colors.gameSurfacePressed },
+  editChip: { alignItems: 'center', minWidth: 36, paddingHorizontal: 10 },
   chipText: { color: colors.gameTextSoft, fontSize: 13, fontWeight: '700' },
   chipTextActive: { color: colors.gameBackground },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },

@@ -365,6 +365,7 @@ function isGameData(value: unknown): value is GameData {
     isRecord(value) &&
     typeof value.appUserName === 'string' &&
     (!('defaultStartingNight' in value) || isStartingNight(value.defaultStartingNight)) &&
+    (!('quickTags' in value) || value.quickTags === undefined || isStringArray(value.quickTags)) &&
     Array.isArray(value.friends) &&
     value.friends.every(isFriend) &&
     Array.isArray(value.games) &&
@@ -383,6 +384,7 @@ function isExportedGameData(value: unknown): value is ExportedGameData {
     isRecord(value) &&
     typeof value.appUserName === 'string' &&
     (!('defaultStartingNight' in value) || isStartingNight(value.defaultStartingNight)) &&
+    (!('quickTags' in value) || value.quickTags === undefined || isStringArray(value.quickTags)) &&
     Array.isArray(value.friends) &&
     value.friends.every(isFriend) &&
     Array.isArray(value.games) &&

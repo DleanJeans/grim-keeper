@@ -36,6 +36,7 @@ export function DataTransferCard() {
         appUserName: state.appUserName,
         friends: state.friends,
         games: state.games,
+        quickTags: state.quickTags,
         roleCatalog: state.roleCatalog,
         savedNotes: state.savedNotes,
         scripts: state.scripts,
