@@ -19,6 +19,9 @@ export type NightOrderRow = {
   role: Role;
 };
 
+/** Characters that only act on a trigger (death, a day event), so they don't belong on later nights. */
+const NOT_WAKING_AFTER_FIRST_NIGHT = new Set(['grandmother', 'tinker', 'moonchild']);
+
 /**
  * Script characters that wake on Night `day`, in night order, with the players who claim or were
  * confirmed as each one by then. Night 1 uses the first-night order.
@@ -33,6 +36,7 @@ export function getNightOrderRows(
   const order = new Map<string, number>();
   for (const roleId of nightSheet[day <= 1 ? 'firstNight' : 'otherNight']) {
     const key = normalizeRoleId(roleId);
+    if (day > 1 && NOT_WAKING_AFTER_FIRST_NIGHT.has(key)) continue;
     if (!order.has(key)) order.set(key, order.size);
   }
 

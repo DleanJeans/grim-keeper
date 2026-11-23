@@ -52,4 +52,20 @@ describe('getNightOrderRows', () => {
     expect(rows.map((row) => row.asleep)).toEqual([false, false, true]);
     expect(getNightOrderRows(roles, players, nightSheet, 3)[2].asleep).toBe(false);
   });
+
+  it('keeps trigger-only characters off later nights', () => {
+    const extra: Role[] = [
+      { id: 'grandmother', name: 'Grandmother', team: 'townsfolk' },
+      { id: 'tinker', name: 'Tinker', team: 'townsfolk' },
+      { id: 'moonchild', name: 'Moonchild', team: 'townsfolk' },
+    ];
+    const sheet = {
+      firstNight: ['dusk', 'grandmother'],
+      otherNight: ['dusk', 'tinker', 'moonchild', 'grandmother'],
+    };
+    expect(getNightOrderRows(extra, [], sheet, 1).map((row) => row.role.id)).toEqual([
+      'grandmother',
+    ]);
+    expect(getNightOrderRows(extra, [], sheet, 2)).toEqual([]);
+  });
 });
