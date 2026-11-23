@@ -100,11 +100,11 @@ export function EvilInPlayPicker() {
     <View style={styles.container}>
       <Text style={styles.title}>In play</Text>
       {showEvil ? (
-        <SlotTokens
-          onPressSlot={setActiveSlot}
-          rolesById={rolesById}
-          slots={[...slots, ...notInPlaySlots]}
-        />
+        <View style={styles.evilRow}>
+          <SlotTokens onPressSlot={setActiveSlot} rolesById={rolesById} slots={slots} />
+          <View style={styles.separator} />
+          <SlotTokens onPressSlot={setActiveSlot} rolesById={rolesById} slots={notInPlaySlots} />
+        </View>
       ) : null}
       {showBluffs ? (
         <>
@@ -153,6 +153,18 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 12,
   },
+  evilRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  separator: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.borderStrong,
+    height: 46,
+    marginHorizontal: 6,
+    width: 1,
+  },
   tokens: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -175,6 +187,7 @@ function SlotTokens({
         const role = slot.roleId ? rolesById.get(slot.roleId) : undefined;
         return (
           <RoleInfoToken
+            crossedOut={slot.team === 'notInPlay'}
             key={slot.slotId}
             onPress={slot.locked ? undefined : () => onPressSlot(slot)}
             role={role}

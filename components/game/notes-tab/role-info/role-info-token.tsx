@@ -14,6 +14,8 @@ const TOKEN_TEXT_WIDTH = TOKEN_SIZE - 9;
 
 export type RoleInfoTokenProps = {
   /** Omit for a read-only token, such as an auto-filled neighbor. */
+  /** Ruled out: red outline with a red diagonal line across the token. */
+  crossedOut?: boolean;
   onPress?: () => void;
   player?: Player;
   role?: Role;
@@ -22,7 +24,14 @@ export type RoleInfoTokenProps = {
 };
 
 /** Circular token showing one info value (or an empty slot); pressable unless read-only. */
-export function RoleInfoToken({ onPress, player, role, slot, value }: RoleInfoTokenProps) {
+export function RoleInfoToken({
+  crossedOut,
+  onPress,
+  player,
+  role,
+  slot,
+  value,
+}: RoleInfoTokenProps) {
   const filled = value !== undefined;
   const valueLabel = player?.name ?? role?.name ?? value;
 
@@ -36,17 +45,20 @@ export function RoleInfoToken({ onPress, player, role, slot, value }: RoleInfoTo
           style={({ pressed }) => [
             styles.token,
             filled ? styles.tokenFilled : styles.tokenEmpty,
+            crossedOut ? styles.tokenCrossedOut : null,
             pressed ? styles.tokenPressed : null,
           ]}
         >
           <TokenContent player={player} role={role} slot={slot} value={value} />
+          {crossedOut ? <View pointerEvents="none" style={styles.strike} /> : null}
         </Pressable>
       ) : (
         <View
           accessibilityLabel={`${slot.label}: ${valueLabel ?? 'empty'}`}
-          style={[styles.token, styles.tokenReadOnly]}
+          style={[styles.token, styles.tokenReadOnly, crossedOut ? styles.tokenCrossedOut : null]}
         >
           <TokenContent player={player} role={role} slot={slot} value={value} />
+          {crossedOut ? <View pointerEvents="none" style={styles.strike} /> : null}
         </View>
       )}
       <Text numberOfLines={1} style={styles.label}>
@@ -79,6 +91,16 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     paddingHorizontal: 3,
     width: TOKEN_SIZE,
+  },
+  strike: {
+    backgroundColor: colors.notInPlayStrike,
+    height: 2.5,
+    position: 'absolute',
+    transform: [{ rotate: '-45deg' }],
+    width: TOKEN_SIZE * 1.5,
+  },
+  tokenCrossedOut: {
+    borderColor: colors.notInPlayStrike,
   },
   tokenEmpty: {
     borderColor: colors.roleInfoTokenEmptyBorder,

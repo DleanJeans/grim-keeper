@@ -22,6 +22,8 @@ const baseColors = {
   danger: '#fca5a5',
   dangerBorder: '#7f1d1d',
   dangerSurface: '#2a1517',
+  /** Outline and diagonal line on tokens for characters ruled out as not in play. */
+  notInPlayStrike: '#dc2626',
   success: '#d8e7cf',
   successBorder: '#3f6a45',
   successSurface: '#16261a',
