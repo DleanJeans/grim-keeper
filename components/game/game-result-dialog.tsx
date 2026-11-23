@@ -1,6 +1,6 @@
 import { Plus } from 'lucide-react-native';
 import { useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { LessonBox } from '@/components/game/lesson-box';
 import { KeyboardAvoidingView } from '@/components/keyboard-avoiding-view';
 import { ScaledModal } from '@/components/scaled-modal';
@@ -36,6 +36,7 @@ export function GameResultDialog({
   result,
 }: GameResultDialogProps) {
   const nextKey = useRef(0);
+  const lessonsScroll = useRef<ScrollView>(null);
   const [drafts, setDrafts] = useState<LessonDraft[]>(() => {
     const lessons = getGameLessons(game);
     return (lessons.length > 0 ? lessons : ['']).map((text) => ({
@@ -60,6 +61,7 @@ export function GameResultDialog({
 
   function addDraft() {
     setDrafts((current) => [...current, { key: nextKey.current++, tagPlayer: true, text: '' }]);
+    setTimeout(() => lessonsScroll.current?.scrollToEnd({ animated: true }), 50);
   }
 
   function close(after?: () => void) {
@@ -138,7 +140,12 @@ export function GameResultDialog({
               <Text style={styles.actionText}>Clear</Text>
             </Pressable>
           </View>
-          <View style={styles.lesson}>
+          <ScrollView
+            contentContainerStyle={styles.lesson}
+            keyboardShouldPersistTaps="handled"
+            ref={lessonsScroll}
+            style={styles.lessonScroll}
+          >
             <Text style={styles.lessonLabel}>Lessons</Text>
             {drafts.map((draft) => (
               <LessonBox
@@ -159,7 +166,7 @@ export function GameResultDialog({
             >
               <Plus color={colors.textMuted} size={20} strokeWidth={2.5} />
             </Pressable>
-          </View>
+          </ScrollView>
           <View style={styles.actions}>
             {onShowWinRates ? (
               <Pressable
@@ -250,13 +257,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     boxShadow: `0 18px 48px ${colors.dialogShadow}`,
     gap: 20,
+    maxHeight: '100%',
     maxWidth: 420,
     padding: 20,
     width: '100%',
   },
   lesson: {
     gap: 8,
-    zIndex: 1,
+    paddingBottom: 8,
+  },
+  lessonScroll: {
+    flexShrink: 1,
+    minHeight: 0,
   },
   lessonLabel: {
     color: colors.textMuted,
