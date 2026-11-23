@@ -1,6 +1,5 @@
-import { Play, Plus } from 'lucide-react-native';
-import { type RefObject, useState } from 'react';
-import type { TextInput as RNTextInput } from 'react-native';
+import { Play } from 'lucide-react-native';
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { FixedPlayerRow } from '@/components/create/fixed-player-row';
@@ -8,42 +7,29 @@ import { FriendPlayerPicker } from '@/components/create/friend-player-picker';
 import { LoricPicker } from '@/components/create/loric-picker';
 import { StorytellerPicker } from '@/components/create/storyteller-picker';
 import { SushiBuffetRolePicker } from '@/components/create/sushi-buffet-role-picker';
-import { FriendSuggestions } from '@/components/friends/friend-suggestions';
 import { GameScriptPicker } from '@/components/scripts/game-script-picker';
-import { Text, TextInput } from '@/components/text';
+import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { FriendSummary, Role, StoredScript } from '@/types/game';
 import { hasKnaves } from '@/utils/knaves-utils';
 
 type CreateFormHeaderProps = {
   allFriends: FriendSummary[];
-  canAddPlayer: boolean;
   canStart: boolean;
-  duplicateName: boolean;
   featuredScript?: StoredScript;
   fixedPlayerName?: string;
-  friends: FriendSummary[];
   helperText: string;
-  inputRef: RefObject<RNTextInput | null>;
   isEditing: boolean;
   isSushiBuffet: boolean;
   lorics: Role[];
-  name: string;
-  nameFocused: boolean;
   onAddFriend: (name: string) => string | undefined;
-  onAddPlayer: () => void;
-  onBlurName: () => void;
   onBrowseScripts: () => void;
-  onChangeName: (name: string) => void;
-  onFocusName: () => void;
   onApplyFriendSelection: (friendIds: string[]) => void;
-  onSelectFriend: (friend: FriendSummary) => void;
   onSelectLorics: (roleIds: string[]) => void;
   onSelectScript: (scriptId: string | null) => void;
   onSelectSushiRoles: (roleIds: string[]) => void;
   onSelectStorytellers: (friendIds: string[]) => void;
   onStart: () => void;
-  onSubmitName: () => void;
   scriptPlayCounts?: ReadonlyMap<string, number>;
   scripts: StoredScript[];
   selectedScriptId: string | null;
@@ -57,33 +43,21 @@ type CreateFormHeaderProps = {
 
 export function CreateFormHeader({
   allFriends,
-  canAddPlayer,
   canStart,
-  duplicateName,
   featuredScript,
   fixedPlayerName,
-  friends,
   helperText,
-  inputRef,
   isEditing,
   isSushiBuffet,
   lorics,
-  name,
-  nameFocused,
   onAddFriend,
-  onAddPlayer,
   onApplyFriendSelection,
-  onBlurName,
   onBrowseScripts,
-  onChangeName,
-  onFocusName,
-  onSelectFriend,
   onSelectLorics,
   onSelectScript,
   onSelectSushiRoles,
   onSelectStorytellers,
   onStart,
-  onSubmitName,
   scriptPlayCounts,
   scripts,
   selectedScriptId,
@@ -157,70 +131,13 @@ export function CreateFormHeader({
         <Text selectable style={styles.instructions}>
           Add players from the player on the left then clockwise.
         </Text>
-        {!isEditing ? (
-          <FriendPlayerPicker
-            firstSeat={fixedPlayerName ? 2 : 1}
-            friends={allFriends}
-            onAddFriend={onAddFriend}
-            onDone={onApplyFriendSelection}
-            selectedFriendIds={selectedFriendIds}
-          />
-        ) : null}
-        {isEditing ? (
-          <>
-            <Text selectable style={styles.label}>
-              Player name
-            </Text>
-            <View style={styles.nameRow}>
-              <View style={styles.inputContainer}>
-                <View
-                  accessibilityElementsHidden={!nameFocused}
-                  importantForAccessibility={nameFocused ? 'auto' : 'no-hide-descendants'}
-                  style={[
-                    styles.friendPopover,
-                    nameFocused ? undefined : styles.friendPopoverHidden,
-                  ]}
-                >
-                  <FriendSuggestions friends={friends} onSelectFriend={onSelectFriend} />
-                </View>
-                <TextInput
-                  autoCapitalize="words"
-                  autoCorrect={false}
-                  accessibilityLabel="Player name"
-                  enterKeyHint="done"
-                  ref={inputRef}
-                  onBlur={onBlurName}
-                  onChangeText={onChangeName}
-                  onFocus={onFocusName}
-                  onSubmitEditing={onSubmitName}
-                  returnKeyType="done"
-                  submitBehavior="submit"
-                  value={name}
-                  style={[styles.nameInput, duplicateName ? styles.nameInputDuplicate : null]}
-                />
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                disabled={!canAddPlayer}
-                onPress={onAddPlayer}
-                style={({ pressed }) => [
-                  styles.addButton,
-                  pressed && styles.buttonPressed,
-                  !canAddPlayer && styles.buttonDisabled,
-                ]}
-              >
-                <Plus
-                  color={canAddPlayer ? colors.text : colors.onDisabled}
-                  size={17}
-                  strokeWidth={2.7}
-                />
-                <Text style={[styles.addButtonText, !canAddPlayer && styles.buttonTextDisabled]}>
-                  Add
-                </Text>
-              </Pressable>
-            </View>
-          </>
-        ) : null}
+        <FriendPlayerPicker
+          firstSeat={fixedPlayerName ? 2 : 1}
+          friends={allFriends}
+          onAddFriend={onAddFriend}
+          onDone={onApplyFriendSelection}
+          selectedFriendIds={selectedFriendIds}
+        />
       </View>
 
       {!isEditing ? (
@@ -247,7 +164,7 @@ export function CreateFormHeader({
         </View>
       ) : null}
 
-      <Text selectable style={[styles.helperText, duplicateName && styles.helperTextDuplicate]}>
+      <Text selectable style={styles.helperText}>
         {helperText}
       </Text>
       {fixedPlayerName ? <FixedPlayerRow name={fixedPlayerName} /> : null}
@@ -260,22 +177,6 @@ const styles = StyleSheet.create({
     color: colors.warning,
     fontSize: 12,
     fontWeight: '700',
-  },
-  addButton: {
-    alignItems: 'center',
-    backgroundColor: colors.surfaceRaised,
-    borderColor: colors.border,
-    borderRadius: 8,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 7,
-    justifyContent: 'center',
-    minHeight: 52,
-    paddingHorizontal: 12,
-  },
-  addButtonText: {
-    color: colors.text,
-    fontWeight: '800',
   },
   buttonDisabled: {
     backgroundColor: colors.disabled,
@@ -290,59 +191,15 @@ const styles = StyleSheet.create({
     gap: 14,
     paddingBottom: 12,
   },
-  friendPopover: {
-    left: 0,
-    marginTop: 8,
-    pointerEvents: 'box-none',
-    position: 'absolute',
-    right: 0,
-    top: '100%',
-    zIndex: 10,
-  },
-  friendPopoverHidden: {
-    opacity: 0,
-    pointerEvents: 'none',
-  },
   helperText: {
     color: colors.textMuted,
     fontSize: 14,
     lineHeight: 20,
   },
-  helperTextDuplicate: {
-    color: colors.danger,
-  },
-  inputContainer: {
-    flex: 1,
-    position: 'relative',
-    zIndex: 10,
-  },
   instructions: {
     color: colors.textMuted,
     fontSize: 15,
     lineHeight: 22,
-  },
-  label: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  nameInput: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 8,
-    borderWidth: 1,
-    color: colors.text,
-    fontSize: 18,
-    minHeight: 52,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  nameInputDuplicate: {
-    borderColor: colors.danger,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    gap: 8,
   },
   pickerCell: {
     flex: 1,

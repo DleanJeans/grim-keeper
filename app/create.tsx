@@ -1,6 +1,5 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { TextInput as RNTextInput } from 'react-native';
 import { FlatList, Keyboard, StyleSheet, View } from 'react-native';
 import { CreateFormHeader } from '@/components/create/create-form-header';
 import { CreateHeaderDoneButton } from '@/components/create/create-header-done-button';
@@ -58,12 +57,9 @@ export default function CreateRoute() {
   const roleCatalog = useGameStore((state) => state.roleCatalog);
   const storedFriends = useGameStore((state) => state.friends);
   const savedNotes = useGameStore((state) => state.savedNotes);
-  const inputRef = useRef<RNTextInput>(null);
   const initialDraft = useRef(
     gameIdParam || copyPlayersFromParam ? undefined : readNewGameDraft(),
   ).current;
-  const [name, setName] = useState('');
-  const [nameFocused, setNameFocused] = useState(false);
   const [draftPlayers, setDraftPlayers] = useState<DraftPlayer[]>(initialDraft?.players ?? []);
   const [movingPlayerId, setMovingPlayerId] = useState<string | null>(null);
   const [swappingPlayerId, setSwappingPlayerId] = useState<string | null>(null);
@@ -171,10 +167,6 @@ export default function CreateRoute() {
     ],
     [appUserStorytells, fixedPlayerName, players],
   );
-  const selectedNames = useMemo(
-    () => [...seatedNames, ...selectedStorytellers.map((storyteller) => storyteller.name)],
-    [seatedNames, selectedStorytellers],
-  );
   const storytellerFriends = useMemo(
     () =>
       sortStorytellerSummaries([
@@ -195,21 +187,7 @@ export default function CreateRoute() {
     [playerPickerFriends, players],
   );
   const movingPlayer = players.find((player) => player.id === movingPlayerId);
-  const normalizedName = normalizePlayerName(name);
-  const duplicateName = hasDuplicatePlayerName(selectedNames, name);
-  const canAddPlayer = normalizedName.length > 0 && !duplicateName;
-  const canStart = players.length >= 1 && !(normalizedName.length > 0 && duplicateName);
-  const suggestedFriends = useMemo(() => {
-    const key = normalizedName.toLocaleLowerCase();
-
-    return friends
-      .filter(
-        (friend) =>
-          !hasDuplicatePlayerName(selectedNames, friend.name) &&
-          (!key || friend.name.toLocaleLowerCase().includes(key)),
-      )
-      .slice(0, 5);
-  }, [friends, normalizedName, selectedNames]);
+  const canStart = players.length >= 1;
 
   const isNewGameDraft = !gameIdParam && !copyPlayersFromParam;
   useEffect(() => {
@@ -295,10 +273,6 @@ export default function CreateRoute() {
   ]);
 
   const helperText = useMemo(() => {
-    if (duplicateName) {
-      return 'That player already exists.';
-    }
-
     if (players.length < 1) {
       return 'Add at least 1 other player.';
     }
@@ -310,37 +284,7 @@ export default function CreateRoute() {
     return isEditing
       ? 'Add or remove players, tap a player to change seat order, choose a script, then tap Done. Tokens stay where they are on the map.'
       : 'Tap a player to move them in seat order.';
-  }, [duplicateName, isEditing, movingPlayer, players.length]);
-
-  function handleAddPlayer() {
-    if (!canAddPlayer) {
-      return;
-    }
-
-    setDraftPlayers((currentPlayers) => [
-      ...currentPlayers,
-      { id: createDraftId(), name: normalizedName },
-    ]);
-    setName('');
-    setNameFocused(true);
-    requestAnimationFrame(() => inputRef.current?.focus());
-  }
-
-  function handleSelectFriend(friend: FriendSummary) {
-    const normalizedFriendName = normalizePlayerName(friend.name);
-
-    if (!normalizedFriendName || hasDuplicatePlayerName(selectedNames, normalizedFriendName)) {
-      return;
-    }
-
-    setDraftPlayers((currentPlayers) => [
-      ...currentPlayers,
-      { id: friend.id, name: normalizedFriendName },
-    ]);
-    setName('');
-    setNameFocused(true);
-    setTimeout(() => inputRef.current?.focus(), 0);
-  }
+  }, [isEditing, movingPlayer, players.length]);
 
   function handleApplyFriendSelection(friendIds: string[]) {
     setDraftPlayers((currentPlayers) =>
@@ -480,29 +424,21 @@ export default function CreateRoute() {
                 No other players yet.
               </Text>
               <Text selectable style={styles.emptyText}>
-                Type a name and press Enter or Add.
+                Tap Choose friends to add players.
               </Text>
             </View>
           }
           ListHeaderComponent={
             <CreateFormHeader
               allFriends={playerPickerFriends}
-              canAddPlayer={canAddPlayer}
               canStart={canStart}
-              duplicateName={duplicateName}
               featuredScript={sushiBuffetScript}
               fixedPlayerName={appUserStorytells ? undefined : fixedPlayerName}
-              friends={suggestedFriends}
               helperText={helperText}
-              inputRef={inputRef}
               isEditing={isEditing}
               isSushiBuffet={isSushiBuffet}
-              name={name}
-              nameFocused={nameFocused}
               onAddFriend={handleAddFriend}
-              onAddPlayer={handleAddPlayer}
               onApplyFriendSelection={handleApplyFriendSelection}
-              onBlurName={() => setNameFocused(false)}
               onBrowseScripts={() =>
                 router.push({
                   pathname: '/scripts',
@@ -512,9 +448,6 @@ export default function CreateRoute() {
                       : { selectForGame: 'true' },
                 })
               }
-              onChangeName={setName}
-              onFocusName={() => setNameFocused(true)}
-              onSelectFriend={handleSelectFriend}
               onSelectScript={setDraftSelectedScriptId}
               onSelectSushiRoles={(roleIds) => {
                 sushiSelectionChangedRef.current = true;
@@ -524,7 +457,6 @@ export default function CreateRoute() {
               lorics={roleCatalog.filter((role) => role.team?.toLocaleLowerCase() === 'loric')}
               onSelectLorics={setSelectedLoricIds}
               onStart={handleStart}
-              onSubmitName={handleAddPlayer}
               scripts={availableScripts}
               scriptPlayCounts={scriptPlayCounts}
               selectedScriptId={selectedScriptId}
@@ -634,10 +566,6 @@ function getDraftPlayers(game: Game): DraftPlayer[] {
 
 function getStorytellerIds(game: Game) {
   return game.players.filter((player) => player.isStoryteller).map((player) => player.id);
-}
-
-function createDraftId() {
-  return `draft-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 const styles = StyleSheet.create({
