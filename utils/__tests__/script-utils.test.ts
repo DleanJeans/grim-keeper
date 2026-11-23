@@ -271,6 +271,30 @@ describe('script utils', () => {
     ).toEqual(['imp', 'empath', 'fortune_teller']);
   });
 
+  it('keeps Grandmother, Tinker and Moonchild off the other-nights list only', () => {
+    const entries = getScriptRoleEntries(
+      [
+        { id: 'grandmother', name: 'Grandmother' },
+        { id: 'tinker', name: 'Tinker' },
+        { id: 'moonchild', name: 'Moonchild' },
+        { id: 'imp', name: 'Imp' },
+      ],
+      [],
+      [],
+    );
+    const nightSheet = {
+      firstNight: ['grandmother', 'imp'],
+      otherNight: ['imp', 'tinker', 'moonchild', 'grandmother'],
+    };
+
+    expect(
+      getNightOrderRoleEntries(entries, nightSheet, 'firstNight').map(({ role }) => role.id),
+    ).toEqual(['grandmother', 'imp']);
+    expect(
+      getNightOrderRoleEntries(entries, nightSheet, 'otherNight').map(({ role }) => role.id),
+    ).toEqual(['imp']);
+  });
+
   it('supports filtering the derived entries to roles with notes', () => {
     const entries = getScriptRoleEntries(
       [

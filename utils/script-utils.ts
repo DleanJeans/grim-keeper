@@ -261,6 +261,9 @@ export function getScriptRoleEntries(
   });
 }
 
+/** Trigger-only characters that don't belong on the Other nights order, only on the first night. */
+export const NOT_WAKING_AFTER_FIRST_NIGHT = new Set(['grandmother', 'tinker', 'moonchild']);
+
 export function getNightOrderRoleEntries(
   entries: ScriptRoleEntry[],
   nightSheet: NightSheet,
@@ -270,6 +273,7 @@ export function getNightOrderRoleEntries(
 
   for (const roleId of nightSheet[nightName]) {
     const normalizedRoleId = normalizeNightSheetRoleId(roleId);
+    if (nightName === 'otherNight' && NOT_WAKING_AFTER_FIRST_NIGHT.has(normalizedRoleId)) continue;
     if (!nightOrder.has(normalizedRoleId)) {
       nightOrder.set(normalizedRoleId, nightOrder.size);
     }

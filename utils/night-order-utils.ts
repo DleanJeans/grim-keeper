@@ -2,7 +2,7 @@ import type { GamePhase, Player, Role } from '@/types/game';
 import { getDeathPhase } from '@/utils/game-phase-utils';
 import { isPlayerCurrentlyDead } from '@/utils/player-utils';
 import { getAssignedRoleIdsForDayOrPrevious } from '@/utils/role-utils';
-import type { NightSheet } from '@/utils/script-utils';
+import { type NightSheet, NOT_WAKING_AFTER_FIRST_NIGHT } from '@/utils/script-utils';
 
 export type NightOrderClaimer = {
   dead: boolean;
@@ -18,9 +18,6 @@ export type NightOrderRow = {
   claimers: NightOrderClaimer[];
   role: Role;
 };
-
-/** Characters that only act on a trigger (death, a day event), so they don't belong on later nights. */
-const NOT_WAKING_AFTER_FIRST_NIGHT = new Set(['grandmother', 'tinker', 'moonchild']);
 
 /**
  * Script characters that wake on Night `day`, in night order, with the players who claim or were

@@ -195,9 +195,7 @@ export function ScriptRoleList({
           <ScriptRoleListHeader
             header={typeof header === 'function' ? header(sortMode) : header}
             notesOnly={notesOnly}
-            nightTab={nightTab}
             onNotesOnlyChange={setNotesOnly}
-            onNightTabChange={setNightTab}
             onShowNotesChange={(value) => {
               setShowNotes(value);
               setRowLayoutAnimationEnabled(false);
@@ -244,10 +242,14 @@ export function ScriptRoleList({
         </AnimatedScriptRoleRow>
       )}
       renderSectionHeader={({ section }) =>
-        sortMode === 'current-split' ? <ScriptRoleSectionHeader label={section.title} /> : null
+        sortMode === 'current-split' ? (
+          <ScriptRoleSectionHeader label={section.title} />
+        ) : (
+          <ScriptRoleNightTabs onNightTabChange={setNightTab} nightTab={nightTab} />
+        )
       }
       sections={sections}
-      stickySectionHeadersEnabled={sortMode === 'current-split'}
+      stickySectionHeadersEnabled
       style={styles.screen}
     />
   );
@@ -298,6 +300,11 @@ const styles = StyleSheet.create({
   },
   listHeader: {
     paddingBottom: 8,
+  },
+  nightTabs: {
+    backgroundColor: colors.background,
+    paddingBottom: 8,
+    paddingTop: 8,
   },
   roleCard: {
     backgroundColor: colors.surface,
@@ -447,10 +454,8 @@ function formatTeamLabel(team: string) {
 
 function ScriptRoleListHeader({
   header,
-  nightTab,
   notesOnly,
   onNotesOnlyChange,
-  onNightTabChange,
   onShowNotesChange,
   onSortModeChange,
   onTwoColumnsChange,
@@ -459,10 +464,8 @@ function ScriptRoleListHeader({
   twoColumns,
 }: {
   header: ReactElement;
-  nightTab: ScriptRoleNightTab;
   notesOnly: boolean;
   onNotesOnlyChange: (value: boolean) => void;
-  onNightTabChange: (value: ScriptRoleNightTab) => void;
   onShowNotesChange: (value: boolean) => void;
   onSortModeChange: (value: ScriptRoleSortMode) => void;
   onTwoColumnsChange: (value: boolean) => void;
@@ -494,24 +497,6 @@ function ScriptRoleListHeader({
           />
         </View>
       </View>
-      {sortMode === 'night-order' ? (
-        <View
-          accessibilityLabel="Night order tab"
-          accessibilityRole="toolbar"
-          style={styles.segmentedControl}
-        >
-          <ScriptRoleNightTabButton
-            label="First night"
-            onPress={() => onNightTabChange('first-night')}
-            selected={nightTab === 'first-night'}
-          />
-          <ScriptRoleNightTabButton
-            label="Other nights"
-            onPress={() => onNightTabChange('other-night')}
-            selected={nightTab === 'other-night'}
-          />
-        </View>
-      ) : null}
       <View style={styles.toggleList}>
         <ScriptRoleToggle
           label="Only roles with notes"
@@ -530,6 +515,35 @@ function ScriptRoleListHeader({
             selected={twoColumns}
           />
         ) : null}
+      </View>
+    </View>
+  );
+}
+
+function ScriptRoleNightTabs({
+  nightTab,
+  onNightTabChange,
+}: {
+  nightTab: ScriptRoleNightTab;
+  onNightTabChange: (value: ScriptRoleNightTab) => void;
+}) {
+  return (
+    <View style={styles.nightTabs}>
+      <View
+        accessibilityLabel="Night order tab"
+        accessibilityRole="toolbar"
+        style={styles.segmentedControl}
+      >
+        <ScriptRoleNightTabButton
+          label="First night"
+          onPress={() => onNightTabChange('first-night')}
+          selected={nightTab === 'first-night'}
+        />
+        <ScriptRoleNightTabButton
+          label="Other nights"
+          onPress={() => onNightTabChange('other-night')}
+          selected={nightTab === 'other-night'}
+        />
       </View>
     </View>
   );
