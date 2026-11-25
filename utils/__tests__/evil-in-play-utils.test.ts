@@ -20,6 +20,12 @@ const TROUBLE_BREWING = [
   role('baron', 'minion'),
   role('imp', 'demon'),
 ];
+const GOOD_SCRIPT = [
+  role('washerwoman', 'townsfolk'),
+  role('librarian', 'townsfolk'),
+  role('chef', 'townsfolk'),
+  role('empath', 'townsfolk'),
+];
 const BAD_MOON_RISING = [
   role('godfather', 'minion'),
   role('po', 'demon'),
@@ -166,6 +172,19 @@ describe('getBluffSlots', () => {
       { locked: false, roleId: undefined, slotId: 'bluff-1', team: 'bluff' },
       { locked: false, roleId: undefined, slotId: 'bluff-2', team: 'bluff' },
     ]);
+  });
+
+  it('adds a spare slot once every slot is filled, for a 4th bluff', () => {
+    const three = { 'bluff-0': 'washerwoman', 'bluff-1': 'librarian', 'bluff-2': 'chef' };
+    expect(getBluffSlots(GOOD_SCRIPT, three).map((slot) => slot.slotId)).toEqual([
+      'bluff-0',
+      'bluff-1',
+      'bluff-2',
+      'bluff-3',
+    ]);
+    const four = getBluffSlots(GOOD_SCRIPT, { ...three, 'bluff-3': 'empath' });
+    expect(four).toHaveLength(5);
+    expect(four[3]?.roleId).toBe('empath');
   });
 });
 

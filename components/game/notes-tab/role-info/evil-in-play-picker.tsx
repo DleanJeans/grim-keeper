@@ -194,7 +194,9 @@ export function EvilInPlayPicker() {
       {showBluffs ? (
         <>
           <Text style={styles.rowLabel}>Bluffs</Text>
-          <SlotTokens onPressSlot={setActiveSlot} rolesById={rolesById} slots={bluffSlots} />
+          <View style={styles.evilRow}>
+            <SlotTokens onPressSlot={setActiveSlot} rolesById={rolesById} slots={bluffSlots} />
+          </View>
           <UnclaimedRoles playersWithoutClaims={playersWithoutClaims} roles={unclaimedRoles} />
         </>
       ) : null}

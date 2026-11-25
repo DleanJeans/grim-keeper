@@ -188,10 +188,20 @@ export function getGameEvilInPlaySlots(
   return getEvilInPlaySlots(scriptRoles, counts, game.evilInPlay, confirmedRoleIds);
 }
 
-/** Bluff slots with the good character chosen in each. */
+/**
+ * Bluff slots with the good character chosen in each: the usual 3, plus one spare after the last
+ * when every slot is filled, for a 4-evil game where the Storyteller gave more than 3 bluffs.
+ */
 export function getBluffSlots(scriptRoles: Role[], bluffs: Game['bluffs']): BluffSlot[] {
   const goodRoleIds = new Set(scriptRoles.filter(isGoodRole).map((role) => role.id));
-  return Array.from({ length: BLUFF_COUNT }, (_, index): BluffSlot => {
+  const isFilled = (index: number) => {
+    const roleId = bluffs?.[`bluff-${index}`];
+    return Boolean(roleId && goodRoleIds.has(roleId));
+  };
+  let count = BLUFF_COUNT;
+  for (let index = BLUFF_COUNT; index < 20; index++) if (isFilled(index)) count = index + 1;
+  while (Array.from({ length: count }, (_, index) => isFilled(index)).every(Boolean)) count++;
+  return Array.from({ length: count }, (_, index): BluffSlot => {
     const slotId = `bluff-${index}`;
     const roleId = bluffs?.[slotId];
     return {
