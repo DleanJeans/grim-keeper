@@ -2,9 +2,9 @@ import type { Game, Player, Role, SavedNote } from '@/types/game';
 import {
   getLessonPlayers,
   getLessonsForPlayers,
-  getStorytellerLessons,
   getLessonsForScriptCharacters,
   getLessonsFromGame,
+  getStorytellerLessons,
 } from '@/utils/lesson-utils';
 
 const roles = [
