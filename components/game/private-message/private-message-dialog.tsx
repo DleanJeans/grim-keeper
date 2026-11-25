@@ -85,7 +85,8 @@ export function PrivateMessageDialog({ onClose }: PrivateMessageDialogProps) {
                     </View>
                     <Text style={styles.hiddenTitle}>Message hidden</Text>
                     <Text style={styles.hint}>
-                      Hand the phone over.{'\n'}Hold the button below to read.
+                      Hand the phone over.{'\n'}Hold the button below to read, or tap it to keep it
+                      open.
                     </Text>
                   </View>
                 )}

@@ -1,21 +1,46 @@
 import { Eye, Hand } from 'lucide-react-native';
+import { useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { HoldToReveal } from '@/components/hold-to-reveal';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
 
+/** A press shorter than this is a tap that latches the message open. */
+const TAP_MS = 350;
+
 type HoldToRevealButtonProps = {
   holding: boolean;
   onHoldChange: (holding: boolean) => void;
 };
 
-/** The big "Hold to reveal" button at the bottom of the private message hand-over screen. */
+/**
+ * The big "Hold to reveal" button at the bottom of the private message hand-over screen. Hold it
+ * to read and let go to hide; tap it once to keep the message open until the next tap.
+ */
 export function HoldToRevealButton({ holding, onHoldChange }: HoldToRevealButtonProps) {
+  const latched = useRef(false);
+  const pressedAt = useRef(0);
+
+  function handleHoldChange(down: boolean) {
+    if (down) {
+      pressedAt.current = Date.now();
+      onHoldChange(true);
+      return;
+    }
+    const isTap = Date.now() - pressedAt.current < TAP_MS;
+    if (isTap && !latched.current) {
+      latched.current = true;
+      return;
+    }
+    latched.current = false;
+    onHoldChange(false);
+  }
+
   return (
     <HoldToReveal
-      accessibilityLabel="Hold to reveal"
-      onHoldChange={onHoldChange}
+      accessibilityLabel={holding ? 'Hide message' : 'Hold to reveal'}
+      onHoldChange={handleHoldChange}
       style={holding ? styles.holdDown : styles.hold}
     >
       {holding ? (
@@ -28,7 +53,7 @@ export function HoldToRevealButton({ holding, onHoldChange }: HoldToRevealButton
           {holding ? 'Showing' : 'Hold to reveal'}
         </Text>
         <Text selectable={false} style={[styles.holdHint, holding && styles.holdHintDown]}>
-          {holding ? 'Let go to hide' : 'Release to hide'}
+          {holding ? 'Let go or tap to hide' : 'Or tap to keep it open'}
         </Text>
       </View>
     </HoldToReveal>
