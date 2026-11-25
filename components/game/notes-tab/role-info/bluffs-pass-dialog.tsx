@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { BluffToken } from '@/components/game/notes-tab/role-info/bluff-token';
+import { HoldToReveal } from '@/components/hold-to-reveal';
 import { ScaledModal } from '@/components/scaled-modal';
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
@@ -121,10 +122,8 @@ export function BluffsPassDialog({ bluffs, members, onClose, visible }: BluffsPa
           <View style={styles.center}>
             <Text style={styles.hint}>Hand the device to</Text>
             <Text style={styles.memberTitle}>{member.name}</Text>
-            <Pressable
-              accessibilityRole="button"
-              onPressIn={() => setPeeking(true)}
-              onPressOut={() => setPeeking(false)}
+            <HoldToReveal
+              onHoldChange={setPeeking}
               style={({ pressed }) => [
                 styles.primary,
                 styles.hold,
@@ -132,7 +131,7 @@ export function BluffsPassDialog({ bluffs, members, onClose, visible }: BluffsPa
               ]}
             >
               <Text style={styles.primaryText}>Hold to see your bluff</Text>
-            </Pressable>
+            </HoldToReveal>
             <Text style={styles.hint}>Letting go hides it again.</Text>
             <Pressable
               accessibilityRole="button"
