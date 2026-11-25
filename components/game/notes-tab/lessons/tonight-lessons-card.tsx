@@ -1,5 +1,4 @@
 import { BookMarked, ChevronDown, ChevronUp } from 'lucide-react-native';
-import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
@@ -7,6 +6,7 @@ import { FriendNameLink } from '@/components/game/notes-tab/lessons/friend-name-
 import { LessonsList } from '@/components/game/notes-tab/lessons/lessons-list';
 import { RoleIcon } from '@/components/role-icon';
 import { Text } from '@/components/text';
+import { useLessonsCollapsed } from '@/hooks/use-lessons-collapsed';
 import { useGameStore } from '@/store/game-store';
 import { colors } from '@/theme/colors';
 import type { Role, SavedNote } from '@/types/game';
@@ -25,7 +25,7 @@ import {
  */
 export function TonightLessonsCard() {
   const { game } = useGameRouteContext();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, toggleCollapsed] = useLessonsCollapsed();
   const savedNotes = useGameStore((state) => state.savedNotes);
   const appUserName = useGameStore((state) => state.appUserName);
   const roleCatalog = useGameStore((state) => state.roleCatalog);
@@ -60,7 +60,7 @@ export function TonightLessonsCard() {
         accessibilityLabel={collapsed ? 'Show lessons' : 'Collapse lessons'}
         accessibilityRole="button"
         accessibilityState={{ expanded: !collapsed }}
-        onPress={() => setCollapsed((value) => !value)}
+        onPress={toggleCollapsed}
         style={({ pressed }) => [styles.header, pressed && styles.headerPressed]}
       >
         <BookMarked color={colors.savedNoteIcon} size={16} strokeWidth={2.4} />
