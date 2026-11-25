@@ -28,6 +28,7 @@ type NoteSuggestion =
 export function NoteAutocompleteInput({
   accessibilityLabel,
   day,
+  dropdownBelow = false,
   phase,
   game,
   onChangeText,
@@ -38,6 +39,8 @@ export function NoteAutocompleteInput({
 }: {
   accessibilityLabel: string;
   day: number;
+  /** Opens the suggestions under the input, for an input near the top of the screen. */
+  dropdownBelow?: boolean;
   phase: GamePhase;
   game: Game;
   onChangeText: (text: string) => void;
@@ -113,6 +116,7 @@ export function NoteAutocompleteInput({
         value={value}
       />
       <NoteSuggestionDropdown
+        below={dropdownBelow}
         day={day}
         phase={phase}
         game={game}
@@ -163,6 +167,7 @@ function getNoteSuggestions(players: Player[], roles: Role[], query: string | un
 }
 
 function NoteSuggestionDropdown({
+  below,
   day,
   phase,
   game,
@@ -170,6 +175,7 @@ function NoteSuggestionDropdown({
   suggestions,
   visible,
 }: {
+  below: boolean;
   day: number;
   phase: GamePhase;
   game: Game;
@@ -182,7 +188,11 @@ function NoteSuggestionDropdown({
       accessibilityElementsHidden={!visible}
       importantForAccessibility={visible ? 'auto' : 'no-hide-descendants'}
       keyboardShouldPersistTaps="always"
-      style={[styles.dropdown, visible ? styles.dropdownVisible : styles.dropdownHidden]}
+      style={[
+        styles.dropdown,
+        below && styles.dropdownBelow,
+        visible ? styles.dropdownVisible : styles.dropdownHidden,
+      ]}
     >
       {suggestions.map((suggestion) => (
         <Pressable
@@ -233,6 +243,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 0,
     zIndex: 20,
+  },
+  dropdownBelow: {
+    bottom: 'auto',
+    marginBottom: 0,
+    marginTop: 4,
+    top: '100%',
   },
   dropdownHidden: {
     opacity: 0,

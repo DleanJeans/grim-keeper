@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { DjGameButton } from '@/components/game/dj-game-button';
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { PrivateMessageButton } from '@/components/game/private-message/private-message-button';
 import { RandomDrawer } from '@/components/game/random-drawer/random-drawer';
 import { RevealRolesButton } from '@/components/game/reveal-roles-button';
 import { RoleDisplayModes, roleDisplayModes } from '@/components/game/role-display-modes';
@@ -55,6 +56,7 @@ export function MapToolbar({ djEnabled, onToggleSuspectFilter, suspectFilter }: 
             <MoveDiagonal color={colors.gameText} size={18} strokeWidth={2.6} />
           </Pressable>
         )}
+        <PrivateMessageButton />
         <Pressable
           accessibilityHint="Opens random players, a random character and fake info"
           accessibilityLabel="Random picker"
