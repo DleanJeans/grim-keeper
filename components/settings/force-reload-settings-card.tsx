@@ -4,40 +4,68 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
 import { colors } from '@/theme/colors';
-import { forceReloadWebApp } from '@/utils/force-reload';
+import { forceReloadWebApp, isWebUpdateAvailable } from '@/utils/force-reload';
+
+type Status = 'idle' | 'checking' | 'current' | 'available' | 'unknown' | 'reloading';
+
+const STATUS_TEXT: Record<Status, string> = {
+  available: 'A new version is available.',
+  checking: 'Checking…',
+  current: "You're on the latest version.",
+  idle: 'See if a newer version has been deployed.',
+  reloading: 'Reloading…',
+  unknown: "Couldn't check for updates.",
+};
+
+const BUTTON_TEXT: Record<Status, string> = {
+  available: 'Update now',
+  checking: 'Checking…',
+  current: 'Check again',
+  idle: 'Check',
+  reloading: 'Reloading…',
+  unknown: 'Force reload',
+};
 
 export function ForceReloadSettingsCard() {
-  const [reloading, setReloading] = useState(false);
+  const [status, setStatus] = useState<Status>('idle');
 
   if (process.env.EXPO_OS !== 'web') {
     return null;
   }
 
-  async function reload() {
-    setReloading(true);
-    await forceReloadWebApp();
+  const busy = status === 'checking' || status === 'reloading';
+
+  async function press() {
+    if (status === 'available' || status === 'unknown') {
+      setStatus('reloading');
+      await forceReloadWebApp();
+      return;
+    }
+    setStatus('checking');
+    const available = await isWebUpdateAvailable();
+    setStatus(available === undefined ? 'unknown' : available ? 'available' : 'current');
   }
 
   return (
     <View style={styles.card}>
       <View style={styles.copy}>
         <Text selectable style={styles.title}>
-          Force reload
+          Check for updates
         </Text>
         <Text selectable style={styles.description}>
-          Clears the app's cached files and loads the newest version. Your games, friends, notes,
+          {STATUS_TEXT[status]} Reloading clears cached app files only; your games, friends, notes,
           settings, and theme are kept.
         </Text>
       </View>
       <Pressable
-        accessibilityLabel="Force reload and clear cache"
+        accessibilityLabel="Check for updates or force reload"
         accessibilityRole="button"
-        disabled={reloading}
-        onPress={reload}
-        style={({ pressed }) => [styles.button, (pressed || reloading) && styles.buttonPressed]}
+        disabled={busy}
+        onPress={press}
+        style={({ pressed }) => [styles.button, (pressed || busy) && styles.buttonPressed]}
       >
         <RefreshCw color={colors.text} size={18} strokeWidth={2.6} />
-        <Text style={styles.buttonText}>{reloading ? 'Reloading…' : 'Reload'}</Text>
+        <Text style={styles.buttonText}>{BUTTON_TEXT[status]}</Text>
       </Pressable>
     </View>
   );
