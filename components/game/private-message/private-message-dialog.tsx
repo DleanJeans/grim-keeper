@@ -1,4 +1,4 @@
-import { Bookmark, Eye, Hand, Lock, Pencil, Trash2, X } from 'lucide-react-native';
+import { Bookmark, Hand, Lock, Pencil, Trash2, X } from 'lucide-react-native';
 import { type ReactNode, useState } from 'react';
 import { Keyboard, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { DimensionSlider } from '@/components/game/dimension-slider';
 import { useGameRouteContext } from '@/components/game/game-route-context';
 import { NoteAutocompleteInput } from '@/components/game/notes-tab/note-autocomplete-input';
+import { HoldToRevealButton } from '@/components/game/private-message/hold-to-reveal-button';
 import { PrivateMessageText } from '@/components/game/private-message/private-message-text';
 import { KeyboardAvoidingView } from '@/components/keyboard-avoiding-view';
 import { ScaledModal } from '@/components/scaled-modal';
@@ -100,28 +101,7 @@ export function PrivateMessageDialog({ onClose }: PrivateMessageDialogProps) {
                   value={fontSize}
                 />
               </View>
-              <Pressable
-                accessibilityHint="Shows the message while held"
-                accessibilityLabel="Hold to reveal"
-                accessibilityRole="button"
-                onPressIn={() => setPeeking(true)}
-                onPressOut={() => setPeeking(false)}
-                style={[styles.hold, peeking && styles.holdDown]}
-              >
-                {peeking ? (
-                  <Eye color={colors.text} size={26} strokeWidth={2.4} />
-                ) : (
-                  <Hand color={colors.onPrimary} size={26} strokeWidth={2.4} />
-                )}
-                <View>
-                  <Text style={[styles.holdTitle, peeking && styles.holdTitleDown]}>
-                    {peeking ? 'Showing' : 'Hold to reveal'}
-                  </Text>
-                  <Text style={[styles.holdHint, peeking && styles.holdHintDown]}>
-                    {peeking ? 'Let go to hide' : 'Release to hide'}
-                  </Text>
-                </View>
-              </Pressable>
+              <HoldToRevealButton holding={peeking} onHoldChange={setPeeking} />
             </>
           ) : (
             <>
@@ -311,23 +291,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  hold: {
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-    borderRadius: 24,
-    borderWidth: 2,
-    flexDirection: 'row',
-    gap: 12,
-    justifyContent: 'center',
-    minHeight: 86,
-    userSelect: 'none',
-  },
-  holdDown: { backgroundColor: colors.surfaceRaised, transform: [{ scale: 0.97 }] },
-  holdTitle: { color: colors.onPrimary, fontSize: 18, fontWeight: '900' },
-  holdTitleDown: { color: colors.text },
-  holdHint: { color: colors.onPrimary, fontSize: 12, fontWeight: '700', opacity: 0.65 },
-  holdHintDown: { color: colors.text },
 });
 
 function IconButton({
