@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useGameRouteContext } from '@/components/game/game-route-context';
+import { BluffsButtons } from '@/components/game/notes-tab/role-info/bluffs-buttons';
 import { PastEvilTeamsButton } from '@/components/game/notes-tab/role-info/past-evil-teams-button';
 import { RoleInfoPickerDialog } from '@/components/game/notes-tab/role-info/role-info-picker-dialog';
 import { RoleInfoToken } from '@/components/game/notes-tab/role-info/role-info-token';
@@ -196,6 +197,7 @@ export function EvilInPlayPicker() {
           <Text style={styles.rowLabel}>Bluffs</Text>
           <View style={styles.evilRow}>
             <SlotTokens onPressSlot={setActiveSlot} rolesById={rolesById} slots={bluffSlots} />
+            <BluffsButtons />
           </View>
           <UnclaimedRoles playersWithoutClaims={playersWithoutClaims} roles={unclaimedRoles} />
         </>

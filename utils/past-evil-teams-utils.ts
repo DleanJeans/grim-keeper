@@ -97,7 +97,7 @@ function getPastEvilGame(game: Game): PastEvilGame {
   };
 }
 
-function getConfirmedEvilMember(player: Player, roles: Role[]): PastEvilMember | undefined {
+export function getConfirmedEvilMember(player: Player, roles: Role[]): PastEvilMember | undefined {
   const confirmStages = getAssignmentStages(player.roleAssignments, 'confirm');
   const lastStage = confirmStages[confirmStages.length - 1];
   if (!lastStage) return undefined;
