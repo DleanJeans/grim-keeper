@@ -1,7 +1,8 @@
 import { Stack } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/text';
+import { useLookupSettled } from '@/hooks/use-lookup-settled';
 import { colors } from '@/theme/colors';
 
 type NotFoundScreenProps = {
@@ -10,6 +11,17 @@ type NotFoundScreenProps = {
 };
 
 export function NotFoundScreen({ message, title }: NotFoundScreenProps) {
+  const settled = useLookupSettled();
+
+  // Show a spinner until we are sure the item does not exist, instead of flashing "not found".
+  if (!settled) {
+    return (
+      <View accessibilityLabel="Loading" style={styles.container}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title }} />
