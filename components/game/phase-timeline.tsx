@@ -1,4 +1,4 @@
-import { FlameKindling, Skull } from 'lucide-react-native';
+import { FlameKindling, HeartPulse, Skull } from 'lucide-react-native';
 import { useMemo, useRef } from 'react';
 import { type LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -31,7 +31,7 @@ type PhaseTimelineProps = {
   onChangePhase: (day: number, phase: GamePhase) => void;
 };
 
-type PhaseDeaths = { executions: number; kills: number };
+type PhaseDeaths = { executions: number; kills: number; revives: number };
 
 export type Stop = {
   /** The phase this stop goes to. */
@@ -112,10 +112,16 @@ export function PhaseTimeline({
 /** How many players were executed or otherwise killed in each phase, by phase index. */
 function getDeathsByPhase(players: Player[]): Map<number, PhaseDeaths> {
   const deaths = new Map<number, PhaseDeaths>();
-  for (const { death } of players) {
+  for (const { death, revive } of players) {
+    if (revive) {
+      const index = getEventPhaseIndex(revive.day, 'day');
+      const entry = deaths.get(index) ?? { executions: 0, kills: 0, revives: 0 };
+      entry.revives += 1;
+      deaths.set(index, entry);
+    }
     if (!death) continue;
     const index = getEventPhaseIndex(death.day, getDeathPhase(death));
-    const entry = deaths.get(index) ?? { executions: 0, kills: 0 };
+    const entry = deaths.get(index) ?? { executions: 0, kills: 0, revives: 0 };
     if (death.kind === 'execution') {
       entry.executions += 1;
     } else {
@@ -192,6 +198,7 @@ function PhaseStop({
       <View style={styles.deathRow}>
         {deaths?.executions ? <DeathMark count={deaths.executions} kind="execution" /> : null}
         {deaths?.kills ? <DeathMark count={deaths.kills} kind="kill" /> : null}
+        {deaths?.revives ? <DeathMark count={deaths.revives} kind="revive" /> : null}
       </View>
       <View style={styles.dotRow}>
         {/* Each stop draws its half of the line on both sides, so lines never cover a dot. */}
@@ -229,28 +236,31 @@ function PhaseStop({
 
 type DeathMarkProps = {
   count: number;
-  kind: 'execution' | 'kill';
+  kind: 'execution' | 'kill' | 'revive';
 };
 
 /** One icon for the executions or the other deaths in a phase, with a count when several. */
 function DeathMark({ count, kind }: DeathMarkProps) {
   const execution = kind === 'execution';
-  const Icon = execution ? FlameKindling : Skull;
+  const revive = kind === 'revive';
+  const Icon = revive ? HeartPulse : execution ? FlameKindling : Skull;
+  const countStyle = revive
+    ? styles.reviveCount
+    : execution
+      ? styles.executionCount
+      : styles.killCount;
+  const color = revive
+    ? colors.reviveBorder
+    : execution
+      ? colors.deathExecution
+      : colors.deathNight;
   return (
     <View
-      accessibilityLabel={`${count} ${execution ? 'executed' : 'killed'}`}
+      accessibilityLabel={`${count} ${revive ? 'revived' : execution ? 'executed' : 'killed'}`}
       style={styles.deathMark}
     >
-      <Icon
-        color={execution ? colors.deathExecution : colors.deathNight}
-        size={DEATH_ICON_SIZE}
-        strokeWidth={2.6}
-      />
-      {count > 1 ? (
-        <Text style={[styles.deathCount, execution ? styles.executionCount : styles.killCount]}>
-          {count}
-        </Text>
-      ) : null}
+      <Icon color={color} size={DEATH_ICON_SIZE} strokeWidth={2.6} />
+      {count > 1 ? <Text style={[styles.deathCount, countStyle]}>{count}</Text> : null}
     </View>
   );
 }
@@ -291,6 +301,7 @@ const styles = StyleSheet.create({
   },
   executionCount: { color: colors.deathExecution },
   killCount: { color: colors.deathNight },
+  reviveCount: { color: colors.reviveBorder },
   earlierDot: { backgroundColor: 'transparent', borderStyle: 'dotted' },
   label: { color: colors.gameTextMuted, fontSize: 9.5, fontWeight: '800' },
   line: {
