@@ -217,7 +217,7 @@ type GameState = GameData & {
   updateSavedNote: (
     noteId: string,
     changes: Pick<SavedNote, 'playerName' | 'roleIds' | 'text'> &
-      Partial<Pick<SavedNote, 'requiredRoleIds'>>,
+      Partial<Pick<SavedNote, 'aboutStoryteller' | 'requiredRoleIds'>>,
   ) => boolean;
   setRoleInfoValue: (
     gameId: string,
@@ -1385,12 +1385,19 @@ export const useGameStore = create<GameState>()(
               return note;
             }
             saved = true;
-            const { requiredRoleIds: previousRequired, ...rest } = note;
+            const {
+              aboutStoryteller: previousAboutStoryteller,
+              requiredRoleIds: previousRequired,
+              ...rest
+            } = note;
+            const aboutStoryteller =
+              'aboutStoryteller' in changes ? changes.aboutStoryteller : previousAboutStoryteller;
             const requested =
               'requiredRoleIds' in changes ? changes.requiredRoleIds : previousRequired;
             const requiredRoleIds = requested?.filter((roleId) => roleIds.includes(roleId));
             return {
               ...rest,
+              ...(aboutStoryteller && playerName ? { aboutStoryteller } : {}),
               ...(requiredRoleIds && requiredRoleIds.length > 0 ? { requiredRoleIds } : {}),
               playerName,
               roleIds,

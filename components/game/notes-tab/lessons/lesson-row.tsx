@@ -35,6 +35,7 @@ export function LessonRow({ lesson, roles }: LessonRowProps) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(lesson.text);
   const [tagPlayer, setTagPlayer] = useState(true);
+  const [aboutStoryteller, setAboutStoryteller] = useState(!!lesson.aboutStoryteller);
   const [error, setError] = useState('');
   const [firstRoleId, setFirstRoleId] = useState(lesson.roleIds[0]);
   const [requiredRoleIds, setRequiredRoleIds] = useState(lesson.requiredRoleIds ?? []);
@@ -47,6 +48,7 @@ export function LessonRow({ lesson, roles }: LessonRowProps) {
   function handleEdit() {
     setText(lesson.text);
     setTagPlayer(true);
+    setAboutStoryteller(!!lesson.aboutStoryteller);
     setFirstRoleId(lesson.roleIds[0]);
     setRequiredRoleIds(lesson.requiredRoleIds ?? []);
     setError('');
@@ -60,6 +62,7 @@ export function LessonRow({ lesson, roles }: LessonRowProps) {
         : detectRoleIdsInNote(text, roleCatalog);
     if (
       updateSavedNote(lesson.id, {
+        aboutStoryteller: tagPlayer && aboutStoryteller,
         playerName: tagPlayer ? playerName : '',
         requiredRoleIds,
         roleIds,
@@ -148,12 +151,32 @@ export function LessonRow({ lesson, roles }: LessonRowProps) {
             </View>
           </View>
         ) : null}
-        {noteRoles.length > 1 ? (
+        {playerName && tagPlayer ? (
+          <View style={styles.tagRow}>
+            <Text style={styles.tagText}>
+              {aboutStoryteller
+                ? 'Shown as (Storyteller) in Lessons for tonight'
+                : `Shown as ${playerName} in Lessons for tonight`}
+            </Text>
+            <Switch
+              accessibilityLabel="Show this note as (Storyteller)"
+              accessibilityRole="switch"
+              accessibilityState={{ checked: aboutStoryteller }}
+              onValueChange={setAboutStoryteller}
+              thumbColor={aboutStoryteller ? colors.primary : colors.onDisabled}
+              trackColor={{ false: colors.disabled, true: colors.borderStrong }}
+              value={aboutStoryteller}
+            />
+          </View>
+        ) : null}
+        {noteRoles.length > 1 || (noteRoles.length === 1 && playerName) ? (
           <View style={styles.firstRole}>
             <Text style={styles.tagText}>
               {requiredRoleIds.length > 0
                 ? 'Show only when all selected characters are on the script'
-                : 'Show when any character is on the script. Tap to require:'}
+                : playerName
+                  ? 'Show for this player in any script. Tap to require a character:'
+                  : 'Show when any character is on the script. Tap to require:'}
             </Text>
             <View style={styles.roleChips}>
               {noteRoles.map(({ id, role }) => (

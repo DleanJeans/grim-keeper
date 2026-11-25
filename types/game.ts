@@ -139,6 +139,11 @@ export type SavedNote = {
    * tonight". Unset: the note shows when any of its characters is on the script.
    */
   requiredRoleIds?: string[];
+  /**
+   * Shown in "Lessons for tonight" under "(Storyteller)" instead of under the player it is
+   * saved with, whoever tells this game. The player stays tagged everywhere else.
+   */
+  aboutStoryteller?: boolean;
   text: string;
   /** Game this note originated from. May be empty for legacy notes pre-dating the unification. */
   gameId: string;

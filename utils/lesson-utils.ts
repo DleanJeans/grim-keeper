@@ -87,16 +87,42 @@ export function getPlayerLessons(savedNotes: SavedNote[], playerName: string, ga
 
 export type PlayerLessons = { lessons: SavedNote[]; playerId: string; playerName: string };
 
-/** Every player in the game, in seat order, who has lessons from other games. */
+/** Whether every character the note requires is on the game's script (Travellers included). */
+function hasRequiredRoles(note: SavedNote, game: Pick<Game, 'script'>) {
+  const required = note.requiredRoleIds ?? [];
+  if (required.length === 0) return true;
+  const scriptIds = new Set((game.script?.roles ?? []).map((role) => role.id));
+  return required.every((roleId) => scriptIds.has(stripTeam(roleId)));
+}
+
+/**
+ * Every player in the game, in seat order, who has lessons from other games. Notes marked as
+ * about the Storyteller are left to `getStorytellerLessons`; a note that requires characters
+ * only shows when they are all on the script.
+ */
 export function getLessonsForPlayers(
-  game: Pick<Game, 'id' | 'players'>,
+  game: Pick<Game, 'id' | 'players' | 'script'>,
   savedNotes: SavedNote[],
 ): PlayerLessons[] {
   return game.players.flatMap((player) => {
     if (player.id === APP_USER_ID || player.isStoryteller) return [];
-    const lessons = getPlayerLessons(savedNotes, player.name, game.id);
+    const lessons = getPlayerLessons(savedNotes, player.name, game.id).filter(
+      (note) => !note.aboutStoryteller && hasRequiredRoles(note, game),
+    );
     return lessons.length > 0 ? [{ lessons, playerId: player.id, playerName: player.name }] : [];
   });
+}
+
+/** Notes from other games marked "(Storyteller)" whose required characters are on the script, newest first. */
+export function getStorytellerLessons(
+  game: Pick<Game, 'id' | 'script'>,
+  savedNotes: SavedNote[],
+): SavedNote[] {
+  return savedNotes
+    .filter(
+      (note) => note.aboutStoryteller && note.gameId !== game.id && hasRequiredRoles(note, game),
+    )
+    .sort((first, second) => second.createdAt.localeCompare(first.createdAt));
 }
 
 export type CharacterLessons = {

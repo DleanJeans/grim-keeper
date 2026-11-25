@@ -14,6 +14,7 @@ import {
   findNoteRole,
   getLessonsForPlayers,
   getLessonsForScriptCharacters,
+  getStorytellerLessons,
 } from '@/utils/lesson-utils';
 
 /**
@@ -37,11 +38,17 @@ export function TonightLessonsCard() {
   const entries = getLessonsForPlayers(game, savedNotes)
     .map(keepShown)
     .filter((entry) => entry.lessons.length > 0);
+  const storytellerLessons = keepShown({
+    lessons: getStorytellerLessons(game, savedNotes),
+  }).lessons;
   const characterEntries = getLessonsForScriptCharacters(game, savedNotes, appUserName)
     .map(keepShown)
     .filter((entry) => entry.lessons.length > 0);
 
-  if (game.result !== undefined || entries.length + characterEntries.length === 0) {
+  if (
+    game.result !== undefined ||
+    entries.length + characterEntries.length + storytellerLessons.length === 0
+  ) {
     return null;
   }
 
@@ -70,6 +77,12 @@ export function TonightLessonsCard() {
               <LessonsList lessons={entry.lessons} />
             </View>
           ))}
+      {collapsed || storytellerLessons.length === 0 ? null : (
+        <View style={styles.player}>
+          <Text style={styles.name}>(Storyteller)</Text>
+          <LessonsList lessons={storytellerLessons} roles={scriptRoles} />
+        </View>
+      )}
       {collapsed
         ? null
         : characterEntries.map((entry) => (

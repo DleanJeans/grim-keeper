@@ -1,7 +1,8 @@
-import type { Player, Role, SavedNote } from '@/types/game';
+import type { Game, Player, Role, SavedNote } from '@/types/game';
 import {
   getLessonPlayers,
   getLessonsForPlayers,
+  getStorytellerLessons,
   getLessonsForScriptCharacters,
   getLessonsFromGame,
 } from '@/utils/lesson-utils';
@@ -89,6 +90,45 @@ describe('getLessonsForPlayers', () => {
         lessons.map((lesson) => lesson.id),
       ]),
     ).toEqual([['ann', ['new', 'old']]]);
+  });
+});
+
+describe('Storyteller and required-character notes', () => {
+  const note = (id: string, extra: Partial<SavedNote>): SavedNote => ({
+    createdAt: `2026-07-0${id}T00:00:00.000Z`,
+    day: 1,
+    gameId: 'old',
+    id,
+    playerName: 'Ann',
+    roleIds: ['gangster'],
+    scriptName: 'TB',
+    text: `note ${id}`,
+    updatedAt: `2026-07-0${id}T00:00:00.000Z`,
+    ...extra,
+  });
+  const script = (ids: string[]) =>
+    ({ roles: ids.map((id) => ({ id, name: id })) }) as unknown as Game['script'];
+  const savedNotes = [
+    note('1', { aboutStoryteller: true, requiredRoleIds: ['gangster'] }),
+    note('2', { requiredRoleIds: ['gangster'] }),
+    note('3', {}),
+  ];
+  const players = [player('ann', { name: 'Ann' })];
+
+  it('moves Storyteller notes out of the player and shows them when the required traveller is on the script', () => {
+    const withGangster = { id: 'g', players, script: script(['gangster']) };
+    expect(
+      getLessonsForPlayers(withGangster, savedNotes).map(({ lessons }) => lessons.map((n) => n.id)),
+    ).toEqual([['3', '2']]);
+    expect(getStorytellerLessons(withGangster, savedNotes).map((n) => n.id)).toEqual(['1']);
+  });
+
+  it('hides notes requiring a character the script lacks', () => {
+    const without = { id: 'g', players, script: script(['empath']) };
+    expect(
+      getLessonsForPlayers(without, savedNotes).map(({ lessons }) => lessons.map((n) => n.id)),
+    ).toEqual([['3']]);
+    expect(getStorytellerLessons(without, savedNotes)).toEqual([]);
   });
 });
 
