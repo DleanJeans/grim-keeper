@@ -7,6 +7,7 @@ import { ResponsiveContent } from '@/components/responsive-content';
 import { AppVersionInfo } from '@/components/settings/app-version-info';
 import { AutoFullscreenSettingsCard } from '@/components/settings/auto-fullscreen-settings-card';
 import { DataTransferCard } from '@/components/settings/data-transfer-card';
+import { ForceReloadSettingsCard } from '@/components/settings/force-reload-settings-card';
 import { GoogleSyncCard } from '@/components/settings/google-sync-card';
 import { NightStartSettingsCard } from '@/components/settings/night-start-settings-card';
 import { SizeSettingsCard } from '@/components/settings/size-settings-card';
@@ -61,6 +62,7 @@ export default function SettingsRoute() {
           <TokenInfoSettingsCard />
           <GoogleSyncCard />
           <DataTransferCard />
+          <ForceReloadSettingsCard />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Clear all data"
