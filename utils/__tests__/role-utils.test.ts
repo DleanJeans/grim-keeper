@@ -1016,6 +1016,20 @@ describe('role utilities', () => {
     ]);
   });
 
+  it('includes the Boomdandy minion as a killer', () => {
+    const roles = getKillerRoleOptions([
+      {
+        ability:
+          'If you die, all players vote and the player with the most votes dies. (Only the Boomdandy knows who it is.)',
+        id: 'boomdandy',
+        name: 'Boomdandy',
+        team: 'minion',
+      },
+    ]);
+
+    expect(roles.map((role) => role.id)).toContain('boomdandy');
+  });
+
   it('keeps generic demon when multiple demon types are in the script', () => {
     const roles = getKillerRoleOptions([
       {
