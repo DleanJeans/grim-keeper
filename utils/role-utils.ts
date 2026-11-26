@@ -922,6 +922,19 @@ export function addRoleToScript(script: StoredScript, role: Role): StoredScript 
   };
 }
 
+/** Replaces the description and avatar of one role in a script. */
+export function updateScriptRole(
+  script: StoredScript,
+  roleId: string,
+  changes: Pick<Role, 'ability' | 'imageUrls'>,
+): StoredScript {
+  return {
+    ...script,
+    roles: script.roles.map((role) => (role.id === roleId ? { ...role, ...changes } : role)),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
 export function removeRoleFromScript(script: StoredScript, roleId: string): StoredScript {
   return {
     ...script,

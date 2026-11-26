@@ -1,3 +1,4 @@
+import type { StoredScript } from '@/types/game';
 import {
   canRoleKill,
   formatRoleId,
@@ -34,6 +35,7 @@ import {
   mergeScriptRoles,
   parseRoleIconCatalog,
   toggleRoleSelection,
+  updateScriptRole,
 } from '@/utils/role-utils';
 
 describe('role utilities', () => {
@@ -1403,5 +1405,29 @@ describe('toggleRoleSelection', () => {
     expect(toggleRoleSelection(['a', 'b', 'c'], 'd', 'slot', 1)).toEqual(['a', 'd', 'c']);
     expect(toggleRoleSelection(['a', 'b', 'c'], 'd', 'slot')).toEqual(['a', 'b', 'c', 'd']);
     expect(toggleRoleSelection(['a', 'b', 'c'], 'a', 'only')).toEqual(['a']);
+  });
+});
+
+describe('updateScriptRole', () => {
+  it('sets the description and avatar of one role only', () => {
+    const script = {
+      id: 's',
+      name: 'S',
+      roles: [
+        { id: 'gobbler', name: 'Gobbler' },
+        { id: 'imp', name: 'Imp' },
+      ],
+      scriptType: 'Full',
+      updatedAt: '',
+      version: '1',
+    } as StoredScript;
+    const updated = updateScriptRole(script, 'gobbler', {
+      ability: 'Each night*, choose a player: they die.',
+      imageUrls: ['data:image/png;base64,AAA'],
+    });
+
+    expect(updated.roles[0]).toMatchObject({ ability: 'Each night*, choose a player: they die.' });
+    expect(updated.roles[0].imageUrls).toEqual(['data:image/png;base64,AAA']);
+    expect(updated.roles[1]).toEqual({ id: 'imp', name: 'Imp' });
   });
 });

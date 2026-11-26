@@ -1,12 +1,12 @@
-import { Plus, X } from 'lucide-react-native';
+import { Pencil, Plus, X } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-
 import { RoleReference } from '@/components/role-reference';
+import { CustomRoleEditor } from '@/components/scripts/custom-role-editor';
 import { Text, TextInput } from '@/components/text';
 import { colors } from '@/theme/colors';
 import type { Role, StoredScript } from '@/types/game';
-import { addRoleToScript, removeRoleFromScript } from '@/utils/role-utils';
+import { addRoleToScript, removeRoleFromScript, updateScriptRole } from '@/utils/role-utils';
 
 type ScriptRoleEditorProps = {
   roleCatalog: Role[];
@@ -17,6 +17,7 @@ type ScriptRoleEditorProps = {
 export function ScriptRoleEditor({ onChange, roleCatalog, script }: ScriptRoleEditorProps) {
   const [scriptName, setScriptName] = useState(script.name);
   const [query, setQuery] = useState('');
+  const [editingRoleId, setEditingRoleId] = useState<string>();
 
   useEffect(() => {
     setScriptName(script.name);
@@ -26,6 +27,8 @@ export function ScriptRoleEditor({ onChange, roleCatalog, script }: ScriptRoleEd
     () => new Set(script.roles.map((role) => role.id)),
     [script.roles],
   );
+  const catalogIds = useMemo(() => new Set(roleCatalog.map((role) => role.id)), [roleCatalog]);
+  const editingRole = script.roles.find((role) => role.id === editingRoleId);
   const suggestions = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
 
@@ -82,10 +85,19 @@ export function ScriptRoleEditor({ onChange, roleCatalog, script }: ScriptRoleEd
             key={role.id}
             role={role}
             scriptId={script.id}
+            onEdit={catalogIds.has(role.id) ? undefined : () => setEditingRoleId(role.id)}
             onRemove={() => onChange(removeRoleFromScript(script, role.id))}
           />
         ))}
       </View>
+      {editingRole ? (
+        <CustomRoleEditor
+          key={editingRole.id}
+          onChange={(changes) => onChange(updateScriptRole(script, editingRole.id, changes))}
+          onClose={() => setEditingRoleId(undefined)}
+          role={editingRole}
+        />
+      ) : null}
       <TextInput
         autoCapitalize="words"
         autoCorrect={false}
@@ -130,10 +142,12 @@ export function ScriptRoleEditor({ onChange, roleCatalog, script }: ScriptRoleEd
 }
 
 function RoleChip({
+  onEdit,
   onRemove,
   role,
   scriptId,
 }: {
+  onEdit?: () => void;
   onRemove: () => void;
   role: Role;
   scriptId: string;
@@ -141,6 +155,16 @@ function RoleChip({
   return (
     <View style={styles.chip}>
       <RoleReference role={role} scriptId={scriptId} textStyle={styles.chipText} />
+      {onEdit ? (
+        <Pressable
+          accessibilityLabel={`Edit ${role.name} description and avatar`}
+          accessibilityRole="button"
+          hitSlop={10}
+          onPress={onEdit}
+        >
+          <Pencil color={colors.textMuted} size={14} strokeWidth={2.5} />
+        </Pressable>
+      ) : null}
       <Pressable
         accessibilityLabel={`Remove ${role.name} from script`}
         accessibilityRole="button"
